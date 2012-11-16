@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title><%= (&title // 'RplusMgmt') %></title>
+
+    <!-- Bootstrap -->
+    <link href="/css/bootstrap.min.css" rel="stylesheet" media="screen">
+    <style type="text/css">
+      body {
+        padding-top: 60px;
+        padding-bottom: 40px;
+      }
+      .sidebar-nav {
+        padding: 9px 0;
+      }
+    </style>
+
+    <script src="/js/jquery.js"></script>
+
+    <%= content_for 'header' %>
+  </head>
+
+  <body>
+    <div class="navbar navbar-inverse navbar-fixed-top">
+      <div class="navbar-inner">
+        <div class="container-fluid">
+          <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </a>
+          <a class="brand" href="/">RplusMgmt</a>
+          <div class="nav-collapse collapse">
+            <ul class="nav">
+              <li class="dropdown">
+                <a href="#" class="dropdown-toggle" data-toggle="dropdown">RplusWeb <b class="caret"></b></a>
+                <ul class="dropdown-menu">
+                  <li><a href="<%= url_for q{/questions} %>">Вопросы</a></li>
+                </ul>
+              </li>
+              <!--
+              <li class="dropdown">
+                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Заявки <b class="caret"></b></a>
+                <ul class="dropdown-menu">
+                  <li><a href="<%= url_for q{/queries/accepted} %>">Принятые</a></li>
+                  <li><a href="<%= url_for q{/queries/offered} %>">Подобранная недвижимость</a></li>
+                </ul>
+              </li>
+              -->
+              <li class="dropdown">
+                <a href="#" class="dropdown-toggle" data-toggle="dropdown">СМС <b class="caret"></b></a>
+                <ul class="dropdown-menu">
+                  <li><a href="#">Отправленные</a></li>
+                </ul>
+              </li>
+              <li class="dropdown">
+                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Выгрузка прессы <b class="caret"></b></a>
+                <ul class="dropdown-menu">
+                  <li><a href="<%= url_for q{/export/present.rtf} %>">Презент</a></li>
+                  <li><a href="<%= url_for q{/export/vnx.xls} %>">ВНХ</a></li>
+                </ul>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="container-fluid">
+        <div class="row-fluid">
+            <div class="span12">
+                <%= content %>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap -->
+    <script src="/js/bootstrap.min.js"></script>
+
+  </body>
+</html>

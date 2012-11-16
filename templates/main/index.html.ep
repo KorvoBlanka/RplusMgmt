@@ -1,0 +1,6 @@
+% layout 'default';
+
+<div class="hero-unit span6">
+  <h1>RplusMgmt</h1>
+  <p>Добро пожаловать в Rplus Managememt. Выберите один из пунктов меню.</p>
+</div>
