@@ -1,0 +1,249 @@
+% layout 'default';
+
+% content_for header => begin
+<script type="text/javascript">
+  function loadQuestions() {
+    $.ajax({
+      type: "POST",
+      url: "<%= url_for q{/questions/list} %>",
+    })
+      .done(function (data) {
+        var tb = $('tbody');
+        var xhtml = '';
+
+        for (var i = 0; i < data.length; i++) {
+          var x = data[i];
+          var d = new Date(x.add_date);
+          xhtml += '<tr id="q-' + x.id + '">';
+          xhtml += '<td>' + i + '</td>';
+          xhtml += '<td nowrap>' + d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate() + '</td>';
+          xhtml += '<td>' + x.status + '</td>';
+          xhtml += '<td>' + (x.client === undefined ? '-' : x.client.name) + '</td>';
+          xhtml += '<td>' + x.title + '</td>';
+          xhtml += '<td>' + x.question + '</td>';
+          xhtml += '<td>' + x.answer + '</td>';
+          xhtml += '<td nowrap>'
+            xhtml += '<a href="#" onclick="editQuestion(' + x.id + '); return false;"><i class="icon-pencil"></i></a>';
+            xhtml += '&nbsp;';
+            xhtml += '<a href="#" onclick="deleteQuestion(' + x.id + '); return false;"><i class="icon-remove"></i></a>';
+          xhtml += '</td>';
+          xhtml += '</tr>';
+        }
+
+        tb.html(xhtml);
+      })
+      .fail(function (jqXHR, textStatus) {
+      })
+    ;
+  }
+
+  function addQuestion() {
+    showQuestionDialog({},
+      function (data, successCb, errorCb) {
+        $.ajax({
+          type: "POST",
+          url: "<%= url_for q{/questions/add} %>",
+          data: data
+        })
+          .done(function (data) {
+            if (data.status == 'success') {
+              if (successCb !== undefined) successCb();
+              loadQuestions();
+              var msg = '';
+              msg += '<div class="alert alert-success span4">';
+              msg += '<button type="button" class="close" data-dismiss="alert">&times;</button>';
+              msg += 'Вопрос успешно <strong>добавлен</strong>.';
+              msg += '</div>';
+              $('#message').html(msg);
+            } else {
+              if (errorCb !== undefined) errorCb(data);
+            }
+          })
+          .fail(function (jqXHR, textStatus) {
+            if (errorCb !== undefined) errorCb();
+          })
+        ;
+      }
+    );
+  }
+
+  function editQuestion(id) {
+    $.ajax({
+      type: "POST",
+      url: "<%= url_for q{/questions/get} %>",
+      data: {id:id}
+    })
+      .done(function (data) {
+        showQuestionDialog(data,
+          function (data, successCb, errorCb) {
+            $.ajax({
+              type: "POST",
+              url: "<%= url_for q{/questions/update} %>",
+              data: data
+            })
+              .done(function (data) {
+                if (data.status == 'success') {
+                  if (successCb !== undefined) successCb();
+                  loadQuestions();
+                  var msg = '';
+                  msg += '<div class="alert alert-success span4">';
+                  msg += '<button type="button" class="close" data-dismiss="alert">&times;</button>';
+                  msg += 'Вопрос успешно <strong>изменен</strong>.';
+                  msg += '</div>';
+                  $('#message').html(msg);
+                } else {
+                  if (errorCb !== undefined) errorCb(data);
+                }
+              })
+            ;
+          }
+        );
+      })
+      .fail(function (jqXHR, textStatus) {
+        if (errorCb !== undefined) errorCb();
+      })
+    ;
+  }
+
+  function deleteQuestion(id) {
+    if (id !== undefined) {
+      bootbox.confirm("Are you sure?",  function (e) {
+        if (e) {
+          $.ajax({
+            type: "POST",
+            url: "<%= url_for q{/questions/delete} %>",
+            data: {id:id}
+          })
+            .done(function (data) {
+              if (data.status == 'success') {
+                var tq = $('#q-' + id);
+                if (tq !== undefined) {
+                  tq.remove();
+                  var msg = '';
+                  msg += '<div class="alert alert-success span4">';
+                  msg += '<button type="button" class="close" data-dismiss="alert">&times;</button>';
+                  msg += 'Вопрос успешно <strong>удален</strong>.';
+                  msg += '</div>';
+                  $('#message').html(msg);
+                }
+              }
+            })
+          ;
+        }
+      });
+    }
+  }
+
+  function showQuestionDialog(data, saveCb, closeCb) {
+    var fqId = $('#fqId');
+    var fqStatus = $('#fqStatus');
+    var fqTitle = $('#fqTitle');
+    var fqQuestion = $('#fqQuestion');
+    var fqAnswer = $('#fqAnswer');
+
+    // Clear old values
+    fqId.val("");
+    fqStatus.val("");
+    fqTitle.val("");
+    fqQuestion.val("");
+    fqAnswer.val("");
+
+    if (data !== undefined) {
+      if (data.id !== undefined) fqId.val(data.id);
+      if (data.status !== undefined) fqStatus.val(data.status);
+      if (data.title !== undefined) fqTitle.val(data.title);
+      if (data.question !== undefined) fqQuestion.val(data.question);
+      if (data.answer !== undefined) fqAnswer.val(data.answer);
+    }
+    $('#fqDialog').unbind('submit');
+    $('#fqDialog').bind('submit', function (event) {
+      if (saveCb !== undefined) saveCb({
+        id: fqId.val(),
+        status: fqStatus.val(),
+        title: fqTitle.val(),
+        question: fqQuestion.val(),
+        answer: fqAnswer.val()
+      },
+        function () { // successCb
+          $('#qDialogModal').modal('hide');
+        },
+        function (data) { // errorCb
+          var msg = '';
+          msg += '<div class="alert alert-error">';
+          msg += '<button type="button" class="close" data-dismiss="alert">&times;</button>';
+          msg += 'Ошибка!';
+          msg += '</div>';
+          $('#fqMessage').html(msg);
+        }
+      );
+      event.preventDefault();
+    });
+    $('#fqClose').unbind('click');
+    $('#fqClose').bind('click', function (event) {
+      if (closeCb !== undefined) closeCb();
+    });
+    $('#qDialogModal').modal();
+  }
+
+  $(function () {
+    bootbox.animate(false);
+    loadQuestions();
+  });
+</script>
+% end
+
+% content_for modals => begin
+<!-- Modal dialog -->
+<div id="qDialogModal" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="qModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+  <div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+    <h3 id="qModalLabel">Question</h3>
+  </div>
+    <div class="modal-body">
+      <div id="fqMessage"></div>
+      <div class="clearfix"></div>
+      <form id="fqDialog">
+        <input type="hidden" id="fqId" name="id" value="">
+        <fieldset>
+          <label for="fqStatus">Status</label>
+          <select id="fqStatus" name="status">
+            <option value="asked">asked</option>
+            <option value="published">published</option>
+          </select>
+          <label for="fqTitle">Title</label>
+          <input type="text" id="fqTitle" name="title">
+          <label for="fqQuestion">Question</label>
+          <textarea id="fqQuestion" style="width: 400px; max-width: 500px; height: 50px;" name="question" required></textarea>
+          <label for="fqAnswer">Answer</label>
+          <textarea id="fqAnswer" style="width: 450px; max-width: 500px; height: 70px;" name="answer"></textarea>
+        </fieldset>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" data-dismiss="modal" aria-hidden="true" id="fqClose">Close</button>
+      <button type="submit" class="btn btn-primary" form="fqDialog" id="fqSave">Save</button>
+    </div>
+</div>
+%end
+
+<div id="message"></div>
+<div class="clearfix"></div>
+<div class="btn-toolbar">
+  <button class="btn btn-primary" id="bAddQuestion" onclick="addQuestion();"><i class="icon-plus icon-white"></i>Add</button>
+</div>
+<table class="table table-striped table-condensed">
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>Date</th>
+      <th>Status</th>
+      <th>Client</th>
+      <th>Title</th>
+      <th>Question</th>
+      <th>Answer</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+  </tbody>
+</table>
