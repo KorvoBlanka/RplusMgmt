@@ -21,7 +21,7 @@
     <!-- Bootstrap Modal CSS -->
     <link href="/css/bootstrap-modal.css" rel="stylesheet">
 
-    <script type="text/javascript" src="/js/jquery.js"></script>
+    <script type="text/javascript" src="/js/jquery-1.9.1.min.js"></script>
 
     <%= content_for 'header' %>
 
