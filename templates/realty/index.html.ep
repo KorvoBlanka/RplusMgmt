@@ -104,6 +104,9 @@
             xhtml += '<tr data-toggle="realtyCard" data-id="' + x.id + '"' + (isOpened ? ' class="warning"' : '') + '>';
               xhtml += '<td style="text-align: center;' + _realtyTableStyle(n++) + '">';
                 xhtml += '<a href="#" data-toggle="tooltip" title="' + x.offer_type + '">' + (x.offer_type == 'Аренда' ? '<i class="icon-calendar"></i>' : '<i class="icon-flag"></i>') + '</a>';
+                if (x.main_photo_thumbnail) {
+                  xhtml += '<br><a href="#" data-toggle="tooltip" data-placement="right" data-html="true" data-title="' + $('<div>').text('<img src=\'' + x.main_photo_thumbnail + '\'></img>').html() + '"><i class="icon-camera"></i></a>';
+                }
               xhtml += '</td>';
               xhtml += '<td style="' + _realtyTableStyle(n++) + '">';
                 xhtml += x.realty_type;
@@ -541,7 +544,7 @@
               <th data-field="realty_type">Type<i class="pull-right icon-arrow-up" style="display: none;"></i></th>
               <th data-field="ap_scheme_id">Scheme<i class="pull-right icon-arrow-up" style="display: none;"></i></th>
               <th data-field="rooms_count">Rooms<i class="pull-right icon-arrow-up" style="display: none;"></i></th>
-              <th data-field="street.name2">Address<i class="pull-right icon-arrow-up" style="display: none;"></i></th>
+              <th data-field="address">Address<i class="pull-right icon-arrow-up" style="display: none;"></i></th>
               <th data-field="price">Price<i class="pull-right icon-arrow-up" style="display: none;"></i></th>
               <th data-field="floor">Floor<i class="pull-right icon-arrow-up" style="display: none;"></i></th>
               <th data-field="square">Square<i class="pull-right icon-arrow-up" style="display: none;"></i></th>

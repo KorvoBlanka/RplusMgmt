@@ -98,17 +98,20 @@ sub list {
         eval {
             $sort = decode_json($sort);
             if ($sort->{'field'}) {
+                my $dir = $sort->{'direction'} =~ /^desc$/i ? 'DESC' : 'ASC';
                 if (
                     $sort->{'field'} eq 'realty_type' ||
                     $sort->{'field'} eq 'ap_scheme_id' ||
                     $sort->{'field'} eq 'rooms_count' ||
-                    $sort->{'field'} eq 'street.name2' ||
                     $sort->{'field'} eq 'price' ||
                     $sort->{'field'} eq 'floor' ||
                     $sort->{'field'} eq 'open_date' ||
                     $sort->{'field'} eq 'agent.name'
                 ) {
-                    $sort_by = $sort->{'field'}.' '.($sort->{'direction'} =~ /^desc$/i ? 'DESC' : 'ASC');
+                    $sort_by = $sort->{'field'}.' '.$dir;
+                } elsif ($sort->{'field'} eq 'address') {
+                    # FIXME: Bug in Rose::DB::Object (must be street.parent_kladr.name2)
+                    $sort_by = 'parent_kladr.name2 '.$dir.', street.name2 '.$dir;
                 }
             }
         }
@@ -128,7 +131,8 @@ sub list {
     my $realty_iter = Rplus::Object::Realty::Manager->get_objects_iterator(
         query => \@rdb_query,
         ($sort_by ? (sort_by => $sort_by) : ()),
-        with_all_objects => 1,
+        with_objects => [ (map { $_->name } Rplus::Object::Realty->meta->foreign_keys), 'street.parent_kladr' ],
+        #with_all_objects => 1,
         per_page => $per_page,
         page => $page,
     );
@@ -152,7 +156,8 @@ sub list {
             square => [
                 ($realty->square_total ? join('/', $realty->square_total, ($realty->square_living || ()), ($realty->square_kitchen || ())).' кв.м.' : ()),
                 ($realty->square_land ? $realty->square_land.(($realty->square_land_type || 'ar') eq 'ar' ? ' сот.' : ' га.') : ())
-            ]
+            ],
+            main_photo_thumbnail => $realty->main_photo_id ? $self->url_for(sprintf("/photos/%s/%s", $realty->id, $realty->main_photo->thumbnail_filename)) : undef,
         };
     }
 
