@@ -1,0 +1,394 @@
+% layout 'default';
+
+% content_for after_bootstrap => begin
+<script src="/js/bootstrap-editable.min.js"></script>
+<script src="/js/input-ext/mediator.js"></script>
+% end
+
+% content_for header => begin
+<link href="/css/bootstrap-editable.css" rel="stylesheet">
+<link href="/css/input-ext/mediator.css" rel="stylesheet">
+<style type="text/css">
+  #companyList {
+    height: 600px;
+    overflow-y: auto;
+    display: block;
+  }
+
+  % if ($self->req->headers->user_agent !~ /Macintosh/) {
+  #companyList::-webkit-scrollbar {
+    width: 7px;
+  }
+
+  #companyList::-webkit-scrollbar-track {
+    -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.3);
+    border-radius: 10px;
+  }
+
+  #companyList::-webkit-scrollbar-thumb {
+    border-radius: 10px;
+    -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.5);
+  }
+  % }
+</style>
+<script type="text/javascript">
+  var mediatorPage = (function () {
+    var currentCompany = null;
+
+    function loadCompanies() {
+      var filter = $('input[name="filter"]', '.form-search').val();
+
+      $.ajax({
+        type: "POST",
+        url: "<%= url_for q{/api/company/list} %>",
+        data: {filter: filter}
+      })
+        .done(function (data) {
+          var xhtml = '';
+          for (i = 0; i < data.list.length; i++) {
+            var x = data.list[i];
+            xhtml += '<tr' + (x.mediators_count == 0 ? ' class="error"' : '') + '>';
+            xhtml += '<td>';
+            xhtml += '<a href="#" class="company-item" data-id="' + x.id + '">' + x.name + '</a>';
+            xhtml += '</td>';
+            xhtml += '</tr>';
+          }
+          $('#companyList').html(xhtml);
+          $('#companyCount').html(data.count);
+
+          // Mark current company
+          if (currentCompany) {
+            $('.company-item[data-id="' + currentCompany.id + '"]', '#companyList').parent().parent().addClass('info');
+          }
+        })
+        .fail(function (jqXHR, textStatus) {
+        })
+      ;
+    }
+
+    function loadCompany(id) {
+      if (!id) {
+        currentCompany = null;
+        $('.breadcrumb').html('Please, select mediator company');
+        $('#mediatorList').html('');
+        return;
+      }
+
+      $.ajax({
+        type: "POST",
+        url: "<%= url_for q{/api/mediator/list} %>",
+        data: {company_id: id}
+      })
+        .done(function (data) {
+          var company = data.company;
+          currentCompany = company;
+
+          // Set current company and define actions
+          (function () {
+            var breadcrumb = $('.breadcrumb');
+            breadcrumb.html('Компания: <a href="#" data-id="' + company.id + '">' + company.name + '</a>');
+
+            var el = $('a', breadcrumb);
+            el.editable({
+              pk: company.id,
+              type: 'text',
+              url: '/api/company/save',
+              placement: 'bottom',
+              title: 'Enter company name',
+              inputclass: 'input-xlarge',
+              params: function (params) {
+                return {
+                  id: params.pk,
+                  name: params.value,
+                };
+              },
+              success: function (response, newValue) {
+                if (response.status == 'failed') {
+                  var msg = '';
+                  if (response.errors.length) {
+                    msg = response.errors[0].msg;
+                  }
+                  return msg;
+                } else {
+                  loadCompanies();
+                  currentCompany = response.data;
+                }
+                return null;
+              },
+            });
+
+            // Delete action
+            breadcrumb.off('click', '.btn-danger');
+            breadcrumb.on('click', '.btn-danger', function (event) {
+              el.editable('hide');
+              bootbox.confirm("Are you sure to delete company «" + company.name + "»?",  function (e) {
+                if (e) {
+                  $.ajax({
+                    type: "POST",
+                    url: "<%= url_for q{/api/company/delete} %>",
+                    data: {id: company.id}
+                  })
+                    .done(function (data) {
+                      if (data.status == 'success') {
+                        loadCompany(null);
+                        loadCompanies();
+                      }
+                    })
+                  ;
+                }
+              });
+            });
+
+            // Mark active company in the table
+            $('tr.info', '#companyList').removeClass('info');
+            $('.company-item[data-id="' + company.id + '"]', '#companyList').parent().parent().addClass('info');
+          })();
+
+          var xhtml = '';
+          for (var i = 0; i < data.list.length; i++) {
+            var x = data.list[i];
+            xhtml += '<tr>';
+            xhtml += '<td>';
+            xhtml += '<a href="#" data-type="mediator" data-pk="' + x.id + '" data-id="' + x.id + '" data-mediator-name="' + x.name + '" data-mediator-phone-num="' + x.phone_num + '">' + x.phone_num + '</a>';
+            xhtml += '</td>';
+            xhtml += '</tr>';
+          }
+          $('#mediatorList').html(xhtml);
+
+          // Set editable
+          $('a[data-type="mediator"]', '#mediatorList').each(function (el) {
+            var name = $(this).data('mediator-name');
+            var phoneNum = $(this).data('mediator-phone-num');
+            $(this).editable({
+              url: '/api/mediator/save',
+              title: 'Enter mediator name and phone number',
+              placement: 'right',
+              value: {name: name, phoneNum: phoneNum},
+              params: function (params) {
+                return {
+                  id: params.pk,
+                  name: params.value.name,
+                  phone_num: params.value.phoneNum,
+                };
+              },
+              success: function (response, newValue) {
+                if (response.status == 'failed') {
+                  var msg = '';
+                  if (response.errors.length) {
+                    msg = response.errors[0].msg;
+                  }
+                  return msg;
+                } else {
+                }
+                return null;
+              },
+            });
+          });
+        })
+        .fail(function (jqXHR, textStatus) {
+        })
+      ;
+    }
+
+    $(function () {
+      // Add 'trash' button
+      $.fn.editableform.buttons =
+        '<button type="submit" class="btn btn-primary editable-submit"><i class="icon-ok icon-white"></i></button>&nbsp;' +
+        '<button type="button" class="btn btn-danger"><i class="icon-trash icon-white"></i></button>' +
+        '<button type="button" class="btn editable-cancel"><i class="icon-remove"></i></button>'
+      ;
+
+      loadCompanies();
+
+      // Search filter
+      $('.form-search').submit(function (event) {
+        loadCompanies();
+        event.preventDefault();
+      });
+
+      $('#companyList').on('click', '.company-item', function (event) {
+        var id = $(this).data('id');
+        loadCompany(id);
+      });
+
+      /**
+       * New mediator dialog
+       */
+
+      // New mediator
+      $('#addMediatorBtn').click(function (event) {
+        $('#mediatorDialog').modal();
+      });
+
+      $('#mediatorDialog').on('show', function () {
+        var dialog = $(this);
+        $('#mediatorDialogMsg', dialog).html('');
+        $('[name="company"]:input', dialog).val('')
+        $('[name="name"]:input', dialog).val('');
+        $('[name="phone_num"]:input', dialog).val('');
+      });
+      $('#mediatorDialog').on('shown', function () {
+        var dialog = $(this);
+        if (currentCompany) {
+          $('[name="company"]:input', dialog).val(currentCompany.name);
+          $('[name="name"]:input', dialog).focus();
+        } else {
+          $('[name="company"]:input', dialog).focus();
+        }
+      });
+
+      // Company name autocompletion
+      $('[name="company"]:input', '#mediatorDialog').typeahead({
+        source: function (query, process) {
+          $.ajax({
+            type: "POST",
+            url: "<%= url_for q{/api/company/list} %>",
+            data: {filter: query, limit: 8}
+          })
+            .done(function (data) {
+              var res = new Array();
+              for (var i = 0; i < data.list.length; i++) {
+                res.push(data.list[i].name);
+              }
+              process(res);
+            })
+          ;
+        },
+      });
+
+      // New mediator dialog form submitting
+      $('form', '#mediatorDialog').on('submit', function (event) {
+        var dialog = $('#mediatorDialog'),
+            company = $('[name="company"]:input', dialog).val(),
+            name = $('[name="name"]:input', dialog).val(),
+            phoneNum = $('[name="phone_num"]:input', dialog).val()
+        ;
+
+        $.ajax({
+          type: "POST",
+          url: "<%= q{/api/mediator/add} %>",
+          data: {company: company, name: name, phone_num: phoneNum}
+        })
+          .done(function (data) {
+            if (data.status == 'failed') {
+              var xhtml = '';
+              xhtml += '<div class="alert alert-error">';
+              xhtml += '<button type="button" class="close" data-dismiss="alert">&times;</button>';
+              for (var i = 0; i < data.errors.length; i++) {
+                var x = data.errors[i];
+                xhtml += '<p>' + x.msg + '</p>';
+              }
+              xhtml += '</div>';
+              $('#mediatorDialogMsg', dialog).html(xhtml);
+            } else {
+              dialog.modal('hide');
+              loadCompany(data.data.company.id);
+              loadCompanies();
+            }
+          })
+        ;
+        event.preventDefault();
+      });
+
+      // Mediator delete action
+      $('#mediatorList').on('click', '.btn-danger', function (event) {
+        var el = $('a[data-type="mediator"]', $(this).closest('tr'));
+        var id = el.data('id');
+        var phoneNum = el.data('mediator-phone-num');
+        el.editable('hide');
+        bootbox.confirm("Are you sure to delete mediator «" + phoneNum + "»?",  function (e) {
+          if (e) {
+            $.ajax({
+              type: "POST",
+              url: "<%= url_for q{/api/mediator/delete} %>",
+              data: {id: id}
+            })
+              .done(function (data) {
+                if (data.status == 'success') {
+                  loadCompany(currentCompany.id);
+                }
+              })
+            ;
+          }
+        });
+      });
+    });
+  })();
+</script>
+% end
+
+% content_for modals => begin
+<!-- Modal dialog -->
+<div id="mediatorDialog" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="mediatorDialogLabel" aria-hidden="true">
+  <div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+    <h3 id="mediatorDialogLabel">New mediator</h3>
+  </div>
+    <div class="modal-body">
+      <div id="mediatorDialogMsg"></div>
+      <div class="clearfix"></div>
+      <form id="mediatorDialogForm">
+        <fieldset>
+          <label for="company">Company</label>
+          <input type="text" class="input-xlarge" name="company" autocomplete="off" required>
+          <label for="name">Name</label>
+          <input type="text" class="input-large" name="name" autocomplete="off" required>
+          <label for="phone-num">Phone num</label>
+          <input type="tel" class="input-medium" name="phone_num" autocomplete="off" required>
+        </fieldset>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" data-dismiss="modal" aria-hidden="true">Close</button>
+      <button type="submit" class="btn btn-primary" form="mediatorDialogForm">Add</button>
+    </div>
+</div>
+% end
+
+<div class="row">
+  <div class="span4">
+    <div class="pull-left">
+      <button type="button" class="btn btn-success" id="addMediatorBtn"><i class="icon-plus icon-white"></i>Add</button>
+    </div>
+  </div>
+  <div class="span8">
+    <div class="pull-right">
+      <form class="form-search">
+        <div class="input-append">
+          <input type="text" class="input-xlarge search-query" name="filter">
+          <button class="btn" type="submit">Search</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<div class="row">
+  <div class="span4">
+    <div>
+      <p class="muted">Найдено: <span id="companyCount">0</span></p>
+    </div>
+    <table class="table table-hover table-condensed">
+      <thead>
+        <tr>
+          <th>Company</th>
+        </tr>
+      </thead>
+      <tbody id="companyList"></tbody>
+    </table>
+  </div>
+  <div class="span8">
+    <div class="breadcrumb">
+        Please, select mediator company
+    </div>
+    <div class="span4">
+      <table class="table table-hover table-condensed">
+        <thead style="display: none;">
+          <tr>
+            <th>Mediator</th>
+          </tr>
+        </thead>
+        <tbody id="mediatorList"></tbody>
+      </table>
+    </div>
+  </div>
+</div>

@@ -1,8 +1,6 @@
-package RplusMgmt::Main;
+package RplusMgmt::Controller::Geo;
 
 use Mojo::Base 'Mojolicious::Controller';
-
-use utf8;
 
 sub index {
     my $self = shift;

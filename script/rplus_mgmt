@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use FindBin;
-use lib "$FindBin::Bin/../lib", "$FindBin::Bin/../../RplusServer", "$FindBin::Bin/../../RplusWeb/lib";
+use lib "$FindBin::Bin/../lib", "$FindBin::Bin/../../Rplus/lib";
 
 # Start commands for application
 require Mojolicious::Commands;

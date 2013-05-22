@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Sign in &middot; RplusMgmt</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Bootstrap -->
+    <link href="/css/bootstrap.min.css" rel="stylesheet">
+    <style type="text/css">
+      body {
+        padding-top: 40px;
+        padding-bottom: 40px;
+      }
+    </style>
+    <link href="/css/bootstrap-responsive.min.css" rel="stylesheet">
+    <script src="/js/jquery.js"></script>
+
+    <script type="text/javascript">
+      $(function () {
+        $('form.signin').submit(function (event) {
+          var login = $('input[name="login"]').val();
+          var password = $('input[name="password"]').val();
+          var rememberMe = $('input[name="remember_me"]:checked').val();
+          $.ajax({
+            type: "POST",
+            url: "<%= url_for q{/signin} %>",
+            data: {login: login, password: password, remember_me: rememberMe},
+          })
+            .done(function (data) {
+              if (data.status == 'failed') {
+                $('.alert-error').show();
+              } else {
+                location.reload();
+              }
+            })
+          ;
+          event.preventDefault();
+        });
+      });
+    </script>
+  </head>
+  <body>
+    <div class="container">
+      <div class="row">
+        <div class="span4 offset4 well">
+          <legend>Please Sign In</legend>
+          <div class="alert alert-error" style="display: none;">
+            <a class="close" data-dismiss="alert" href="#">&times;</a>Incorrect Login or Password!
+          </div>
+          <form class="signin">
+            <fieldset>
+              <input type="text" class="span4" name="login" placeholder="Login" autocomplete="off" required autofocus>
+              <input type="password" class="span4" name="password" placeholder="Password" autocomplete="off" required>
+              <button class="btn btn-primary" type="submit">Sign in</button>
+            </fieldset>
+          </form>
+        </div>
+      </div>
+    </div> <!-- /container -->
+
+    <!-- Bootstrap -->
+    <script type="text/javascript" src="/js/bootstrap.min.js"></script>
+
+  </body>
+</html>

@@ -1,0 +1,190 @@
+% layout 'default';
+
+% content_for after_bootstrap => begin
+<script type="text/javascript" src="/js/leaflet.min.js"></script>
+% end
+
+% content_for header => begin
+<link href="/css/leaflet.css" rel="stylesheet">
+<link href="/css/whhg.css" rel="stylesheet">
+<style type="text/css">
+  .geo-map {
+    height: 600px;
+    cursor: default !important;
+  }
+  .geo-map:active {
+    cursor: pointer !important;
+  }
+  .phone button {
+    margin: 5px;
+  }
+</style>
+<script type="text/javascript">
+  var searchPage = (function () {
+    var geoMap;
+
+    $(function () {
+      // Geo
+      geoMap = L.map('geoMap', {
+        center: [48.480232846617845, 135.07203340530396],
+        zoom: 16,
+      });
+      L.tileLayer('http://tile{s}.maps.2gis.com/tiles?x={x}&y={y}&z={z}&v=10', {
+        maxZoom: 18,
+        subdomains: '0123',
+        errorTileUrl: 'http://maps.api.2gis.ru/images/nomap.png',
+        attribution: 'Powered by RplusMgmt / Leaflet',
+      }).addTo(geoMap);
+      geoMap.attributionControl.setPrefix(false);
+      geoMap.on('click', function (event) {
+        $.ajax({
+          url: 'http://catalog.api.2gis.ru/geo/search',
+          data: {
+            q: event.latlng.lng + ',' + event.latlng.lat,
+            key: 'rujrdp3400',
+            version: 1.3,
+            output: 'jsonp',
+            types: 'house,station,station_platform,place,sight,metro'
+          },
+          dataType: 'jsonp',
+        })
+          .done(function (data) {
+            if (data.result) {
+              var content = '';
+              content += '<b>Информация:</b><br>';
+              content += data.result[0].name + '<br>';
+              if (data.result[0].attributes && data.result[0].attributes.purpose) {
+                content += data.result[0].attributes.purpose;
+              }
+              var popup = L.popup()
+                           .setLatLng(event.latlng)
+                           .setContent(content)
+                           .openOn(geoMap);
+            }
+          })
+        ;
+      });
+
+      // PhoneWidget
+      var phoneContent = '';
+      phoneContent += '<table class="phone">';
+      phoneContent += '<tr>';
+      phoneContent += '<td colspan="3" style="text-align: center;">';
+      phoneContent += '<div class="alert alert-info"><i class="icon-incomingcall"></i>&nbsp; Алекс</div>';
+      phoneContent += '</td>';
+      phoneContent += '</tr>';
+      phoneContent += '<tr>';
+      phoneContent += '<td><button type="button" class="btn">1</button></td><td><button type="button" class="btn">2</button></td><td><button type="button" class="btn">3</button></td>';
+      phoneContent += '</tr>';
+      phoneContent += '<tr>';
+      phoneContent += '<td><button type="button" class="btn">4</button></td><td><button type="button" class="btn">5</button></td><td><button type="button" class="btn">6</button></td>';
+      phoneContent += '</tr>';
+      phoneContent += '<tr>';
+      phoneContent += '<td><button type="button" class="btn">7</button></td><td><button type="button" class="btn">8</button></td><td><button type="button" class="btn">9</button></td>';
+      phoneContent += '</tr>';
+      phoneContent += '<tr>';
+      phoneContent += '<td><button type="button" class="btn">#</button></td><td><button type="button" class="btn">0</button></td><td><button type="button" class="btn">*</button></td>';
+      phoneContent += '</tr>';
+      phoneContent += '<tr>';
+      phoneContent += '<td colspan="3">';
+      phoneContent += '<button type="button" class="btn btn-success" style="width: 60px;"><i class="icon-phonealt" style="-webkit-transform: rotate(-10deg);"></i></button>';
+      phoneContent += '<button type="button" class="btn btn-danger" style="width: 60px;"><i class="icon-phonealt" style="-webkit-transform: rotate(135deg);"></i></button>';
+      phoneContent += '</td>';
+      phoneContent += '</tr>';
+      phoneContent += '</table>';
+      $('.phone').popover({
+        html: true,
+        placement: 'bottom',
+        trigger: 'click',
+        content: phoneContent,
+      });
+      //$('.phone').popover('show');
+    });
+  })();
+</script>
+% end
+
+<div class="row">
+  <div class="span12" style="padding-bottom: 10px;">
+    <input class="span12" type="text" id="requestLine" autocomplete="off" placeholder="Type search request here">
+    <input class="span12" type="text" id="requestLinePlaceholder" style="display: none;" autocomplete="off">
+  </div>
+</div>
+<div class="row">
+  <div class="span6">
+
+    <div class="row" style="display: none;">
+      <div class="span3">
+        <button class="btn" type="button"><i class="icon-iphone"></i>&nbsp;<span class="caret"></span></button>
+        <!--
+        <div class="alert alert-info" style="display: inline; margin-left: 10px; margin-right: 10px;">
+          Алекс
+        </div>
+        -->
+        <button class="btn btn-primary"><i class="icon-ok icon-white"></i>&nbsp;Send</button>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="span6" style="margin-bottom: 8px;">
+        <button class="btn btn-primary"><i class="icon-ok icon-white"></i>&nbsp;Send</button>
+        &nbsp;
+        <button class="btn phone" type="button"><i class="icon-iphone"></i>&nbsp;<span class="caret"></span></button>
+        <div class="pull-right" style="margin-top: 10px;"><span class="muted">Найдено: </span><span class="muted" id="realtyCount">5</span></div>
+      </div>
+    </div>
+
+    <table class="table table-striped table-condensed table-bordered" style="font-size: 10pt;">
+      <tbody>
+        <tr>
+          <td style="vertical-align: middle;">
+            <input type="checkbox">
+          </td>
+          <td>
+            <p>Квартира, 3к, Рокоссовского ул., 3600 тыс. руб., улучшенная, кирпичный, 1/5 эт., смежно-раздельные комнаты, хорошее сост., 64/42/6 кв.м., без балкона, санузел совмещенный, подходит под ипотеку, окна пластик,зарешечены,сантехника поменяна ,в ванной кафель ,подходит под ипотеку</p>
+            <p>Агент: Алекс, 8-924-411-1173</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle;">
+            <input type="checkbox">
+          </td>
+          <td>
+            <p>Квартира, 3к, Рокоссовского ул., 3600 тыс. руб., улучшенная, кирпичный, 1/5 эт., смежно-раздельные комнаты, хорошее сост., 64/42/6 кв.м., без балкона, санузел совмещенный, подходит под ипотеку, окна пластик,зарешечены,сантехника поменяна ,в ванной кафель ,подходит под ипотеку</p>
+            <p>Агент: Алекс, 8-924-411-1173</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle;">
+            <input type="checkbox">
+          </td>
+          <td>
+            <p>Квартира, 3к, Рокоссовского ул., 3600 тыс. руб., улучшенная, кирпичный, 1/5 эт., смежно-раздельные комнаты, хорошее сост., 64/42/6 кв.м., без балкона, санузел совмещенный, подходит под ипотеку, окна пластик,зарешечены,сантехника поменяна ,в ванной кафель ,подходит под ипотеку</p>
+            <p>Агент: Алекс, 8-924-411-1173</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle;">
+            <input type="checkbox">
+          </td>
+          <td>
+            <p>Квартира, 3к, Рокоссовского ул., 3600 тыс. руб., улучшенная, кирпичный, 1/5 эт., смежно-раздельные комнаты, хорошее сост., 64/42/6 кв.м., без балкона, санузел совмещенный, подходит под ипотеку, окна пластик,зарешечены,сантехника поменяна ,в ванной кафель ,подходит под ипотеку</p>
+            <p>Агент: Алекс, 8-924-411-1173</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: middle;">
+            <input type="checkbox">
+          </td>
+          <td>
+            <p>Квартира, 3к, Рокоссовского ул., 3600 тыс. руб., улучшенная, кирпичный, 1/5 эт., смежно-раздельные комнаты, хорошее сост., 64/42/6 кв.м., без балкона, санузел совмещенный, подходит под ипотеку, окна пластик,зарешечены,сантехника поменяна ,в ванной кафель ,подходит под ипотеку</p>
+            <p>Агент: Алекс, 8-924-411-1173</p>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="span6">
+    <div class="geo-map" id="geoMap"></div>
+  </div>
+</div>

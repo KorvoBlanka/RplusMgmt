@@ -1,0 +1,9 @@
+.editable-mediator {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.editable-mediator span {
+    width: 75px;
+    display: inline-block;
+}

@@ -1,0 +1,578 @@
+% layout 'default';
+
+% use Rplus::Model::User::Manager;
+% use Rplus::Config::Realty;
+
+% content_for before_bootstrap => begin
+<script src="/js/jquery-ui-1.9.2.custom.min.js"></script>
+% end
+
+% content_for after_bootstrap => begin
+<script src="/js/bootstrap-contextmenu.js"></script>
+<script src="/js/rplus-requestline.js"></script>
+% end
+
+% content_for header => begin
+<link href="/css/custom-theme/jquery-ui-1.9.2.custom.css" rel="stylesheet">
+<style tyle="text/css">
+  #realtyTable th {
+    white-space: nowrap;
+  }
+  span.close {
+    margin-left: 2px;
+  }
+  .nav-tabs > li > a > span.close {
+    display: none;
+  }
+  .nav-tabs > li:hover > a > span.close {
+    display: inline;
+  }
+  .nav-tabs > li.active > a > span.close {
+    display: inline;
+  }
+  .table-hover tbody tr:hover > td,
+  .table-hover tbody tr:hover > th {
+    background-color: #faf2cc;
+    cursor: default !important;
+  }
+</style>
+<script type="text/javascript">
+  var realtyPage = (function () {
+    var realtyTableState = {
+      cols: {
+        1: true, 2: true, 3: true, 4: true, 5: true, 6: true, 7: true, 8: false, 9: true, 10: false, 11: false, 12: true, 13: false
+      },
+      sort: {
+        field: null,
+        direction: null,
+      },
+    };
+    var currentRealtyPool = {};
+
+    // Request line
+    var el_requestLine;
+
+    // Filters
+    var el_filterRaw, el_filterWork, el_filterTemporary, el_filterClosed, el_filterClaims,
+        el_filterAgent
+    ;
+
+    // Pages
+    var el_perPage, el_prevPage, el_currentPage, el_nextPage;
+
+    function _realtyTableStyle(i) {
+      return realtyTableState.cols[i] ? '' : 'display: none;';
+    }
+
+    function doQuery (page) {
+      var filter = {};
+      var perPage = el_perPage.val();
+
+      if (el_filterRaw.hasClass('active')) {
+        filter.state = ['raw'];
+      } else if (el_filterWork.hasClass('active')) {
+        filter.state = ['work'];
+      } else if (el_filterTemporary.hasClass('active')) {
+        filter.state = ['closed_temporary'];
+      } else if (el_filterClosed.hasClass('active')) {
+        filter.state = ['closed_mediator', 'closed_deal', 'deleted'];
+      } else if (el_filterClaims.hasClass('active')) {
+        filter.custom = ['claims'];
+      }
+      filter.agent = el_filterAgent.val();
+
+      $.ajax({
+        type: "POST",
+        url: "<%= q{/api/realty/list} %>",
+        data: {
+          query: JSON.stringify(el_requestLine.requestLine('query')),
+          profile: 'extended',
+          filter: JSON.stringify(filter),
+          sort: JSON.stringify(realtyTableState.sort),
+          per_page: perPage,
+          page: page,
+        }
+      })
+        .done(function (data) {
+          var xhtml = '';
+          currentRealtyPool = {};
+          for (var i = 0; i < data.list.length; i++) {
+            var x = data.list[i];
+            currentRealtyPool[x.id] = x;
+            var isOpened = $('#navTab a[href="#realty-' + x.id + '"]').length;
+            var n = 1;
+            xhtml += '<tr data-toggle="realtyCard" data-id="' + x.id + '"' + (isOpened ? ' class="warning"' : '') + '>';
+              xhtml += '<td style="text-align: center;' + _realtyTableStyle(n++) + '">';
+                xhtml += '<a href="#" data-toggle="tooltip" title="' + x.offer_type + '">' + (x.offer_type == 'Аренда' ? '<i class="icon-calendar"></i>' : '<i class="icon-flag"></i>') + '</a>';
+              xhtml += '</td>';
+              xhtml += '<td style="' + _realtyTableStyle(n++) + '">';
+                xhtml += x.realty_type;
+              xhtml += '</td>';
+              xhtml += '<td style="' + _realtyTableStyle(n++) + '">';
+                xhtml += x.ap_scheme || '';
+              xhtml += '</td>';
+              xhtml += '<td style="text-align: center;' + _realtyTableStyle(n++) + '">';
+                xhtml += x.rooms_count || '';
+              xhtml += '</td>';
+              xhtml += '<td style="' + _realtyTableStyle(n++) + '">';
+                xhtml += x.address || '';
+              xhtml += '</td>';
+              xhtml += '<td style="text-align: center;' + _realtyTableStyle(n++) + '">';
+                xhtml += x.price || '';
+              xhtml += '</td>';
+              xhtml += '<td style="text-align: center;' + _realtyTableStyle(n++) + '">';
+                xhtml += x.floor_floors || '';
+              xhtml += '</td>';
+              xhtml += '<td style="text-align: center;' + _realtyTableStyle(n++) + '">';
+                xhtml += x.square ? x.square.join('<br>') : '';
+              xhtml += '</td>';
+              xhtml += '<td style="white-space: nowrap;' + _realtyTableStyle(n++) + '">';
+                xhtml += x.seller_phones ? x.seller_phones.join('<br>') : '';
+              xhtml += '</td>';
+              xhtml += '<td style="text-align: center;' + _realtyTableStyle(n++) + '">';
+                xhtml += x.tags ? '<a href="#" data-toggle="tooltip" title="' + x.tags + '"><i class="icon-tags"></i></a>' : '';
+              xhtml += '</td>';
+              xhtml += '<td style="' + _realtyTableStyle(n++) + '">';
+                xhtml += x.export_mass_media || '';
+              xhtml += '</td>';
+              xhtml += '<td style="text-align: center; white-space: nowrap;' + _realtyTableStyle(n++) + '">';
+                xhtml += x.open_date;
+              xhtml += '</td>';
+              xhtml += '<td style="' + _realtyTableStyle(n++) + '">';
+                xhtml += x.agent_name || '';
+              xhtml += '</td>';
+            xhtml += '</td>';
+          }
+          $('#realtyTable tbody').html(xhtml);
+          $('#realtyTable tbody a[data-toggle="tooltip"]').tooltip();
+          $('#realtyCount').html(data.count);
+
+          if (data.prev !== undefined) {
+            el_prevPage.data('page', data.prev);
+            el_prevPage.removeClass('disabled');
+          } else {
+            el_prevPage.addClass('disabled');
+          }
+          el_currentPage.data('page', data.page);
+          el_currentPage.children('a').html(data.page);
+          if (data.next !== undefined) {
+            el_nextPage.data('page', data.next);
+            el_nextPage.removeClass('disabled');
+          } else {
+            el_nextPage.addClass('disabled');
+          }
+
+          updateClaimsCount();
+        })
+        .fail(function (jqXHR, textStatus) {})
+      ;
+    }
+
+    function updateClaimsCount() {
+      $.ajax({
+        type: "POST",
+        url: "<%= q{/api/claim/count} %>",
+      })
+        .done(function (data) {
+          $('.claims-count').html(data.count);
+        })
+      ;
+    }
+
+    $(function () {
+      /**
+       * Request line
+       */
+      el_requestLine = $('#requestLine');
+      el_requestLine.requestLine({
+        url: "<%= url_for q{/api/query/complete} %>",
+        profile: 'extended'
+      });
+      el_requestLine.bind('queryChanged', function (event) {
+        doQuery();
+      });
+
+      /**
+       * State filter + claims filter
+       */
+      el_filterRaw = $('#filterRaw');
+      el_filterWork = $('#filterWork');
+      el_filterTemporary = $('#filterTemporary');
+      el_filterClosed = $('#filterClosed');
+      el_filterClaims = $('#filterClaims');
+
+      $('#filterBtnToolbar button').click(function (event) {
+        if (!$(this).hasClass('active')) {
+          $('#filterBtnToolbar button.active').removeClass('active');
+          $(this).addClass('active');
+          event.stopPropagation();
+          doQuery();
+        }
+      });
+
+      /**
+       * Agent filter
+       */
+      el_filterAgent = $('#filterAgent');
+      el_filterAgent.change(function (event) {
+        doQuery();
+      });
+
+      /**
+       * Realty table
+       */
+
+      // Context menu (header)
+      $('#search #hContextMenu > li').click(function (event) {
+        var i = $('a', this).data('nth-child');
+        if (i > 0) {
+          if (realtyTableState.cols[i]) {
+            $('thead > tr > th:nth-child(' + i + ')', '#realtyTable').hide();
+            $('tbody > tr > td:nth-child(' + i + ')', '#realtyTable').hide();
+            $('i', this).hide();
+            realtyTableState.cols[i] = false;
+          } else {
+            $('thead > tr > th:nth-child(' + i + ')', '#realtyTable').show();
+            $('tbody > tr > td:nth-child(' + i + ')', '#realtyTable').show();
+            $('i', this).show();
+            realtyTableState.cols[i] = true;
+          }
+        }
+      });
+
+      // Context menu (body)
+      (function () {
+        var id;
+
+        $('#realtyTable > tbody').on('mousedown', 'tr', function (event) {
+          if (event.which != 3) return; // right btn
+          id = $(this).data('id');
+
+          // Уберём галочки со всех элементов меню "State" и выставим в текущий элемент
+          $('#search #rContextMenu [data-type="state"] > li > a > i').css('visibility', 'hidden');
+          $('#search #rContextMenu [data-type="state"] > li > a[data-id="' + currentRealtyPool[id]._state + '"] > i').css('visibility', 'visible');
+        });
+  
+        // State change
+        $('#search #rContextMenu [data-type="state"] > li').click(function (event) {
+          var state = $('a', $(this)).data('id');
+          if (currentRealtyPool[id]._state == state) return;
+
+          $.ajax({
+            type: "POST",
+            url: "<%= url_for q{/api/realty/set} %>",
+            data: {id: id, state: state}
+          })
+            .done(function (data) {
+              if (data.status == 'success') {
+                // Обновим текущий список
+                doQuery(el_currentPage.data('page'));
+              } else if (data.status == 'failed') {
+                alert('Ошибка! Невозможно сменить статус.');
+              } else if (data.status == 'duplicate') {
+                alert('Ошибка! Найден повтор.');
+              }
+            })
+          ;
+        });
+      })();
+
+      // Sort
+      $('#realtyTable > thead > tr > th[data-field]').click(function (event) {
+        var field = $(this).data('field');
+        var direction = $(this).find('i').hasClass('icon-arrow-up') ? 'asc' : 'desc';
+        var page = el_currentPage.data('page');
+        if (realtyTableState.sort.field == field) {
+          if (direction == 'asc') {
+            $(this).find('i').removeClass('icon-arrow-up').addClass('icon-arrow-down');
+            direction = 'desc';
+          } else {
+            $(this).find('i').removeClass('icon-arrow-down').addClass('icon-arrow-up');
+            direction = 'asc';
+          }
+          realtyTableState.sort.direction = direction;
+        } else {
+          $('#realtyTable > thead > tr > th[data-field] > i').hide();
+          $(this).find('i').show();
+          realtyTableState.sort.field = field;
+          realtyTableState.sort.direction = direction;
+        }
+        doQuery(page);
+      });
+
+      // Load table state
+      for (i in realtyTableState.cols) {
+        if (realtyTableState.cols[i] == false) {
+          $('thead > tr > th:nth-child(' + i + ')', '#realtyTable').hide();
+          $('[data-nth-child="' + i + '"] > i', '#search #hContextMenu').hide();
+        }
+      }
+
+      /**
+       * Pages
+       */
+      el_perPage = $('#perPage');
+      el_prevPage = $('#prevPage');
+      el_currentPage = $('#currentPage');
+      el_nextPage = $('#nextPage');
+
+      el_perPage.change(function (event) {
+        doQuery();
+      });
+
+      $('#realtyPagination > ul > li').click(function (event) {
+        if (!($(this).hasClass('active') || $(this).hasClass('disabled'))) {
+          doQuery($(this).data('page'));
+        }
+      });
+
+      doQuery();
+
+      /**
+       * Realty cards management
+       */
+      // Create
+      $('#newRealtyBtn').click(function (event) {
+        var card = RealtyCard({
+          container: function (x) {
+            $('#navTab').append('<li><a href="#realty-' + x.id + '" data-toggle="tab" data-id="' + x.id + '">' + x.title + '&nbsp;<span class="close">&times;</span></a></li>');
+            $('#navTabContent').append('<div class="tab-pane" id="realty-' + x.id + '"></div>');
+            return $('#realty-' + x.id, '#navTabContent');
+          },
+          data: {agent_id: (parseInt(el_filterAgent.val())|0 || null)},
+          done: function (x) {
+            $('#navTab a[href="#realty-' + x.id + '"]').data('card', card);
+            $('#navTab a[href="#realty-' + x.id + '"]').tab('show');
+          },
+          events: {
+            save: function (x) {
+              // Обновим заголовок
+              $('#navTab > li > a[href="#realty-' + x.id + '"]').html($('<div>').text(x.title).html() + '&nbsp;<span class="close">&times;</span>');
+              // На всякий случай обновим текущий список :)
+              doQuery(el_currentPage.data('page'));
+            },
+          }
+        }).create();
+      });
+
+      // Open
+      //$('#realtyTable tbody').on('click', 'a.open-realty-card', function (event) {
+      $(document).on('click', '[data-toggle="realtyCard"]', function (event) {
+        var id = $(this).data('id');
+        var open = $(this).data('open') || 'background';
+
+        // Проверим, не открыта ли уже карточка
+        if ($('#navTab a[href="#realty-' + id + '"]').length) {
+          $('#navTab a[href="#realty-' + id + '"]').tab('show');
+        } else {
+          var card = RealtyCard({
+            container: function (x)  {
+              // Дополнительно проверим, что контейнера не существует
+              if ($('#navTab a[href="#realty-' + id + '"]').length == 0) {
+                $('#navTab').append('<li><a href="#realty-' + x.id + '" data-toggle="tab" data-id="' + x.id + '">' + $('<div>').text(x.title).html() + '&nbsp;<span class="close">&times;</span></a></li>');
+                $('#navTabContent').append('<div class="tab-pane" id="realty-' + x.id + '"></div>');
+                return $('#realty-' + x.id, '#navTabContent');
+              } else {
+                return null;
+              }
+            },
+            done: function (x) {
+              $('#navTab a[href="#realty-' + x.id + '"]').data('card', card);
+              if (open == 'foreground') {
+                $('#navTab a[href="#realty-' + x.id + '"]').tab('show');
+              } else {
+                // Nothing to do
+              }
+              // Подсветим открытый вариант в таблице
+              $('tr[data-id="' + id + '"]', '#realtyTable').addClass('warning');
+            },
+            events: {
+              save: function (x) {
+                // Обновим заголовок
+                $('#navTab > li > a[href="#realty-' + x.id + '"]').html($('<div>').text(x.title).html() + '&nbsp;<span class="close">&times;</span>');
+                // Если данная недвижимость входит в текущий отображаемый список - обновим его
+                if (currentRealtyPool[x.id]) {
+                  doQuery(el_currentPage.data('page'));
+                }
+              },
+            }
+          }).open(id);
+        }
+      });
+
+      // Close
+      $('#navTab').on('click', 'span.close', function (event) {
+        var id = $(this).parent().data('id');
+        var card = $(this).parent().data('card');
+
+        if ($(this).parent().parent().hasClass('active')) {
+          if ($(this).parent().parent().next().length) {
+            // Open next tab
+            $('>a', $(this).parent().parent().next()).tab('show');
+          }  else {
+            // Open search tab
+            $('#navTab a[href="#search"]').tab('show');
+          }
+        }
+
+        // Remove realty block
+        card.close();
+        $('#navTab a[href="#realty-' + id + '"]').parent().remove();
+        $('#navTabContent div.tab-pane[id="realty-' + id + '"]').remove();
+
+        // Уберём подсветку в таблице
+        $('tr[data-id="' + id + '"]', '#realtyTable').removeClass('warning');
+
+        return false;
+      });
+    });
+  })();
+</script>
+% end
+
+<div class="row">
+  <div class="span12">
+    <ul class="nav nav-tabs" id="navTab">
+      <li class="active"><a href="#search" data-toggle="tab"><span style="font-weight: bold;">Search</span></a></li>
+    </ul>
+  </div>
+</div>
+<div class="tab-content" id="navTabContent">
+  <div class="tab-pane active" id="search">
+    <div class="row">
+      <div class="span12" style="padding-bottom: 10px;">
+        <input class="span12" type="text" id="requestLine" autocomplete="off" placeholder="Type search request here">
+        <input class="span12" type="text" id="requestLinePlaceholder" style="display: none;" autocomplete="off">
+      </div>
+    </div>
+    <div class="row">
+      <div class="span6">
+        <div class="pull-left">
+          <div class="btn-toolbar" id="filterBtnToolbar">
+            <!-- <div class="btn-group" data-toggle="buttons-radio" id="filterBtnGroup"> -->
+            <div class="btn-group">
+              <button type="button" class="btn btn-small btn-primary" id="filterRaw"><i class="icon-white icon-question-sign"></i></button>
+              <button type="button" class="btn btn-small btn-primary active" id="filterWork"><i class="icon-white icon-ok"></i></button>
+              <button type="button" class="btn btn-small btn-primary" id="filterTemporary"><i class="icon-white icon-time"></i></button>
+              <button type="button" class="btn btn-small btn-primary" id="filterClosed"><i class="icon-white icon-trash"></i></button>
+            </div>
+            <div class="btn-group">
+              <button type="button" class="btn btn-small btn-danger" id="filterClaims"><i class="icon-white icon-warning-sign"></i>&nbsp;<span class="claims-count">0</span></button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="span6">
+        <div class="pull-right">
+          % if (config->{'is_agency'}) {
+          <form class="form-inline" style="margin: 0px;">
+            <select class="span3" id="filterAgent" <%= config->{is_agency} ? '' : 'disabled' %>>
+              <option value="">Any</option>
+              <option value="all">All agents</option>
+              <option value="nobody">Nobody</option>
+              % my $user_iter = Rplus::Model::User::Manager->get_objects_iterator(query => [ role => ['agent', 'manager'], delete_date => undef ], sort_by => 'role, name');
+              % while (my $user = $user_iter->next) {
+              <option value="<%= $user->id %>"><%= $user->name %></option>
+              % }
+            </select>
+            <button type="button" class="btn btn-small btn-primary" id="newRealtyBtn"><i class="icon-white icon-plus"></i></button>
+          </form>
+          % } else {
+          <div class="btn-toolbar">
+            <div class="btn-group">
+              <button type="button" class="btn btn-small btn-primary" id="newRealtyBtn"><i class="icon-white icon-plus"></i></button>
+            </div>
+          </div>
+          % }
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="span12" style="margin-top: 5px; margin-bottom: 5px;">
+        <span class="muted">Найдено: </span><span class="muted" id="realtyCount">0</span>
+      </div>
+    </div>
+    <div class="row">
+      <div class="span12" style="overflow: hidden;">
+        <!-- Table context menu to hide unused cols -->
+        <div id="context-menu-header">
+            <ul class="dropdown-menu" role="menu" id="hContextMenu">
+              % {
+              % my $i = 2;
+              <li><a tabindex="-1" href="#" data-nth-child="<%= $i++ %>"><i class="icon-ok"></i>&nbsp;Type</a></li>
+              <li><a tabindex="-1" href="#" data-nth-child="<%= $i++ %>"><i class="icon-ok"></i>&nbsp;Scheme</a></li>
+              <li><a tabindex="-1" href="#" data-nth-child="<%= $i++ %>"><i class="icon-ok"></i>&nbsp;Rooms</a></li>
+              <li><a tabindex="-1" href="#" data-nth-child="<%= $i++ %>"><i class="icon-ok"></i>&nbsp;Address</a></li>
+              <li><a tabindex="-1" href="#" data-nth-child="<%= $i++ %>"><i class="icon-ok"></i>&nbsp;Price</a></li>
+              <li><a tabindex="-1" href="#" data-nth-child="<%= $i++ %>"><i class="icon-ok"></i>&nbsp;Floor</a></li>
+              <li><a tabindex="-1" href="#" data-nth-child="<%= $i++ %>"><i class="icon-ok"></i>&nbsp;Square</a></li>
+              <li><a tabindex="-1" href="#" data-nth-child="<%= $i++ %>"><i class="icon-ok"></i>&nbsp;Seller</a></li>
+              <li><a tabindex="-1" href="#" data-nth-child="<%= $i++ %>"><i class="icon-ok"></i>&nbsp;Tags</a></li>
+              <li><a tabindex="-1" href="#" data-nth-child="<%= $i++ %>"><i class="icon-ok"></i>&nbsp;MassMedia</a></li>
+              <li><a tabindex="-1" href="#" data-nth-child="<%= $i++ %>"><i class="icon-ok"></i>&nbsp;OpenDate</a></li>
+              <li <%== config->{'is_agency'} ? '' : 'style="display: none;"' %>><a tabindex="-1" href="#" data-nth-child="<%= $i++ %>"><i class="icon-ok"></i>&nbsp;Agent</a></li>
+              % }
+            </ul>
+        </div>
+        <!-- Table > Realty context menu to fast realty management -->
+        <div id="context-menu-body">
+            <ul class="dropdown-menu" role="menu" id="rContextMenu">
+              <!--
+              <li><a tabindex="-1" href="#" data-action="open">Open</a></li>
+              <li class="divider"></li>
+              -->
+              <li class="dropdown-submenu">
+                <a tabindex="-1" href="#">State</a>
+                <ul class="dropdown-menu" data-type="state">
+                  % {
+                  % my @x = @Rplus::Config::Realty::REALTY_STATES;
+                  % for (my $i = 0; $i < @x; $i += 2) {
+                  <li><a tabindex="-1" href="#" data-id="<%= $x[$i] %>"><i class="icon-ok"></i>&nbsp;<%= $x[$i+1] %></a></li>
+                  % }
+                  % }
+                </ul>
+              </li>
+            </ul>
+        </div>
+        <table class="table table-striped table-condensed table-bordered table-hover" style="white-space: pre-line;" id="realtyTable">
+          <thead data-toggle="context" data-target="#context-menu-header">
+            <tr>
+              <th></th>
+              <th data-field="realty_type">Type<i class="pull-right icon-arrow-up" style="display: none;"></i></th>
+              <th data-field="ap_scheme_id">Scheme<i class="pull-right icon-arrow-up" style="display: none;"></i></th>
+              <th data-field="rooms_count">Rooms<i class="pull-right icon-arrow-up" style="display: none;"></i></th>
+              <th data-field="street.name2">Address<i class="pull-right icon-arrow-up" style="display: none;"></i></th>
+              <th data-field="price">Price<i class="pull-right icon-arrow-up" style="display: none;"></i></th>
+              <th data-field="floor">Floor<i class="pull-right icon-arrow-up" style="display: none;"></i></th>
+              <th data-field="square">Square<i class="pull-right icon-arrow-up" style="display: none;"></i></th>
+              <th>Seller</th>
+              <th>Tags</th>
+              <th>MassMedia</th>
+              <th data-field="open_date">OpenDate<i class="pull-right icon-arrow-up" style="display: none;"></i></th>
+              <th data-field="agent.name">Agent<i class="pull-right icon-arrow-up" style="display: none;"></i></th>
+            </tr>
+          </thead>
+          <tbody data-toggle="context" data-target="#context-menu-body"></tbody>
+        </table>
+        <div class="pagination pagination-right" id="realtyPagination">
+          <div class="pull-left">
+            <select class="input-mini" id="perPage">
+              <option>10</option>
+              <option selected>15</option>
+              <option>20</option>
+              <option>50</option>
+              <option>100</option>
+            </select>
+          </div>
+          <ul>
+            <li class="disabled" id="prevPage"><a href="#">&laquo;</a></li>
+            <li class="active" id="currentPage"><a href="#">1</a></li>
+            <li class="disabled" id="nextPage"><a href="#">&raquo;</a></li>
+          </ul>
+        </div>
+      </div>
+    </div> <!-- /row -->
+  </div> <!-- /tab-pane#search -->
+</div> <!-- /tab-content -->
+
+%= include 'blocks/realty_card';

@@ -1,0 +1,1149 @@
+% use Rplus::Config::Realty;
+% use Rplus::Model::User::Manager;
+% use Rplus::Model::ApCondition::Manager;
+% use Rplus::Model::ApScheme::Manager;
+% use Rplus::Model::Balcony::Manager;
+% use Rplus::Model::Bathroom::Manager;
+% use Rplus::Model::HouseType::Manager;
+% use Rplus::Model::RoomScheme::Manager;
+% use Rplus::Model::MassMedia::Manager;
+% use Rplus::Model::Tag::Manager;
+% use Rplus::Model::MassMedia::Manager;
+% use Rplus::Model::Kladr::Manager;
+
+% content_for after_bootstrap => begin
+<script type="text/javascript" src="/js/select2.min.js"></script>
+<script type="text/javascript" src="/js/rplus-client.js"></script>
+<script type="text/javascript" src="/js/leaflet.min.js"></script>
+<script type="text/javascript" src="/js/vendor/jquery.ui.widget.js"></script>
+<script type="text/javascript" src="/js/jquery.iframe-transport.js"></script>
+<script type="text/javascript" src="/js/jquery.fileupload.js"></script>
+<script type="text/javascript" src="/js/holder/holder.js"></script>
+<script type="text/javascript" src="/js/bootstrap-lightbox.min.js"></script>
+<script type="text/javascript" src="/js/alertify.min.js"></script>
+% end
+
+% content_for header => begin
+<link href="/css/bootstrap-custom.css" rel="stylesheet">
+<link href="/css/select2.css" rel="stylesheet">
+<link href="/css/rplus-client.css" rel="stylesheet">
+<link href="/css/leaflet.css" rel="stylesheet">
+<link href="/css/bootstrap-lightbox.css" rel="stylesheet">
+<link href="/css/alertify/themes/alertify.core.css" rel="stylesheet">
+<link href="/css/alertify/themes/alertify.default.css" rel="stylesheet">
+<!-- <link href="/css/alertify/themes/alertify.bootstrap.css" rel="stylesheet"> -->
+<style type="text/css">
+  /*
+  ::-webkit-scrollbar {
+    width: 0px;
+  }
+  */
+  .select2-results::-webkit-scrollbar {
+    width: 7px;
+  }
+  .select2-results::-webkit-scrollbar-track {
+    -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.3);
+    border-radius: 10px;
+  }
+  .select2-results::-webkit-scrollbar-thumb {
+    border-radius: 10px;
+    -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.5);
+  }
+
+  .control-group {
+    margin-bottom: 10px !important;
+  }
+  .form-actions {
+    margin-top: 0px !important;
+  }
+
+  .select2-search-field input {
+    padding: 3px !important;
+  }
+
+  .geo-map {
+    height: 490px;
+    margin-bottom: 15px;
+    cursor: default !important;
+  }
+  .geo-map:active {
+    cursor: pointer !important;
+  }
+
+  .thumbnails {
+    margin-top: 15px;
+  }
+  .thumbnail-delete {
+    position: absolute; margin-left: 270px; margin-top: -15px;
+  }
+  .modal-backdrop {
+    background: #000 !important;
+  }
+
+  input.error,
+  select.error,
+  .select2-container.error,
+  textarea.error {
+    color: #b94a48;
+    border-color: #b94a48;
+    -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+       -moz-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+            box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+  }
+  input.error:focus,
+  select.error:focus,
+  textarea.error:focus {
+    border-color: #953b39;
+    -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 6px #d59392;
+       -moz-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 6px #d59392;
+            box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 6px #d59392;
+  }
+</style>
+<script type="text/javascript">
+  var RealtyCard = (function () {
+    // Global variables
+    var template;
+    var default_city_id = 3;
+    var cities = {
+      list: [
+        % my %kladr_level34;
+        % for my $x (@{Rplus::Model::Kladr::Manager->get_objects(query => [ level => [3, 4] ], require_objects => ['parent_kladr'], sort_by => 't1.name_lc')}) {
+        %   push @{$kladr_level34{$x->parent_kladr->name.' '.$x->parent_kladr->type->short_name}}, $x;
+        % }
+        % for my $parent (keys %kladr_level34) {
+          { text: "<%= $parent %>", children: [
+          % for my $x (@{$kladr_level34{$parent}}) {
+            {id: <%= $x->id %>, text: "<%= $x->name.' '.$x->type->short_name %>"},
+          % }
+          ]
+          },
+        % }
+      ],
+    };
+
+    $(function () {
+      template = $('#realtyCardTemplate').html();
+    });
+
+    return function (options) {
+      // Per-object variables
+      var realty;
+      var container;
+      var geoMap;
+
+      // Per-object events
+      var events = options.events || {};
+
+      function alerts() {
+        var alertId = '#realtyAlert-' + realty.id;
+        $(alertId + '> .close').click(function (event) {
+          $(this).parent().hide();
+        });
+      }
+
+      function updateGeo(streetId, houseNum) {
+        var el_sublandmark = $('[name="sublandmark_id"]:input', container);
+        var _oldVal = el_sublandmark.val(), _setVal;
+        el_sublandmark.html('<option class="muted" value="">Подориентир...</option>');
+
+        realty.latitude = null;
+        realty.longitude = null;
+
+        var streetId = streetId || $('[name="street_id"]:input', container).val();
+        var houseNum = houseNum || $('[name="house_num"]:input', container).val();
+        if (streetId && houseNum) {
+          $.ajax({
+            type: "POST",
+            url: "<%= url_for q{/api/geo/get}%>",
+            data: {street_id: streetId, house_num: houseNum}
+          })
+            .done(function (data) {
+              if (data.status == 'success') {
+                for (var i = 0; i < data.sublandmarks.length; i++) {
+                  var x = data.sublandmarks[i];
+                  el_sublandmark.append('<option value="' + x.id + '">' + x.text + '</option>');
+                  if (x.id == _oldVal) _setVal = true;
+                }
+                if (_setVal) el_sublandmark.val(_oldVal);
+                realty.latitude = data.latitude;
+                realty.longitude = data.longitude;
+              }
+            })
+            .fail(function (jqXHR, textStatus, errorThrown) {
+              
+            })
+        }
+      }
+
+      function mainTab() {
+        // City field
+        var el_city = $('[name="city_id"]:input', container);
+        el_city.select2({
+          //width: 'element',
+          allowClear: true,
+          data: cities.list,
+        });
+        el_city.select2('val', default_city_id);
+        el_city.change(function (event) {
+          if (el_street.select2('val')) {
+            el_street.select2('val', '');
+          }
+          updateGeo();
+        });
+
+        // Street field
+        var el_street = $('[name="street_id"]:input', container);
+        el_street.select2({
+          //width: 'element',
+          minimumInputLength: 1,
+          allowClear: true,
+          ajax: {
+            url: "<%= q{/api/street/complete} %>",
+            quietMillis: 100,
+            data: function (term, page) {
+              return {
+                term: term,
+                city_id: el_city.select2('val'),
+                page: page,
+              };
+            },
+            results: function (data, page) {
+              return {
+                results: data.list,
+                more: data.next ? true : false
+              };
+            }
+          },
+          initSelection: function (element, callback) {
+            if (realty.street) {
+              callback(realty.street);
+            }
+          },
+        });
+        el_street.change(function (event) {
+          updateGeo();
+        });
+
+        // Sublandmark field
+        var el_sublandmark = $('[name="sublandmark_id"]:input', container);
+        if (realty.sublandmarks && realty.sublandmarks.length) {
+          for (var i = 0; i < realty.sublandmarks.length; i++) {
+            var x = realty.sublandmarks[i];
+            el_sublandmark.append('<option value="' + x.id + '">' + x.text + '</option>');
+          }
+        } else {
+          // Trying to update geo
+          //updateGeo(realty.street_id, realty.house_num, true);
+        }
+
+        // Tags field
+        var el_tags = $('[name="tags"]:input', container);
+        el_tags.select2({
+          //width: 'resolve',
+        });
+
+        // ExportMassMedia field
+        var el_exportMassMedia = $('[name="export_mass_media"]:input', container);
+        el_exportMassMedia.select2({
+          //width: 'resolve',
+        });
+
+        var el_houseNum = $('[name="house_num"]:input', container);
+        el_houseNum.change(function (event) {
+          updateGeo();
+        });
+      }
+
+      function workTab() {
+        // Seller field
+        $('[name="seller"]', container).rplusClient({
+          placement: 'bottom',
+          title: 'Enter seller info',
+          formId: 'formSeller-' + realty.id,
+        });
+
+        // Buyer field
+        /*
+        $('a[name="buyer_id"]', container).editable({
+          type: 'client',
+          placement: 'bottom',
+          autotext: 'always',
+          name: 'buyer',
+          title: 'Enter buyer info',
+          unsavedclass: '',
+          send: 'never',
+        });
+        */
+      }
+
+      function geoTab() {
+        var _cachedLatitude, _cachedLongitude;
+        var marker;
+
+        $('a[href="#geo-' + realty.id + '"]', container).bind('shown', function (event) {
+          if (!geoMap) {
+            geoMap = L.map('map-' + realty.id, {
+              center: [48.480232846617845, 135.07203340530396],
+              zoom: 16,
+            });
+            L.tileLayer('http://tile{s}.maps.2gis.com/tiles?x={x}&y={y}&z={z}&v=10', {
+              maxZoom: 18,
+              subdomains: '0123',
+              errorTileUrl: 'http://maps.api.2gis.ru/images/nomap.png',
+              attribution: 'Powered by RplusMgmt / Leaflet',
+            }).addTo(geoMap);
+            geoMap.attributionControl.setPrefix(false);
+            geoMap.on('click', function (event) {
+              $.ajax({
+                url: 'http://catalog.api.2gis.ru/geo/search',
+                data: {
+                  q: event.latlng.lng + ',' + event.latlng.lat,
+                  key: 'rujrdp3400',
+                  version: 1.3,
+                  output: 'jsonp',
+                  types: 'house,station,station_platform,place,sight,metro'
+                },
+                dataType: 'jsonp',
+              })
+                .done(function (data) {
+                  if (data.result) {
+                    var content = '';
+                    content += '<b>Информация:</b><br>';
+                    content += data.result[0].name + '<br>';
+                    if (data.result[0].attributes && data.result[0].attributes.purpose) {
+                      content += data.result[0].attributes.purpose;
+                    }
+                    var popup = L.popup()
+                                 .setLatLng(event.latlng)
+                                 .setContent(content)
+                                 .openOn(geoMap);
+                  }
+                })
+              ;
+            });
+          }
+          if (realty.latitude && realty.longitude && _cachedLatitude != realty.latitude && _cachedLongitude != realty.longitude) {
+            if (!marker) {
+              marker = L.marker([realty.latitude, realty.longitude])
+                        .addTo(geoMap)
+                        .bindPopup(realty.title);
+            } else {
+              marker.setLatLng([realty.latitude, realty.longitude]);
+            }
+            geoMap.panTo([realty.latitude, realty.longitude]);
+            _cachedLatitude = realty.latitude;
+            _cachedLongitude = realty.longitude;
+          }
+        });
+      }
+
+      function photosTab() {
+        var photosContainer = $('#photos-' + realty.id, container);
+
+        function loadPhotos() {
+          $.ajax({
+            type: "POST",
+            url: "<%= url_for(q{/api/photo/list}) %>",
+            data: {realty_id: realty.id}
+          })
+            .done(function (data) {
+              var xhtml = '';
+              for (var i = 0; i < data.length; i++) {
+                var x = data[i];
+                xhtml += '<li class="span3" data-id="' + x.id + '">';
+                xhtml += '<a href="#" class="close thumbnail-delete" >&times;</a>';
+                xhtml += '<a href="#lightbox" class="thumbnail" data-toggle="lightbox" data-image="' + x.photo + '">';
+                xhtml += '<img src="' + x.thumbnail + '" alt="">';
+                // For preloading
+                xhtml += '<img src="' + x.photo + '" style="display: none;">';
+                xhtml += '</a>';
+                xhtml += '</li>';
+              }
+              $('.thumbnails', photosContainer).html(xhtml);
+            })
+          ;
+        }
+
+        photosContainer.on('click', 'a.thumbnail-delete', function (event) {
+          var el = $(this).closest('li');
+          var id = el.data('id');
+          $.ajax({
+            type: "POST",
+            url: "<%= url_for(q{/api/photo/delete}) %>",
+            data: {id: id}
+          })
+            .done(function (data) {
+              if (data.status == 'success') {
+                el.remove();
+              }
+            })
+          ;
+        });
+
+        $('input[type="file"]', photosContainer).fileupload({
+          url: "<%= url_for q{/api/photo/add} %>",
+          dataType: 'json',
+          formData: function () { var formData = [{ name: 'realty_id', value: realty.id }]; return formData; },
+          done: function (e, data) {
+            // Progress bar
+            $('.progress', photosContainer).hide();
+            $('.progress > .bar', photosContainer).css('width', '0%');
+
+            if (data.result.status == 'success') {
+              loadPhotos();
+            } else {
+              alert('Ошибка загрузки фотографии');
+            }
+          },
+          fail: function (e, data) {
+            // Progress bar
+            $('.progress', photosContainer).hide();
+            $('.progress > .bar', photosContainer).css('width', '0%');
+
+            alert('Ошибка загрузки фотографии');
+          },
+          send: function(e, data) {
+            $('.progress', photosContainer).show();
+          },
+          progressall: function (e, data) {
+            var progress = parseInt(data.loaded / data.total * 100, 10);
+            $('.progress > .bar', photosContainer).css('width', progress + '%');
+          }
+        });
+
+        $('.btn-add-photo', photosContainer).click(function (event) {
+          $('input[type="file"]', photosContainer).click();
+        });
+
+        loadPhotos();
+      }
+
+      function claimsTab() {
+        var claimsContainer = $('#claims-' + realty.id, container);
+
+        function loadClaims() {
+          $.ajax({
+            type: "POST",
+            url: "<%= url_for q{/api/claim/list} %>",
+            data: {realty_id: realty.id}
+          })
+            .done(function (data) {
+              var xhtml = '';
+              for (var i = 0; i < data.list.length; i++) {
+                var x = data.list[i];
+                xhtml += '<div class="row">';
+                  xhtml += '<div class="span5">';
+                    xhtml += '<div class="bs-docs-example2" style="padding-top: 25px;">';
+                      xhtml += '<div class="bs-docs-example-title">' + x.add_date + ' | ' + x.status + '</div>';
+                      xhtml += '<dl class="dl-horizontal">';
+                        xhtml += '<dt style="width: 70px;">Client</dt>';
+                        xhtml += '<dd style="margin-left: 90px;">' + x.client + '</dd>';
+                        xhtml += '<dt style="width: 70px;">Type</dt>';
+                        xhtml += '<dd style="margin-left: 90px;">' + x.type + '</dd>';
+                        if (x.comment) {
+                          xhtml += '<dt style="width: 70px;">Comment</dt>';
+                          xhtml += '<dd style="margin-left: 90px;">' + $('<div>').text(x.comment).html() + '</dd>';
+                        }
+                        if (x.answer) {
+                          xhtml += '<dt style="width: 70px;">Answer</dt>';
+                          xhtml += '<dd style="margin-left: 90px;">' + $('<div>').text(x.answer).html() + '</dd>';
+                        }
+                      xhtml += '</dl>';
+                      if (x.status == 'new') {
+                        xhtml += '<form>';
+                          xhtml += '<fieldset>';
+                            xhtml += '<div class="btn-group pull-right">';
+                              xhtml += '<button class="btn btn-primary dropdown-toggle" data-toggle="dropdown">Action <span class="caret"></span></button>';
+                              xhtml += '<ul class="dropdown-menu">';
+                                xhtml += '<li><a href="#" data-id="' + x.id + '" data-status="confirmed"><i class="icon-ok"></i> Confirm</a></li>';
+                                xhtml += '<li><a href="#" data-id="' + x.id + '" data-status="rejected"><i class="icon-remove"></i> Reject</a></li>';
+                              xhtml += '</ul>';
+                            xhtml += '</div>';
+                          xhtml += '</fieldset>';
+                        xhtml += '</form>';
+                      }
+                    xhtml += '</div>';
+                  xhtml += '</div>';
+                xhtml += '</div>';
+              }
+              xhtml += '<div class="row"><div class="span5" style="padding-top:30px;">&nbsp;</div></div>';
+
+              claimsContainer.html(xhtml);
+              $('#claimsCount-' + realty.id).html(data.count_new);
+              if (data.count_new) {
+                $('#claimsCount-' + realty.id).show();
+              } else {
+                $('#claimsCount-' + realty.id).hide();
+              }
+            })
+          ;
+        }
+
+        claimsContainer.on('click', 'form ul.dropdown-menu li > a', function (event) {
+          var id = $(this).data('id');
+          var status = $(this).data('status');
+          bootbox.prompt("Enter answer", function(result) {
+            if (result === null) {
+            } else {
+              $.ajax({
+                type: "POST",
+                url: "<%= url_for q{/api/claim/update} %>",
+                data: {id: id, status: status, answer: result},
+              })
+                .done(function (data) {
+                  if (data.status == 'success') {
+                    loadClaims();
+                  } else {
+                    alert('Ошибка');
+                  }
+                })
+            }
+          });
+        });
+
+        loadClaims();
+      }
+
+      function formActions() {
+        $('#realtyForm-' + realty.id, container).bind('submit', function (event) {
+          var formData = {
+            id: realty.id,
+            tags: new Array(),
+            export_mass_media: new Array(),
+            seller: $('[name="seller"]', container).rplusClient('getValue'),
+            latitude: realty.latitude,
+            longitude: realty.longitude
+          };
+          var formArray = $(this).serializeArray();
+          for (var i in formArray) {
+            var x = formArray[i];
+            if ((typeof formData[x.name] == 'object') && (formData[x.name] instanceof Array)) {
+              formData[x.name].push(x.value);
+            } else {
+              formData[x.name] = x.value ? x.value : null;
+            }
+          }
+          //console.dir(formData);
+          $.ajax({
+            type: "POST",
+            url: "<%= q{/api/realty/save} %>",
+            data: {id: realty.id, data: JSON.stringify(formData)},
+          })
+            .done(function (data) {
+              var alertId = '#realtyAlert-' + realty.id;
+              $(alertId, container).attr('class', 'alert'); // reset classes
+
+              if (data.status == 'success') {
+                // Уберём error класс
+                $('.control-group.error', container).removeClass('error');
+                $('[name]:input.error', container).removeClass('error');
+
+                // Выведем сообщение об успешном сохранении
+                if (data.mediator) {
+                  $(alertId + ' > div',container).html('<strong>Вы сохраняете недвижимость с телефоном посредника: ' + $('<div>').text(data.mediator.company).html() + '!</strong><br>Недвижимость успешно сохранена.');
+                  $(alertId, container).show();
+                } else {
+                  $(alertId + ' > div', container).html('Недвижимость успешно сохранена.');
+                  $(alertId, container).addClass('alert-success').show();
+                }
+
+                // Вызовем событие
+                if ($.isFunction(events.save)) {
+                  events.save(data.data);
+                }
+              } else if (data.status == 'duplicate') {
+                // Повтор
+                $(alertId + ' > div', container).html('<strong>Найден повтор!</strong>&nbsp;&nbsp;' + '<a href="#" data-toggle="realtyCard" data-id="' + data.data.id + '" data-open="foreground">' + $('<div>').text(data.data.title).html() + '</a>');
+                $(alertId, container).show();
+              } else if (data.status == 'failed') {
+                $(alertId + ' > div', container).html('<strong>Ошибка!</strong> Проверьте правильность указания данных.');
+                $(alertId, container).addClass('alert-error').show();
+
+                if (data.errors) { // Ошибки подсветим красненьким
+                  for (var i = 0; i < data.errors.length; i++) {
+                    var x = data.errors[i];
+                    if (x.field == 'realty_type' || x.field == 'offer_type' || x.field == 'state' || x.field == 'street_id') {
+                      $('[name="' + x.field + '"]:input', container).closest('.control-group').addClass('error');
+                    } else if (x.field == 'seller') {
+                      $('a[name="seller"]', container).closest('.control-group').addClass('error');
+                    } else {
+                      $('[name="' + x.field + '"]:input', container).addClass('error');
+                    }
+                  }
+                }
+              } else if (data.status == 'maintenance') {
+                // Режим обслуживания
+                $(alertId + ' > div', container).html('<strong>Внимание!</strong>&nbsp;&nbsp; Программа находится в режиме технического обслуживания. Операция временно невозможна.');
+                $(alertId, container).show();
+              }
+            })
+            .fail(function (jqXHR, textStatus, errorThrown) {
+              var alertId = '#realtyAlert-' + realty.id;
+              $(alertId, container).attr('class', 'alert'); // reset classes
+
+              $(alertId + ' > div', container).html('<strong>Ошибка сервера!</strong>&nbsp;&nbsp;' + $('<div>').text(textStatus.substring(0, 30)).html());
+              $(alertId, container).addClass('alert-error').show();
+            })
+          ;
+          event.preventDefault();
+        });
+      }
+
+      var $this = {
+        create: function () {
+          $.ajax({
+            type: "POST",
+            url: "<%= q{/api/realty/create} %>",
+            data: {},
+          })
+            .done(function (data) {
+              realty = data;
+              realty.title = 'New#' + realty.id;
+              if ($.isFunction(options.container)) {
+                container = options.container(data);
+              } else {
+                container = options.container;
+              }
+              if (!container) return;
+              container.html(template.replace(/{id}/g, realty.id));
+
+              alerts();
+              mainTab();
+              workTab();
+              geoTab();
+              photosTab();
+              claimsTab();
+              formActions();
+
+              var date = new Date();
+              $('span[name="open_date"]', container).html(
+                ((date.getDate() < 10 ? '0' : '') + date.getDate()) + "." +
+                ((date.getMonth() < 9 ? '0' : '') + (date.getMonth() + 1)) +"." +
+                date.getFullYear()
+              );
+              if (options.data) {
+                if (options.data.agent_id) {
+                  $('[name="agent_id"]:input', container).val(options.data.agent_id);
+                }
+              }
+
+              if ($.isFunction(options.done)) {
+                options.done(realty);
+              }
+            })
+          ;
+          return $this;
+        },
+
+        open: function (id) {
+          $.ajax({
+            type: "POST",
+            url: "<%= q{/api/realty/get} %>",
+            data: {id: id},
+          })
+            .done(function (data) {
+              realty = data;
+              if ($.isFunction(options.container)) {
+                container = options.container(data);
+              } else {
+                container = options.container;
+              }
+              if (!container) return;
+              container.html(template.replace(/{id}/g, realty.id));
+
+              alerts();
+              mainTab();
+              workTab();
+              geoTab();
+              photosTab();
+              claimsTab();
+              formActions();
+
+              for (f in realty) {
+                var x = data[f];
+                var el = $('[name="' + f + '"]:input', container);
+
+                if (f == 'city_id') {
+                  el.select2('val', x || '');
+                } else if (f == 'street_id' && x) {
+                  el.select2('val', x || '');
+                } else if (f == 'street' && x) {
+                  // None
+                } else if (f == 'tags') {
+                  el.select2('val', x);
+                } else if (f == 'export_mass_media') {
+                  el.select2('val', x);
+                } else if (f == 'open_date') {
+                  $('span[name="open_date"]', container).html(realty.open_date.replace(/^(\d{4})\-(\d{2})-(\d{2}).+$/, "$3.$2.$1"));
+                } else if (f == 'seller' && x) {
+                  $('[name="seller"]', container).rplusClient('setValue', x);
+                } else if (f == 'source_mass_media' && x) {
+                  var xhtml = '<strong>Источник:</strong> ' + data.source_mass_media + (data.source_ad_text ? '<br>' + $('<div>').text(data.source_ad_text).html() : '');
+                  $('#realtySourceAdText-' + realty.id).html(xhtml).show();
+                } else {
+                  if (el.length > 0) {
+                    el.val(x);
+                  }
+                }
+              }
+
+              if ($.isFunction(options.done)) {
+                options.done(realty);
+              }
+            })
+          ;
+          return $this;
+        },
+
+        close: function () {
+          return $this;
+        }
+      };
+      return $this;
+    };
+  })();
+</script>
+% end
+
+% content_for modals => begin
+<div id="lightbox" class="lightbox hide fade" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class='lightbox-header'>
+    <button type="button" class="close" data-dismiss="lightbox" aria-hidden="true">&times;</button>
+  </div>
+  <div class='lightbox-content'>
+    <img data-src="holder.js/1024x768">
+  </div>
+</div>
+% end
+
+<div style="display:none;" id="realtyCardTemplate">
+  <div class="row">
+
+    <!-- nav-pills -->
+    <div class="span2">
+      <div class="row">
+        <div class="span2">
+
+      <ul class="nav nav-pills nav-stacked" id="realtyPill-{id}">
+        <li class="active"><a href="#main-{id}" data-toggle="pill"><i class="icon-home"></i> Main</a></li>
+        <li><a href="#work-{id}" data-toggle="pill"><i class="icon-briefcase"></i> Work</a></li>
+        <li style="display: none;"><a href="#exchange-{id}" data-toggle="pill"><i class="icon-retweet"></i> Exchange</a></li>
+        <li><a href="#geo-{id}" data-toggle="pill"><i class="icon-globe"></i> Geo</a></li>
+        <li><a href="#photos-{id}" data-toggle="pill"><i class="icon-camera"></i> Photos</a></li>
+        <li><a href="#claims-{id}" data-toggle="pill"><i class="icon-comment"></i> Claims&nbsp;&nbsp;&nbsp;<span class="badge badge-important claims-count" style="display: none;" id="claimsCount-{id}">0</span></a></li>
+      </ul>
+
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="span2">
+          <div class="alert alert-info" id="realtySourceAdText-{id}" style="font-size: 9pt; color: black; display: none;">
+          </div>
+        </div>
+      </div>
+
+    </div> <!-- /nav-pills -->
+
+    <div class="span10">
+
+      <div class="row">
+        <div class="span9">
+          <div class="alert" id="realtyAlert-{id}" style="display: none;">
+            <button type="button" class="close">&times;</button>
+            <div class="alert-msg"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-content" id="realtyPillContent-{id}">
+        <div class="tab-pane active" id="main-{id}">
+          <div class="row">
+            <div class="span9">
+              <form class="form-horizontal" id="realtyForm-{id}">
+                <div class="well well-small">
+                  <div class="row">
+                    <div class="pull-right">
+                      <span style="font-weight: bold;" name="open_date"></span>
+                    </div>
+                    <div class="span4">
+                      <div class="control-group">
+                        <label class="control-label" for="realtyTypeInput-{id}">Realty Type</label>
+                        <div class="controls">
+                          <select class="input-medium" name="realty_type" id="realtyTypeInput-{id}">
+                            <option class="muted" value="">Тип...</option>
+                            % {
+                            % my @x = @Rplus::Config::Realty::REALTY_TYPES;
+                            % for (my $i = 0; $i < @x; $i += 2) {
+                            <option value="<%= $x[$i] %>"><%= $x[$i+1] %></option>
+                            % }
+                            % }
+                          </select>
+                        </div>
+                      </div> <!-- /control-group -->
+                      <div class="control-group">
+                        <label class="control-label" for="offerTypeInput-{id}">Offer Type</label>
+                        <div class="controls">
+                          <select class="input-medium" name="offer_type" id="offerTypeInput-{id}">
+                            <option class="muted" value="">Предложение...</option>
+                            % {
+                            % my @x = @Rplus::Config::Realty::REALTY_OFFER_TYPES;
+                            % for (my $i = 0; $i < @x; $i += 2) {
+                            <option value="<%= $x[$i] %>"><%= $x[$i+1] %></option>
+                            % }
+                            % }
+                          </select>
+                        </div>
+                      </div> <!-- /control-group -->
+                    </div> <!-- /span4 -->
+                    <div class="span4">
+                      <div class="control-group">
+                        <label class="control-label" for="stateInput-{id}">State</label>
+                        <div class="controls">
+                          <select class="input-medium" name="state" id="stateInput-{id}">
+                            <option class="muted" value="">Статус...</option>
+                            % {
+                            % my @x = @Rplus::Config::Realty::REALTY_STATES;
+                            % for (my $i = 0; $i < @x; $i += 2) {
+                            <option value="<%= $x[$i] %>"><%= $x[$i+1] %></option>
+                            % }
+                            % }
+                          </select>
+                        </div>
+                      </div> <!-- /control-group -->
+                      <div class="control-group" <%== config->{'is_agency'} ? '' : 'style="display: none;"' %>>
+                        <label class="control-label" for="agentInput-{id}">Agent</label>
+                        <div class="controls">
+                          <select class="input-medium" name="agent_id" id="agentInput-{id}">
+                            <option class="muted" value="">Агент...</option>
+                            <option class="muted" value="">Nobody</option>
+                            % my $user_iter = Rplus::Model::User::Manager->get_objects_iterator(query => [ role => ['agent', 'manager'], delete_date => undef ], sort_by => 'role, name');
+                            % while (my $user = $user_iter->next) {
+                            <option value="<%= $user->id %>"><%= $user->name %></option>
+                            % }
+                          </select>
+                        </div>
+                      </div> <!-- /control-group -->
+                    </div> <!-- /span4 -->
+                  </div> <!-- /row -->
+                </div> <!-- /well -->
+                <div class="control-group">
+                  <label class="control-label">City / Street</label>
+                  <div class="controls">
+                    <input type="text" class="input-xlarge" name="city_id" placeholder="Нас. пункт">
+                    &nbsp;/&nbsp;
+                    <input type="text" class="input-xlarge" name="street_id" placeholder="Улица">
+                  </div>
+                </div> <!-- /control-group -->
+                <div class="control-group">
+                  <label class="control-label">Location</label>
+                  <div class="controls">
+                    <input type="text" class="input-mini" name="house_num" placeholder="№ дома">
+                    &nbsp;/&nbsp;
+                    <input type="text" class="input-mini" name="ap_num" placeholder="№ кв.">
+                    &nbsp;/&nbsp;
+                    <select name="sublandmark_id">
+                      <option class="muted" value="">Подориентир...</option>
+                    </select>
+                    &nbsp;
+                    <span>house / ap / sublandmark</span>
+                  </div>
+                </div> <!-- /control-group -->
+                <div class="well well-small">
+                  <div class="control-group">
+                    <label class="control-label">House type</label>
+                    <div class="controls">
+                      <select class="input-medium" name="ap_scheme_id">
+                        <option class="muted" value="">Планировка...</option>
+                        % for my $x (@{Rplus::Model::ApScheme::Manager->get_objects}) {
+                        <option value="<%= $x->id %>"><%= $x->name %></option>
+                        % }
+                      </select>
+                      &nbsp;/&nbsp;
+                      <select class="input-medium" name="house_type_id">
+                        <option class="muted" value="">Дом...</option>
+                        % for my $x (@{Rplus::Model::HouseType::Manager->get_objects}) {
+                        <option value="<%= $x->id %>"><%= $x->name %></option>
+                        % }
+                      </select>
+                    </div>
+                  </div> <!-- /control-group -->
+                  <div class="control-group">
+                    <label class="control-label">Floor / Levels</label>
+                    <div class="controls">
+                      <input type="text" class="input-mini" name="floor" placeholder="Этаж">
+                      &nbsp;/&nbsp;
+                      <input type="text" class="input-mini" name="floors_count" placeholder="Этажность">
+                      &nbsp;/&nbsp;
+                      <input type="text" class="input-mini" name="levels_count" placeholder="Уровень">
+                      &nbsp;
+                      <span>floor / floors / levels</span>
+                    </div>
+                  </div> <!-- /control-group -->
+                  <div class="control-group">
+                    <label class="control-label">Rooms</label>
+                    <div class="controls">
+                      <input type="text" class="input-mini" name="rooms_count" placeholder="Кол. комнат">
+                      &nbsp;/&nbsp;
+                      <select class="input-medium" name="room_scheme_id">
+                        <option class="muted" value="">Комнаты...</option>
+                        % for my $x (@{Rplus::Model::RoomScheme::Manager->get_objects}) {
+                        <option value="<%= $x->id %>"><%= $x->name %></option>
+                        % }
+                      </select>
+                    </div>
+                  </div> <!-- /control-group -->
+                  <div class="control-group">
+                    <label class="control-label">Square</label>
+                    <div class="controls">
+                      <input type="text" class="input-mini" name="square_total" placeholder="Общая">
+                      &nbsp;/&nbsp;
+                      <input type="text" class="input-mini" name="square_living" placeholder="Жилая">
+                      &nbsp;/&nbsp;
+                      <input type="text" class="input-mini" name="square_kitchen" placeholder="Кухни">
+                      &nbsp;
+                      <span>total / living / kitchen</span>
+                    </div>
+                  </div> <!-- /control-group -->
+                  <div class="control-group">
+                    <label class="control-label">Land square</label>
+                    <div class="controls">
+                      <input type="text" class="input-mini" name="square_land" placeholder="Земли">
+                      &nbsp;/&nbsp;
+                      <select class="input-small" name="square_land_type">
+                        <option value="ar">сот.</option>
+                        <option value="hectare">га.</option>
+                      </select>
+                    </div>
+                  </div> <!-- /control-group -->
+                  <div class="control-group">
+                    <label class="control-label">Condition</label>
+                    <div class="controls">
+                      <select class="input-medium" name="ap_condition_id">
+                        <option class="muted" value="">Состояние...</option>
+                        % for my $x (@{Rplus::Model::ApCondition::Manager->get_objects}) {
+                        <option value="<%= $x->id %>"><%= $x->name %></option>
+                        % }
+                      </select>
+                      &nbsp;/&nbsp;
+                      <select class="input-medium" name="balcony_id">
+                        <option class="muted" value="">Балкон...</option>
+                        % for my $x (@{Rplus::Model::Balcony::Manager->get_objects}) {
+                        <option value="<%= $x->id %>"><%= $x->name %></option>
+                        % }
+                      </select>
+                      &nbsp;/&nbsp;
+                      <select class="input-medium" name="bathroom_id">
+                        <option class="muted" value="">Санузел...</option>
+                        % for my $x (@{Rplus::Model::Bathroom::Manager->get_objects}) {
+                        <option value="<%= $x->id %>"><%= $x->name %></option>
+                        % }
+                      </select>
+                    </div>
+                  </div> <!-- /control-group -->
+                </div> <!-- /well -->
+                <div class="control-group">
+                  <label class="control-label">Tags</label>
+                  <div class="controls">
+                    <!-- <input type="text" class="input-xxlarge" name="tags" placeholder="Выберите теги"> -->
+                    <select class="input-xxlarge" name="tags" data-placeholder="Выберите теги" multiple>
+                      % for my $x (@{Rplus::Model::Tag::Manager->get_objects(query => [ delete_date => undef ])}) {
+                      <option value="<%= $x->id %>"><%= $x->name %></option>
+                      % }
+                    </select>
+                  </div>
+                </div> <!-- /control-group -->
+                <div class="control-group" style="display: none;">
+                  <label class="control-label">Export to</label>
+                  <div class="controls">
+                    <!-- <input type="text" class="input-xxlarge" name="export_mass_media" placeholder="Выберите СМИ"> -->
+                    <select class="input-xxlarge" name="export_mass_media" data-placeholder="Выберите СМИ" multiple>
+                      % for my $x (@{Rplus::Model::MassMedia::Manager->get_objects}) {
+                      <option value="<%= $x->id %>"><%= $x->name %></option>
+                      % }
+                    </select>
+                  </div>
+                </div> <!-- /control-group -->
+                <div class="control-group">
+                  <label class="control-label" for="descriptionInput-{id}">Additional description</label>
+                  <div class="controls">
+                    <textarea class="span4" rows="5" name="description" id="descriptionInput-{id}" placeholder="Дополнительное описание, 5 слов в рекламу"></textarea>
+                  </div>
+                </div> <!-- /control-group -->
+                <div class="well well-small" style="display:none;">
+                  <a href="#" class="muted" data-toggle="collapse" data-target="#realtySource-{id}">Source</a>
+                  <div id="realtySource-{id}" class="collapse out">
+                    <div class="control-group">
+                      <label class="control-label">Source</label>
+                      <div class="controls">
+                        <select class="input-medium" name="source_mass_media_id">
+                          <option class="muted" value="">Источник...</option>
+                          % for my $x (@{Rplus::Model::MassMedia::Manager->get_objects}) {
+                          <option value="<%= $x->id %>"><%= $x->name %></option>
+                          % }
+                        </select>
+                      </div>
+                    </div> <!-- /control-group -->
+                    <div class="control-group">
+                      <label class="control-label">Text</label>
+                      <div class="controls">
+                        <textarea class="span4" rows="5" name="source_ad_text" placeholder="Исходный текст объявления"></textarea>
+                      </div>
+                    </div> <!-- /control-group -->
+                  </div>
+                </div> <!-- /well -->
+              </form> <!-- /#realtyForm -->
+            </div> <!-- /span9 -->
+          </div> <!-- /row -->
+
+          <div class="row">
+            <div class="span9">
+              <div class="form-actions">
+                <div class="pull-right">
+                  <button type="button" class="btn" form="realtyForm-{id}" style="display: none;">Cancel</button>
+                  <button type="submit" class="btn btn-primary" form="realtyForm-{id}">Save changes</button>
+                </div>
+              </div>
+            </div>
+          </div> <!-- /row -->
+
+        </div> <!-- /tab-pane#main -->
+
+        <div class="tab-pane" id="work-{id}">
+          <div class="row">
+            <div class="span9">
+              <form class="form-horizontal">
+                <div class="well well-small">
+                  <div class="control-group">
+                    <label class="control-label">Seller</label>
+                    <div class="controls">
+                      <!-- <input type="hidden" name="seller_id" value=""> -->
+                      <a href="#" name="seller" class="rplus-client"></a>
+                    </div>
+                  </div> <!-- /control-group -->
+                  <div class="control-group">
+                    <label class="control-label">Seller info</label>
+                    <div class="controls">
+                      <textarea class="span3" rows="3" name="seller_info" form="realtyForm-{id}" placeholder="Дополнительный номер телефона, когда лучше звонить, и т.д."></textarea>
+                    </div>
+                  </div> <!-- /control-group -->
+                  % if (config->{'is_agency'}) {
+                  <div class="control-group">
+                    <label class="control-label">Price</label>
+                    <div class="controls">
+                      <input type="text" class="input-mini" name="seller_price" form="realtyForm-{id}" placeholder="Продавца">
+                      &nbsp;/&nbsp;
+                      <input type="text" class="input-mini" name="agency_price" form="realtyForm-{id}" placeholder="Агенства">
+                      &nbsp;
+                      <span>seller / agency</span>
+                    </div>
+                  </div> <!-- /control-group -->
+                  % } else {
+                  <div class="control-group">
+                    <label class="control-label">Seller price</label>
+                    <div class="controls">
+                      <input type="text" class="input-mini" name="seller_price" form="realtyForm-{id}" placeholder="Продавца">
+                    </div>
+                  </div> <!-- /control-group -->
+                  % }
+                  <!--
+                  <div class="control-group">
+                    <label class="control-label">Sale contract</label>
+                    <div class="controls">
+                      <input type="text" class="input-" name="sale_contract_code" form="realtyForm-{id}" placeholder="№ дог.">
+                      &nbsp;/&nbsp;
+                      <input type="text" class="input-mini" name="sale_contract_term" form="realtyForm-{id}" placeholder="Дата дог.">
+                    </div>
+                  </div> <!-- /control-group -->
+                  <div class="control-group">
+                    <label class="control-label">Sale info</label>
+                    <div class="controls">
+                      <textarea class="span4" rows="5" name="sale_info" form="realtyForm-{id}" placeholder="Информация по этапам продажи недвижимости" ></textarea>
+                    </div>
+                  </div> <!-- /control-group -->
+                </div> <!-- /well -->
+                <a href="#" class="muted" data-toggle="collapse" data-target="#realtyBuyer-{id}" style="display: none;">Buyer</a>
+                <div id="realtyBuyer-{id}" class="collapse out" style="display: none;">
+                  <div class="control-group">
+                    <label class="control-label">Buyer</label>
+                    <div class="controls">
+                      <!-- <input type="hidden" name="buyer_id" value=""> -->
+                      <a href="#" name="buyer" class="rplus-client"></a>
+                    </div>
+                  </div> <!-- /control-group -->
+                  <!--
+                  <div class="control-group">
+                    <label class="control-label">Buy contract / date</label>
+                    <div class="controls">
+                      <input type="text" class="input-mini" name="buy_contract_code" form="realtyForm-{id}" placeholder="№ дог.">
+                      &nbsp;/&nbsp;
+                      <input type="text" class="input-mini" name="buy_contract_term" form="realtyForm-{id}" placeholder="Дата дог.">
+                    </div>
+                  </div> <!-- /control-group -->
+                  <div class="control-group">
+                    <label class="control-label">Final price</label>
+                    <div class="controls">
+                      <input type="text" class="input-mini" name="final_price" form="realtyForm-{id}" placeholder="Факт. цена">
+                    </div>
+                  </div> <!-- /control-group -->
+                </div>
+              </form>
+            </div> <!-- /span9 -->
+          </div> <!-- /row -->
+
+          <div class="row">
+            <div class="span9">
+              <div class="form-actions">
+                <div class="pull-right">
+                  <button type="button" class="btn" form="realtyForm-{id}" style="display: none;">Cancel</button>
+                  <button type="submit" class="btn btn-primary" form="realtyForm-{id}">Save changes</button>
+                </div>
+              </div>
+            </div>
+          </div> <!-- /row -->
+
+        </div> <!-- /tab-pane#work -->
+
+        <div class="tab-pane" id="geo-{id}">
+          <div class="row">
+            <div class="span9">
+              <div class="geo-map" id="map-{id}"></div>
+            </div> <!-- /span9 -->
+          </div> <!-- /row -->
+        </div> <!-- /tab-pane#geo -->
+
+        <div class="tab-pane" id="photos-{id}">
+          <div class="row">
+            <div class="span9">
+              <div class="row">
+                <div class="span2">
+                  <input type="file" name="photo" style="visibility: hidden; position: absolute; top: 0; left: 0;" accept="image/jpeg">
+                  <button class="btn btn-success btn-add-photo">
+                    <i class="icon-plus icon-white"></i>
+                    <span>Add photo</span>
+                  </button>
+                </div>
+                <div class="span4">
+                  <div class="progress progress-striped active" style="display: none; width: 100%;">
+                    <div class="bar" style="width: 0%;"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="span9">
+                  <ul class="thumbnails">
+                  </ul>
+                </div>
+              </div>
+            </div> <!-- /span9 -->
+          </div> <!-- /row -->
+        </div> <!-- /tab-pane#photos -->
+
+        <div class="tab-pane" id="claims-{id}"></div>
+
+      </div> <!-- /tab-content#realtyPillContent -->
+
+    </div> <!-- /span10 -->
+  </div> <!-- /row -->
+
+</div>
