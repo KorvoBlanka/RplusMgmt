@@ -40,7 +40,7 @@
   var realtyPage = (function () {
     var realtyTableState = {
       cols: {
-        1: true, 2: true, 3: true, 4: true, 5: true, 6: true, 7: true, 8: false, 9: true, 10: false, 11: false, 12: true, 13: false
+        1: true, 2: false, 3: true, 4: true, 5: true, 6: true, 7: true, 8: true, 9: false, 10: true, 11: false, 12: false, 13: true, 14: false
       },
       sort: {
         field: null,
@@ -104,9 +104,13 @@
             xhtml += '<tr data-toggle="realtyCard" data-id="' + x.id + '"' + (isOpened ? ' class="warning"' : '') + '>';
               xhtml += '<td style="text-align: center;' + _realtyTableStyle(n++) + '">';
                 xhtml += '<a href="#" data-toggle="tooltip" title="' + x.offer_type + '">' + (x.offer_type == 'Аренда' ? '<i class="icon-calendar"></i>' : '<i class="icon-flag"></i>') + '</a>';
-                if (x.main_photo_thumbnail) {
-                  xhtml += '<br><a href="#" data-toggle="tooltip" data-placement="right" data-html="true" data-title="' + $('<div>').text('<img src=\'' + x.main_photo_thumbnail + '\'></img>').html() + '"><i class="icon-camera"></i></a>';
-                }
+              xhtml += '</td>';
+              xhtml += '<td style="text-align: center;' + _realtyTableStyle(n++) + '">';
+              if (x.main_photo_thumbnail) {
+                xhtml += '<a href="#" data-toggle="tooltip" data-placement="right" data-html="true" data-title="' + $('<div>').text('<img src=\'' + x.main_photo_thumbnail + '\'></img>').html() + '"><i class="icon-camera"></i></a>';
+              } else {
+                xhtml += '-';
+              }
               xhtml += '</td>';
               xhtml += '<td style="' + _realtyTableStyle(n++) + '">';
                 xhtml += x.realty_type;
@@ -136,7 +140,7 @@
                 xhtml += x.tags ? '<a href="#" data-toggle="tooltip" title="' + x.tags + '"><i class="icon-tags"></i></a>' : '';
               xhtml += '</td>';
               xhtml += '<td style="' + _realtyTableStyle(n++) + '">';
-                xhtml += x.export_mass_media || '';
+                xhtml += x.source_mass_media || '';
               xhtml += '</td>';
               xhtml += '<td style="text-align: center; white-space: nowrap;' + _realtyTableStyle(n++) + '">';
                 xhtml += x.open_date;
@@ -271,7 +275,7 @@
                 // Обновим текущий список
                 doQuery(el_currentPage.data('page'));
               } else if (data.status == 'failed') {
-                alert('Ошибка! Невозможно сменить статус.');
+                alert('Ошибка! Невозможно сменить статус. Проверьте правильность указанных данных.');
               } else if (data.status == 'duplicate') {
                 alert('Ошибка! Найден повтор.');
               }
@@ -502,6 +506,7 @@
             <ul class="dropdown-menu" role="menu" id="hContextMenu">
               % {
               % my $i = 2;
+              <li><a tabindex="-1" href="#" data-nth-child="<%= $i++ %>"><i class="icon-ok"></i>&nbsp;Photo</a></li>
               <li><a tabindex="-1" href="#" data-nth-child="<%= $i++ %>"><i class="icon-ok"></i>&nbsp;Type</a></li>
               <li><a tabindex="-1" href="#" data-nth-child="<%= $i++ %>"><i class="icon-ok"></i>&nbsp;Scheme</a></li>
               <li><a tabindex="-1" href="#" data-nth-child="<%= $i++ %>"><i class="icon-ok"></i>&nbsp;Rooms</a></li>
@@ -511,7 +516,7 @@
               <li><a tabindex="-1" href="#" data-nth-child="<%= $i++ %>"><i class="icon-ok"></i>&nbsp;Square</a></li>
               <li><a tabindex="-1" href="#" data-nth-child="<%= $i++ %>"><i class="icon-ok"></i>&nbsp;Seller</a></li>
               <li><a tabindex="-1" href="#" data-nth-child="<%= $i++ %>"><i class="icon-ok"></i>&nbsp;Tags</a></li>
-              <li><a tabindex="-1" href="#" data-nth-child="<%= $i++ %>"><i class="icon-ok"></i>&nbsp;MassMedia</a></li>
+              <li><a tabindex="-1" href="#" data-nth-child="<%= $i++ %>"><i class="icon-ok"></i>&nbsp;Source</a></li>
               <li><a tabindex="-1" href="#" data-nth-child="<%= $i++ %>"><i class="icon-ok"></i>&nbsp;OpenDate</a></li>
               <li <%== config->{'is_agency'} ? '' : 'style="display: none;"' %>><a tabindex="-1" href="#" data-nth-child="<%= $i++ %>"><i class="icon-ok"></i>&nbsp;Agent</a></li>
               % }
@@ -541,6 +546,7 @@
           <thead data-toggle="context" data-target="#context-menu-header">
             <tr>
               <th></th>
+              <th></th>
               <th data-field="realty_type">Type<i class="pull-right icon-arrow-up" style="display: none;"></i></th>
               <th data-field="ap_scheme_id">Scheme<i class="pull-right icon-arrow-up" style="display: none;"></i></th>
               <th data-field="rooms_count">Rooms<i class="pull-right icon-arrow-up" style="display: none;"></i></th>
@@ -550,7 +556,7 @@
               <th data-field="square">Square<i class="pull-right icon-arrow-up" style="display: none;"></i></th>
               <th>Seller</th>
               <th>Tags</th>
-              <th>MassMedia</th>
+              <th>Source</th>
               <th data-field="open_date">OpenDate<i class="pull-right icon-arrow-up" style="display: none;"></i></th>
               <th data-field="agent.name">Agent<i class="pull-right icon-arrow-up" style="display: none;"></i></th>
             </tr>
