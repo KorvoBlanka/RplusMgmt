@@ -227,50 +227,8 @@ sub create {
     $self->render_json({id => $x->[0]});
 }
 
-sub set {
-    my $self = shift;
-
-    my $id = $self->param('id');
-    my $state = $self->param('state');
-
-    return $self->render_not_found unless $state;
-    return $self->render_json({status => 'failed'}) unless $REALTY_STATES_H{$state};
-
-    my $realty = Rplus::Object::Realty->new(id => $id)->load;
-    if ($realty->state ne $state) {
-        # Проверим на повтор (в рабочей базе)
-        if ($state eq 'work') {
-            if (my $duplicate_realty_id = find_duplicate_realty($_get_realty_data->($realty), ad_search => 1)) {
-                my $duplicate_realty = Rplus::Object::Realty->new(id => $duplicate_realty_id)->load;
-                return $self->render_json({status => 'duplicate', data => {id => $duplicate_realty->id, title => $duplicate_realty->get_digest('web_title')}});
-            }
-        }
-
-        $realty->state($state);
-        $realty->save(changes_only => 1);
-    }
-
-    return $self->render_json({status => 'success'});
-}
-
-sub save {
-    my $self = shift;
-
-    my $data; eval { $data = decode_json(encode_utf8(scalar($self->param('data')))); } or do {};
-    return $self->render_json({status => 'failed'}) unless $data && ref($data) eq 'HASH' && $data->{'id'};
-
-    #say $self->dumper(scalar($self->param('data')));
-    #return $self->render_json({status => 'maintenance'});
-
-    # Нормализация значений
-    $data->{'house_num'} = format_house_num($data->{'house_num'}, 1) if $data->{'house_num'};
-    $data->{'square_total'} =~ s/,/./ if $data->{'square_total'};
-    $data->{'square_living'} =~ s/,/./ if $data->{'square_living'};
-    $data->{'square_kitchen'} =~ s/,/./ if $data->{'square_kitchen'};
-    $data->{'square_land'} =~ s/,/./ if $data->{'square_land'};
-    $data->{'seller_price'} =~ s/,/./ if $data->{'seller_price'};
-    $data->{'agency_price'} =~ s/,/./ if $data->{'agency_price'};
-    $data->{'final_price'} =~ s/,/./ if $data->{'final_price'};
+my $_validate_realty_data = sub {
+    my $data = shift;
 
     # Валидация значений
     my @errors;
@@ -307,6 +265,61 @@ sub save {
             }
         }
     }
+
+    return @errors;
+};
+
+sub set {
+    my $self = shift;
+
+    my $id = $self->param('id');
+    my $state = $self->param('state');
+
+    return $self->render_not_found unless $state;
+    return $self->render_json({status => 'failed'}) unless $REALTY_STATES_H{$state};
+
+    my $realty = Rplus::Object::Realty->new(id => $id)->load;
+    if ($realty->state ne $state) {
+        # Проверим на повтор (в рабочей базе)
+        if ($state eq 'work') {
+            if (my $duplicate_realty_id = find_duplicate_realty($_get_realty_data->($realty), ad_search => 1)) {
+                my $duplicate_realty = Rplus::Object::Realty->new(id => $duplicate_realty_id)->load;
+                return $self->render_json({status => 'duplicate', data => {id => $duplicate_realty->id, title => $duplicate_realty->get_digest('web_title')}});
+            }
+        }
+
+        $realty->state($state);
+
+        my $data = $realty->column_value_pairs;
+        my @errors = $_validate_realty_data->($data);
+        return $self->render_json({status => 'failed', errors => \@errors}) if @errors;
+
+        $realty->save(changes_only => 1);
+    }
+
+    return $self->render_json({status => 'success'});
+}
+
+sub save {
+    my $self = shift;
+
+    my $data; eval { $data = decode_json(encode_utf8(scalar($self->param('data')))); } or do {};
+    return $self->render_json({status => 'failed'}) unless $data && ref($data) eq 'HASH' && $data->{'id'};
+
+    #say $self->dumper(scalar($self->param('data')));
+    #return $self->render_json({status => 'maintenance'});
+
+    # Нормализация значений
+    $data->{'house_num'} = format_house_num($data->{'house_num'}, 1) if $data->{'house_num'};
+    $data->{'square_total'} =~ s/,/./ if $data->{'square_total'};
+    $data->{'square_living'} =~ s/,/./ if $data->{'square_living'};
+    $data->{'square_kitchen'} =~ s/,/./ if $data->{'square_kitchen'};
+    $data->{'square_land'} =~ s/,/./ if $data->{'square_land'};
+    $data->{'seller_price'} =~ s/,/./ if $data->{'seller_price'};
+    $data->{'agency_price'} =~ s/,/./ if $data->{'agency_price'};
+    $data->{'final_price'} =~ s/,/./ if $data->{'final_price'};
+
+    my @errors = $_validate_realty_data->($data);
     return $self->render_json({status => 'failed', errors => \@errors}) if @errors;
 
     # Проверим на повтор (в рабочей базе)
