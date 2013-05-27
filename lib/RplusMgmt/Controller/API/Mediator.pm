@@ -49,7 +49,7 @@ sub list {
         push @{$res->{'list'}}, {
             id => $mediator->id,
             name => $mediator->name,
-            phone_num => $mediator->phone_num,
+            phone_num => format_phone_num($mediator->phone_num, 'human'),
         };
     }
     $res->{'count'} = @{$res->{'list'}};

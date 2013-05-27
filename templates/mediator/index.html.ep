@@ -201,9 +201,14 @@
       loadCompanies();
 
       // Search filter
-      $('.form-search').submit(function (event) {
-        loadCompanies();
-        event.preventDefault();
+      var searchTimeout = null;
+      $('.form-search').submit(function (event) { return false; });
+      $('.form-search > :input').keydown(function (event) {
+        if (searchTimeout) { clearTimeout(searchTimeout); searchTimeout = null; }
+        searchTimeout = setTimeout(function () {
+          loadCompanies();
+        }, 700);
+        //event.preventDefault();
       });
 
       $('#companyList').on('click', '.company-item', function (event) {
@@ -354,10 +359,10 @@
   <div class="span8">
     <div class="pull-right">
       <form class="form-search">
-        <div class="input-append">
-          <input type="text" class="input-xlarge search-query" name="filter">
-          <button class="btn" type="submit">Search</button>
-        </div>
+        <!-- <div class="input-append"> -->
+          <input type="text" class="input-xlarge search-query" name="filter" autocomplete="off">
+          <!-- <span class="add-on">Search</span> -->
+        <!-- </div> -->
       </form>
     </div>
   </div>

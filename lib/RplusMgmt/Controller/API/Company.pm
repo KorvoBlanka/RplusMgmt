@@ -28,7 +28,11 @@ sub list {
     my $filter = $self->param('filter');
     if ($filter) {
         $filter =~ s/([%_])/\\$1/g;
-        $filter = lc($filter);
+        if ($filter =~ /^\+?\d{1,11}$/) {
+            if ($filter =~ s/^8(.*)$/$1/) {} elsif ($filter =~ s/^\+7(.*)$/$1/) {}
+        } else {
+            $filter = lc($filter);
+        }
     }
     my $limit = $self->param('limit') || 0;
 
