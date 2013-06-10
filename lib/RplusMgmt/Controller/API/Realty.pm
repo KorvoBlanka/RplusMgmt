@@ -91,7 +91,8 @@ sub list {
             say $@;
         };
     }
-    #push @rdb_query, state => 'work' if none { $_ eq 'state' } @rdb_query;;
+    #push @rdb_query, state => 'work' if none { $_ eq 'state' } @rdb_query;
+    push @rdb_query, \"(t1.close_date IS NULL OR t1.close_date >= (now() - interval '14 days'))";
 
     my $sort_by = 'open_date DESC';
     if (my $sort = $self->param('sort')) {
