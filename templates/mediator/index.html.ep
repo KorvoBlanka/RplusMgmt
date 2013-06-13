@@ -207,7 +207,7 @@
         if (searchTimeout) { clearTimeout(searchTimeout); searchTimeout = null; }
         searchTimeout = setTimeout(function () {
           loadCompanies();
-        }, 700);
+        }, 300);
         //event.preventDefault();
       });
 
