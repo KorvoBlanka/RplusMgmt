@@ -1,3 +1,5 @@
+%= include 'blocks/notifications';
+
 <!DOCTYPE html>
 <html>
   <head>
@@ -35,6 +37,7 @@
   </head>
 
   <body>
+
   <div class="page-container">
     <div class="navbar navbar-inverse navbar-fixed-top">
       <div class="navbar-inner">
@@ -50,10 +53,13 @@
               Logged in as [<a href="/signout" class="navbar-link"><%= session->{'user'}->{'name'} %></a>]
             </p>
             <ul class="nav">
-              <li class="<%= $controller eq 'search' ? 'active' : '' %>"><a href="<%= url_for q{/search} %>"><i class="icon-search icon-white"></i>&nbsp;Search</a></li>
-              <li class="<%= $controller eq 'realty' ? 'active' : '' %>"><a href="<%= url_for q{/realty} %>"><i class="icon-home icon-white"></i>&nbsp;My Realty&nbsp;<span class="badge badge-important claims-count" style="display: none;">0</span></a></li>
+              <li class="<%= $controller eq 'search' ? 'active' : '' %>" style="display: none;"><a href="<%= url_for q{/search} %>"><i class="icon-search icon-white"></i>&nbsp;Search</a></li>
+              <li class="<%= $controller eq 'realty' ? 'active' : '' %>"><a href="<%= url_for q{/realty} %>"><i class="icon-home icon-white"></i>&nbsp;My Realty&nbsp;<span class="badge badge-important" id="notifyClaimCount" style="display: none;">0</span></a></li>
               % if (config->{'roles'}->{$user_role}->{'mediator'}) {
               <li class="<%= $controller eq 'mediator' ? 'active' : '' %>"><a href="<%= url_for q{/mediator} %>"><i class="icon-stop icon-white"></i>&nbsp;Mediators</a></li>
+              % }
+              % if (1) {
+              <li class="<%= $controller eq 'tasks' ? 'active' : '' %>"><a href="<%= url_for q{/tasks} %>"><i class="icon-tasks icon-white"></i>&nbsp;Tasks&nbsp;<span class="badge badge-important" id="notifyTaskCount" style="display: none;">0</span></a></li>
               % }
               <!--
               <li class="dropdown">
@@ -108,6 +114,8 @@
     <script type="text/javascript" src="/js/bootstrap-modal.js"></script>
     <!-- Bootbox -->
     <script type="text/javascript" src="/js/bootbox-custom.js"></script>
+    <!-- MomentJS -->
+    <script type="text/javascript" src="/js/moment.min.js"></script>
     <%= content_for 'after_bootstrap' %>
   </div>
 

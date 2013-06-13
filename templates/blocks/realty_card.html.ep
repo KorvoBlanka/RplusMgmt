@@ -252,6 +252,14 @@
         el_houseNum.change(function (event) {
           updateGeo();
         });
+
+        // Test right popover
+        /*
+        $('[data-toggle="popover"]', container).popover({
+          title: 'Buyers',
+          content: '8-924-411-1173 at 13:44',
+        });
+        */
       }
 
       function workTab() {
@@ -504,6 +512,14 @@
         loadClaims();
       }
 
+      function tasksTab() {
+        var tasksContainer = $('#tasks-' + realty.id, container);
+
+        $('#newTask-' + realty.id, container).click(function (event) {
+          TaskDialog().create({realty_id: realty.id, category: 'realty'});
+        });
+      }
+
       function formActions() {
         $('#realtyForm-' + realty.id, container).bind('submit', function (event) {
           var formData = {
@@ -590,7 +606,7 @@
       }
 
       var $this = {
-        create: function () {
+        create: function (x) {
           $.ajax({
             type: "POST",
             url: "<%= q{/api/realty/create} %>",
@@ -613,17 +629,13 @@
               geoTab();
               photosTab();
               claimsTab();
+              tasksTab();
               formActions();
 
-              var date = new Date();
-              $('span[name="open_date"]', container).html(
-                ((date.getDate() < 10 ? '0' : '') + date.getDate()) + "." +
-                ((date.getMonth() < 9 ? '0' : '') + (date.getMonth() + 1)) +"." +
-                date.getFullYear()
-              );
-              if (options.data) {
-                if (options.data.agent_id) {
-                  $('[name="agent_id"]:input', container).val(options.data.agent_id);
+              $('span[name="open_date"]', container).html(moment().format("DD.MM.YYYY"));
+              if (x) {
+                if (x.agent_id) {
+                  $('[name="agent_id"]:input', container).val(x.agent_id);
                 }
               }
 
@@ -657,6 +669,7 @@
               geoTab();
               photosTab();
               claimsTab();
+              tasksTab();
               formActions();
 
               for (f in realty) {
@@ -731,6 +744,7 @@
         <li><a href="#geo-{id}" data-toggle="pill"><i class="icon-globe"></i> Geo</a></li>
         <li><a href="#photos-{id}" data-toggle="pill"><i class="icon-camera"></i> Photos</a></li>
         <li><a href="#claims-{id}" data-toggle="pill"><i class="icon-comment"></i> Claims&nbsp;&nbsp;&nbsp;<span class="badge badge-important claims-count" style="display: none;" id="claimsCount-{id}">0</span></a></li>
+        <li style="display: inline-block; width: 130px;"><a href="#tasks-{id}" data-toggle="pill"><i class="icon-tasks"></i> Tasks</a></li><a href="#" id="newTask-{id}" style="display: inline-block; margin-left: 5px; padding-left: 8px; width: 22px; border: 1px solid rgb(222,222,222); border-radius: 4px;"><i class="icon-plus"></i></a>
       </ul>
 
         </div>
@@ -994,6 +1008,13 @@
                 </div> <!-- /well -->
               </form> <!-- /#realtyForm -->
             </div> <!-- /span9 -->
+
+            <div class="span1">
+              <div class="pull-right">
+                <a href="#" data-toggle="popover" data-placement="left"><i class="icon-list"></i></a>
+              </div>
+            </div>
+
           </div> <!-- /row -->
 
           <div class="row">
