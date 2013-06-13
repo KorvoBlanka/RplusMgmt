@@ -1,0 +1,79 @@
+%#
+%# RplusMgmt nofitications
+%#
+%#
+
+% content_for after_bootstrap => begin
+<script type="text/javascript" src="/js/jquery.pnotify.min.js"></script>
+% end
+
+% content_for header => begin
+<link rel="stylesheet" type="text/css" href="/css/jquery.pnotify.default.css">
+<style type="text/css">
+  .ui-pnotify.stack-bottomright {
+    /* These are just CSS default values to reset the pnotify CSS. */
+    right: auto;
+    top: auto;
+  }
+  .ui-pnotify-custom {
+    color: #000;
+    /*
+    background-color: #ccc;
+    border-color: rgb(204, 204, 204);
+    */
+    background-color: rgb(241, 241, 241);
+    border-color: rgb(142,142,142);
+  }
+  .ui-pnotify-custom h4 {
+    color: #000;
+  }
+</style>
+<script type="application/x-javascript">
+  // Tasks
+  $(function () {
+    $.pnotify.defaults.history = false;
+
+    var notificationShow = 1;
+    var stackBottomRight = {"dir1": "up", "dir2": "left", "firstpos1": 25, "firstpos2": 25};
+
+    function notifyTasks() {
+      $.ajax({
+        url: "/api/task/notify",
+        type: "POST",
+      })
+        .done(function (data) {
+          if (data.count) {
+            $('#notifyTaskCount').text(data.count).show();
+          } else {
+            $('#notifyTaskCount').text(data.count).hide();
+          }
+
+          if (notificationShow) {
+            notificationShow = 0;
+
+            for (var i = 0; i < data.list.length; i++) {
+              var x = data.list[i];
+              if (x.category == 'other') {
+                $.pnotify({
+                    title: 'Task',
+                    text: x.description,
+                    sticker: false,
+                    addclass: "stack-bottomright",
+                    stack: stackBottomRight,
+                    type: "info",
+                    opacity: 0.8,
+                    //hide: false,
+                    cornerclass: "ui-pnotify-custom",
+                });
+              }
+            }
+          }
+        })
+      ;
+    }
+
+    notifyTasks();
+    var notifyTasksInterval = setInterval(notifyTasks, 10000);
+  });
+</script>
+% end
