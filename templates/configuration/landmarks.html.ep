@@ -37,7 +37,7 @@
       $('[name="id"]:input').val(null);
       $('[name="name"]:input').val(null).focus();
       $('[name="keywords"]:input').val(null);
-      $('#btnRemove').prop('disabled', true);
+      $('#btnDelete').prop('disabled', true);
       $('#landmarkList > a.active').removeClass('active');
     }
 
@@ -86,7 +86,7 @@
             $('#landmarkList > a.active').removeClass('active');
             $('#landmarkList > a[data-id="' + id + '"]').addClass('active');
           }
-          $('#btnRemove').prop('disabled', false);
+          $('#btnDelete').prop('disabled', false);
         })
       ;
     }
@@ -228,7 +228,7 @@
         e.preventDefault();
       });
 
-      $('#btnRemove').click(function (e) {
+      $('#btnDelete').click(function (e) {
         var id   = $('[name="id"]:input').val(),
             name = $('[name="name"]:input').val();
         if (id && confirm('Are you sure to delete "' + name + '"?')) {
@@ -269,7 +269,7 @@
       </div>
       <div class="form-group pull-right">
         <button type="submit" class="btn btn-success btn-sm" id="btnOk"><span class="glyphicon glyphicon-ok"></span></button>
-        <button type="button" class="btn btn-danger btn-sm" id="btnRemove" disabled="disabled"><span class="glyphicon glyphicon-trash"></span></button>
+        <button type="button" class="btn btn-danger btn-sm" id="btnDelete" disabled="disabled"><span class="glyphicon glyphicon-trash"></span></button>
       </div>
     </form>
   </div>
