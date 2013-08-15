@@ -1,0 +1,291 @@
+% layout 'default';
+
+% content_for after_bootstrap => begin
+<script type="application/javascript" src="/assets/leaflet/0.6.4/leaflet.js"></script>
+<script type="application/javascript" src="/assets/leaflet.fullscreen/2013.07.05/Control.FullScreen.js"></script>
+<script type="application/javascript" src="/assets/leaflet.draw/0.2.1-dev/leaflet.draw.js"></script>
+% end
+
+% content_for header => begin
+<link rel="stylesheet" href="/assets/leaflet/0.6.4/leaflet.css">
+<link rel="stylesheet" href="/assets/leaflet.fullscreen/2013.07.05/Control.FullScreen.css">
+<link rel="stylesheet" href="/assets/leaflet.draw/0.2.1-dev/leaflet.draw.css">
+<style type="text/css">
+  #landmarkList {
+    height: 600px;
+    overflow-y: auto;
+  }
+
+  #geoMap {
+    height: 600px;
+    cursor: default !important;
+  }
+
+  #geoMap:active {
+    cursor: pointer !important;
+  }
+</style>
+% end
+
+% content_for javascript => begin
+<script type="application/javascript">
+  !function () {
+    var geoMap, drawnItems;
+
+    function _Clear() {
+      drawnItems.clearLayers();
+      $('[name="id"]:input').val(null);
+      $('[name="name"]:input').val(null).focus();
+      $('[name="keywords"]:input').val(null);
+      $('#btnRemove').prop('disabled', true);
+      $('#landmarkList > a.active').removeClass('active');
+    }
+
+    function _List() {
+      var type = $('[name="type"]:input').val() || 'landmark',
+          id   = $('[name="id"]:input').val()
+      ;
+      $.ajax({
+        type: 'POST',
+        url: '/api/landmark/list',
+        data: {type: type}
+      })
+        .done(function (data) {
+          var xhtml = '';
+          for (var i = 0; i < data.list.length; i++) {
+            var x = data.list[i];
+            xhtml += '<a href="#" class="list-group-item' + (id == x.id ? ' active' : '') + '" data-toggle="landmark" data-id="' + x.id + '">' + Rplus.Util.escape(x.name) + '</a>';
+          }
+          $('#landmarkList').html(xhtml);
+        })
+      ;
+    }
+
+    function _Load(id) {
+      $.ajax({
+        type: 'POST',
+        url: '/api/landmark/get',
+        data: {id: id},
+      })
+        .done(function (data) {
+          $('[name="id"]:input').val(data.id);
+          $('[name="name"]:input').val(data.name);
+          $('[name="keywords"]:input').val(data.keywords);
+
+          drawnItems.clearLayers();
+          if (data.metadata) {
+            var metadata = JSON.parse(data.metadata);
+            drawnItems.addData(metadata.geojson);
+            drawnItems.setStyle(function (feature) {
+              return {color: '#662d91'};
+            });
+            geoMap.setView(metadata.center, metadata.zoom);
+          }
+
+          if ($('#landmarkList > a.active').data('id') != id) {
+            $('#landmarkList > a.active').removeClass('active');
+            $('#landmarkList > a[data-id="' + id + '"]').addClass('active');
+          }
+          $('#btnRemove').prop('disabled', false);
+        })
+      ;
+    }
+
+    function _Save() {
+      var id       = $('[name="id"]:input').val(),
+          type     = $('[name="type"]:input').val(),
+          name     = $('[name="name"]:input').val(),
+          keywords = $('[name="keywords"]:input').val(),
+          metadata = {
+            geojson: drawnItems.toGeoJSON(),
+            center: {lat: geoMap.getCenter().lat, lng: geoMap.getCenter().lng},
+            zoom: geoMap.getZoom()
+          }
+      ;
+      $.ajax({
+        type: "POST",
+        url: "/api/landmark/save",
+        data: {id: id, type: type, name: name,keywords: keywords, geojson: JSON.stringify(metadata.geojson), metadata: JSON.stringify(metadata)}
+      })
+        .done(function (data) {
+          if (data.status == 'success') {
+            $('[name="id"]:input').val(data.data.id);
+            $('#btnNew').prop('disabled', false);
+            _List();
+          } else {
+            alert('Error');
+          }
+        })
+      ;
+    }
+
+    function _Delete(id) {
+      $.ajax({
+        type: "POST",
+        url: "/api/landmark/delete",
+        data: {id: id}
+      })
+        .done(function (data) {
+          _Clear();
+          _List();
+        })
+      ;
+    }
+
+    $(function () {
+      // Geo
+      !function () {
+        geoMap = L.map('geoMap', {
+          center: [48.480232846617845, 135.07203340530396],
+          zoom: 16,
+        });
+
+        L.tileLayer('http://tile{s}.maps.2gis.com/tiles?x={x}&y={y}&z={z}&v=10', {
+          maxZoom: 18,
+          subdomains: '0123',
+          errorTileUrl: 'http://maps.api.2gis.ru/images/nomap.png',
+          attribution: '<a href="http://http://2gis.ru/">2GIS</a> Layer | RplusMgmt',
+        }).addTo(geoMap);
+
+        geoMap.on('click', function (event) {
+          $.ajax({
+            url: 'http://catalog.api.2gis.ru/geo/search',
+            data: {
+              q: event.latlng.lng + ',' + event.latlng.lat,
+              key: 'rujrdp3400',
+              version: 1.3,
+              output: 'jsonp',
+              types: 'house,station,station_platform,place,sight,metro'
+            },
+            dataType: 'jsonp',
+          })
+            .done(function (data) {
+              if (data.result) {
+                var content = '';
+                content += '<b>Info:</b><br>';
+                content += data.result[0].name + '<br>';
+                if (data.result[0].attributes && data.result[0].attributes.purpose) {
+                  content += data.result[0].attributes.purpose;
+                }
+                var popup = L.popup()
+                             .setLatLng(event.latlng)
+                             .setContent(content)
+                             .openOn(geoMap);
+              }
+            })
+          ;
+        });
+
+        var fullScreen = new L.Control.FullScreen({position: 'topleft'});
+        geoMap.addControl(fullScreen);
+
+        drawnItems = new L.GeoJSON();
+        geoMap.addLayer(drawnItems);
+
+        var drawControl = new L.Control.Draw({
+          position: 'topleft',
+          draw: {
+            polyline: false,
+            polygon: {
+              allowIntersection: false,
+              drawError: {
+                color: '#e1e100',
+                timeout: 1000,
+                message: '<strong>Oh snap!<strong> you can\'t draw that!' // Message that will show when intersect
+              },
+              shapeOptions: {
+                color: '#662d91'
+              }
+            },
+            rectangle: {
+              shapeOptions: {
+                color: '#662d91'
+              }
+            },
+            circle: false,
+            marker: false,
+          },
+          edit: {
+            featureGroup: drawnItems
+          }
+        });
+        geoMap.addControl(drawControl);
+
+        geoMap.on('draw:created', function (e) {
+          var type = e.layerType,
+              layer = e.layer;
+
+          drawnItems.addLayer(layer);
+        });
+      }();
+
+      $('[name="type"]:input').change(function (e) {
+        _List();
+      });
+
+      $('#landmarkForm').submit(function (e) {
+        _Save();
+        e.preventDefault();
+      });
+
+      $('#btnRemove').click(function (e) {
+        var id   = $('[name="id"]:input').val(),
+            name = $('[name="name"]:input').val();
+        if (id && confirm('Are you sure to delete "' + name + '"?')) {
+          _Delete(id);
+        }
+      });
+
+      $('#btnNew').click(function (e) {
+        _Clear();
+      });
+
+      $('#landmarkList').on('click', 'a', function (e) {
+        var id = $(this).data('id');
+        _Load(id);
+      });
+
+      _List();
+    });
+  }();
+</script>
+% end
+
+<div class="row">
+  <div class="col-lg-3 margin-bottom-20">
+    <select class="form-control input-sm" name="type" form="landmarkForm">
+      <option value="landmark">Landmarks</option>
+      <option value="sublandmark">Sublandmars</option>
+    </select>
+  </div>
+  <div class="col-lg-9 margin-bottom-20">
+    <form class="form-inline" id="landmarkForm">
+      <input type="hidden" name="id" value="">
+      <div class="form-group" style="width: 25%;">
+        <input type="text" class="form-control input-sm" name="name" placeholder="Name" autocomplete="off" required>
+      </div>
+      <div class="form-group" style="width: 65%">
+        <input type="text" class="form-control input-sm" name="keywords" placeholder="Keywords" autocomplete="off">
+      </div>
+      <div class="form-group pull-right">
+        <button type="submit" class="btn btn-success btn-sm" id="btnOk"><span class="glyphicon glyphicon-ok"></span></button>
+        <button type="button" class="btn btn-danger btn-sm" id="btnRemove" disabled="disabled"><span class="glyphicon glyphicon-trash"></span></button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-lg-3">
+    <div class="list-group list-compact win-scroll" id="landmarkList"></div>
+  </div>
+  <div class="col-lg-9">
+    <div id="geoMap"></div>
+  </div>
+</div>
+
+<nav class="navbar navbar-fixed-bottom" role="navigation">
+  <div class="container">
+    <button type="button" class="btn btn-primary btn-sm navbar-btn" id="btnNew"><span class="glyphicon glyphicon-plus"></span></button>
+  </div>
+</nav>
