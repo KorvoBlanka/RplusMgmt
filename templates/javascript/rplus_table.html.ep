@@ -1,0 +1,104 @@
+% use Encode qw(decode_utf8);
+
+% use Rplus::Model::DictApScheme::Manager;
+% use Rplus::Model::DictBalcony::Manager;
+% use Rplus::Model::DictBathroom::Manager;
+% use Rplus::Model::DictCondition::Manager;
+% use Rplus::Model::DictHouseType::Manager;
+% use Rplus::Model::DictRoomScheme::Manager;
+
+% use Rplus::Model::Media::Manager;
+
+% use Rplus::Model::RealtyCategory::Manager;
+% use Rplus::Model::RealtyType::Manager;
+% use Rplus::Model::RealtyOfferType::Manager;
+% use Rplus::Model::RealtyState::Manager;
+
+% use Rplus::Model::User::Manager;
+
+% use Encode qw(decode_utf8);
+
+<script type="application/javascript">
+  "use strict";
+
+  window.Rplus.Table = {
+    Dict: {
+      ap_schemes: { <% { %>
+        % my $iter = Rplus::Model::DictApScheme::Manager->get_objects_iterator(query => [delete_date => undef]);
+        % while (my $x = $iter->next) {
+          "<%= $x->id %>": {id: <%= $x->id %>, name: "<%= $x->name %>", metadata: <%== decode_utf8 $x->metadata %>},
+        % }
+      <% } %> },
+
+      balconies: { <% { %>
+        % my $iter = Rplus::Model::DictBalcony::Manager->get_objects_iterator(query => [delete_date => undef]);
+        % while (my $x = $iter->next) {
+          "<%= $x->id %>": {id: <%= $x->id %>, name: "<%= $x->name %>", metadata: <%== decode_utf8 $x->metadata %>},
+        % }
+      <% } %> },
+
+      bathrooms: { <% { %>
+        % my $iter = Rplus::Model::DictBathroom::Manager->get_objects_iterator(query => [delete_date => undef]);
+        % while (my $x = $iter->next) {
+          "<%= $x->id %>": {id: <%= $x->id %>, name: "<%= $x->name %>", metadata: <%== decode_utf8 $x->metadata %>},
+        % }
+      <% } %> },
+
+      conditions: { <% { %>
+        % my $iter = Rplus::Model::DictCondition::Manager->get_objects_iterator(query => [delete_date => undef]);
+        % while (my $x = $iter->next) {
+          "<%= $x->id %>": {id: <%= $x->id %>, name: "<%= $x->name %>", metadata: <%== decode_utf8 $x->metadata %>},
+        % }
+      <% } %> },
+
+      house_types: { <% { %>
+        % my $iter = Rplus::Model::DictHouseType::Manager->get_objects_iterator(query => [delete_date => undef]);
+        % while (my $x = $iter->next) {
+          "<%= $x->id %>": {id: <%= $x->id %>, name: "<%= $x->name %>", metadata: <%== decode_utf8 $x->metadata %>},
+        % }
+      <% } %> },
+
+      room_schemes: { <% { %>
+        % my $iter = Rplus::Model::DictRoomScheme::Manager->get_objects_iterator(query => [delete_date => undef]);
+        % while (my $x = $iter->next) {
+          "<%= $x->id %>": {id: <%= $x->id %>, name: "<%= $x->name %>", metadata: <%== decode_utf8 $x->metadata %>},
+        % }
+      <% } %> },
+    },
+
+    media: { <% { %>
+      % my $iter = Rplus::Model::Media::Manager->get_objects_iterator(query => [delete_date => undef]);
+      % while (my $x = $iter->next) {
+        "<%= $x->id %>": {id: <%= $x->id %>, name: "<%= $x->name %>", code: "<%= $x->code %>", type: "<%= $x->type %>"},
+      % }
+    <% } %> },
+
+    realty_types: { <% { %>
+      % my $iter = Rplus::Model::RealtyType::Manager->get_objects_iterator();
+      % while (my $x = $iter->next) {
+        "<%= $x->code %>": {id: <%= $x->id %>, name: "<%= $x->name %>"},
+      % }
+    <% } %> },
+
+    realty_states: { <% { %>
+      % my $iter = Rplus::Model::RealtyState::Manager->get_objects_iterator();
+      % while (my $x = $iter->next) {
+        "<%= $x->code %>": {id: <%= $x->id %>, name: "<%= $x->name %>", metadata: <%== $x->metadata %>},
+      % }
+    <% } %> },
+
+    realty_offer_types: { <% { %>
+      % my $iter = Rplus::Model::RealtyOfferType::Manager->get_objects_iterator();
+      % while (my $x = $iter->next) {
+        "<%= $x->code %>": {id: <%= $x->id %>, name: "<%= $x->name %>"},
+      % }
+    <% } %> },
+
+    users: { <% { %>
+      % my $iter = Rplus::Model::User::Manager->get_objects_iterator(query => [delete_date => undef]);
+      % while (my $x = $iter->next) {
+        "<%= $x->id %>": {id: <%= $x->id %>, name: "<%= $x->name %>", phone_num: "<%= $x->phone_num %>"},
+      % }
+    <% } %> },
+  };
+</script>

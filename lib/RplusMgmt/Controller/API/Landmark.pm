@@ -25,6 +25,8 @@ sub list {
     my $self = shift;
 
     my $type = $self->param('type');
+    my $lat = $self->param('lat'); $lat = undef unless $lat && $lat =~ /^\d+\.\d+$/;
+    my $lng = $self->param('lng'); $lng = undef unless $lng && $lng =~ /^\d+\.\d+$/;
 
     my $res = {
         count => 0,
@@ -32,7 +34,15 @@ sub list {
     };
 
     my @fields = qw(id name);
-    my $landmark_iter = Rplus::Model::Landmark::Manager->get_objects_iterator(select => [@fields], query => [type => $type, delete_date => undef], sort_by => 'name');
+    my $landmark_iter = Rplus::Model::Landmark::Manager->get_objects_iterator(
+        select => [@fields],
+        query => [
+            type => $type,
+            ($lat && $lng ? \"t1.geodata::geography && ST_GeogFromText('SRID=4326;POINT($lng $lat)')" : ()),
+            delete_date => undef,
+        ],
+        sort_by => 'name'
+    );
     while (my $landmark = $landmark_iter->next) {
         push @{$res->{'list'}}, {map { $_ => $landmark->$_ } @fields};
         $res->{'count'}++;

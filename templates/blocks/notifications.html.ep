@@ -3,11 +3,11 @@
 %#
 %#
 
-% content_for after_bootstrap => begin
+% content_for 'after_bootstrap' => begin
 <script type="text/javascript" src="/js/jquery.pnotify.min.js"></script>
 % end
 
-% content_for header => begin
+% content_for 'header' => begin
 <link rel="stylesheet" type="text/css" href="/css/jquery.pnotify.default.css">
 <style type="text/css">
   .ui-pnotify.stack-bottomright {
@@ -28,9 +28,13 @@
     color: #000;
   }
 </style>
-<script type="application/x-javascript">
+% end
+
+% content_for 'javascript' => begin
+<script type="application/javascript">
   // Tasks
   $(function () {
+    return;
     $.pnotify.defaults.history = false;
 
     var notificationShow = 1;

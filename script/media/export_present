@@ -1,0 +1,88 @@
+#!/usr/bin/env perl
+
+use FindBin;
+use lib "$FindBin::Bin/../../lib";
+
+use Rplus::Modern;
+
+use Rplus::Model::Realty;
+use Rplus::Model::Realty::Manager;
+use Rplus::Model::Media;
+use Rplus::Model::Media::Manager;
+use Rplus::Model::Landmark;
+use Rplus::Model::Landmark::Manager;
+
+use RTF::Writer;
+use Text::Trim;
+
+use LWP::UserAgent;
+use File::Temp qw(tempdir);
+use Archive::Extract;
+use Text::Trim;
+use JSON;
+use POSIX qw(strftime);
+
+my $MEDIA = Rplus::Model::Media::Manager->get_objects(query => [type => 'export', code => 'present', delete_date => undef])->[0];
+exit unless $MEDIA;
+my $META = decode_json($MEDIA->metadata);
+
+export_present($ARGV[0]);
+
+# Процедура импорта
+sub export_present {
+    my $out_file = shift;
+
+    # Комнаты
+    {
+        my $iter = Rplus::Model::Realty::Manager->get_objects_iterator(
+            query => [
+                offer_type_code => $META->{'params'}->{'offer_type_code'},
+                state_code => 'work',
+                \"type_code IN (SELECT RT.code FROM realty_types RT WHERE RT.category_code = 'room')",
+                \("export_media && {'".$MEDIA->id."'}"),
+            ],
+            with_objects => ['address_object', 'agent', 'sublandmark'],
+        );
+    }
+
+    # Малосемейки
+    {
+        my $iter = Rplus::Model::Realty::Manager->get_objects_iterator(
+            query => [
+                offer_type_code => $META->{'params'}->{'offer_type_code'},
+                state_code => 'work',
+                type_code => 'apartment_small',
+                \("export_media && {'".$MEDIA->id."'}"),
+            ],
+            with_objects => ['address_object', 'agent', 'sublandmark'],
+        );
+    }
+
+    # 1-4 Комнатные квартиры
+    {
+        for my $rooms_count (1..4) {
+            my $iter = Rplus::Model::Realty::Manager->get_objects_iterator(
+                query => [
+                    offer_type_code => $META->{'params'}->{'offer_type_code'},
+                    state_code => 'work',
+                    \"type_code IN (SELECT RT.code FROM realty_types RT WHERE RT.category_code = 'apartment' AND RT.code != 'apartment_small')",
+                    \("export_media && {'".$MEDIA->id."'}"),
+                    rooms_count => $rooms_count,
+                ]
+            );
+        }
+    }
+
+    # Многокомнатные квартиры
+    {
+        my $iter = Rplus::Model::Realty::Manager->get_objects_iterator(
+            query => [
+                offer_type_code => $META->{'params'}->{'offer_type_code'},
+                state_code => 'work',
+                \"type_code IN (SELECT RT.code FROM realty_types RT WHERE RT.category_code = 'apartment' AND RT.code != 'apartment_small')",
+                \("export_media && {'".$MEDIA->id."'}"),
+                rooms_count => {gt => 4},
+            ]
+        );
+    }
+}

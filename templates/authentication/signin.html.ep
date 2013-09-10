@@ -4,32 +4,74 @@
     <meta charset="utf-8">
     <title>Sign in &middot; RplusMgmt</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Rplus Management">
+    <meta name="author" content="Alexander Orlenko">
+
+    % my $bootstrap_ver = '3.0.0';
 
     <!-- Bootstrap -->
-    <link href="/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/bootstrap/<%= $bootstrap_ver %>/css/bootstrap.min.css">
+
     <style type="text/css">
       body {
-        padding-top: 40px;
-        padding-bottom: 40px;
+        padding-top: 50px;
+        padding-bottom: 50px;
+      }
+
+      .panel {
+        max-width: 350px;
+        margin: 0 auto 20px;
+      }
+
+      .panel-body {
+        padding: 19px 29px 29px;
       }
     </style>
-    <link href="/css/bootstrap-responsive.min.css" rel="stylesheet">
-    <script src="/js/jquery-1.9.1.min.js"></script>
+  </head>
+  <body>
 
-    <script type="text/javascript">
+    <div class="container">
+      <div class="panel panel-default">
+        <div class="panel-body">
+          <form class="form-signin">
+            <fieldset>
+              <legend>Please Sign In</legend>
+              <div class="form-group">
+                <input type="text" class="form-control" name="login" placeholder="Login" autocomplete="off" required autofocus>
+              </div>
+              <div class="form-group">
+                <input type="password" class="form-control" name="password" placeholder="Password" autocomplete="off" required>
+              </div>
+              <div class="checkbox">
+                <label>
+                  <input type="checkbox" name="remember_me" value="1"> Remember me
+                </label>
+              </div>
+              <button type="submit" class="btn btn-primary">Sign in</button>
+            </fieldset>
+          </form>
+        </div>
+      </div>
+    </div> <!-- /container -->
+
+    <!-- JavaScript -->
+    <script type="application/javascript" src="/assets/jquery/2.0.3/jquery.min.js"></script>
+    <script type="application/javascript" src="/assets/bootstrap/<%= $bootstrap_ver %>/js/bootstrap.min.js"></script>
+
+    <script type="application/javascript">
       $(function () {
-        $('form.signin').submit(function (event) {
+        $('.form-signin').submit(function (event) {
           var login = $('input[name="login"]').val();
           var password = $('input[name="password"]').val();
           var rememberMe = $('input[name="remember_me"]:checked').val();
           $.ajax({
             type: "POST",
-            url: "<%= url_for q{/signin} %>",
+            url: "/signin",
             data: {login: login, password: password, remember_me: rememberMe},
           })
             .done(function (data) {
               if (data.status == 'failed') {
-                $('.alert-error').show();
+                $('.form-group').addClass('has-error');
               } else {
                 location.reload();
               }
@@ -39,28 +81,6 @@
         });
       });
     </script>
-  </head>
-  <body>
-    <div class="container">
-      <div class="row">
-        <div class="span4 offset4 well">
-          <legend>Please Sign In</legend>
-          <div class="alert alert-error" style="display: none;">
-            <a class="close" data-dismiss="alert" href="#">&times;</a>Incorrect Login or Password!
-          </div>
-          <form class="signin">
-            <fieldset>
-              <input type="text" class="span4" name="login" placeholder="Login" autocomplete="off" required autofocus>
-              <input type="password" class="span4" name="password" placeholder="Password" autocomplete="off" required>
-              <button class="btn btn-primary" type="submit">Sign in</button>
-            </fieldset>
-          </form>
-        </div>
-      </div>
-    </div> <!-- /container -->
-
-    <!-- Bootstrap -->
-    <script type="text/javascript" src="/js/bootstrap.min.js"></script>
 
   </body>
 </html>

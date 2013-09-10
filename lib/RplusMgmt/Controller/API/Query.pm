@@ -6,7 +6,6 @@ use Rplus::Object::Query;
 use Rplus::Object::Query::Manager;
 
 use JSON;
-use Mojo::Util qw(xml_escape trim);
 
 sub auth {
     my $self = shift;
@@ -22,21 +21,12 @@ sub complete {
 
     my $term = $self->param('term');
     my $profile = $self->param('profile');
-    my $subquery; eval { $subquery = decode_json(scalar($self->param('subquery'))); } or do {};
+    my $subquery = $self->param('subquery');
 
-    my @items = Rplus::Object::Query->complete_params(term => $term, profile => $profile, subquery => $subquery);
-    my @items2;
-    for (my $i = 0; $i < @items; $i++) {
-        my $x = $items[$i];
-        if ($x->{'field'} eq 'rooms_count' || $x->{'field'} eq 'price' || $x->{'field'} eq 'floor' || $x->{'field'} eq 'square_total') {
-            push @items2, $x;
-            $items[$i] = undef;
-        }
-    }
-    push @items2, (sort { length($a->{'label'}) <=> length($b->{'label'}) } grep { defined $_ } @items);
-    @items2 = map { { label => xml_escape($_->{'label'}), value => { field => $_->{'field'}, value => $_->{'value'} } } } @items2;
+    my @items = Rplus::Object::Query->__complete__($term, profile => $profile, city_id => 3, limit => 10);
+    @items = map { { label => $_->{'text'}, value => { field => $_->{'field'}, value => $_->{'value'} } } } @items;
 
-    return $self->render_json(\@items2);
+    return $self->render_json(\@items);
 }
 
 1;

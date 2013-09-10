@@ -1,0 +1,11 @@
+<script type="application/javascript">
+  "use strict";
+
+  window.Rplus = {};
+
+  Rplus.Util = {
+    escape: function (text) {
+        return $('<div>').text(text).html();
+    }
+  };
+</script>

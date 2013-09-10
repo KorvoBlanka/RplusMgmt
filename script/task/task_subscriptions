@@ -1,0 +1,70 @@
+#!/usr/bin/env perl
+
+#
+# Программа поиска подходящих вариантов недвижимости по оставленному ранее запросу
+#
+# Author: Alexander Orlenko
+# Rplus project
+#
+
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+
+use Rplus::Modern;
+
+use Rplus::Object::Query;
+use Rplus::Object::Query::Manager;
+
+use Rplus::Model::Realty;
+use Rplus::Model::Realty::Manager;
+use Rplus::Model::OfferedRealty;
+use Rplus::Model::OfferedRealty::Manager;
+use Rplus::Model::MessageQueue;
+use Rplus::Model::MessageQueue::Manager;
+
+while(1) {
+    my $query_iter = Rplus::Object::Query::Manager->get_objects_iterator(
+        query => [
+            add_date => { ge => \"(now() - INTERVAL '2 weeks')" },
+            '!client_id' => undef,
+            delete_date => undef,
+        ],
+    );
+    while (my $query = $query_iter->next) {
+        say "Query: ".$query->description;
+
+        my @rdb_query = $query->build_rose_db_query;
+        push @rdb_query, state => 'work';
+        push @rdb_query, or => [
+            state_change_date => { gt => $query->add_date },
+            price_change_date => { gt => $query->add_date },
+        ];
+        push @rdb_query, [\("
+            -- Исключим уже подобранную недвижимость за прошедший месяц
+            t1.id NOT IN (
+                SELECT OFR.realty_id
+                FROM offered_realty OFR
+                WHERE OFR.client_id = ".$query->client_id." AND (OFR.delete_date IS NULL OR OFR.add_date >= (now() - INTERVAL '1 month'))
+            ) AND
+            -- Исключим купленную недвижимость
+            t1.id NOT IN (
+                SELECT PR.realty_id
+                FROM purchased_realty PR
+                WHERE PR.client_id = ".$query->client_id." AND delete_date IS NULL
+            )
+        ")];
+        push @rdb_query, '!seller_id' => $query->client_id;
+
+        # Найдем новую недвижимость
+        my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(select => 'id', query => \@rdb_query);
+        my $found = 0;
+        while (my $realty = $realty_iter->next) {
+            Rplus::Model::OfferedRealty->new(query_id => $query->id, client_id => $query->client_id, realty_id => $realty->id)->save;
+            Rplus::Model::MessageQueue->new(client_id => $query->client_id, realty_id => $realty->id, query_id => $query->id, type => 'ro')->save;
+            $found++;
+        }
+        say "Found: $found";
+    }
+
+    sleep 5 * 60;
+}

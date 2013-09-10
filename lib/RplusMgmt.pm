@@ -9,7 +9,6 @@ sub startup {
     my $self = shift;
 
     # Plugins
-    $self->plugin('PoweredBy' => (name => "RplusMgmt $VERSION"));
     $self->plugin('Config' => {file => 'app.conf'});
 
     # Secret
@@ -28,20 +27,17 @@ sub startup {
         my $r2b = $r2->bridge->to(controller => 'authentication', action => 'auth');
 
         # Main controller
-        $r2b->get('/')->to('main#index');
+        $r2b->get('/')->to(template => 'main/index');
 
-        # MassMedia export
-        #$r->get('/export/present.rtf')->to('mass_media#present');
-        #$r->get('/export/vnx.xls')->to('mass_media#vnx');
+        # Configuration controller
+        $r2b->get('/conf/:action')->to(controller => 'configuration');
 
-        $r2b->route('/:controller/:action')->to(action => 'index');
+        # Other controllers
+        $r2b->get('/:controller/:action')->to(action => 'index');
     }
 
     # API namespace
-    my $r3 = $r->route('/api')->to(namespace => 'RplusMgmt::Controller::API');
-    {
-        $r3->route('/:controller')->bridge->to(action => 'auth')->route('/:action');
-    }
+    $r->route('/api')->to(namespace => 'RplusMgmt::Controller::API')->route('/:controller')->bridge->to(action => 'auth')->route('/:action');
 }
 
 1;

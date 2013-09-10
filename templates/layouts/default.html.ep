@@ -1,131 +1,163 @@
-%= include 'blocks/notifications';
-
 <!DOCTYPE html>
 <html>
   <head>
     <meta charset="utf-8">
     <title><%= &title || 'RplusMgmt' %></title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Rplus Management">
+    <meta name="author" content="Alexander Orlenko">
+
+    % my $bootstrap_ver = '3.0.0-wip';
 
     <!-- Bootstrap -->
-    <link href="/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/bootstrap/<%= $bootstrap_ver %>/css/bootstrap.min.css">
+
     <style type="text/css">
       body {
-        padding-top: 60px;
-        padding-bottom: 40px;
+        padding-top: 70px;
+        padding-bottom: 50px;
       }
-      .sidebar-nav {
-        padding: 9px 0;
+
+      .margin-bottom-15 {
+        margin-bottom: 15px;
+      }
+
+      .margin-bottom-20 {
+        margin-bottom: 20px;
+      }
+
+      .list-group.list-compact > .list-group-item {
+        padding-top: 5px ;
+        padding-bottom: 5px;
+        border-left: 0;
+        border-right: 0;
+        border-radius: 0;
+      }
+
+      .list-group.list-compact > .list-group-item:first-of-type {
+        border-top: 0;
+      }
+
+      .list-group.list-compact > .list-group-item:last-of-type {
+        border-bottom: 0;
+      }
+
+      % if ($self->req->headers->user_agent =~ /Windows/) {
+        ::-webkit-scrollbar {
+          width: 5px;
+        }
+
+        ::-webkit-scrollbar-track {
+          margin: 2px;
+          /* set the style/colour of the scroll bar background */
+          background:
+          -webkit-gradient(
+            linear,
+            0 0,
+            100% 0,
+            from(rgba(0,0,0,0.2)),
+            to(rgba(0,0,0,0.12))
+          );
+          -webkit-box-shadow: 0 1px 0 0 rgba(255,255,255,0.35);
+          -webkit-border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+          /* this is the acutal scrooll bar, set the colours here to match your site */
+          /* I have used grey's (#464646 & #383838 & #cccccc) */
+          background: rgba(0,0,0,.5);
+          -webkit-border-radius: 6px;
+          -webkit-background-clip: padding-box;
+        }
+      % }
+
+      .animation-rotate {
+        -webkit-animation: spin 2s infinite linear;
+                animation: spin 2s infinite linear;
+      }
+
+      @-webkit-keyframes spin {
+        0% {
+          -webkit-transform: rotate(0deg);
+        }
+        100% {
+          -webkit-transform: rotate(359deg);
+        }
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(359deg);
+        }
       }
     </style>
-    <link href="/css/bootstrap-responsive.min.css" rel="stylesheet">
-
-    <!-- Bootstrap Modal CSS -->
-    <link href="/css/bootstrap-modal.css" rel="stylesheet">
-
-    <script type="text/javascript" src="/js/jquery-1.9.1.min.js"></script>
 
     <%= content_for 'header' %>
-
-    <script type="text/javascript">
-      $(function () {
-        % if ($controller eq 'search') {
-        $('.navbar .nav .icon-search').css('background-image', 'none');
-        % }
-      });
-    </script>
   </head>
-
   <body>
 
-  <div class="page-container">
-    <div class="navbar navbar-inverse navbar-fixed-top">
-      <div class="navbar-inner">
-        <div class="container">
-          <button class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+    <!-- Navbar -->
+    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+      <div class="container">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-top-collapse">
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </button>
-          <a class="brand" href="/">RplusMgmt</a>
-          <div class="nav-collapse collapse">
-            <p class="navbar-text pull-right">
-              Logged in as [<a href="/signout" class="navbar-link"><%= session->{'user'}->{'name'} %></a>]
-            </p>
-            <ul class="nav">
-              <li class="<%= $controller eq 'search' ? 'active' : '' %>" style="display: none;"><a href="<%= url_for q{/search} %>"><i class="icon-search icon-white"></i>&nbsp;Search</a></li>
-              <li class="<%= $controller eq 'realty' ? 'active' : '' %>"><a href="<%= url_for q{/realty} %>"><i class="icon-home icon-white"></i>&nbsp;My Realty&nbsp;<span class="badge badge-important" id="notifyClaimCount" style="display: none;">0</span></a></li>
-              % if (config->{'roles'}->{$user_role}->{'mediator'}) {
-              <li class="<%= $controller eq 'mediator' ? 'active' : '' %>"><a href="<%= url_for q{/mediator} %>"><i class="icon-stop icon-white"></i>&nbsp;Mediators</a></li>
-              % }
-              % if (1) {
-              <li class="<%= $controller eq 'tasks' ? 'active' : '' %>"><a href="<%= url_for q{/tasks} %>"><i class="icon-tasks icon-white"></i>&nbsp;Tasks&nbsp;<span class="badge badge-important" id="notifyTaskCount" style="display: none;">0</span></a></li>
-              % }
-              <!--
-              <li class="dropdown">
-                <a href="#" class="dropdown-toggle" data-toggle="dropdown">RplusWeb <b class="caret"></b></a>
-                <ul class="dropdown-menu">
-                  <li><a href="<%= url_for q{/banners} %>">Баннеры</a></li>
-                  <li><a href="<%= url_for q{/questions} %>">Вопросы</a></li>
-                </ul>
-              </li>
-              -->
-              <!--
-              <li class="dropdown">
-                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Заявки <b class="caret"></b></a>
-                <ul class="dropdown-menu">
-                  <li><a href="<%= url_for q{/queries/accepted} %>">Принятые</a></li>
-                  <li><a href="<%= url_for q{/queries/offered} %>">Подобранная недвижимость</a></li>
-                </ul>
-              </li>
-              <li class="dropdown">
-                <a href="#" class="dropdown-toggle" data-toggle="dropdown">СМС <b class="caret"></b></a>
-                <ul class="dropdown-menu">
-                  <li><a href="#">Отправленные</a></li>
-                </ul>
-              </li>
-              <li class="dropdown">
-                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Выгрузка прессы <b class="caret"></b></a>
-                <ul class="dropdown-menu">
-                  <li><a href="<%= url_for q{/export/present.rtf} %>">Презент</a></li>
-                  <li><a href="<%= url_for q{/export/vnx.xls} %>">ВНХ</a></li>
-                </ul>
-              </li>
-              -->
-            </ul>
-          </div>
+          <a href="/" class="navbar-brand">RplusMgmt</a>
+        </div>
+
+        <div class="collapse navbar-collapse navbar-top-collapse">
+          <ul class="nav navbar-nav">
+            <li class="<%= $controller eq 'search' && 'active' %>"><a href="/search"><span class="glyphicon glyphicon-search"></span> Search</a></li>
+            <li class="<%= $controller eq 'realty' && 'active' %>"><a href="/realty"><span class="glyphicon glyphicon-home"></span> Realty</a></li>
+            <!--li class="<%= $controller eq 'tasks' && 'active' %>"><a href="/tasks"><span class="glyphicon glyphicon-tasks"></span> Tasks</a></li-->
+            <!--li class="<%= $controller eq 'analytics' && 'active' %>"><a href="/tasks"><span class="glyphicon glyphicon-info-sign"></span> Analytics</a></li-->
+            <li class="dropdown">
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-cog"></span> Configuration <b class="caret"></b></a>
+              <ul class="dropdown-menu">
+                <li><a href="/conf/mediators"><span class="glyphicon glyphicon-ban-circle"></span> Mediators</a></li>
+                <li><a href="/conf/landmarks"><span class="glyphicon glyphicon-globe"></span> Landmarks</a></li>
+                <li><a href="/conf/users"><span class="glyphicon glyphicon-user"></span> Users</a></li>
+              </ul>
+            </li>
+          </ul>
+          <p class="navbar-text navbar-right visible-lg">
+            Signed in as <a href="/signout" class="navbar-link"><%= session->{'user'}->{'name'} %></a>
+          </p>
         </div>
       </div>
-    </div>
+    </nav>
 
     <div class="container">
-        <div class="row">
-            <div class="span12">
-                <%= content %>
-            </div>
-        </div>
+      <%= content %>
+
+      <!-- Modal Definitions -->
+      <%= content_for 'modals' %>
     </div>
 
+    <!-- JavaScript -->
+    <script type="application/javascript" src="/assets/jquery/2.0.3/jquery.min.js"></script>
     <%= content_for 'before_bootstrap' %>
     <!-- Bootstrap -->
-    <script type="text/javascript" src="/js/bootstrap.min.js"></script>
-    <!-- Bootstap Modal -->
-    <script type="text/javascript" src="/js/bootstrap-modalmanager.js"></script>
-    <script type="text/javascript" src="/js/bootstrap-modal.js"></script>
-    <!-- Bootbox -->
-    <script type="text/javascript" src="/js/bootbox-custom.js"></script>
+    <script type="application/javascript" src="/assets/bootstrap/<%= $bootstrap_ver %>/js/bootstrap.min.js"></script>
     <!-- MomentJS -->
-    <script type="text/javascript" src="/js/moment.min.js"></script>
+    <script type="application/javascript" src="/assets/moment/2.1.0/moment.min.js"></script>
     <%= content_for 'after_bootstrap' %>
-  </div>
 
-  <%= content_for 'modals' %>
+    <%= include 'javascript/rplus' %>
 
-  <script type="text/javascript">
-    $(function () {
-      $(document).on('click', 'a[href=#]', function (event) { event.preventDefault(); });
-    });
-  </script>
+    <%= content_for 'javascript' %>
 
+    <script type="application/javascript">
+      $(function () {
+        $(document).on('click', 'a[href="#"]', function (event) { event.preventDefault(); });
+      });
+    </script>
   </body>
 </html>

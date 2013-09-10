@@ -1,0 +1,30 @@
+#!/usr/bin/env perl
+
+use FindBin;
+BEGIN { unshift @INC, "$FindBin::Bin/../lib" }
+
+use Rplus::Modern;
+
+use Rplus::DB;
+
+use Rose::DB::Object::Loader;
+use Rose::DB::Object::ConventionManager;
+
+my $loader = Rose::DB::Object::Loader->new(
+    db           => Rplus::DB->new,
+    class_prefix => 'Rplus::Model::',
+    base_class   => 'Rplus::DB::Object',
+    #convention_manager => Rose::DB::Object::ConventionManager->new(
+    #    plural_to_singular_function => sub {
+    #        $_ = shift;
+    #        s/houses$/house/i || s/ies$/y/i || s/ses$/s/i || /[aeiouy]ss$/i || s/s$//i ? $_ : $_;
+    #    }
+    #),
+);
+
+# Удалим старые модели
+use File::Path qw(remove_tree);
+remove_tree("$FindBin::Bin/../lib/Rplus/Model", { keep_root => 1 });
+
+# Сгенерируем новые модели
+$loader->make_modules(module_dir => "$FindBin::Bin/../lib");

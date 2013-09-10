@@ -1,41 +1,160 @@
 % layout 'default';
 
+% use Rplus::Model::RealtyOfferType::Manager;
+
 % content_for after_bootstrap => begin
-<script type="text/javascript" src="/js/leaflet.min.js"></script>
+<script type="application/javascript" src="/assets/leaflet/0.6.4/leaflet.js"></script>
+<script type="application/javascript" src="/assets/leaflet.fullscreen/2013.07.05/Control.FullScreen.js"></script>
+<script type="application/javascript" src="/assets/sipml5/r213/SIPml-api.js"></script>
 % end
 
 % content_for header => begin
-<link href="/css/leaflet.css" rel="stylesheet">
-<link href="/css/whhg.css" rel="stylesheet">
+<link rel="stylesheet" href="/assets/leaflet/0.6.4/leaflet.css">
+<link rel="stylesheet" href="/assets/leaflet.fullscreen/2013.07.05/Control.FullScreen.css">
 <style type="text/css">
-  .geo-map {
+  #searchTableWrapper {
+    height: 600px;
+    overflow-y: auto;
+  }
+
+  #searchTable {
+    margin-bottom: 0;
+  }
+
+  #searchTable > tbody > tr {
+    cursor: pointer;
+  }
+
+  #searchTable > tbody > tr > td {
+    padding: 8px 10px;
+  }
+
+  #searchTable > tbody > tr:first-of-type > td {
+    border-top: 0;
+  }
+
+  #geoMap {
     height: 600px;
     cursor: default !important;
   }
-  .geo-map:active {
+
+  #geoMap:active {
     cursor: pointer !important;
   }
-  .phone button {
-    margin: 5px;
-  }
 </style>
-<script type="text/javascript">
-  var searchPage = (function () {
+% end
+
+% content_for javascript => begin
+%= include 'javascript/rplus_table';
+<script type="application/javascript">
+  "use strict";
+
+  !function () {
     var geoMap;
 
+    var _List_started  = 0, _List_finished = 0;
+    function _List(page) {
+      var q = $('#searchQuery').val();
+      var offerType = $('#filterOfferType').data('offer-type');
+
+      if (!q) return;
+
+      _List_started = 1; $('#searchLoading').removeClass('invisible');
+      $.ajax({
+        type: "POST",
+        url: "<%= url_for q{/api/realty/list} %>",
+        data: {q: q, state: 'work', offer_type: offerType, page: page, per_page: 30},
+        complete: function () { _List_started = 0; $('#searchLoading').addClass('invisible'); }
+      })
+        .done(function (data) {
+          var xhtml = '';
+          for (var i = 0; i < data.list.length; i++) {
+            var r = data.list[i];
+            var parts = [];
+            //parts.push('<span class="label label-default">' + r.offer_type_code + '</span>');
+            parts.push('<strong>' + Rplus.Util.escape(Rplus.Table.realty_types[r.type_code].name) + '</strong>');
+            if (r.rooms_count) parts.push(r.rooms_count + 'к');
+            if (r.address_object) {
+              parts.push(Rplus.Util.escape(r.address_object.name + ' ' + r.address_object.short_type) );
+              parts.push(Rplus.Util.escape(r.address_object.addr_parts[1].name + ' ' + r.address_object.addr_parts[1].short_type));
+            }
+            if (r.ap_scheme_id) parts.push(Rplus.Table.Dict.ap_schemes[r.ap_scheme_id].metadata.description || Rplus.Table.Dict.ap_schemes[r.ap_scheme_id].name);
+            if (r.house_type_id) parts.push(Rplus.Table.Dict.house_types[r.house_type_id].metadata.description || Rplus.Table.Dict.house_types[r.house_type_id].name);
+            if (r.room_scheme_id) parts.push(Rplus.Table.Dict.room_schemes[r.room_scheme_id].metadata.description || Rplus.Table.Dict.room_schemes[r.room_scheme_id].name);
+            if (r.floor && r.floors_count) { parts.push(r.floor + '/' + r.floors_count + ' эт.') } else if (r.floor || r.floors_count) { parts.push((r.floor || r.floors_count) + ' эт.'); }
+            if (r.condition_id) parts.push(Rplus.Table.Dict.conditions[r.condition_id].metadata.description || Rplus.Table.Dict.conditions[r.condition_id].name);
+            if (r.balcony_id) parts.push(Rplus.Table.Dict.balconies[r.balcony_id].metadata.description || Rplus.Table.Dict.balconies[r.balcony_id].name);
+            if (r.bathroom_id) parts.push(Rplus.Table.Dict.bathrooms[r.bathroom_id].metadata.description || Rplus.Table.Dict.bathrooms[r.bathroom_id].name);
+            {
+              var squares = [];
+              if (r.square_total) squares.push(r.square_total);
+              if (r.square_living) squares.push(r.square_living);
+              if (r.square_kitchen) squares.push(r.square_kitchen);
+              if (squares.length) parts.push(squares.join('/') + ' кв. м.');
+            }
+            if (r.square_land && r.square_land_type) parts.push(r.square_land + ' ' + (r.square_land_type == 'ar' ? 'сот.' : 'га'));
+            if (r.description) parts.push(r.description);
+            if (r.price) parts.push('<span class="text-primary">' + r.price + ' тыс. руб.' + '</span>');
+
+            xhtml += '<tr data-id="' + r.id + '" data-page="' + data.page + '" data-lat="' + r.latitude + '" data-lng="' + r.longitude + '"><td>' + parts.join(', ') + '</td></tr>';
+          }
+
+          if (data.list.length > 0) {
+            _List_finished = 0;
+          } else {
+            _List_finished = 1;
+          }
+
+          if (page == 1) {
+            // clear Geo markers
+            $('#searchTable tr').each(function () {
+              if ($(this).data('marker')) {
+                geoMap.removeLayer($(this).data('marker'));
+              }
+            });
+
+            $('#searchTableWrapper').scrollTop(0);
+            $('#searchTable').html(xhtml);
+            $('#searchCount').text(data.count);
+          } else {
+            $('#searchTable').append(xhtml);
+          }
+
+          // Display new results on map
+          $('#searchTable tr[data-page="' + data.page + '"]').each(function () {
+            var $this = $(this);
+            var  lat = $this.data('lat'), lng = $this.data('lng');
+            if (lat && lng) {
+              var marker = L.marker([lat, lng]).addTo(geoMap).bindPopup($('> td', $this).text());
+              $this.data('marker', marker);
+            }
+          });
+        })
+      ;
+    }
+
     $(function () {
+      // Filter: offerType
+      $('#filterOfferType > ul > li > a').click(function (e) {
+        $('#filterOfferType').data('offer-type', $(this).data('offer-type'));
+        $('#filterOfferType > a').html($(this).html() + ' <b class="caret"></b>');
+        _List(1);
+      });
+
       // Geo
       geoMap = L.map('geoMap', {
         center: [48.480232846617845, 135.07203340530396],
         zoom: 16,
+        fullscreenControl: true,
       });
+
       L.tileLayer('http://tile{s}.maps.2gis.com/tiles?x={x}&y={y}&z={z}&v=10', {
         maxZoom: 18,
         subdomains: '0123',
         errorTileUrl: 'http://maps.api.2gis.ru/images/nomap.png',
-        attribution: 'Powered by RplusMgmt / Leaflet',
+        attribution: '<a href="http://http://2gis.ru/">2GIS</a> Layer | RplusMgmt',
       }).addTo(geoMap);
-      geoMap.attributionControl.setPrefix(false);
+
       geoMap.on('click', function (event) {
         $.ajax({
           url: 'http://catalog.api.2gis.ru/geo/search',
@@ -65,126 +184,323 @@
         ;
       });
 
-      // PhoneWidget
-      var phoneContent = '';
-      phoneContent += '<table class="phone">';
-      phoneContent += '<tr>';
-      phoneContent += '<td colspan="3" style="text-align: center;">';
-      phoneContent += '<div class="alert alert-info"><i class="icon-incomingcall"></i>&nbsp; Алекс</div>';
-      phoneContent += '</td>';
-      phoneContent += '</tr>';
-      phoneContent += '<tr>';
-      phoneContent += '<td><button type="button" class="btn">1</button></td><td><button type="button" class="btn">2</button></td><td><button type="button" class="btn">3</button></td>';
-      phoneContent += '</tr>';
-      phoneContent += '<tr>';
-      phoneContent += '<td><button type="button" class="btn">4</button></td><td><button type="button" class="btn">5</button></td><td><button type="button" class="btn">6</button></td>';
-      phoneContent += '</tr>';
-      phoneContent += '<tr>';
-      phoneContent += '<td><button type="button" class="btn">7</button></td><td><button type="button" class="btn">8</button></td><td><button type="button" class="btn">9</button></td>';
-      phoneContent += '</tr>';
-      phoneContent += '<tr>';
-      phoneContent += '<td><button type="button" class="btn">#</button></td><td><button type="button" class="btn">0</button></td><td><button type="button" class="btn">*</button></td>';
-      phoneContent += '</tr>';
-      phoneContent += '<tr>';
-      phoneContent += '<td colspan="3">';
-      phoneContent += '<button type="button" class="btn btn-success" style="width: 60px;"><i class="icon-phonealt" style="-webkit-transform: rotate(-10deg);"></i></button>';
-      phoneContent += '<button type="button" class="btn btn-danger" style="width: 60px;"><i class="icon-phonealt" style="-webkit-transform: rotate(135deg);"></i></button>';
-      phoneContent += '</td>';
-      phoneContent += '</tr>';
-      phoneContent += '</table>';
-      $('.phone').popover({
-        html: true,
-        placement: 'bottom',
-        trigger: 'click',
-        content: phoneContent,
+      $('#searchQuery').bind('input', function (e) {
+        if ($(this).val() == '') {
+          // clear Geo markers
+          $('#searchTable tr').each(function () {
+            if ($(this).data('marker')) {
+              geoMap.removeLayer($(this).data('marker'));
+            }
+          });
+          $('#searchTable').html('');
+          $('#searchCount').text(0);
+        }
       });
-      //$('.phone').popover('show');
+      $('form[role="search"]').submit(function (e) { _List(1); e.preventDefault(); });
+
+      $('#searchTable').on('click', 'tr', function (e) {
+        var $this = $(this);
+        $this.toggleClass('selected').toggleClass('warning');
+
+        var marker = $this.data('marker');
+        if ($this.hasClass('selected')) {
+          if (marker) {
+            // display marker popup
+            geoMap.panTo(marker.getLatLng());
+            marker.openPopup();
+          }
+        } else if (marker) {
+          marker.closePopup();
+        }
+      });
+
+      $('#searchTableWrapper').scroll(function (e) {
+        if ($(this).scrollTop() + $(this).innerHeight() >= $(this)[0].scrollHeight) {
+          var lastPage = $('#searchTable tr:last-child').data('page');
+          if (!_List_started && !_List_finished) _List(lastPage + 1);
+        }
+      });
+
+      // Subscribe
+      $('#btnSubscribe > ul > li > a').click(function (e) {
+        var q = $('#searchQuery').val(),
+            offerType = $('#filterOfferType').data('offer-type'),
+            active = $(this).data('active'),
+            realtyId = [],
+            phoneNum = $('#sfPhoneNum').val()
+        ;
+        $('#searchTable > tbody > tr.selected').each(function () {
+          realtyId.push($(this).data('id'));
+        });
+
+        if (!q) { alert('Запрос не указан'); return; };
+        if (!active && !realtyId.length) return;
+        if (!phoneNum) { alert('Номер телефона не указан'); return; }
+
+        $.ajax({
+          type: "POST",
+          url: "/api/subscription/add",
+          data: {q: q, offer_type: offerType, realty_id: realtyId, active: active, phone_num: phoneNum}
+        })
+          .done(function (data) {
+            if (data.status == 'success') {
+              alert('Действие успешно завершено');
+            } else {
+              alert('Ошибка оформления подписки');
+            }
+          })
+          .fail(function (jqXHR, textStatus, errorThrown) {
+            alert('Ошибка оформления подписки');
+          })
+        ;
+      });
+
+      _List(1);
+
+      //
+      // SIP SoftPhone
+      //
+      % if (0) {
+      SIPml.init(
+        function () {
+          if (!SIPml.isWebRtcSupported() || !SIPml.isWebSocketSupported()) {
+            // Can't use SIP
+            return;
+          }
+
+          var sipStack, sipSessionRegister, sipSessionCall;
+
+          sipStack = new SIPml.Stack({
+            realm: '212.19.22.218',
+            impi: '1004',
+            impu: 'sip:1004@212.19.22.218',
+            password: 'pass1004',
+            display_name: '1004',
+            websocket_proxy_url: 'ws://212.19.22.218:8088/asterisk/ws',
+
+            enable_click2call: false,
+            enable_rtcweb_breaker: false,
+            //ice_servers: [{url: 'stun:stun.l.google.com:19302'}],
+
+            //bandwidth: {audio: 64, video: 512},
+
+            events_listener: {events: '*', listener: onSipEventStack},
+
+            sip_headers: [
+              {name: 'User-Agent', value: 'Rplus SoftPhone/0.1 sipML5'}
+            ],
+          });
+
+          function UI_setSoftPhoneState(state, session) {
+            if (state == 'offline') {
+              $('#sfAudioRingTone').trigger('pause');
+              $('#sfBtnPhone').prop('disabled', true);
+              $('#sfBtnPhone').removeClass('btn-success btn-danger').addClass('btn-primary').data({session: null, action: null});
+              $('#sfDisplay').text('');
+            } else if (state == 'online') {
+              $('#sfAudioRingTone').trigger('pause');
+              $('#sfBtnPhone').prop('disabled', false);
+              $('#sfBtnPhone').removeClass('btn-success btn-danger').addClass('btn-primary').data({session: null, action: null});
+              $('#sfDisplay').text('');
+            } else if (state == 'accept') {
+              $('#sfAudioRingTone').trigger('play');
+              $('#sfBtnPhone').removeClass('btn-primary btn-danger').addClass('btn-success').data({session: session, action: 'accept'});
+            } else if (state == 'hangup') {
+              $('#sfAudioRingTone').trigger('pause');
+              $('#sfBtnPhone').removeClass('btn-primary btn-success').addClass('btn-danger').data({session: session, action: 'hangup'});
+              $('#sfDisplay').text('');
+            }
+          }
+
+          function onSipEventStack(e) {
+            //console.log("\n\nSTACK EVENT: " + e.type + "\n\n");
+
+            switch(e.type) {
+              case 'started': {
+                // REGISTER
+                sipSessionRegister = this.newSession('register', {
+                  expires: 200,
+                  events_listener: {events: '*', listener: onSipEventSession},
+                  sip_caps: [
+                    {name: '+audio', value: null},
+                    {name: 'language', value: '\"en,ru\"'},
+                  ]
+                });
+                sipSessionRegister.register();
+                break;
+              }
+              case 'stopping': case 'stopped': case 'failed_to_start': case 'failed_to_stop': {
+                sipStack = null;
+                sipSessionRegister = null;
+                sipSessionCall = null;
+
+                UI_setSoftPhoneState('offline');
+
+                break;
+              }
+              case 'i_new_call': {
+                if (sipSessionCall) {
+                  // do not accept the incoming call if we're already 'in call'
+                  e.newSession.hangup();
+                } else {
+                  sipSessionCall = e.newSession;
+
+                  var conf = {
+                    audio_remote: $('#sfAudioRemote').get(0),
+                    events_listener: {events: '*', listener: onSipEventSession},
+                    sip_caps: [
+                      { name: '+sip.ice' },
+                      { name: 'language', value: '\"en,ru\"' }
+                    ]
+                  };
+                  sipSessionCall.setConfiguration(conf);
+
+                  UI_setSoftPhoneState('accept', sipSessionCall);
+
+                  var remoteNumber = (sipSessionCall.getRemoteFriendlyName() || 'unknown');
+                  $('#sfPhoneNum').val(remoteNumber);
+                  //notify(remoteNumber);
+                }
+                break;
+              }
+              case 'm_permission_requested': {
+                break;
+              }
+              case 'm_permission_accepted': {
+                break;
+              }
+              case 'm_permission_refused': {
+                UI_setSoftPhoneState('online');
+                break;
+              }
+              case 'starting': default: break;
+            }
+          }
+
+          function onSipEventSession(e) {
+            //console.log("\n\nSESSION EVENT: " + e.type + "\n\n");
+
+            switch(e.type) {
+              case 'connecting': {
+                break;
+              }
+              case 'connected': {
+                if (e.session == sipSessionRegister) {
+                  UI_setSoftPhoneState('online');
+                } else if (e.session == sipSessionCall) {
+                  UI_setSoftPhoneState('hangup', sipSessionCall);
+                }
+                break;
+              }
+              case 'terminating': {
+                break;
+              }
+              case 'terminated': {
+                if (e.session == sipSessionRegister) {
+                  sipSessionCall = null;
+                  sipSessionRegister = null;
+                  UI_setSoftPhoneState('offline');
+                } else if (e.session == sipSessionCall) {
+                  sipSessionCall = null;
+                  UI_setSoftPhoneState('online');
+                }
+                break;
+              }
+              default: break;
+            }
+          }
+
+          $('#sfBtnPhone').click(function (e) {
+            var x = $(this),
+                session = x.data('session'),
+                action  = x.data('action')
+            ;
+            if (session) {
+              if (action == 'accept') {
+                session.accept();
+              } else if (action == 'hangup') {
+                session.hangup();
+              }
+            }
+          });
+
+          if (sipStack.start() != 0) {
+            // Can't use SIP
+            return;
+          }
+        },
+        function () {
+          // Can't use SIP
+          return;
+        }
+      );
+      % }
     });
-  })();
+  }();
 </script>
 % end
 
+<!-- Audios -->
+<audio id="sfAudioRemote" autoplay></audio>
+<audio id="sfAudioRingTone" src="/sounds/ringtone.wav" loop></audio>
+
 <div class="row">
-  <div class="span12" style="padding-bottom: 10px;">
-    <input class="span12" type="text" id="requestLine" autocomplete="off" placeholder="Type search request here">
-    <input class="span12" type="text" id="requestLinePlaceholder" style="display: none;" autocomplete="off">
+  <div class="col-lg-11">
+    <form role="search">
+      <div class="form-group">
+        <label class="sr-only" for="searchQuery">Search</label>
+        <input type="text" class="form-control input-sm" id="searchQuery" name="q" placeholder="Search" autocomplete="off" x-webkit-speech>
+      </div>
+    </form>
+  </div>
+  <div class="col-lg-1">
+    <div class="btn-group pull-right" id="btnSubscribe">
+      <button type="button" class="btn btn-default btn-sm dropdown-toggle" data-toggle="dropdown">
+        <strong>SMS</strong>&nbsp;&nbsp;<span class="caret"></span>
+      </button>
+      <ul class="dropdown-menu" role="menu">
+        <li><a href="#" data-active="0">SMS</a></li>
+        <li><a href="#" data-active="1">SMS + Subscribe</a></li>
+      </ul>
+    </div>
   </div>
 </div>
 <div class="row">
-  <div class="span6">
-
-    <div class="row" style="display: none;">
-      <div class="span3">
-        <button class="btn" type="button"><i class="icon-iphone"></i>&nbsp;<span class="caret"></span></button>
-        <!--
-        <div class="alert alert-info" style="display: inline; margin-left: 10px; margin-right: 10px;">
-          Алекс
-        </div>
-        -->
-        <button class="btn btn-primary"><i class="icon-ok icon-white"></i>&nbsp;Send</button>
-      </div>
+  <div class="col-lg-6" style="padding-right: 0;">
+    <div id="searchTableWrapper">
+      <table class="table table-striped table-hover table-condensed" id="searchTable">
+        <tbody></tbody>
+      </table>
     </div>
-
-    <div class="row">
-      <div class="span6" style="margin-bottom: 8px;">
-        <button class="btn btn-primary"><i class="icon-ok icon-white"></i>&nbsp;Send</button>
-        &nbsp;
-        <button class="btn phone" type="button"><i class="icon-iphone"></i>&nbsp;<span class="caret"></span></button>
-        <div class="pull-right" style="margin-top: 10px;"><span class="muted">Найдено: </span><span class="muted" id="realtyCount">5</span></div>
-      </div>
-    </div>
-
-    <table class="table table-striped table-condensed table-bordered" style="font-size: 10pt;">
-      <tbody>
-        <tr>
-          <td style="vertical-align: middle;">
-            <input type="checkbox">
-          </td>
-          <td>
-            <p>Квартира, 3к, Рокоссовского ул., 3600 тыс. руб., улучшенная, кирпичный, 1/5 эт., смежно-раздельные комнаты, хорошее сост., 64/42/6 кв.м., без балкона, санузел совмещенный, подходит под ипотеку, окна пластик,зарешечены,сантехника поменяна ,в ванной кафель ,подходит под ипотеку</p>
-            <p>Агент: Алекс, 8-924-411-1173</p>
-          </td>
-        </tr>
-        <tr>
-          <td style="vertical-align: middle;">
-            <input type="checkbox">
-          </td>
-          <td>
-            <p>Квартира, 3к, Рокоссовского ул., 3600 тыс. руб., улучшенная, кирпичный, 1/5 эт., смежно-раздельные комнаты, хорошее сост., 64/42/6 кв.м., без балкона, санузел совмещенный, подходит под ипотеку, окна пластик,зарешечены,сантехника поменяна ,в ванной кафель ,подходит под ипотеку</p>
-            <p>Агент: Алекс, 8-924-411-1173</p>
-          </td>
-        </tr>
-        <tr>
-          <td style="vertical-align: middle;">
-            <input type="checkbox">
-          </td>
-          <td>
-            <p>Квартира, 3к, Рокоссовского ул., 3600 тыс. руб., улучшенная, кирпичный, 1/5 эт., смежно-раздельные комнаты, хорошее сост., 64/42/6 кв.м., без балкона, санузел совмещенный, подходит под ипотеку, окна пластик,зарешечены,сантехника поменяна ,в ванной кафель ,подходит под ипотеку</p>
-            <p>Агент: Алекс, 8-924-411-1173</p>
-          </td>
-        </tr>
-        <tr>
-          <td style="vertical-align: middle;">
-            <input type="checkbox">
-          </td>
-          <td>
-            <p>Квартира, 3к, Рокоссовского ул., 3600 тыс. руб., улучшенная, кирпичный, 1/5 эт., смежно-раздельные комнаты, хорошее сост., 64/42/6 кв.м., без балкона, санузел совмещенный, подходит под ипотеку, окна пластик,зарешечены,сантехника поменяна ,в ванной кафель ,подходит под ипотеку</p>
-            <p>Агент: Алекс, 8-924-411-1173</p>
-          </td>
-        </tr>
-        <tr>
-          <td style="vertical-align: middle;">
-            <input type="checkbox">
-          </td>
-          <td>
-            <p>Квартира, 3к, Рокоссовского ул., 3600 тыс. руб., улучшенная, кирпичный, 1/5 эт., смежно-раздельные комнаты, хорошее сост., 64/42/6 кв.м., без балкона, санузел совмещенный, подходит под ипотеку, окна пластик,зарешечены,сантехника поменяна ,в ванной кафель ,подходит под ипотеку</p>
-            <p>Агент: Алекс, 8-924-411-1173</p>
-          </td>
-        </tr>
-      </tbody>
-    </table>
   </div>
-  <div class="span6">
-    <div class="geo-map" id="geoMap"></div>
+  <div class="col-lg-6" style="padding-left:0;">
+    <div id="geoMap"></div>
   </div>
 </div>
+
+<nav class="navbar navbar-default navbar-fixed-bottom">
+  <div class="container">
+    <form class="navbar-form navbar-left">
+      <button type="button" class="btn btn-primary btn-sm" id="sfBtnPhone" disabled="disabled"><span class="glyphicon glyphicon-phone"></span></button>
+      <div class="form-group">
+        <input type="text" class="form-control input-sm" id="sfPhoneNum" placeholder="Phone" autocomplete="off">
+      </div>
+    </form>
+    <p class="navbar-text" style="margin-left: 0;"><span class="text-danger" id="sfDisplay"></span></p>
+    <div class="navbar-right">
+      <ul class="nav navbar-nav">
+        <li class="dropdown" id="filterOfferType" data-offer-type="sale">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown">Продажа <b class="caret"></b></a>
+          <ul class="dropdown-menu">
+            % {
+            % my $iter = Rplus::Model::RealtyOfferType::Manager->get_objects_iterator(sort_by => 'id');
+            % while (my $x = $iter->next) {
+              <li><a href="#" data-offer-type="<%= $x->code %>"><%= $x->name %></a></li>
+            % }}
+          </ul>
+        </li>
+      </ul>
+      <p class="navbar-text"><span class="glyphicon glyphicon-refresh animation-rotate invisible" id="searchLoading"></span> <span class="text-primary">Found</span> <span class="text-primary" id="searchCount">0</span></p>
+    </div>
+  </div>
+</nav>

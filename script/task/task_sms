@@ -1,0 +1,281 @@
+#!/usr/bin/env perl
+
+#
+# Программа обработки очереди сообщений и отправки СМС
+#
+# Author: Alexander Orlenko
+# Rplus project
+#
+
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+
+use Rplus::Modern;
+
+use Rplus::Model::MessageQueue;
+use Rplus::Model::MessageQueue::Manager;
+use Rplus::Model::SmsMessage;
+use Rplus::Model::SmsMessage::Manager;
+use Rplus::Model::Phone;
+use Rplus::Model::Phone::Manager;
+use Rplus::Model::Task;
+use Rplus::Model::Task::Manager;
+
+use Rplus::Object::Realty;
+
+use Rplus::Config;
+use Rplus::Util qw(format_phone_num);
+use Rplus::Transport::SMSC::HTTP;
+
+use POSIX qw(strftime);
+
+while (1) {
+    my $params = $Rplus::Config::CONFIG->{'sms'};
+
+    # Обработаем очереди: ri, ro
+    {
+        my $mq_iter = Rplus::Model::MessageQueue::Manager->get_objects_iterator(
+            query => [
+                '!client_id' => undef,
+                '!realty_id' => undef,
+                '!query_id' => undef,
+                type => ['ri', 'ro'],
+                status => 'queued',
+                \"t1.add_date >= now() - INTERVAL '1 day'",
+            ],
+            require_objects => ['client'],
+        );
+        while (my $mq = $mq_iter->next) {
+            eval {
+                my $realty = Rplus::Object::Realty->new(id => $mq->realty_id)->load;
+
+                if ($mq->type eq 'ri') {
+                    if (my $message = $params->{'template'}->{$mq->type}->{'client'}) {
+                        {
+                            my $realty_digest = $realty->get_digest('sms_client');
+                            $message =~ s/\Q%realty_digest%\E/$realty_digest/g;
+                        }
+
+                        # Отправим сообщение на все подходящие номера телефонов
+                        for my $phone_num (@{$mq->client->contact_phones}) {
+                            next unless $phone_num =~ /^9\d{9}$/;
+                            $mq->add_sms_messages({ queue_id => $mq->id, phone_num => $phone_num, message => $message });
+                            say sprintf("[%s] Generated message: %s => %s", strftime('%F %R', localtime), $phone_num, $message);
+                        }
+                    }
+
+                    if ($realty->agent_id && $realty->agent->phone_num && $realty->agent->phone_num =~ /^9\d{9}$/) {
+                        if (my $message = $params->{'template'}->{$mq->type}->{'agent'}) {
+                            if (my $client_info = join(', ', map { format_phone_num($_, type => 'human') } (@{$mq->client->contact_phones})[0,2])) {
+                                {
+                                    my $realty_digest = $realty->get_digest('sms_agent');
+                                    $message =~ s/\Q%realty_digest%\E/$realty_digest/g;
+                                    $message =~ s/\Q%client_info%\E/$client_info/g;
+                                }
+    
+                                $mq->add_sms_messages({ queue_id => $mq->id, phone_num => $realty->agent->phone_num, message => $message });
+                                say sprintf("[%s] Generated message: %s => %s", strftime('%F %R', localtime), $realty->agent->phone_num, $message);
+                            }
+                        }
+                    }
+                }
+
+                # RealtyOffer сообщения отправляем в зависимости от статуса подписки клиента и отдельных номеров
+                if ($mq->type eq 'ro' && $mq->client->sms_subscription) {
+                    my @client_phones;
+                    if (my $message = $params->{'template'}->{$mq->type}->{'client'}) {
+                        {
+                            my $realty_digest = $realty->get_digest('sms_client');
+                            $message =~ s/\Q%realty_digest%\E/$realty_digest/g;
+                        }
+
+                        for my $phone_num (@{$mq->client->contact_phones}) {
+                            next unless $phone_num =~ /^9\d{9}$/;
+                            my $phone = Rplus::Model::Phone->new(phone_num => $phone_num)->load(speculative => 1);
+                            next if $phone && !$phone->sms_subscription;
+
+                            # Убедимся, что на этот номер данная недвижимость не приходила в течении 1 месяца
+                            next if Rplus::Model::SmsMessage::Manager->get_objects_count(query => [
+                                phone_num => $phone_num,
+                                '!status' => 'error',
+                                add_date => { ge => \"(now() - INTERVAL '1 month')" },
+                                \("
+                                    t1.queue_id IN (
+                                        SELECT MQ.id
+                                        FROM message_queue MQ
+                                        WHERE MQ.realty_id = ".$mq->realty_id." AND MQ.type IN ('ri', 'ro') AND MQ.add_date >= (now() - INTERVAL '1 month')
+                                    )
+                                "),
+                            ]);
+
+                            push @client_phones, $phone_num;
+                            $mq->add_sms_messages({ queue_id => $mq->id, phone_num => $phone_num, message => $message });
+                            say sprintf("[%s] Generated message: %s => %s", strftime('%F %R', localtime), $phone_num, $message);
+                        }
+                    }
+
+                    if (@client_phones && $realty->agent_id && $realty->agent->phone_num && $realty->agent->phone_num =~ /^9\d{9}$/) {
+                        if (my $message = $params->{'template'}->{$mq->type}->{'agent'}) {
+                            if (my $client_info = join(', ', map { format_phone_num($_, type => 'human') } @client_phones[0,2])) {
+                                {
+                                    my $realty_digest = $realty->get_digest('sms_agent');
+                                    $message =~ s/\Q%realty_digest%\E/$realty_digest/g;
+                                    $message =~ s/\Q%client_info%\E/$client_info/g;
+                                }
+    
+                                $mq->add_sms_messages({ queue_id => $mq->id, phone_num => $realty->agent->phone_num, message => $message });
+                                say sprintf("[%s] Generated message: %s => %s", strftime('%F %R', localtime), $realty->agent->phone_num, $message);
+                            }
+                        }
+                    }
+                }
+
+                $mq->status('processed');
+                $mq->save;
+
+                1;
+            } or do {
+                say sprintf("Error while processing queue: %s", $@);
+                $mq = Rplus::Model::MessageQueue->new(id => $mq->id)->load;
+                $mq->status('error');
+                $mq->error_message($@);
+                $mq->save;
+            };
+        }
+    }
+
+    # Обработаем очереди: wr, wpr, wpc
+    {
+        my $mq_iter = Rplus::Model::MessageQueue::Manager->get_objects_iterator(
+            query => [
+                '!client_id' => undef,
+                type => ['wr', 'wpr', 'wpc'],
+                status => 'queued',
+                \"t1.add_date >= now() - INTERVAL '1 day'",
+            ],
+            require_objects => ['client'],
+        );
+        while (my $mq = $mq_iter->next) {
+            eval {
+                # Этим сообщения отправляем только на номер phone_num, заданный в самом клиенте!
+                if ($mq->client->phone_num) {
+                    if (my $message = $params->{'template'}->{$mq->type}) {
+                        my $password = $mq->client->password;
+                        $message =~ s/\Q%password%\E/$password/g;
+
+                        $mq->add_sms_messages({ queue_id => $mq->id, phone_num => $mq->client->phone_num, message => $message });
+                        say sprintf("[%s] Generating message: %s => %s", strftime('%F %R', localtime), $mq->client->phone_num, $message);
+                    }
+                }
+
+                $mq->status('processed');
+                $mq->save;
+
+                1;
+            } or do {
+                say sprintf("Error while processing queue: %s", $@);
+                $mq = Rplus::Model::MessageQueue->new(id => $mq->id)->load;
+                $mq->status('error');
+                $mq->error_message($@);
+                $mq->save;
+            };
+        }
+    }
+
+    # Обработаем добавление задачи (ta - task add)
+    {
+        my $mq_iter = Rplus::Model::MessageQueue::Manager->get_objects_iterator(
+            query => [
+                '!task_id' => undef,
+                type => 'ta',
+                status => 'queued',
+                \"t1.add_date >= now() - INTERVAL '1 day'",
+            ],
+            require_objects => ['task'],
+        );
+        while (my $mq = $mq_iter->next) {
+            eval {
+                if (($mq->task->assigned_user->phone_num // '') =~ /^9\d{9}$/) {
+                    my $message = $params->{'template'}->{$mq->type};
+                    my $task_creator_name = $mq->task->creator->name || 'system';
+                    my $task_description = $mq->task->description;
+                    my $task_deadline_date = $mq->task->deadline_date->strftime("%d.%m.%Y");
+                    $message =~ s/\Q%creator_name%\E/$task_creator_name/g;
+                    $message =~ s/\Q%description%\E/$task_description/g;
+                    $message =~ s/\Q%deadline_date%\E/$task_deadline_date/g;
+
+                    $mq->add_sms_messages({ queue_id => $mq->id, phone_num => $mq->task->assigned_user->phone_num, message => $message });
+                    say sprintf("[%s] Generating message: %s => %s", strftime('%F %R', localtime), $mq->task->assigned_user->phone_num, $message);
+                }
+
+                $mq->status('processed');
+                $mq->save;
+
+                1;
+            } or do {
+                say sprintf("Error while processing queue: %s", $@);
+                $mq = Rplus::Model::MessageQueue->new(id => $mq->id)->load;
+                $mq->status('error');
+                $mq->error_message($@);
+                $mq->save;
+            };
+        }
+    }
+
+    # Обработаем напоминания для задач (tr - task remind)
+    {
+        my $task_iter = Rplus::Model::Task::Manager->get_objects_iterator(
+            query => [
+                \"t1.remind_date <= now()",
+                status => 'scheduled',
+                delete_date => undef,
+                \"t1.id NOT IN (SELECT MQ.task_id FROM message_queue MQ WHERE MQ.type = 'tr' AND MQ.task_id = t1.id AND MQ.task_remind_date = t1.remind_date)",
+                type => 'in',
+            ],
+            require_objects => ['assigned_user'],
+        );
+        while (my $task = $task_iter->next) {
+            eval {
+                my $mq = Rplus::Model::MessageQueue->new(
+                    type => 'tr',
+                    task_id => $task->id,
+                    task_remind_date => $task->remind_date,
+                );
+                $mq->save;
+
+                if (($task->assigned_user->phone_num // '') =~ /^9\d{9}$/) {
+                    my $message = $params->{'template'}->{$mq->type};
+                    my $task_description = $task->description;
+                    my $task_deadline_date = $task->deadline_date->strftime("%d.%m.%Y");
+                    $message =~ s/\Q%description%\E/$task_description/g;
+                    $message =~ s/\Q%deadline_date%\E/$task_deadline_date/g;
+
+                    $mq->add_sms_messages({ queue_id => $mq->id, phone_num => $task->assigned_user->phone_num, message => $message });
+                    say sprintf("[%s] Generating message: %s => %s", strftime('%F %R', localtime), $task->assigned_user->phone_num, $message);
+                }
+
+                $mq->status('processed');
+                $mq->save;
+
+                1;
+            } or do {
+            };
+        }
+    }
+
+    # Отправим сообщения, ожидающие отправки
+    my $transport_params = $params->{'transport'}->{'smsc'};
+    my $sm_iter = Rplus::Model::SmsMessage::Manager->get_objects_iterator(query => [ status => 'queued' ]);
+    while (my $sm = $sm_iter->next) {
+        say sprintf("[%s] Sending message: (%s) %s => %s", strftime('%F %R', localtime), $sm->id, $sm->phone_num, $sm->message);
+        my $x = Rplus::Transport::SMSC::HTTP::send_message(phone_num => $sm->phone_num, message => $sm->message, %$transport_params);
+        $sm->status($x->{'status'});
+        $sm->parts_count($x->{'parts_count'}) if exists $x->{'parts_count'};
+        $sm->subsystem_id($x->{'subsystem_id'}) if exists $x->{'subsystem_id'};
+        $sm->attempts_count($sm->attempts_count + 1) if $x->{'status'} eq 'error';
+        $sm->error_message($x->{'error_message'}) if exists $x->{'error_message'};
+        $sm->save;
+    }
+
+    sleep 10;
+}

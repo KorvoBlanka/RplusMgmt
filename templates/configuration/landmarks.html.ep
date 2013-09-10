@@ -1,5 +1,8 @@
 % layout 'default';
 
+% use Rplus::Model::Media::Manager;
+% use JSON;
+
 % content_for after_bootstrap => begin
 <script type="application/javascript" src="/assets/leaflet/0.6.4/leaflet.js"></script>
 <script type="application/javascript" src="/assets/leaflet.fullscreen/2013.07.05/Control.FullScreen.js"></script>
@@ -256,6 +259,14 @@
     <select class="form-control input-sm" name="type" form="landmarkForm">
       <option value="landmark">Landmarks</option>
       <option value="sublandmark">Sublandmars</option>
+      % {
+      % my $iter = Rplus::Model::Media::Manager->get_objects_iterator(query => [type => 'export', delete_date => undef]);
+      % while (my $x = $iter->next) {
+      % my $metadata = decode_json($x->metadata);
+      % if ($metadata->{'landmark_types'}) {
+      % for my $k (sort { $metadata->{'landmark_types'}->{$a} cmp $metadata->{'landmark_types'}->{$b} } keys %{$metadata->{'landmark_types'}}) {
+        <option value="<%= $k %>"><%= $metadata->{'landmark_types'}->{$k} %></option>
+      % }}}}
     </select>
   </div>
   <div class="col-lg-9 margin-bottom-20">
@@ -277,15 +288,15 @@
 
 <div class="row">
   <div class="col-lg-3">
-    <div class="list-group list-compact win-scroll" id="landmarkList"></div>
+    <div class="list-group list-compact" id="landmarkList"></div>
   </div>
   <div class="col-lg-9">
     <div id="geoMap"></div>
   </div>
 </div>
 
-<nav class="navbar navbar-fixed-bottom" role="navigation">
+<nav class="navbar navbar-default navbar-fixed-bottom">
   <div class="container">
-    <button type="button" class="btn btn-primary btn-sm navbar-btn" id="btnNew"><span class="glyphicon glyphicon-plus"></span></button>
+    <button type="button" class="btn btn-primary btn-sm navbar-btn" id="btnNew"><span class="glyphicon glyphicon-plus"></span> New</button>
   </div>
 </nav>
