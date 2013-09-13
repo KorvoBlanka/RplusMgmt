@@ -12,77 +12,355 @@ use Rplus::Model::Media::Manager;
 use Rplus::Model::Landmark;
 use Rplus::Model::Landmark::Manager;
 
+use JSON;
 use RTF::Writer;
 use Text::Trim;
-
-use LWP::UserAgent;
-use File::Temp qw(tempdir);
-use Archive::Extract;
-use Text::Trim;
-use JSON;
-use POSIX qw(strftime);
 
 my $MEDIA = Rplus::Model::Media::Manager->get_objects(query => [type => 'export', code => 'present', delete_date => undef])->[0];
 exit unless $MEDIA;
 my $META = decode_json($MEDIA->metadata);
 
+# META params
+my $P = $META->{'params'};
+
+unless ($ARGV[0]) { say "Usage: $0 <filename>"; exit; }
 export_present($ARGV[0]);
 
 # Процедура импорта
 sub export_present {
     my $out_file = shift;
 
+    my $rtf = RTF::Writer->new_to_file($out_file);
+    $rtf->prolog('charset' => 'ansicpg1251', colors => [undef, [255,0,0], [0,0,255], [255,255,0]]);
+
+    my @landmarks = sort { ($a->name =~ s/^\((\d+)\).+$/$1/r || '100') <=> ($b->name =~ s/^\((\d+)\).+$/$1/r || 100) } @{Rplus::Model::Landmark::Manager->get_objects(query => [type => 'present', delete_date => undef])};
+    push @landmarks, undef;
+
+    sub _format_sum {
+        my $sum = shift;
+
+        my ($m, $ths) = (($sum - $sum%1000)/1000, $sum%1000);
+        my $human_sum;
+        $human_sum = "$m млн." if $m;
+        $human_sum .= ($m ? ' ' : '')."$ths тыс." if $ths;
+
+        return $human_sum;
+    }
+
     # Комнаты
     {
-        my $iter = Rplus::Model::Realty::Manager->get_objects_iterator(
-            query => [
-                offer_type_code => $META->{'params'}->{'offer_type_code'},
-                state_code => 'work',
-                \"type_code IN (SELECT RT.code FROM realty_types RT WHERE RT.category_code = 'room')",
-                \("export_media && {'".$MEDIA->id."'}"),
-            ],
-            with_objects => ['address_object', 'agent', 'sublandmark'],
-        );
+        my %R;
+        for my $l (@landmarks) {
+            my $iter = Rplus::Model::Realty::Manager->get_objects_iterator(
+                query => [
+                    state_code => 'work',
+                    offer_type_code => $META->{'params'}->{'offer_type_code'},
+                    'type.category_code' => 'room',
+                    \("t1.export_media && '{".$MEDIA->id."}'"),
+                    ($l ? \("t1.landmarks && '{".$l->id."}'") : \("NOT (t1.landmarks && ARRAY(SELECT L.id FROM landmarks L WHERE L.type = 'present' AND L.delete_date IS NULL))")),
+                ],
+                sort_by => 'address_object.expanded_name',
+                with_objects => ['address_object', 'sublandmark', 'type', 'agent'],
+            );
+            my ($title, @body);
+            while (my $realty = $iter->next) {
+                next if $R{$realty->id};
+                $R{$realty->id} = 1;
+                if (!$title) {
+                    if ($l) {
+                        $title = "Комнаты. ".($l->name =~ s/^\(\d+\)\s+//r);
+                    } else {
+                        $title = "Комнаты. Остальное";
+                    }
+                }
+
+                my $location;
+                if ($realty->address_object_id) {
+                    my $addrobj = $realty->address_object;
+                    $location = $addrobj->name.($addrobj->short_type ne 'ул' ? ' '.$addrobj->short_type : '');
+                    if ($realty->sublandmark_id && $location !~ /[()]/) {
+                        $location .= ' ('.$realty->sublandmark->name.')';
+                    }
+                    $location .= '.';
+                }
+
+                my $type = 'Комн.'.($realty->rooms_count ? ' в '.$realty->rooms_count.'-комн.' : '');
+
+                my @digest;
+                push @digest, ($P->{'dict'}->{'ap_schemes'}->{$realty->ap_scheme_id} || $realty->ap_scheme->name) if $realty->ap_scheme_id;
+                push @digest, ($P->{'dict'}->{'house_types'}->{$realty->house_type_id} || $realty->house_type->name) if $realty->house_type_id;
+                push @digest, ($realty->floor || '?').'/'.($realty->floors_count || '?') if $realty->floor || $realty->floors_count;
+                push @digest, ($P->{'dict'}->{'room_schemes'}->{$realty->room_scheme_id} || $realty->room_scheme->name) if $realty->room_scheme_id;
+                push @digest, ($P->{'dict'}->{'conditions'}->{$realty->condition_id} || $realty->condition->name) if $realty->condition_id;
+                push @digest, $realty->square_total.($realty->square_living && $realty->square_kitchen ? '/'.$realty->square_living.'/'.$realty->square_kitchen : ' кв.м.') if $realty->square_total;
+                push @digest, ($P->{'dict'}->{'balconies'}->{$realty->balcony_id} || $realty->balcony->name) if $realty->balcony_id;
+                push @digest, ($P->{'dict'}->{'bathrooms'}->{$realty->bathroom_id} || $realty->bathroom->name) if $realty->bathroom_id;
+                if ($P->{'add_description_words'} && $realty->description) {
+                    my @desc = grep { $_ } trim(split(/,|\n/, $realty->description));
+                    push @digest, join(', ', grep { $_ } @desc[0..($P->{'add_description_words'} - 1)]);
+                }
+                my $digest = join(', ', @digest);
+
+                my $price = _format_sum($realty->price).' руб.' if $realty->price;
+                my @phones;
+                for my $phone_num (@{$P->{'phones'}}) {
+                    if ($phone_num eq '%agent.phone_num%' && $realty->agent_id) {
+                        my $x = decode_json($realty->agent->metadata)->{'public_phone_num'} || $realty->agent->phone_num;
+                        push @phones, $x if $x;
+                    } else {
+                        push @phones, $phone_num;
+                    }
+                }
+                my $phones = join(', ', @phones);
+
+                push @body, [\'\fi400\b', $location.' '] if $location;
+                push @body, join(' ', $type, ($digest ? "($digest)" : ()), ($price || ()), $phones);
+                push @body, "\n";
+            }
+
+            if ($title) {
+                $rtf->paragraph(\'\sa400\qc\b', $title);
+                $rtf->paragraph(\'\sa400', @body);
+            }
+        }
     }
 
     # Малосемейки
     {
-        my $iter = Rplus::Model::Realty::Manager->get_objects_iterator(
-            query => [
-                offer_type_code => $META->{'params'}->{'offer_type_code'},
-                state_code => 'work',
-                type_code => 'apartment_small',
-                \("export_media && {'".$MEDIA->id."'}"),
-            ],
-            with_objects => ['address_object', 'agent', 'sublandmark'],
-        );
-    }
-
-    # 1-4 Комнатные квартиры
-    {
-        for my $rooms_count (1..4) {
+        my %R;
+        for my $l (@landmarks) {
             my $iter = Rplus::Model::Realty::Manager->get_objects_iterator(
                 query => [
-                    offer_type_code => $META->{'params'}->{'offer_type_code'},
                     state_code => 'work',
-                    \"type_code IN (SELECT RT.code FROM realty_types RT WHERE RT.category_code = 'apartment' AND RT.code != 'apartment_small')",
-                    \("export_media && {'".$MEDIA->id."'}"),
-                    rooms_count => $rooms_count,
-                ]
+                    offer_type_code => $META->{'params'}->{'offer_type_code'},
+                    type_code => 'apartment_small',
+                    \("t1.export_media && '{".$MEDIA->id."}'"),
+                    ($l ? \("t1.landmarks && '{".$l->id."}'") : \("NOT (t1.landmarks && ARRAY(SELECT L.id FROM landmarks L WHERE L.type = 'present' AND L.delete_date IS NULL))")),
+                ],
+                sort_by => 'address_object.expanded_name',
+                with_objects => ['address_object', 'sublandmark', 'type', 'agent'],
             );
+            my ($title, @body);
+            while (my $realty = $iter->next) {
+                next if $R{$realty->id};
+                $R{$realty->id} = 1;
+                if (!$title) {
+                    if ($l) {
+                        $title = "Малосемейки. ".($l->name =~ s/^\(\d+\)\s+//r);
+                    } else {
+                        $title = "Малосемейки. Остальное";
+                    }
+                }
+
+                my $location;
+                if ($realty->address_object_id) {
+                    my $addrobj = $realty->address_object;
+                    $location = $addrobj->name.($addrobj->short_type ne 'ул' ? ' '.$addrobj->short_type : '');
+                    if ($realty->sublandmark_id && $location !~ /[()]/) {
+                        $location .= ' ('.$realty->sublandmark->name.')';
+                    }
+                    $location .= '.';
+                }
+
+                my $type = 'Малосем.';
+
+                my @digest;
+                push @digest, ($P->{'dict'}->{'ap_schemes'}->{$realty->ap_scheme_id} || $realty->ap_scheme->name) if $realty->ap_scheme_id;
+                push @digest, ($P->{'dict'}->{'house_types'}->{$realty->house_type_id} || $realty->house_type->name) if $realty->house_type_id;
+                push @digest, ($realty->floor || '?').'/'.($realty->floors_count || '?') if $realty->floor || $realty->floors_count;
+                push @digest, ($P->{'dict'}->{'room_schemes'}->{$realty->room_scheme_id} || $realty->room_scheme->name) if $realty->room_scheme_id;
+                push @digest, ($P->{'dict'}->{'conditions'}->{$realty->condition_id} || $realty->condition->name) if $realty->condition_id;
+                push @digest, $realty->square_total.($realty->square_living && $realty->square_kitchen ? '/'.$realty->square_living.'/'.$realty->square_kitchen : ' кв.м.') if $realty->square_total;
+                push @digest, ($P->{'dict'}->{'balconies'}->{$realty->balcony_id} || $realty->balcony->name) if $realty->balcony_id;
+                push @digest, ($P->{'dict'}->{'bathrooms'}->{$realty->bathroom_id} || $realty->bathroom->name) if $realty->bathroom_id;
+                if ($P->{'add_description_words'} && $realty->description) {
+                    my @desc = grep { $_ } trim(split(/,|\n/, $realty->description));
+                    push @digest, join(', ', grep { $_ } @desc[0..($P->{'add_description_words'} - 1)]);
+                }
+                my $digest = join(', ', @digest);
+
+                my $price = _format_sum($realty->price).' руб.' if $realty->price;
+                my @phones;
+                for my $phone_num (@{$P->{'phones'}}) {
+                    if ($phone_num eq '%agent.phone_num%' && $realty->agent_id) {
+                        my $x = decode_json($realty->agent->metadata)->{'public_phone_num'} || $realty->agent->phone_num;
+                        push @phones, $x if $x;
+                    } else {
+                        push @phones, $phone_num;
+                    }
+                }
+                my $phones = join(', ', @phones);
+
+                push @body, [\'\fi400\b', $location.' '] if $location;
+                push @body, join(' ', $type, ($digest ? "($digest)" : ()), ($price || ()), $phones);
+                push @body, "\n";
+            }
+
+            if ($title) {
+                $rtf->paragraph(\'\sa400\qc\b', $title);
+                $rtf->paragraph(\'\sa400', @body);
+            }
         }
     }
 
-    # Многокомнатные квартиры
-    {
-        my $iter = Rplus::Model::Realty::Manager->get_objects_iterator(
-            query => [
-                offer_type_code => $META->{'params'}->{'offer_type_code'},
-                state_code => 'work',
-                \"type_code IN (SELECT RT.code FROM realty_types RT WHERE RT.category_code = 'apartment' AND RT.code != 'apartment_small')",
-                \("export_media && {'".$MEDIA->id."'}"),
-                rooms_count => {gt => 4},
-            ]
-        );
+    # Квартиры (кроме малосемеек)
+    for my $xrc ((1..4), undef) {
+        my %R;
+        for my $l (@landmarks) {
+            my $iter = Rplus::Model::Realty::Manager->get_objects_iterator(
+                query => [
+                    state_code => 'work',
+                    offer_type_code => $META->{'params'}->{'offer_type_code'},
+                    'type.category_code' => 'apartment',
+                    '!type_code' => 'apartment_small',
+                    ($xrc ? (rooms_count => $xrc) : (rooms_count => {gt => 4})),
+                    \("t1.export_media && '{".$MEDIA->id."}'"),
+                    ($l ? \("t1.landmarks && '{".$l->id."}'") : \("NOT (t1.landmarks && ARRAY(SELECT L.id FROM landmarks L WHERE L.type = 'present' AND L.delete_date IS NULL))")),
+                ],
+                sort_by => 'address_object.expanded_name',
+                with_objects => ['address_object', 'sublandmark', 'type', 'agent'],
+            );
+            my ($title, @body);
+            while (my $realty = $iter->next) {
+                next if $R{$realty->id};
+                $R{$realty->id} = 1;
+                if (!$title) {
+                    if ($l) {
+                        $title = ($xrc ? "${xrc}-комнатные" : 'Многокомнатные').". ".($l->name =~ s/^\(\d+\)\s+//r);
+                    } else {
+                        $title = ($xrc ? "${xrc}-комнатные" : 'Многокомнатные').". Остальное";
+                    }
+                }
+
+                my $location;
+                if ($realty->address_object_id) {
+                    my $addrobj = $realty->address_object;
+                    $location = $addrobj->name.($addrobj->short_type ne 'ул' ? ' '.$addrobj->short_type : '');
+                    if ($realty->sublandmark_id && $location !~ /[()]/) {
+                        $location .= ' ('.$realty->sublandmark->name.')';
+                    }
+                    $location .= '.';
+                }
+
+                my $type = ($realty->rooms_count || '?')."-комн.";
+
+                my @digest;
+                push @digest, ($P->{'dict'}->{'ap_schemes'}->{$realty->ap_scheme_id} || $realty->ap_scheme->name) if $realty->ap_scheme_id;
+                push @digest, ($P->{'dict'}->{'house_types'}->{$realty->house_type_id} || $realty->house_type->name) if $realty->house_type_id;
+                push @digest, ($realty->floor || '?').'/'.($realty->floors_count || '?') if $realty->floor || $realty->floors_count;
+                push @digest, ($P->{'dict'}->{'room_schemes'}->{$realty->room_scheme_id} || $realty->room_scheme->name) if $realty->room_scheme_id;
+                push @digest, ($P->{'dict'}->{'conditions'}->{$realty->condition_id} || $realty->condition->name) if $realty->condition_id;
+                push @digest, $realty->square_total.($realty->square_living && $realty->square_kitchen ? '/'.$realty->square_living.'/'.$realty->square_kitchen : ' кв.м.') if $realty->square_total;
+                push @digest, ($P->{'dict'}->{'balconies'}->{$realty->balcony_id} || $realty->balcony->name) if $realty->balcony_id;
+                push @digest, ($P->{'dict'}->{'bathrooms'}->{$realty->bathroom_id} || $realty->bathroom->name) if $realty->bathroom_id;
+                if ($P->{'add_description_words'} && $realty->description) {
+                    my @desc = grep { $_ } trim(split(/,|\n/, $realty->description));
+                    push @digest, join(', ', grep { $_ } @desc[0..($P->{'add_description_words'} - 1)]);
+                }
+                my $digest = join(', ', @digest);
+
+                my $price = _format_sum($realty->price).' руб.' if $realty->price;
+                my @phones;
+                for my $phone_num (@{$P->{'phones'}}) {
+                    if ($phone_num eq '%agent.phone_num%' && $realty->agent_id) {
+                        my $x = decode_json($realty->agent->metadata)->{'public_phone_num'} || $realty->agent->phone_num;
+                        push @phones, $x if $x;
+                    } else {
+                        push @phones, $phone_num;
+                    }
+                }
+                my $phones = join(', ', @phones);
+
+                push @body, [\'\fi400\b', $location.' '] if $location;
+                push @body, join(' ', $type, ($digest ? "($digest)" : ()), ($price || ()), $phones);
+                push @body, "\n";
+            }
+
+            if ($title) {
+                $rtf->paragraph(\'\sa400\qc\b', $title);
+                $rtf->paragraph(\'\sa400', @body);
+            }
+        }
     }
+
+    # Дома
+    {
+        my %R;
+        for my $l (@landmarks) {
+            my $iter = Rplus::Model::Realty::Manager->get_objects_iterator(
+                query => [
+                    state_code => 'work',
+                    offer_type_code => $META->{'params'}->{'offer_type_code'},
+                    'type.category_code' => 'house',
+                    \("t1.export_media && '{".$MEDIA->id."}'"),
+                    ($l ? \("t1.landmarks && '{".$l->id."}'") : \("NOT (t1.landmarks && ARRAY(SELECT L.id FROM landmarks L WHERE L.type = 'present' AND L.delete_date IS NULL))")),
+                ],
+                sort_by => 'address_object.expanded_name',
+                with_objects => ['address_object', 'sublandmark', 'type', 'agent'],
+            );
+            my ($title, @body);
+            while (my $realty = $iter->next) {
+                next if $R{$realty->id};
+                $R{$realty->id} = 1;
+                if (!$title) {
+                    if ($l) {
+                        $title = "Дома. ".($l->name =~ s/^\(\d+\)\s+//r);
+                    } else {
+                        $title = "Дома. Остальное";
+                    }
+                }
+
+                my $location;
+                if ($realty->address_object_id) {
+                    my $addrobj = $realty->address_object;
+                    $location = $addrobj->name.($addrobj->short_type ne 'ул' ? ' '.$addrobj->short_type : '');
+                    if ($realty->sublandmark_id && $location !~ /[()]/) {
+                        $location .= ' ('.$realty->sublandmark->name.')';
+                    }
+                    $location .= '.';
+                }
+
+                my $type = $realty->type->name;
+
+                my @digest;
+                push @digest, $realty->rooms_count.'-комн.' if $realty->rooms_count;
+                push @digest, ($P->{'dict'}->{'house_types'}->{$realty->house_type_id} || $realty->house_type->name) if $realty->house_type_id;
+                push @digest, $realty->floors_count.' эт.' if $realty->floors_count;
+                push @digest, ($P->{'dict'}->{'room_schemes'}->{$realty->room_scheme_id} || $realty->room_scheme->name) if $realty->room_scheme_id;
+                push @digest, ($P->{'dict'}->{'conditions'}->{$realty->condition_id} || $realty->condition->name) if $realty->condition_id;
+                push @digest, $realty->square_total.($realty->square_living && $realty->square_kitchen ? '/'.$realty->square_living.'/'.$realty->square_kitchen : ' кв.м.') if $realty->square_total;
+                push @digest, ($P->{'dict'}->{'balconies'}->{$realty->balcony_id} || $realty->balcony->name) if $realty->balcony_id;
+                push @digest, ($P->{'dict'}->{'bathrooms'}->{$realty->bathroom_id} || $realty->bathroom->name) if $realty->bathroom_id;
+                push @digest, $realty->square_land.' '.(($realty->square_land_type || 'ar') eq 'hectare' ? 'га.' : 'сот.') if $realty->square_land;
+                if ($P->{'add_description_words'} && $realty->description) {
+                    my @desc = grep { $_ } trim(split(/,|\n/, $realty->description));
+                    push @digest, join(', ', grep { $_ } @desc[0..($P->{'add_description_words'} - 1)]);
+                }
+                my $digest = join(', ', @digest);
+
+                my $price = _format_sum($realty->price).' руб.' if $realty->price;
+                my @phones;
+                for my $phone_num (@{$P->{'phones'}}) {
+                    if ($phone_num eq '%agent.phone_num%' && $realty->agent_id) {
+                        my $x = decode_json($realty->agent->metadata)->{'public_phone_num'} || $realty->agent->phone_num;
+                        push @phones, $x if $x;
+                    } else {
+                        push @phones, $phone_num;
+                    }
+                }
+                my $phones = join(', ', @phones);
+
+                push @body, [\'\fi400\b', $location.' '] if $location;
+                push @body, join(' ', $type, ($digest ? "($digest)" : ()), ($price || ()), $phones);
+                push @body, "\n";
+            }
+
+            if ($title) {
+                $rtf->paragraph(\'\sa400\qc\b', $title);
+                $rtf->paragraph(\'\sa400', @body);
+            }
+        }
+    }
+
+    $rtf->close;
 }
