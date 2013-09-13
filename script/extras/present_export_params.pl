@@ -5,7 +5,7 @@ use warnings;
 use utf8;
 
 use FindBin;
-use lib "$FindBin::Bin/../lib";
+use lib "$FindBin::Bin/../../lib";
 
 use Rplus::Model::Media;
 use Rplus::Model::Media::Manager;
@@ -19,7 +19,6 @@ my $metadata = {
     params => {
         dict => {
             ap_schemes => {
-                __field__ => 'ap_scheme_id',
                 1 => 'стал.',
                 2 => 'хрущ.',
                 3 => 'улучш. план.',
@@ -29,7 +28,6 @@ my $metadata = {
             },
 
             balconies => {
-                __field__ => 'balcony_id',
                 1 => 'без балк.',
                 2 => 'балк.',
                 3 => 'лодж.',
@@ -41,7 +39,6 @@ my $metadata = {
             },
 
             bathrooms => {
-                __field__ => 'bathroom_id',
                 1 => 'без удобств',
                 3 => 'с/у разд.',
                 4 => '2 смежн. с/у',
@@ -52,7 +49,6 @@ my $metadata = {
             },
 
             conditions => {
-                __field__ => 'condition_id',
                 1 => 'п/строит.',
                 2 => 'соц. ремонт',
                 3 => 'сделан ремонт',
@@ -67,7 +63,6 @@ my $metadata = {
             },
 
             house_types => {
-                __field__ => 'house_type_id',
                 1 => 'кирп.',
                 2 => 'монолит.',
                 3 => 'пан.',
@@ -78,7 +73,6 @@ my $metadata = {
             },
 
             room_schemes => {
-                __field__ => 'room_scheme_id',
                 1 => 'студия',
                 2 => 'кухня-гостиная',
                 3 => 'комн. разд.',
@@ -90,12 +84,16 @@ my $metadata = {
 
         offer_type_code => 'sale',
         add_description_words => 5,
-        postfix => '%agent.phone_num%, 470-470',
+        phones => ['%agent.phone_num%', '470-470'],
     },
 
     landmark_types => {
         present => 'Презент',
     },
+
+    export_codes => {
+        present => 'Презент',
+    }
 };
 
 $media->metadata(encode_json $metadata);
