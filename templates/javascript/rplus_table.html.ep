@@ -17,6 +17,7 @@
 % use Rplus::Model::User::Manager;
 
 % use Encode qw(decode_utf8);
+% use JSON;
 
 <script type="application/javascript">
   "use strict";
@@ -95,9 +96,10 @@
     <% } %> },
 
     users: { <% { %>
-      % my $iter = Rplus::Model::User::Manager->get_objects_iterator(query => [delete_date => undef]);
+      % my $iter = Rplus::Model::User::Manager->get_objects_iterator(query => [role => ['agent', 'manager'], delete_date => undef]);
       % while (my $x = $iter->next) {
-        "<%= $x->id %>": {id: <%= $x->id %>, name: "<%= $x->name %>", phone_num: "<%= $x->phone_num %>"},
+        % my $meta = decode_json($x->metadata);
+        "<%= $x->id %>": {id: <%= $x->id %>, name: "<%= $x->name %>", phone_num: "<%= $x->phone_num %>", public_name: "<%= $meta->{'public_name'} %>", public_phone_num: "<%= $meta->{'public_phone_num'} %>"},
       % }
     <% } %> },
   };

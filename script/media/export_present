@@ -96,8 +96,16 @@ sub export_present {
                 push @digest, ($P->{'dict'}->{'balconies'}->{$realty->balcony_id} || $realty->balcony->name) if $realty->balcony_id;
                 push @digest, ($P->{'dict'}->{'bathrooms'}->{$realty->bathroom_id} || $realty->bathroom->name) if $realty->bathroom_id;
                 if ($P->{'add_description_words'} && $realty->description) {
-                    my @desc = grep { $_ } trim(split(/,|\n/, $realty->description));
-                    push @digest, join(', ', grep { $_ } @desc[0..($P->{'add_description_words'} - 1)]);
+                    my $c = 0;
+                    my @desc;
+                    for my $x (grep { $_ } trim(split(/,|\n/, $realty->description))) { # Phrases
+                        my $cc = scalar(grep { $_ } (split /\W/, $x)); # Num words of phrase
+                        if ($cc <= ($P->{'add_description_words'} - $c)) {
+                            push @desc, $x;
+                            $c += $cc;
+                        }
+                    }
+                    push @digest, join(', ', @desc);
                 }
                 my $digest = join(', ', @digest);
 
@@ -174,8 +182,16 @@ sub export_present {
                 push @digest, ($P->{'dict'}->{'balconies'}->{$realty->balcony_id} || $realty->balcony->name) if $realty->balcony_id;
                 push @digest, ($P->{'dict'}->{'bathrooms'}->{$realty->bathroom_id} || $realty->bathroom->name) if $realty->bathroom_id;
                 if ($P->{'add_description_words'} && $realty->description) {
-                    my @desc = grep { $_ } trim(split(/,|\n/, $realty->description));
-                    push @digest, join(', ', grep { $_ } @desc[0..($P->{'add_description_words'} - 1)]);
+                    my $c = 0;
+                    my @desc;
+                    for my $x (grep { $_ } trim(split(/,|\n/, $realty->description))) { # Phrases
+                        my $cc = scalar(grep { $_ } (split /\W/, $x)); # Num words of phrase
+                        if ($cc <= ($P->{'add_description_words'} - $c)) {
+                            push @desc, $x;
+                            $c += $cc;
+                        }
+                    }
+                    push @digest, join(', ', @desc);
                 }
                 my $digest = join(', ', @digest);
 
@@ -254,8 +270,16 @@ sub export_present {
                 push @digest, ($P->{'dict'}->{'balconies'}->{$realty->balcony_id} || $realty->balcony->name) if $realty->balcony_id;
                 push @digest, ($P->{'dict'}->{'bathrooms'}->{$realty->bathroom_id} || $realty->bathroom->name) if $realty->bathroom_id;
                 if ($P->{'add_description_words'} && $realty->description) {
-                    my @desc = grep { $_ } trim(split(/,|\n/, $realty->description));
-                    push @digest, join(', ', grep { $_ } @desc[0..($P->{'add_description_words'} - 1)]);
+                    my $c = 0;
+                    my @desc;
+                    for my $x (grep { $_ } trim(split(/,|\n/, $realty->description))) { # Phrases
+                        my $cc = scalar(grep { $_ } (split /\W/, $x)); # Num words of phrase
+                        if ($cc <= ($P->{'add_description_words'} - $c)) {
+                            push @desc, $x;
+                            $c += $cc;
+                        }
+                    }
+                    push @digest, join(', ', @desc);
                 }
                 my $digest = join(', ', @digest);
 
@@ -333,8 +357,16 @@ sub export_present {
                 push @digest, ($P->{'dict'}->{'bathrooms'}->{$realty->bathroom_id} || $realty->bathroom->name) if $realty->bathroom_id;
                 push @digest, $realty->square_land.' '.(($realty->square_land_type || 'ar') eq 'hectare' ? 'га.' : 'сот.') if $realty->square_land;
                 if ($P->{'add_description_words'} && $realty->description) {
-                    my @desc = grep { $_ } trim(split(/,|\n/, $realty->description));
-                    push @digest, join(', ', grep { $_ } @desc[0..($P->{'add_description_words'} - 1)]);
+                    my $c = 0;
+                    my @desc;
+                    for my $x (grep { $_ } trim(split(/,|\n/, $realty->description))) { # Phrases
+                        my $cc = scalar(grep { $_ } (split /\W/, $x)); # Num words of phrase
+                        if ($cc <= ($P->{'add_description_words'} - $c)) {
+                            push @desc, $x;
+                            $c += $cc;
+                        }
+                    }
+                    push @digest, join(', ', @desc);
                 }
                 my $digest = join(', ', @digest);
 

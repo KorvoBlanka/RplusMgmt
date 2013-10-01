@@ -87,7 +87,7 @@
         {name: "Price", sortName: "price", visible: true, val: function (r) {
           return r.price || '';
         }},
-        {name: "Agent", sortName: "agent.name", visible: false, val: function (r) {
+        {name: "Agent", sortName: "agent.name", visible: true, val: function (r) {
           return r.agent_id ? Rplus.Table.users[r.agent_id].name : '';
         }},
         {name: "Added", sortName: "add_date", visible: true, val: function (r) {
@@ -98,6 +98,7 @@
         }},
       ],
     };
+    var stackBottomRight = {"dir1": "up", "dir2": "left", "firstpos1": 75, "firstpos2": 25};
 
     var _List_started  = 0, _List_finished = 0;
     function _List(page) {
@@ -145,6 +146,23 @@
             var id = $(this).data('id');
             $('#realtyTable > tbody > tr[data-id="' + id + '"]:not(.opened)').removeClass('selected').removeClass('warning').addClass('opened').addClass('danger');
           });
+
+          // Уведомления о посредниках
+          if (data.mediators) {
+            for (var i = 0; i < data.mediators.length; i++) {
+              var x = data.mediators[i];
+              $.pnotify({
+                  title: 'Mediator',
+                  text: x.company + ' ' + Rplus.Util.formatPhoneNum(x.phone_num),
+                  sticker: false,
+                  addclass: "stack-bottomright",
+                  stack: stackBottomRight,
+                  type: "error",
+                  opacity: 0.8,
+                  //cornerclass: "ui-pnotify-custom",
+              });
+            }
+          }
         })
       ;
     }
@@ -294,7 +312,7 @@
         }
       });
 
-      var _dblclick_timer, _dblclick_timeout = 200;
+      var _dblclick_timer, _dblclick_timeout = 350;
       !function onRealtyTableItemClick() {
         $('#realtyTable > tbody').on('click', 'tr', function (e) {
           var $this = $(this);
@@ -354,6 +372,10 @@
         return false;
       });
 
+      // Notifications
+      $.pnotify.defaults.history = false;
+      $.pnotify.defaults.styling = 'bootstrap3';
+
       _List(1);
     });
   }();
@@ -407,6 +429,9 @@
 
           <div class="navbar-right">
             <ul class="nav navbar-nav">
+              % if (session->{'user'}->{'role'} eq 'agent') {
+              <li class="hidden" id="filterAgent" data-agent="<%= session->{'user'}->{'id'} %>"></li>
+              % } else {
               <li class="dropdown" id="filterAgent" data-agent="">
                 <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-user"></span> Any <b class="caret"></b></a>
                 <ul class="dropdown-menu">
@@ -414,12 +439,13 @@
                   <li><a href="#" data-agent="nobody"><strong>Nobody</strong></a></li>
                   <li><a href="#" data-agent="all"><strong>All agents</strong></a></li>
                   % {
-                  % my $iter = Rplus::Model::User::Manager->get_objects_iterator(select => 'id, name', query => [delete_date => undef], sort_by => 'name');
+                  % my $iter = Rplus::Model::User::Manager->get_objects_iterator(select => 'id, name', query => [role => ['agent', 'manager'], delete_date => undef], sort_by => 'name');
                   % while (my $x = $iter->next) {
                     <li><a href="#" data-agent="<%= $x->id %>"><%= $x->name %></a></li>
                   % }}
                 </ul>
               </li>
+              % }
               <li class="dropdown" id="filterOfferType" data-offer-type="sale">
                 <a href="#" class="dropdown-toggle" data-toggle="dropdown">Продажа <b class="caret"></b></a>
                 <ul class="dropdown-menu">

@@ -5,7 +5,12 @@
 
   Rplus.Util = {
     escape: function (text) {
-        return $('<div>').text(text).html();
+      return $('<div>').text(text).html();
+    },
+
+    formatPhoneNum: function (phoneNum) {
+      if (!phoneNum) return;
+      return phoneNum.replace(/^(\d{3})(\d{3})(\d{4})$/, "($1) $2 $3");
     }
   };
 </script>

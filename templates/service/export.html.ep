@@ -1,0 +1,121 @@
+% layout 'default';
+
+% use Rplus::Model::RealtyOfferType::Manager;
+% use Rplus::Model::Media::Manager;
+% use JSON;
+
+% content_for header => begin
+<style type="text/css">
+</style>
+% end
+
+% content_for javascript => begin
+<script type="application/javascript">
+  !function () {
+    $(function () {
+      % {
+        % my $MEDIA = Rplus::Model::Media::Manager->get_objects(query => [code => 'vnh', type => 'export'])->[0];
+        % my $P = decode_json($MEDIA->metadata)->{'params'};
+        $('#formExportVnh [name="offer_type_code"]:input').val("<%= $P->{'offer_type_code'} %>");
+        $('#formExportVnh [name="phones"]:input').val("<%= join(', ', @{$P->{'phones'}}); %>");
+        $('#formExportVnh [name="company"]:input').val("<%= $P->{'company'} %>");
+      % }
+      % {
+        % my $MEDIA = Rplus::Model::Media::Manager->get_objects(query => [code => 'present', type => 'export'])->[0];
+        % my $P = decode_json($MEDIA->metadata)->{'params'};
+        $('#formExportPresent [name="offer_type_code"]:input').val("<%= $P->{'offer_type_code'} %>");
+        $('#formExportPresent [name="add_description_words"]:input').val("<%= $P->{'add_description_words'} %>");
+        $('#formExportPresent [name="phones"]:input').val("<%= join(', ', @{$P->{'phones'}}); %>");
+      % }
+    });
+  }();
+</script>
+% end
+
+<div class="row">
+  <div class="col-lg-5">
+    <h3>Export Media</h3>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-lg-5">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title">Вся Недвижимость Хабаровска</h3>
+      </div>
+      <div class="panel-body">
+        <form class="form-horizontal" role="form" id="formExportVnh" action="/service/export/vnh" method="POST">
+          <div class="form-group">
+            <label class="col-lg-3 control-label">OfferType</label>
+            <div class="col-lg-9">
+              <select class="form-control" name="offer_type_code">
+                <option value="sale">Продажа</option>
+                <option value="rent">Аренда</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="col-lg-3 control-label">Phones</label>
+            <div class="col-lg-9">
+              <input type="text" class="form-control" name="phones" placeholder="Phone1, Phone2">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="col-lg-3 control-label">Company</label>
+            <div class="col-lg-9">
+              <input type="text" class="form-control" name="company" placeholder="Company">
+            </div>
+          </div>
+          <div class="form-group">
+            <div class="col-lg-offset-3 col-lg-9">
+              <button type="submit" class="btn btn-primary pull-right">Process</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title">Презент</h3>
+      </div>
+      <div class="panel-body">
+        <form class="form-horizontal" role="form" id="formExportPresent" action="/service/export/present" method="POST">
+          <div class="form-group">
+            <label class="col-lg-3 control-label">OfferType</label>
+            <div class="col-lg-9">
+              <select class="form-control" name="offer_type_code">
+                <option value="sale">Продажа</option>
+                <option value="rent">Аренда</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="col-lg-3 control-label">Desc words</label>
+            <div class="col-lg-9">
+              <input type="number" class="form-control" name="add_description_words" style="width: 100px;" placeholder="# of words">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="col-lg-3 control-label">Phones</label>
+            <div class="col-lg-9">
+              <input type="text" class="form-control" name="phones" placeholder="Phone1, Phone2">
+            </div>
+          </div>
+          <div class="form-group">
+            <div class="col-lg-offset-3 col-lg-9">
+              <button type="submit" class="btn btn-primary pull-right">Process</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<nav class="navbar navbar-default navbar-fixed-bottom">
+  <div class="container"></div>
+</nav>

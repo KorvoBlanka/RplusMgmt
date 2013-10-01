@@ -71,7 +71,7 @@
             //  xhtml += '<a href="#" class="list-group-item active" data-id="' + x.id + '" data-name="' + x.name + '" data-phone_num="' + x.phone_num + '">' + x.phone_num + '</a>';
             //} else {
               //xhtml += '<a href="#" class="list-group-item" data-id="' + x.id + '" data-name="' + x.name + '" data-phone_num="' + x.phone_num + '">' + x.phone_num + '</a>';
-              xhtml += '<li><a href="#" class="btn btn-link" data-id="' + x.id + '" data-name="' + x.name + '" data-phone_num="' + x.phone_num + '">' + x.phone_num + '</a></li>';
+              xhtml += '<li><a href="#" class="btn btn-link" data-id="' + x.id + '" data-name="' + x.name + '" data-phone_num="' + x.phone_num + '">' + Rplus.Util.formatPhoneNum(x.phone_num) + '</a></li>';
             //}
           }
           $('#mediatorList').html(xhtml);

@@ -8,9 +8,12 @@
     <meta name="author" content="Alexander Orlenko">
 
     % my $bootstrap_ver = '3.0.0-wip';
+    % my $role = session->{'user'}->{'role'};
 
     <!-- Bootstrap -->
     <link rel="stylesheet" href="/assets/bootstrap/<%= $bootstrap_ver %>/css/bootstrap.min.css">
+    <!-- Pines Notify -->
+    <link rel="stylesheet" href="/assets/pnotify/1.2.2/jquery.pnotify.default.css">
 
     <style type="text/css">
       body {
@@ -93,6 +96,12 @@
           transform: rotate(359deg);
         }
       }
+
+      .ui-pnotify.stack-bottomright {
+        /* These are just CSS default values to reset the pnotify CSS. */
+        right: auto;
+        top: auto;
+      }
     </style>
 
     <%= content_for 'header' %>
@@ -114,10 +123,20 @@
 
         <div class="collapse navbar-collapse navbar-top-collapse">
           <ul class="nav navbar-nav">
+            % if ($role eq 'dispatcher' || $role eq 'manager') {
             <li class="<%= $controller eq 'search' && 'active' %>"><a href="/search"><span class="glyphicon glyphicon-search"></span> Search</a></li>
+            % }
+            % if ($role ne 'dispatcher') {
             <li class="<%= $controller eq 'realty' && 'active' %>"><a href="/realty"><span class="glyphicon glyphicon-home"></span> Realty</a></li>
+            % }
             <!--li class="<%= $controller eq 'tasks' && 'active' %>"><a href="/tasks"><span class="glyphicon glyphicon-tasks"></span> Tasks</a></li-->
-            <!--li class="<%= $controller eq 'analytics' && 'active' %>"><a href="/tasks"><span class="glyphicon glyphicon-info-sign"></span> Analytics</a></li-->
+            % if ($role eq 'manager') {
+            <li class="dropdown">
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-star"></span> Services <b class="caret"></b></a>
+              <ul class="dropdown-menu">
+                <li><a href="/service/export"><span class="glyphicon glyphicon-export"></span> Export Media</a></li>
+              </ul>
+            </li>
             <li class="dropdown">
               <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-cog"></span> Configuration <b class="caret"></b></a>
               <ul class="dropdown-menu">
@@ -126,6 +145,7 @@
                 <li><a href="/conf/users"><span class="glyphicon glyphicon-user"></span> Users</a></li>
               </ul>
             </li>
+            % }
           </ul>
           <p class="navbar-text navbar-right visible-lg">
             Signed in as <a href="/signout" class="navbar-link"><%= session->{'user'}->{'name'} %></a>
@@ -148,6 +168,8 @@
     <script type="application/javascript" src="/assets/bootstrap/<%= $bootstrap_ver %>/js/bootstrap.min.js"></script>
     <!-- MomentJS -->
     <script type="application/javascript" src="/assets/moment/2.1.0/moment.min.js"></script>
+    <!-- Pines Notify -->
+    <script type="application/javascript" src="/assets/pnotify/1.2.2/jquery.pnotify.js"></script>
     <%= content_for 'after_bootstrap' %>
 
     <%= include 'javascript/rplus' %>

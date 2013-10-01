@@ -12,7 +12,7 @@ sub startup {
     $self->plugin('Config' => {file => 'app.conf'});
 
     # Secret
-    $self->secret('fkj49SqZ11dkG42fq1g31SAxPgh49FqjrRfN44aquR3v4');
+    $self->secret('fkj49SqZ1g1k2fqrq1g31SPgh449FqjrRfNqw4aquR3v4');
 
     # Router
     my $r = $self->routes;
@@ -28,6 +28,10 @@ sub startup {
 
         # Main controller
         $r2b->get('/')->to(template => 'main/index');
+
+        # Service controller
+        $r2b->get('/service/:action')->to(controller => 'service');
+        $r2b->any('/service/:action/:id')->to(controller => 'service');
 
         # Configuration controller
         $r2b->get('/conf/:action')->to(controller => 'configuration');

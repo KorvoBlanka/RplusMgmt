@@ -12,6 +12,7 @@ use Rplus::Model::Realty::Manager;
 use Rplus::DB;
 
 use Mojo::Util qw(trim);
+use Rplus::Util::PhoneNum;
 
 sub auth {
     my $self = shift;
@@ -56,13 +57,13 @@ sub save {
     my $id = $self->param('id');
     my $company_name = trim scalar($self->param('company_name'));
     my $name = trim scalar($self->param('name'));
-    my $phone_num = trim scalar($self->param('phone_num'));
+    my $phone_num = Rplus::Util::PhoneNum->parse(scalar($self->param('phone_num')));
 
     my @errors;
     {
         push @errors, {field => 'company_name', msg => 'Empty company name'} unless $company_name;
-        push @errors, {field => 'name', msg => 'Empty mediatior name'} unless $name;
-        push @errors, {field => 'phone_num', 'Invalid phone num'} unless $phone_num && $phone_num =~ /^\d{10}$/;
+        #push @errors, {field => 'name', msg => 'Empty mediatior name'} unless $name;
+        push @errors, {field => 'phone_num', 'Invalid phone num'} unless $phone_num;
     }
     return $self->render(json => {status => 'failed', errors => \@errors}) if @errors;
 

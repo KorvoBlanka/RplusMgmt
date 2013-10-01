@@ -32,6 +32,7 @@ sub signin {
         login => $user->login,
         name => $user->name,
         role => $user->role,
+        metadata => $user->metadata,
     };
 
     if ($remember_me) {

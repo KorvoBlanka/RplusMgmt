@@ -1,6 +1,7 @@
 % layout 'default';
 
 % use Rplus::Model::RealtyOfferType::Manager;
+% use JSON;
 
 % content_for after_bootstrap => begin
 <script type="application/javascript" src="/assets/leaflet/0.6.4/leaflet.js"></script>
@@ -75,7 +76,10 @@
             parts.push('<strong>' + Rplus.Util.escape(Rplus.Table.realty_types[r.type_code].name) + '</strong>');
             if (r.rooms_count) parts.push(r.rooms_count + 'к');
             if (r.address_object) {
-              parts.push(Rplus.Util.escape(r.address_object.name + ' ' + r.address_object.short_type) );
+              parts.push(
+                Rplus.Util.escape(r.address_object.name + ' ' + r.address_object.short_type) +
+                (r.sublandmark ? ' (' + r.sublandmark.name + ')' : '')
+              );
               parts.push(Rplus.Util.escape(r.address_object.addr_parts[1].name + ' ' + r.address_object.addr_parts[1].short_type));
             }
             if (r.ap_scheme_id) parts.push(Rplus.Table.Dict.ap_schemes[r.ap_scheme_id].metadata.description || Rplus.Table.Dict.ap_schemes[r.ap_scheme_id].name);
@@ -95,6 +99,10 @@
             if (r.square_land && r.square_land_type) parts.push(r.square_land + ' ' + (r.square_land_type == 'ar' ? 'сот.' : 'га'));
             if (r.description) parts.push(r.description);
             if (r.price) parts.push('<span class="text-primary">' + r.price + ' тыс. руб.' + '</span>');
+            if (r.agent_id) {
+              var agent = Rplus.Table.users[r.agent_id];
+              parts.push('<br><span>Агент: ' + (agent.public_name || agent.name) + ', ' + (agent.public_phone_num || Rplus.Util.formatPhoneNum(Rplus.Table.users[r.agent_id].phone_num)) + '</span>');
+            }
 
             xhtml += '<tr data-id="' + r.id + '" data-page="' + data.page + '" data-lat="' + r.latitude + '" data-lng="' + r.longitude + '"><td>' + parts.join(', ') + '</td></tr>';
           }
@@ -260,7 +268,7 @@
       //
       // SIP SoftPhone
       //
-      % if (0) {
+      % if (my $sip_conf = decode_json(session->{'user'}->{'metadata'})->{'sip'}) {
       SIPml.init(
         function () {
           if (!SIPml.isWebRtcSupported() || !SIPml.isWebSocketSupported()) {
@@ -271,12 +279,12 @@
           var sipStack, sipSessionRegister, sipSessionCall;
 
           sipStack = new SIPml.Stack({
-            realm: '212.19.22.218',
-            impi: '1004',
-            impu: 'sip:1004@212.19.22.218',
-            password: 'pass1004',
-            display_name: '1004',
-            websocket_proxy_url: 'ws://212.19.22.218:8088/asterisk/ws',
+            realm: '<%== $sip_conf->{realm} %>',
+            impi: '<%== $sip_conf->{impi} %>',
+            impu: '<%== $sip_conf->{impu} %>',
+            password: '<%== $sip_conf->{password} %>',
+            display_name: '<%== $sip_conf->{display_name} %>',
+            websocket_proxy_url: '<%== $sip_conf->{websocket_proxy_url} %>',
 
             enable_click2call: false,
             enable_rtcweb_breaker: false,

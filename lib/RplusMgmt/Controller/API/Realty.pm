@@ -4,13 +4,17 @@ use Mojo::Base 'Mojolicious::Controller';
 
 use Rplus::Model::Realty;
 use Rplus::Model::Realty::Manager;
+use Rplus::Model::Landmark;
 use Rplus::Model::Landmark::Manager;
+use Rplus::Model::Mediator;
+use Rplus::Model::Mediator::Manager;
 
 use Rplus::DB;
 use Rose::DB::Object::QueryBuilder qw(build_where_clause);
 
 use Rplus::Util::Query;
 use Rplus::Util::Realty;
+use Rplus::Util::PhoneNum;
 
 use JSON;
 
@@ -35,7 +39,7 @@ sub list {
     my $agent_id = $self->param('agent');
     my $sort_by = $self->param('sort');
     my $page = $self->param("page") || 1;
-    my $per_page = $self->param("per_page") || 50;
+    my $per_page = $self->param("per_page") || 30;
 
     my $res = {
         count => 0,
@@ -63,9 +67,21 @@ sub list {
       push @sort_by, $sort_by;
     }
 
+    my @seller_phones;
     # Full Text Search
     if ($ts_query_text) {
         my $dbh = Rplus::DB->new_or_cached->dbh;
+
+        # Try to recognize phone num
+        for my $x (split /[ .,]/, $ts_query_text) {
+            if ($x =~ /^\s*([\d-]{6,})\s*$/) {
+                if (my $phone_num = Rplus::Util::PhoneNum->parse($1)) {
+                    push @seller_phones, $phone_num;
+                }
+                $ts_query_text =~ s/$x//;
+            }
+        }
+        push @query, \("t1.seller_phones && '{".join(',', map { '"'.$_.'"' } @seller_phones)."}'") if @seller_phones;
 
         # Try to recognize landmarks
         my (@landmarks, @hl);
@@ -115,7 +131,7 @@ sub list {
               WHERE $where
               GROUP BY round(ts_rank(t1.fts, to_tsquery('russian', '$ts_query'))::numeric, 5)
               ORDER BY rank DESC
-              LIMIT 2
+              LIMIT 1
             };
             my $sth = $dbh->prepare($sql);
             $sth->execute(@$bind);
@@ -135,13 +151,21 @@ sub list {
         $res->{'count'} = Rplus::Model::Realty::Manager->get_objects_count(query => \@query);
     }
 
+    # Дополнительно проверим распознанные номера телефонов на посредников
+    if (@seller_phones) {
+        my $mediator_iter = Rplus::Model::Mediator::Manager->get_objects_iterator(query => [phone_num => \@seller_phones, delete_date => undef], require_objects => ['company']);
+        while (my $mediator = $mediator_iter->next) {
+            push @{$res->{'mediators'}}, {id => $mediator->id, company => $mediator->company->name, phone_num => $mediator->phone_num};
+        }
+    }
+
     my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
         select => ['realty.*', map { 'address_object.'.$_ } ('id', 'name', 'short_type', 'expanded_name', 'metadata')],
         query => \@query,
-        sort_by => \@sort_by,
+        sort_by => [@sort_by, 'realty.id desc'],
         page => $page,
         per_page => $per_page,
-        with_objects => ['address_object', @with_objects],
+        with_objects => ['address_object', 'sublandmark', @with_objects],
     );
     while (my $realty = $realty_iter->next) {
         my $metadata = decode_json($realty->metadata);
@@ -153,6 +177,8 @@ sub list {
                 expanded_name => $realty->address_object->expanded_name,
                 addr_parts => decode_json($realty->address_object->metadata)->{'addr_parts'},
             } : undef,
+
+            sublandmark => $realty->sublandmark ? {id => $realty->sublandmark->id, name => $realty->sublandmark->name} : undef,
 
             (map { $_ => scalar $realty->$_ } grep { !/^(?:metadata)|(?:geocoords)|(?:fts)|(?:landmarks)$/ } $realty->meta->column_names)
         };
@@ -249,7 +275,7 @@ sub save {
         } elsif ($f eq 'seller_phones' && exists $data{$f}) {
             my @seller_phones;
             if (ref($data{$f}) eq 'ARRAY') {
-                @seller_phones = grep { /^\d{10}$/ } @{$data{$f}};
+                @seller_phones = map { Rplus::Util::PhoneNum->parse($_) } @{$data{$f}};
             }
             $realty->seller_phones(\@seller_phones);
         } elsif (exists $data{$f}) {

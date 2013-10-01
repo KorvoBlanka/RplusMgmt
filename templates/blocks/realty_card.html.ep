@@ -161,7 +161,7 @@
             $('[name="address_object_name"]:input', container).typeahead('setQuery', v.expanded_name);
           } else if (f == 'seller_phones') {
             $('[name="seller_phones"]:input', container).each(function (i) {
-              $(this).val(v[i]);
+              $(this).val(Rplus.Util.formatPhoneNum(v[i]));
             });
           } else if (f == 'add_date' || f == 'change_date') {
             $('span[data-name="' + f + '"]', container).text(moment(v).format("DD.MM.YYYY"));
@@ -188,15 +188,9 @@
             houseNum = $('[name="house_num"]:input', container).val(),
             addrobj = $('[name="address_object_id"]:input', container).data('addrobj')
         ;
-        if (addrobj && addrobj.addr_parts) {
-          for (var i = 0; i < addrobj.addr_parts.length; i++) {
-            var x = addrobj.addr_parts[i];
-            if (x.level == 7) {
-              street = x.name + ' ' + x.short_type;
-            } else if (x.level < 7 && x.short_type == 'г') {
-              city = x.name;
-            }
-          }
+        if (addrobj && addrobj.addr_parts && addrobj.addr_parts[0].level == 7) {
+          street = addrobj.addr_parts[0].name;
+          city = addrobj.addr_parts[1].name;
         }
         if (city && street && houseNum) {
           $.ajax({
@@ -309,7 +303,7 @@
             }
             geoMap.panTo([realty.latitude, realty.longitude]);
           } else {
-            if (marker) geoMap.removeLayer(marker);
+            if (marker) { geoMap.removeLayer(marker); marker = null; }
           }
         });
       }
@@ -547,14 +541,20 @@
                     <div class="form-group">
                       <label class="col-lg-4 control-label" for="realtyCardForm-Agent-{id}">Agent</label>
                       <div class="col-lg-8">
+                        % if (session->{'user'}->{'role'} eq 'agent') {
+                        <select class="form-control input-sm" name="agent_id" id="realtyCardForm-Agent-{id}">
+                          <option value="<%= session->{'user'}->{'id'} %>"><%= session->{'user'}->{'name'} %></option>
+                        </select>
+                        % } else {
                         <select class="form-control input-sm" name="agent_id" id="realtyCardForm-Agent-{id}">
                           <option class="text-muted" value="">-</option>
                         % {
-                        % my $iter = Rplus::Model::User::Manager->get_objects_iterator(select => 'id, name', query => [delete_date => undef], sort_by => 'name');
+                        % my $iter = Rplus::Model::User::Manager->get_objects_iterator(select => 'id, name', query => [role => ['agent', 'manager'], delete_date => undef], sort_by => 'name');
                         % while (my $x = $iter->next) {
                           <option value="<%= $x->id %>"><%= $x->name %></option>
                         % }}
                         </select>
+                        % }
                       </div>
                     </div>
                   </div>

@@ -15,6 +15,7 @@ use Rplus::Model::Realty::Manager;
 
 use Rplus::DB;
 
+use JSON;
 use Rplus::Util::PhoneNum;
 
 sub auth {
