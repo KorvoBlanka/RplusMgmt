@@ -256,7 +256,7 @@ sub import_present {
 
         # Распознавание адреса
         if ($addr) {
-            my $ts_query = join(' | ', grep { $_ && length($_) > 1 } split(/[ .,()]/, $addr));
+            my $ts_query = join(' | ', grep { $_ && length($_) > 1 } split(/[ .,()|&]/, $addr));
             if ($ts_query) {
                 $ts_query =~ s/'/''/g;
                 my $addrobj = Rplus::Model::AddressObject::Manager->get_objects(
