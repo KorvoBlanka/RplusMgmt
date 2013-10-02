@@ -8,7 +8,8 @@
 % use Rplus::Model::DictHouseType::Manager;
 % use Rplus::Model::DictRoomScheme::Manager;
 % use Rplus::Model::User::Manager;
-% use Rplus::Model::Media::Manager;
+
+% use Rplus::DB;
 
 % content_for after_bootstrap => begin
 <script type="application/javascript" src="/assets/typeahead.js/0.9.3/js/typeahead.min.js"></script>
@@ -465,25 +466,6 @@
         </div>
       </div>
 
-      <div class="row">
-        <div class="col-lg-12">
-          <div class="panel panel-default panel-sm">
-            <div class="panel-body">
-              <a data-toggle="collapse" href="#collapseExport-{id}"><small>Export</small></a>
-              <div id="collapseExport-{id}" class="collapse">
-              % {
-              % my $iter = Rplus::Model::Media::Manager->get_objects_iterator(query => [type => ['export', 'any'], delete_date => undef]);
-              % while (my $x = $iter->next) {
-                <div class="checkbox">
-                  <label><input type="checkbox" name="export_media" value="<%= $x->id %>" form="realtyCardForm-{id}"> <small><%= $x->name %></small></label>
-                </div>
-              % }}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <div class="row" id="realtyCard-SourceBlock-{id}" style="display: none;">
         <div class="col-lg-12">
           <div class="panel panel-default panel-sm">
@@ -492,6 +474,28 @@
                 <strong>Source: </strong> <span data-name="source_media_name">?</span><br>
                 <span data-name="source_media_text">Text</span>
               </small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-lg-12">
+          <div class="panel panel-default panel-sm">
+            <div class="panel-body">
+              <a data-toggle="collapse" href="#collapseExport-{id}"><small>Export</small></a>
+              <div id="collapseExport-{id}" class="collapse">
+              % {
+              % my $export_codes = Rplus::DB->new_or_cached()->dbh->selectall_arrayref(
+              %   q{SELECT J.* FROM media M, json_each_text(M.metadata->'export_codes') J WHERE M.type='export' AND M.delete_date IS NULL ORDER BY J.value},
+              %   {Slice => {}}
+              % );
+              % for my $x (@$export_codes) {
+                <div class="checkbox">
+                  <label><input type="checkbox" name="export_media" value="<%= $x->{'key'} %>" form="realtyCardForm-{id}"> <small><%= $x->{'value'} %></small></label>
+                </div>
+              % }}
+              </div>
             </div>
           </div>
         </div>

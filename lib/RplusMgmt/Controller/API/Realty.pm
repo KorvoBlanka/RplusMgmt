@@ -268,7 +268,8 @@ sub save {
         if ($f eq 'export_media' && exists $data{$f}) {
             my @export_media;
             if (ref($data{$f}) eq 'ARRAY' && @{$data{$f}}) {
-                @export_media = map { $_->id } @{Rplus::Model::Media::Manager->get_objects(query => [id => $data{$f}, type => ['any', 'export'], delete_date => undef])};
+                my $x = Rplus::DB->new_or_cached()->dbh->selectall_hashref(q{SELECT J.* FROM media M, json_each_text(M.metadata->'export_codes') J WHERE M.type='export' AND M.delete_date IS NULL}, 'key');
+                @export_media = grep { exists $x->{$_} } @{$data{$f}};
             }
             $realty->export_media(\@export_media);
         } elsif ($f eq 'tags') {
