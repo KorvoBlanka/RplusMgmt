@@ -21,7 +21,7 @@ exit unless $MEDIA;
 my $META = decode_json($MEDIA->metadata);
 
 # META params
-my $P = $META->{'params'};
+my $P = $META->{'params'} || {};
 
 unless ($ARGV[0]) { say "Usage: $0 <filename>"; exit; }
 export_present($ARGV[0]);
@@ -56,7 +56,7 @@ sub export_present {
                     state_code => 'work',
                     offer_type_code => $META->{'params'}->{'offer_type_code'},
                     'type.category_code' => 'room',
-                    \("t1.export_media && '{".$MEDIA->id."}'"),
+                    \("t1.export_media && '{present}'"),
                     ($l ? \("t1.landmarks && '{".$l->id."}'") : \("NOT (t1.landmarks && ARRAY(SELECT L.id FROM landmarks L WHERE L.type = 'present' AND L.delete_date IS NULL))")),
                 ],
                 sort_by => 'address_object.expanded_name',
@@ -110,16 +110,11 @@ sub export_present {
                 my $digest = join(', ', @digest);
 
                 my $price = _format_sum($realty->price).' руб.' if $realty->price;
-                my @phones;
-                for my $phone_num (@{$P->{'phones'}}) {
-                    if ($phone_num eq '%agent.phone_num%' && $realty->agent_id) {
-                        my $x = decode_json($realty->agent->metadata)->{'public_phone_num'} || $realty->agent->phone_num;
-                        push @phones, $x if $x;
-                    } else {
-                        push @phones, $phone_num;
-                    }
+                my $phones = $P->{'phones'} || '';
+                if ($phones =~ /%agent\.phone_num%/ && $realty->agent_id) {
+                    my $x = decode_json($realty->agent->metadata)->{'public_phone_num'} || $realty->agent->phone_num;
+                    $phones =~ s/%agent\.phone_num%/$x/;
                 }
-                my $phones = join(', ', @phones);
 
                 push @body, [\'\fi400\b', $location.' '] if $location;
                 push @body, join(' ', $type, ($digest ? "($digest)" : ()), ($price || ()), $phones);
@@ -142,7 +137,7 @@ sub export_present {
                     state_code => 'work',
                     offer_type_code => $META->{'params'}->{'offer_type_code'},
                     type_code => 'apartment_small',
-                    \("t1.export_media && '{".$MEDIA->id."}'"),
+                    \("t1.export_media && '{present}'"),
                     ($l ? \("t1.landmarks && '{".$l->id."}'") : \("NOT (t1.landmarks && ARRAY(SELECT L.id FROM landmarks L WHERE L.type = 'present' AND L.delete_date IS NULL))")),
                 ],
                 sort_by => 'address_object.expanded_name',
@@ -196,16 +191,11 @@ sub export_present {
                 my $digest = join(', ', @digest);
 
                 my $price = _format_sum($realty->price).' руб.' if $realty->price;
-                my @phones;
-                for my $phone_num (@{$P->{'phones'}}) {
-                    if ($phone_num eq '%agent.phone_num%' && $realty->agent_id) {
-                        my $x = decode_json($realty->agent->metadata)->{'public_phone_num'} || $realty->agent->phone_num;
-                        push @phones, $x if $x;
-                    } else {
-                        push @phones, $phone_num;
-                    }
+                my $phones = $P->{'phones'} || '';
+                if ($phones =~ /%agent\.phone_num%/ && $realty->agent_id) {
+                    my $x = decode_json($realty->agent->metadata)->{'public_phone_num'} || $realty->agent->phone_num;
+                    $phones =~ s/%agent\.phone_num%/$x/;
                 }
-                my $phones = join(', ', @phones);
 
                 push @body, [\'\fi400\b', $location.' '] if $location;
                 push @body, join(' ', $type, ($digest ? "($digest)" : ()), ($price || ()), $phones);
@@ -230,7 +220,7 @@ sub export_present {
                     'type.category_code' => 'apartment',
                     '!type_code' => 'apartment_small',
                     ($xrc ? (rooms_count => $xrc) : (rooms_count => {gt => 4})),
-                    \("t1.export_media && '{".$MEDIA->id."}'"),
+                    \("t1.export_media && '{present}'"),
                     ($l ? \("t1.landmarks && '{".$l->id."}'") : \("NOT (t1.landmarks && ARRAY(SELECT L.id FROM landmarks L WHERE L.type = 'present' AND L.delete_date IS NULL))")),
                 ],
                 sort_by => 'address_object.expanded_name',
@@ -284,16 +274,11 @@ sub export_present {
                 my $digest = join(', ', @digest);
 
                 my $price = _format_sum($realty->price).' руб.' if $realty->price;
-                my @phones;
-                for my $phone_num (@{$P->{'phones'}}) {
-                    if ($phone_num eq '%agent.phone_num%' && $realty->agent_id) {
-                        my $x = decode_json($realty->agent->metadata)->{'public_phone_num'} || $realty->agent->phone_num;
-                        push @phones, $x if $x;
-                    } else {
-                        push @phones, $phone_num;
-                    }
+                my $phones = $P->{'phones'} || '';
+                if ($phones =~ /%agent\.phone_num%/ && $realty->agent_id) {
+                    my $x = decode_json($realty->agent->metadata)->{'public_phone_num'} || $realty->agent->phone_num;
+                    $phones =~ s/%agent\.phone_num%/$x/;
                 }
-                my $phones = join(', ', @phones);
 
                 push @body, [\'\fi400\b', $location.' '] if $location;
                 push @body, join(' ', $type, ($digest ? "($digest)" : ()), ($price || ()), $phones);
@@ -316,7 +301,7 @@ sub export_present {
                     state_code => 'work',
                     offer_type_code => $META->{'params'}->{'offer_type_code'},
                     'type.category_code' => 'house',
-                    \("t1.export_media && '{".$MEDIA->id."}'"),
+                    \("t1.export_media && '{present}'"),
                     ($l ? \("t1.landmarks && '{".$l->id."}'") : \("NOT (t1.landmarks && ARRAY(SELECT L.id FROM landmarks L WHERE L.type = 'present' AND L.delete_date IS NULL))")),
                 ],
                 sort_by => 'address_object.expanded_name',
@@ -371,16 +356,11 @@ sub export_present {
                 my $digest = join(', ', @digest);
 
                 my $price = _format_sum($realty->price).' руб.' if $realty->price;
-                my @phones;
-                for my $phone_num (@{$P->{'phones'}}) {
-                    if ($phone_num eq '%agent.phone_num%' && $realty->agent_id) {
-                        my $x = decode_json($realty->agent->metadata)->{'public_phone_num'} || $realty->agent->phone_num;
-                        push @phones, $x if $x;
-                    } else {
-                        push @phones, $phone_num;
-                    }
+                my $phones = $P->{'phones'} || '';
+                if ($phones =~ /%agent\.phone_num%/ && $realty->agent_id) {
+                    my $x = decode_json($realty->agent->metadata)->{'public_phone_num'} || $realty->agent->phone_num;
+                    $phones =~ s/%agent\.phone_num%/$x/;
                 }
-                my $phones = join(', ', @phones);
 
                 push @body, [\'\fi400\b', $location.' '] if $location;
                 push @body, join(' ', $type, ($digest ? "($digest)" : ()), ($price || ()), $phones);

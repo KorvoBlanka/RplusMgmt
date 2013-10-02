@@ -17,7 +17,7 @@
         % my $MEDIA = Rplus::Model::Media::Manager->get_objects(query => [code => 'vnh', type => 'export'])->[0];
         % my $P = decode_json($MEDIA->metadata)->{'params'};
         $('#formExportVnh [name="offer_type_code"]:input').val("<%= $P->{'offer_type_code'} %>");
-        $('#formExportVnh [name="phones"]:input').val("<%= join(', ', @{$P->{'phones'}}); %>");
+        $('#formExportVnh [name="phones"]:input').val("<%= $P->{'phones'} %>");
         $('#formExportVnh [name="company"]:input').val("<%= $P->{'company'} %>");
       % }
       % {
@@ -25,7 +25,12 @@
         % my $P = decode_json($MEDIA->metadata)->{'params'};
         $('#formExportPresent [name="offer_type_code"]:input').val("<%= $P->{'offer_type_code'} %>");
         $('#formExportPresent [name="add_description_words"]:input').val("<%= $P->{'add_description_words'} %>");
-        $('#formExportPresent [name="phones"]:input').val("<%= join(', ', @{$P->{'phones'}}); %>");
+        $('#formExportPresent [name="phones"]:input').val("<%= $P->{'phones'} %>");
+      % }
+      % {
+        % my $MEDIA = Rplus::Model::Media::Manager->get_objects(query => [code => 'farpost', type => 'export'])->[0];
+        % my $P = decode_json($MEDIA->metadata)->{'params'};
+        $('#formExportFarpost [name="phones"]:input').val("<%= $P->{'phones'} %>");
       % }
     });
   }();
@@ -99,6 +104,31 @@
               <input type="number" class="form-control" name="add_description_words" style="width: 100px;" placeholder="# of words">
             </div>
           </div>
+          <div class="form-group">
+            <label class="col-lg-3 control-label">Phones</label>
+            <div class="col-lg-9">
+              <input type="text" class="form-control" name="phones" placeholder="Phone1, Phone2">
+            </div>
+          </div>
+          <div class="form-group">
+            <div class="col-lg-offset-3 col-lg-9">
+              <button type="submit" class="btn btn-primary pull-right">Process</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-lg-5">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title">Farpost</h3>
+      </div>
+      <div class="panel-body">
+        <form class="form-horizontal" role="form" id="formExportFarpost" action="/service/export/farpost" method="POST">
           <div class="form-group">
             <label class="col-lg-3 control-label">Phones</label>
             <div class="col-lg-9">

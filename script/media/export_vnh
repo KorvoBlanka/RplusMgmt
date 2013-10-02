@@ -18,10 +18,9 @@ use JSON;
 my $MEDIA = Rplus::Model::Media::Manager->get_objects(query => [type => 'export', code => 'vnh', delete_date => undef])->[0];
 exit unless $MEDIA;
 my $META = decode_json($MEDIA->metadata);
-my $MM_ID = [3, 4];
 
 # META params
-my $P = $META->{'params'};
+my $P = $META->{'params'} || {};
 
 unless ($ARGV[0]) { say "Usage: $0 <filename>"; exit; }
 export_vnh($ARGV[0]);
@@ -81,7 +80,7 @@ sub export_vnh {
                 state_code => 'work',
                 offer_type_code => $META->{'params'}->{'offer_type_code'},
                 'type.category_code' => ['room', 'apartment'],
-                \("t1.export_media && '{".join(',', @$MM_ID)."}'"),
+                \("t1.export_media && '{vnh,vnh_online}'"),
             ],
             sort_by => 'address_object.expanded_name',
             with_objects => ['address_object', 'sublandmark', 'type', 'agent'],
@@ -92,7 +91,7 @@ sub export_vnh {
             if ($realty->address_object_id) {
                 my $addrobj = $realty->address_object;
                 my $meta = decode_json($addrobj->metadata);
-                $location = ($meta->{'short_name'} ? $meta->{'short_name'} : $addrobj->name).' '.$addrobj->short_type;
+                $location = $addrobj->name.($addrobj->short_type ne 'ул' ? ' '.$addrobj->short_type : '');
                 if ($realty->sublandmark_id) {
                     $location .= ' ('.$realty->sublandmark->name.')';
                 }
@@ -102,37 +101,33 @@ sub export_vnh {
                 $area = Rplus::Model::Landmark::Manager->get_objects(query => [id => scalar($realty->landmarks), type => 'vnh_area', delete_date => undef], limit => 1)->[0];
                 $subarea = Rplus::Model::Landmark::Manager->get_objects(query => [id => scalar($realty->landmarks), type => 'vnh_subarea', delete_date => undef], limit => 1)->[0];
             }
-            my @phones;
-            for my $phone_num (@{$P->{'phones'}}) {
-                if ($phone_num eq '%agent.phone_num%' && $realty->agent_id) {
-                    my $x = decode_json($realty->agent->metadata)->{'public_phone_num'} || $realty->agent->phone_num;
-                    push @phones, $x if $x;
-                } else {
-                    push @phones, $phone_num;
-                }
+            my $phones = $P->{'phones'} || '';
+            if ($phones =~ /%agent\.phone_num%/ && $realty->agent_id) {
+                my $x = decode_json($realty->agent->metadata)->{'public_phone_num'} || $realty->agent->phone_num;
+                $phones =~ s/%agent\.phone_num%/$x/;
             }
 
             my $row = [
-                    $P->{'realty_categories'}->{$realty->type->category_code} || '',
-                    $realty->rooms_count || '',
-                    $area ? $area->name : '',
-                    $subarea ? $subarea->name : '',
-                    $location,
-                    $realty->floor || $realty->floors_count ? ($realty->floor || '?').'/'.($realty->floors_count || '?') : '',
-                    $realty->house_type_id ? (($P->{'dict'}->{'house_types'}->{$realty->house_type_id}) // '') : '',
-                    $realty->ap_scheme_id ? (($P->{'dict'}->{'ap_schemes'}->{$realty->ap_scheme_id}) // '') : '',
-                    $realty->square_total,
-                    $realty->square_living,
-                    $realty->square_kitchen,
-                    $realty->room_scheme_id ? (($P->{'dict'}->{'room_schemes'}->{$realty->room_scheme_id}) // '') : '',
-                    $realty->bathroom_id ? (($P->{'dict'}->{'bathrooms'}->{$realty->bathroom_id}) // '') : '',
-                    $realty->balcony_id ? (($P->{'dict'}->{'balconies'}->{$realty->balcony_id}) // '') : '',
-                    '+',
-                    $realty->condition_id ? (($P->{'dict'}->{'conditions'}->{$realty->condition_id}) // '') : '',
-                    $realty->price,
-                    join(', ', @phones) || '',
-                    $P->{'company'} || '',
-                    scalar(grep { $_ == 3 } @{$realty->export_media}) ? '+' : '',
+                $P->{'realty_categories'}->{$realty->type->category_code} || '',
+                $realty->rooms_count || '',
+                $area ? $area->name : '',
+                $subarea ? $subarea->name : '',
+                $location,
+                $realty->floor || $realty->floors_count ? ($realty->floor || '?').'/'.($realty->floors_count || '?') : '',
+                $realty->house_type_id ? (($P->{'dict'}->{'house_types'}->{$realty->house_type_id}) // '') : '',
+                $realty->ap_scheme_id ? (($P->{'dict'}->{'ap_schemes'}->{$realty->ap_scheme_id}) // '') : '',
+                $realty->square_total,
+                $realty->square_living,
+                $realty->square_kitchen,
+                $realty->room_scheme_id ? (($P->{'dict'}->{'room_schemes'}->{$realty->room_scheme_id}) // '') : '',
+                $realty->bathroom_id ? (($P->{'dict'}->{'bathrooms'}->{$realty->bathroom_id}) // '') : '',
+                $realty->balcony_id ? (($P->{'dict'}->{'balconies'}->{$realty->balcony_id}) // '') : '',
+                '+',
+                $realty->condition_id ? (($P->{'dict'}->{'conditions'}->{$realty->condition_id}) // '') : '',
+                $realty->price,
+                $phones,
+                $P->{'company'} || '',
+                scalar(grep { $_ eq 'vnh' } @{$realty->export_media}) ? '+' : '',
             ];
             for my $col_num (0..(scalar(@$row)-1)) {
                 if ($col_num == 5) {
@@ -180,13 +175,12 @@ sub export_vnh {
         my $txt_fmt = $workbook->add_format(num_format => '@');
 
         # Выборка частных домов и коттеджей
-        my $q = "t1.export_mass_media && '{".join(',', @$MM_ID)."}'";
         my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
             query => [
                 state_code => 'work',
                 offer_type_code => $META->{'params'}->{'offer_type_code'},
                 'type.category_code' => 'house',
-                \("t1.export_media && '{".join(',', @$MM_ID)."}'"),
+                \("t1.export_media && '{vnh,vnh_online}'"),
             ],
             sort_by => 'address_object.expanded_name',
             with_objects => ['address_object', 'sublandmark', 'type', 'agent'],
@@ -197,7 +191,7 @@ sub export_vnh {
             if ($realty->address_object_id) {
                 my $addrobj = $realty->address_object;
                 my $meta = decode_json($addrobj->metadata);
-                $location = ($meta->{'short_name'} ? $meta->{'short_name'} : $addrobj->name).' '.$addrobj->short_type;
+                $location = $addrobj->name.($addrobj->short_type ne 'ул' ? ' '.$addrobj->short_type : '');
                 if ($realty->sublandmark_id) {
                     $location .= ' ('.$realty->sublandmark->name.')';
                 }
@@ -207,29 +201,25 @@ sub export_vnh {
                 $area = Rplus::Model::Landmark::Manager->get_objects(query => [id => scalar($realty->landmarks), type => 'vnh_area', delete_date => undef], limit => 1)->[0];
                 $subarea = Rplus::Model::Landmark::Manager->get_objects(query => [id => scalar($realty->landmarks), type => 'vnh_subarea', delete_date => undef], limit => 1)->[0];
             }
-            my @phones;
-            for my $phone_num (@{$P->{'phones'}}) {
-                if ($phone_num eq '%agent.phone_num%' && $realty->agent_id) {
-                    my $x = decode_json($realty->agent->metadata)->{'public_phone_num'} || $realty->agent->phone_num;
-                    push @phones, $x if $x;
-                } else {
-                    push @phones, $phone_num;
-                }
+            my $phones = $P->{'phones'} || '';
+            if ($phones =~ /%agent\.phone_num%/ && $realty->agent_id) {
+                my $x = decode_json($realty->agent->metadata)->{'public_phone_num'} || $realty->agent->phone_num;
+                $phones =~ s/%agent\.phone_num%/$x/;
             }
 
             my $row = [
-                    $area ? $area->name : '',
-                    $subarea ? $subarea->name : '',
-                    $location,
-                    $realty->floors_count // '',
-                    $realty->house_type_id ? (($P->{'dict'}->{'house_types'}->{$realty->house_type_id}) // '') : '',
-                    ($realty->square_land_type || '') eq 'ar' && $realty->square_land ? $realty->square_land : '',
-                    $realty->square_total,
-                    $realty->rooms_count // '',
-                    $realty->description,
-                    $realty->price,
-                    join(', ', @phones) || '',
-                    $P->{'company'} || '',
+                $area ? $area->name : '',
+                $subarea ? $subarea->name : '',
+                $location,
+                $realty->floors_count // '',
+                $realty->house_type_id ? (($P->{'dict'}->{'house_types'}->{$realty->house_type_id}) // '') : '',
+                ($realty->square_land_type || '') eq 'ar' && $realty->square_land ? $realty->square_land : '',
+                $realty->square_total,
+                $realty->rooms_count // '',
+                $realty->description,
+                $realty->price,
+                $phones,
+                $P->{'company'} || '',
             ];
             for my $col_num (0..(scalar(@$row)-1)) {
                 $worksheet->write($row_num, $col_num, $row->[$col_num]);

@@ -5,7 +5,7 @@ use Mojo::Base 'Mojolicious::Controller';
 use Rplus::Model::Media;
 use Rplus::Model::Media::Manager;
 
-use Mojo::Util qw(trim slurp);
+use Mojo::Util qw(trim);
 use JSON;
 use File::Temp qw(tmpnam);
 
@@ -19,7 +19,7 @@ sub export {
             # TODO: Fix this
             if ($media->code eq 'vnh') {
                 my $offer_type_code = $self->param('offer_type_code');
-                my $phones = [grep { $_ } map { trim($_) } split(/,/, scalar $self->param('phones'))];
+                my $phones = trim(scalar $self->param('phones'));
                 my $company = trim(scalar $self->param('company'));
 
                 $meta->{'params'}->{'offer_type_code'} = $offer_type_code;
@@ -31,7 +31,7 @@ sub export {
                 $meta->{'prev_file'} = $file;
 
                 $media->metadata(encode_json($meta));
-                $media->save;
+                $media->save(changes_only => 1);
 
                 system($self->app->static->paths->[0]."/../script/media/export_vnh", $file);
 
@@ -45,7 +45,7 @@ sub export {
             if ($media->code eq 'present') {
                 my $offer_type_code = $self->param('offer_type_code');
                 my $add_description_words = $self->param('add_description_words');
-                my $phones = [grep { $_ } map { trim($_) } split(/,/, scalar $self->param('phones'))];
+                my $phones = trim(scalar $self->param('phones'));
 
                 $meta->{'params'}->{'offer_type_code'} = $offer_type_code;
                 $meta->{'params'}->{'add_description_words'} = $add_description_words;
@@ -56,7 +56,7 @@ sub export {
                 $meta->{'prev_file'} = $file;
 
                 $media->metadata(encode_json($meta));
-                $media->save;
+                $media->save(changes_only => 1);
 
                 system($self->app->static->paths->[0]."/../script/media/export_present", $file);
 
@@ -66,6 +66,25 @@ sub export {
                 return $self->rendered(200);
             }
 
+            if ($media->code eq 'farpost') {
+                my $phones = trim(scalar $self->param('phones'));
+
+                $meta->{'params'}->{'phones'} = $phones;
+
+                unlink($meta->{'prev_file'}) if $meta->{'prev_file'};
+                my $file = tmpnam();
+                $meta->{'prev_file'} = $file;
+
+                $media->metadata(encode_json($meta));
+                $media->save(changes_only => 1);
+
+                system($self->app->static->paths->[0]."/../script/media/export_farpost", $file);
+
+                $self->res->headers->content_disposition('attachment; filename=farpost.xls;');
+                $self->res->content->asset(Mojo::Asset::File->new(path => $file));
+
+                return $self->rendered(200);
+            }
         }
 
         return $self->render(text => 'Not found');
