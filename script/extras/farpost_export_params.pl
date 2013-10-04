@@ -16,6 +16,10 @@ my $media = Rplus::Model::Media::Manager->get_objects(query => [type => 'export'
 exit unless $media;
 
 my $metadata = {
+    params => {
+        phones => '%agent.phone_num%',
+    },
+
     landmark_types => {
         farpost => 'Farpost',
     },

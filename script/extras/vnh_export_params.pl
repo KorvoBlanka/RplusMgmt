@@ -84,8 +84,8 @@ my $metadata = {
         },
 
         offer_type_code => 'sale',
-        phones => ['%agent.phone_num%', '470-470'],
-        company => 'Маклер',
+        phones => '%agent.phone_num%',
+        company => 'My Company',
     },
 
     landmark_types => {
