@@ -11,6 +11,10 @@ use Rplus::Model::Media;
 use Rplus::Model::Media::Manager;
 use Rplus::Model::Landmark;
 use Rplus::Model::Landmark::Manager;
+use Rplus::Model::Photo;
+use Rplus::Model::Photo::Manager;
+
+use Rplus::Config;
 
 use Spreadsheet::WriteExcel;
 use JSON;
@@ -56,7 +60,7 @@ sub export_farpost {
             'Q1' => { text => 'Телефон агента', width => 20 },
             'R1' => { text => "Коммисия агенства", width => 15 },
             'S1' => { text => "Стоимость просмотра", width => 15 },
-            'T1' => { text => "Ссылки на фотографии", width => 25 },
+            'T1' => { text => "Ссылки на фотографии", width => 70 },
         };
         for my $x (keys %$header) {
             if ($x =~ /^(\S)\d$/) {
@@ -69,6 +73,7 @@ sub export_farpost {
         }
 
         my $txt_fmt = $workbook->add_format(num_format => '@');
+        my $txt_fmt2 = $workbook->add_format(); $txt_fmt2->set_text_wrap();
 
         # Выборка частных домов и коттеджей
         my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
@@ -88,6 +93,7 @@ sub export_farpost {
                 my $x = decode_json($realty->agent->metadata)->{'public_phone_num'} || $realty->agent->phone_num;
                 $phones =~ s/%agent\.phone_num%/$x/;
             }
+            my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $realty->id, delete_date => undef])};
 
             my $row = [
                 '',
@@ -109,9 +115,18 @@ sub export_farpost {
                 $phones,
                 '',
                 '',
+                @photos ? {type => 'photo_list', body => join("\n", map { $Rplus::Config::CONFIG->{'blob'}->{'url'}.'/photos/'.$_->realty_id.'/'.$_->filename } @photos)} : '',
             ];
             for my $col_num (0..(scalar(@$row)-1)) {
-                $worksheet->write($row_num, $col_num, $row->[$col_num]);
+                my $x = $row->[$col_num];
+                if (ref($x) eq 'HASH') {
+                    if ($x->{'type'} eq 'photo_list') {
+                        $worksheet->set_row($row_num, 60);
+                        $worksheet->write_string($row_num, $col_num, $x->{'body'}, $txt_fmt2);
+                    }
+                } else {
+                    $worksheet->write($row_num, $col_num, $x);
+                }
             }
             $row_num++;
         }
