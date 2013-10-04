@@ -5,13 +5,13 @@
 
 % content_for after_bootstrap => begin
 <script type="application/javascript" src="/assets/leaflet/0.6.4/leaflet.js"></script>
-<script type="application/javascript" src="/assets/leaflet.fullscreen/2013.07.05/Control.FullScreen.js"></script>
+<script type="application/javascript" src="/assets/leaflet.fullscreen/2013.09.30/Control.FullScreen.js"></script>
 <script type="application/javascript" src="/assets/sipml5/r213/SIPml-api.js"></script>
 % end
 
 % content_for header => begin
 <link rel="stylesheet" href="/assets/leaflet/0.6.4/leaflet.css">
-<link rel="stylesheet" href="/assets/leaflet.fullscreen/2013.07.05/Control.FullScreen.css">
+<link rel="stylesheet" href="/assets/leaflet.fullscreen/2013.09.30/Control.FullScreen.css">
 <style type="text/css">
   #searchTableWrapper {
     height: 600px;

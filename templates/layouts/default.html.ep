@@ -21,6 +21,11 @@
         padding-bottom: 50px;
       }
 
+      /* Workaround to fix https://github.com/twbs/bootstrap/issues/9855 */
+      .modal-open, .modal-open .navbar-fixed-top, .modal-open .navbar-fixed-bottom {
+        margin-right: auto !important;
+      }
+
       .margin-bottom-15 {
         margin-bottom: 15px;
       }
@@ -162,12 +167,12 @@
     </div>
 
     <!-- JavaScript -->
-    <script type="application/javascript" src="/assets/jquery/2.0.3/jquery.min.js"></script>
+    <script type="application/javascript" src="/assets/jquery/2.0.3/jquery-2.0.3.min.js"></script>
     <%= content_for 'before_bootstrap' %>
     <!-- Bootstrap -->
     <script type="application/javascript" src="/assets/bootstrap/<%= $bootstrap_ver %>/js/bootstrap.min.js"></script>
     <!-- MomentJS -->
-    <script type="application/javascript" src="/assets/moment/2.1.0/moment.min.js"></script>
+    <script type="application/javascript" src="/assets/moment/2.2.1/moment.min.js"></script>
     <!-- Pines Notify -->
     <script type="application/javascript" src="/assets/pnotify/1.2.2/jquery.pnotify.js"></script>
     <%= content_for 'after_bootstrap' %>
