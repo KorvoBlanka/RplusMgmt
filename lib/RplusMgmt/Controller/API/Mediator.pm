@@ -12,6 +12,7 @@ use Rplus::Model::Realty::Manager;
 use Rplus::DB;
 
 use Mojo::Util qw(trim);
+use Mojo::Collection;
 use Rplus::Util::PhoneNum;
 
 sub auth {
@@ -86,9 +87,9 @@ sub save {
 
     my ($num_realty_deleted, $update_company_list);
     eval {
-        unless ($mediator->company && lc($mediator->company->name) eq lc($company_name)) {
-            say $company_name;
-            my $company = Rplus::Model::MediatorCompany::Manager->get_objects(query => [[\'lower(name) = ?' => lc($company_name)], delete_date => undef], db => $db)->[0];
+        my $company = $mediator->company;
+        unless ($company && lc($company->name) eq lc($company_name)) {
+            $company = Rplus::Model::MediatorCompany::Manager->get_objects(query => [[\'lower(name) = ?' => lc($company_name)], delete_date => undef], db => $db)->[0];
             unless ($company) {
                 $company = Rplus::Model::MediatorCompany->new(name => $company_name, db => $db);
                 $company->save;
@@ -99,14 +100,31 @@ sub save {
 
         $mediator->save;
 
-        $num_realty_deleted = Rplus::Model::Realty::Manager->update_objects(
-            set => {state_code => 'deleted'},
-            where => [
-                '!state_code' => 'deleted',
-                \'seller_phones && (SELECT array_agg(M.phone_num) FROM mediators M WHERE M.delete_date IS NULL)'
-            ],
-            db => $db,
-        );
+        # Search for additional mediator phones
+        my $search_phones = Mojo::Collection->new();
+        my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(select => 'id, seller_phones', query => ['!state_code' => 'deleted', \("seller_phones && '{".$phone_num."}'")], db => $db);
+        while (my $realty = $realty_iter->next) {
+            push @$search_phones, ($realty->seller_phones);
+        }
+        $search_phones = $search_phones->uniq;
+
+        if ($search_phones->size) {
+            # Add additional mediators
+            for (@$search_phones) {
+                if ($_ ne $phone_num && !Rplus::Model::Mediator::Manager->get_objects_count(query => [phone_num => $_, delete_date => undef], db => $db)) {
+                    Rplus::Model::Mediator->new(db => $db, name => $name, phone_num => $_, company => $company)->save;
+                }
+            }
+
+            $num_realty_deleted = Rplus::Model::Realty::Manager->update_objects(
+                set => {state_code => 'deleted', change_date => \'now()'},
+                where => [
+                    '!state_code' => 'deleted',
+                    \("seller_phones && '{".$search_phones->join(',')."}'")
+                ],
+                db => $db,
+            );
+        }
 
         $db->commit;
         1;
