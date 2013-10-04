@@ -14,12 +14,30 @@
 % content_for after_bootstrap => begin
 <script type="application/javascript" src="/assets/typeahead.js/0.9.3/js/typeahead.min.js"></script>
 <script type="application/javascript" src="/assets/leaflet/0.6.4/leaflet.js"></script>
-<script type="application/javascript" src="/assets/leaflet.fullscreen/2013.07.05/Control.FullScreen.js"></script>
+<script type="application/javascript" src="/assets/leaflet.fullscreen/2013.09.30/Control.FullScreen.js"></script>
+<!-- The jQuery UI widget factory, can be omitted if jQuery UI is already included -->
+<script type="application/javascript" src="/assets/jquery-file-upload/8.8.5/js/vendor/jquery.ui.widget.js"></script>
+<!-- The Load Image plugin is included for the preview images and image resizing functionality -->
+<script type="application/javascript" src="/assets/javascript-load-image/1.9.1/js/load-image.min.js"></script>
+<!-- The Canvas to Blob plugin is included for image resizing functionality -->
+<script type="application/javascript" src="/assets/javascript-canvas-to-blob/2.0.7/js/canvas-to-blob.min.js"></script>
+<!-- The Iframe Transport is required for browsers without support for XHR file uploads -->
+<script type="application/javascript" src="/assets/jquery-file-upload/8.8.5/js/jquery.iframe-transport.js"></script>
+<!-- The basic File Upload plugin -->
+<script type="application/javascript" src="/assets/jquery-file-upload/8.8.5/js/jquery.fileupload.js"></script>
+<!-- The File Upload processing plugin -->
+<script type="application/javascript" src="/assets/jquery-file-upload/8.8.5/js/jquery.fileupload-process.js"></script>
+<!-- The File Upload image preview & resize plugin -->
+<script type="application/javascript" src="/assets/jquery-file-upload/8.8.5/js/jquery.fileupload-image.js"></script>
+<!-- The File Upload validation plugin -->
+<script type="application/javascript" src="/assets/jquery-file-upload/8.8.5/js/jquery.fileupload-validate.js"></script>
+<script type="application/javascript" src="/assets/holder/2.1.0/holder.min.js"></script>
 % end
 
 % content_for header => begin
 <link rel="stylesheet" href="/assets/leaflet/0.6.4/leaflet.css">
-<link rel="stylesheet" href="/assets/leaflet.fullscreen/2013.07.05/Control.FullScreen.css">
+<link rel="stylesheet" href="/assets/leaflet.fullscreen/2013.09.30/Control.FullScreen.css">
+<link rel="stylesheet" href="/assets/jquery-file-upload/8.8.5/css/jquery.fileupload-ui.css">
 <style type="text/css">
   .well-md {
     padding: 15px;
@@ -58,6 +76,11 @@
 
   .geo-map:active {
     cursor: pointer !important;
+  }
+
+  .thumbnail > canvas {
+    display: block;
+    margin: 0 auto;
   }
 
   /**
@@ -309,6 +332,116 @@
         });
       }
 
+      function initPhotosTab() {
+        var xcontainer = $('#realtyCardPhotos-' + realty.id, container);
+
+        function _ListPhotos() {
+          $.ajax({
+            type: 'POST',
+            url: '/api/photo/list',
+            data: {realty_id: realty.id},
+          })
+            .done(function (data) {
+              var xhtml = '';
+              for (var i = 0; i < data.length; i++) {
+                var x = data[i];
+                xhtml += '<div class="col-md-3 col-lg-3 photo-container" data-id="' + x.id + '">';
+                xhtml += '<div class="pull-right">';
+                xhtml += '<a href="#" data-action="main"><span class="glyphicon glyphicon-ok-circle text-muted" title="Set as main photo"></span></a>';
+                xhtml += '<a href="#" data-action="delete" style="margin-left: 6px;"><span class="glyphicon glyphicon-remove" title="Delete photo"></span></a>';
+                xhtml += '</div>';
+                xhtml += '<div class="clearfix"></div>';
+                xhtml += '<a href="#" class="thumbnail">';
+                xhtml += '<img src="' + x.thumbnail_url + '" class="img-responsive">';
+                xhtml += '</a>';
+                xhtml += '</div>';
+              }
+              $('.photo-list', xcontainer).html(xhtml);
+            })
+          ;
+        }
+
+        $('input[type="file"]', xcontainer).fileupload({
+          url: '/api/photo/add',
+          dataType: 'json',
+          formData: function () { var formData = [{ name: 'realty_id', value: realty.id }]; return formData; },
+          autoUpload: false,
+          singleFileUploads: true,
+          acceptFileTypes: /(\.|\/)(gif|jpe?g|png)$/i,
+          maxFileSize: 10000000, // 10 MB
+          disableImageResize: /Android(?!.*Chrome)|Opera/.test(window.navigator.userAgent),
+          imageMaxWidth: 1920,
+          imageMaxHeight: 1280,
+          previewMaxWidth: 203,
+          previewMaxHeight: 151,
+          previewCrop: true,
+          previewOrientation: false,
+        })
+          .on('fileuploadadd', function (e, data) {
+            data.context = $('<div class="col-md-3 col-lg-3 photo-container"></div>').appendTo($('.photo-queue', xcontainer));
+            var node = $(
+              '<div class="pull-right">' +
+              '<a href="#" data-action="delete"><span class="glyphicon glyphicon-remove" title="Delete photo"></span></a>' +
+              '</div>' +
+              '<div class="clearfix"></div>' +
+              '<div class="thumbnail"></div>'
+            ).appendTo(data.context);
+            data.context.data(data);
+          })
+          .on('fileuploadprocessalways', function (e, data) {
+            var file = data.files[0];
+            if (file.preview) {
+              $('.thumbnail', data.context).append(file.preview);
+            }
+          })
+          .on('fileuploadprogressall', function (e, data) {
+            var progress = parseInt(data.loaded / data.total * 100, 10);
+            $('.progress .progress-bar', xcontainer).css('width', progress + '%');
+          })
+          .on('fileuploaddone', function (e, data) {
+            data.context.remove();
+            $('.progress .progress-bar', xcontainer).css('width', '0%');
+            _ListPhotos();
+          })
+          .on('fileuploadfail', function (e, data) {
+            alert('Error while uploading file');
+            data.context.remove();
+            $('.progress .progress-bar', xcontainer).css('width', '0%');
+          })
+        ;
+
+        $('.start', xcontainer).click(function (e) {
+          $('.photo-queue > .photo-container', xcontainer).each(function (index, el) {
+            var $this = $(this),
+                data = $this.data();
+            data.submit();
+          });
+        });
+
+        $('.photo-queue', xcontainer).on('click', '.photo-container a[data-action="delete"]', function (e) {
+          $(this).closest('.photo-container').remove();
+        });
+
+        $('.photo-list', xcontainer).on('click', '.photo-container a[data-action="delete"]', function (e) {
+          var parent = $(this).closest('.photo-container'),
+              id = parent.data('id');
+          $.ajax({
+            type: 'POST',
+            url: '/api/photo/delete',
+            data: {id: id}
+          })
+            .done(function (data) {
+              if (data.status == 'success') {
+                parent.remove();
+              } else {
+                alert('Error while delete photo');
+              }
+            });
+        });
+
+        _ListPhotos();
+      }
+
       function initActions() {
         $('#btnRealtyCardSave-' + realty.id, container).click(function (e) {
           var formData = {
@@ -380,6 +513,7 @@
 
               initMainTab();
               initGeoTab();
+              initPhotosTab();
               initActions();
 
               fillForm();
@@ -414,6 +548,7 @@
 
               initMainTab();
               initGeoTab();
+              initPhotosTab();
               initActions();
 
               fillForm();
@@ -458,7 +593,7 @@
           <ul class="nav nav-pills nav-stacked">
             <li class="active"><a href="#realtyCardHome-{id}" data-toggle="pill"><span class="glyphicon glyphicon-home"></span> Main</a></li>
             <li><a href="#realtyCardGeo-{id}" data-toggle="pill"><span class="glyphicon glyphicon-globe"></span> Geo</a></li>
-            <li class="hidden"><a href="#realtyCardPhotos-{id}" data-toggle="pill"><span class="glyphicon glyphicon-camera"></span> Photos</a></li>
+            <li><a href="#realtyCardPhotos-{id}" data-toggle="pill"><span class="glyphicon glyphicon-camera"></span> Photos</a></li>
             <li class="hidden"><a href="#realtyCardTasks-{id}" data-toggle="pill"><span class="glyphicon glyphicon-tasks"></span> Tasks</a></li>
             <li class="hidden"><a href="#realtyCardComments-{id}" data-toggle="pill"><span class="glyphicon glyphicon-comment"></span> Comments</a></li>
             <li class="hidden"><a href="#realtyCardInterests-{id}" data-toggle="pill"><span class="glyphicon glyphicon-eye-open"></span> Interests</a></li>
@@ -840,6 +975,33 @@
         <div class="tab-pane" id="realtyCardGeo-{id}">
           <div class="geo-map" id="geoMap-{id}"></div>
         </div>
+
+        <div class="tab-pane" id="realtyCardPhotos-{id}">
+          <div class="row">
+            <div class="col-lg-7">
+              <p>
+                <span class="btn btn-success btn-sm fileinput-button">
+                  <i class="glyphicon glyphicon-plus"></i>
+                  <span>Add files...</span>
+                  <!-- The file input field used as target for the file upload widget -->
+                  <input id="fileupload-{id}" type="file" name="files[]" multiple>
+                </span>
+                <button class="btn btn-primary btn-sm start">
+                    <i class="glyphicon glyphicon-upload"></i>
+                    <span>Start upload</span>
+                </button>
+              </p>
+            </div>
+            <div class="col-lg-5">
+              <div class="progress progress-striped">
+                  <div class="progress-bar progress-bar-success" role="progressbar" aria-valuemin="0" aria-valuemax="100"></div>
+              </div>
+            </div>
+          </div>
+          <div class="row photo-queue"></div>
+          <div class="row photo-list"></div>
+        </div>
+
       </div>
     </div>
   </div>
