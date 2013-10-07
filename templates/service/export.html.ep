@@ -50,7 +50,7 @@
         <h3 class="panel-title">Вся Недвижимость Хабаровска</h3>
       </div>
       <div class="panel-body">
-        <form class="form-horizontal" role="form" id="formExportVnh" action="/service/export/vnh" method="POST">
+        <form class="form-horizontal" role="form" id="formExportVnh" action="/export/vnh" method="POST">
           <div class="form-group">
             <label class="col-lg-3 control-label">OfferType</label>
             <div class="col-lg-9">
@@ -88,7 +88,7 @@
         <h3 class="panel-title">Презент</h3>
       </div>
       <div class="panel-body">
-        <form class="form-horizontal" role="form" id="formExportPresent" action="/service/export/present" method="POST">
+        <form class="form-horizontal" role="form" id="formExportPresent" action="/export/present" method="POST">
           <div class="form-group">
             <label class="col-lg-3 control-label">OfferType</label>
             <div class="col-lg-9">
@@ -128,7 +128,7 @@
         <h3 class="panel-title">Farpost</h3>
       </div>
       <div class="panel-body">
-        <form class="form-horizontal" role="form" id="formExportFarpost" action="/service/export/farpost" method="POST">
+        <form class="form-horizontal" role="form" id="formExportFarpost" action="/export/farpost" method="POST">
           <div class="form-group">
             <label class="col-lg-3 control-label">Phones</label>
             <div class="col-lg-9">

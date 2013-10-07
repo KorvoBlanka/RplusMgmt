@@ -29,12 +29,11 @@ sub startup {
         # Main controller
         $r2b->get('/')->to(template => 'main/index');
 
-        # Service controller
-        $r2b->get('/service/:action')->to(controller => 'service');
-        $r2b->any('/service/:action/:id')->to(controller => 'service');
-
         # Configuration controller
         $r2b->get('/conf/:action')->to(controller => 'configuration');
+
+        # Export controllers
+        $r2b->route('/export')->to(namespace => 'RplusMgmt::Controller::Export')->post('/:controller')->to(action => 'index');
 
         # Other controllers
         $r2b->get('/:controller/:action')->to(action => 'index');
