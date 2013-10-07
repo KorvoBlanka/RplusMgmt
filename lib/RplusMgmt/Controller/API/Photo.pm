@@ -11,8 +11,6 @@ use Time::HiRes;
 use File::Path qw(make_path);
 use Image::Magick;
 
-use Rplus::Config;
-
 sub auth {
     my $self = shift;
 
@@ -36,8 +34,8 @@ sub list {
     while (my $photo = $photo_iter->next) {
         push @photos, {
             id => $photo->id,
-            photo_url => $Rplus::Config::CONFIG->{'blob'}->{'url'}.'/photos/'.$photo->realty_id.'/'.$photo->filename,
-            thumbnail_url => $Rplus::Config::CONFIG->{'blob'}->{'url'}.'/photos/'.$photo->realty_id.'/'.$photo->thumbnail_filename,
+            photo_url => $self->config->{'storage'}->{'url'}.'/photos/'.$photo->realty_id.'/'.$photo->filename,
+            thumbnail_url => $self->config->{'storage'}->{'url'}.'/photos/'.$photo->realty_id.'/'.$photo->thumbnail_filename,
         };
     }
 
@@ -54,7 +52,7 @@ sub add {
     return $self->render(json => {status => 'failed'}) unless Rplus::Model::Realty::Manager->get_objects_count(query => [id => $realty_id]);
 
     if (my $file = $self->param('files[]')) {
-        my $path = $Rplus::Config::CONFIG->{'blob'}->{'path'}.'/photos/'.$realty_id;
+        my $path = $self->config->{'storage'}->{'path'}.'/photos/'.$realty_id;
         my $name = Time::HiRes::time =~ s/\.//r; # Unique name
 
         eval {

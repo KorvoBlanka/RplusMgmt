@@ -19,7 +19,17 @@
         }
     },
 
-    is_agency => 0,
+    storage => {
+        path => '/mnt/data/blob/mgmt',
+        url => 'http://blob.dvnic.com/mgmt',
+    },
+
+    smsc => {
+        psw => 'password',
+        sender => 'myname',
+        tz => '+7',
+        login => 'login',
+    },
 
     hypnotoad => {
         listen => ['http://127.0.0.1:9100'],
