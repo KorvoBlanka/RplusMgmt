@@ -312,15 +312,16 @@
         }
       });
 
-      var _dblclick_timer, _dblclick_timeout = 350;
       !function onRealtyTableItemClick() {
+        var _dblclick_timer, _dblclick_timeout = 350;
         $('#realtyTable > tbody').on('click', 'tr', function (e) {
           var $this = $(this);
           var id = $this.data('id');
+
           if (!_dblclick_timer || _dblclick_timer[0] != id) {
+            if (!$this.hasClass('opened')) $this.toggleClass('selected').toggleClass('warning');
             _dblclick_timer = [
               id, setTimeout(function () {
-                if (!$this.hasClass('opened')) $this.toggleClass('selected').toggleClass('warning');
                 if (_dblclick_timer[0] == id) _dblclick_timer = null;
               }, _dblclick_timeout)
             ];
