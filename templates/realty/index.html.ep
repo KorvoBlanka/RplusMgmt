@@ -7,6 +7,7 @@
 % use JSON;
 
 % content_for header => begin
+<link rel="stylesheet" href="/assets/leaflet/0.6.4/leaflet.css">
 <style tyle="text/css">
   #navTab button.close {
     margin-left: -3px;
@@ -29,9 +30,21 @@
   #realtyTable > tbody > tr > td {
     text-align: center;
   }
+
+  #modalGeo .modal-dialog {
+    width: 80%;
+  }
+
+  #modalGeo .modal-body {
+    padding: 5px;
+  }
 </style>
 % end
 
+% content_for after_bootstrap => begin
+<script type="application/javascript" src="/assets/leaflet/0.6.4/leaflet.js"></script>
+% end
+ 
 % content_for javascript => begin
 %= include 'javascript/rplus_table';
 <script type="application/javascript">
@@ -139,6 +152,11 @@
             $('#realtyCount').text(data.count);
           } else {
             $('#realtyTable > tbody').append(xhtml);
+          }
+
+          for (var i = 0; i < data.list.length; i++) {
+            var r = data.list[i];
+            $('#realtyTable > tbody > tr[data-id="' + r.id + '"]').data('obj', r);
           }
 
           // Пометим открытые варианты (среди новых)
@@ -307,7 +325,7 @@
 
       $('#realtyTableWrapper').scroll(function (e) {
         if ($(this).scrollTop() + $(this).innerHeight() >= $(this)[0].scrollHeight) {
-          var lastPage = $('#realtyTable > tbody > tr:last-child').data('page');
+          var lastPage = $('#realtyTable > tbody > tr:last').data('page');
           if (!_List_started && !_List_finished) _List(lastPage + 1);
         }
       });
@@ -317,6 +335,23 @@
         $('#realtyTable > tbody').on('click', 'tr', function (e) {
           var $this = $(this);
           var id = $this.data('id');
+
+          if (e.shiftKey) {
+            // Select all elements from first selected to clicked
+            var $prev = $this.prevUntil('.selected', ':not(.opened)');
+            if ($prev.length) {
+              $prev.addClass('selected').addClass('warning');
+            }
+            /*
+            var lastIndex = $this[0].rowIndex,
+                firstIndex,
+                $x = $('#realtyTable > tbody > tr:lt(' + (lastIndex - 1) + ')').filter('.selected:last');
+            if ($x.length) {
+              firstIndex = $x[0].rowIndex;
+              $('#realtyTable > tbody > tr:gt(' + (firstIndex - 1) + '):lt(' + (lastIndex - 1) + '):not(.selected):not(.opened)').addClass('selected').addClass('warning');
+            }
+            */
+          }
 
           if (!_dblclick_timer || _dblclick_timer[0] != id) {
             if (!$this.hasClass('opened')) $this.toggleClass('selected').toggleClass('warning');
@@ -373,6 +408,136 @@
         return false;
       });
 
+      // Set Agent
+      $('#btnRealtySetAgent').on('click', 'a[data-agent]', function (e) {
+        var agentId = $(this).data('agent');
+        var $selected = $('#realtyTable > tbody > tr.selected');
+        $selected.each(function () {
+          var $this = $(this);
+          var id = $this.data('id');
+          $.ajax({
+            type: "POST",
+            url: "/api/realty/save",
+            data: {id: id, agent_id: agentId}
+          })
+            .done(function (data) {
+              if (data.status == 'success') {
+                var r = data.data;
+                // Обновим данные в таблице
+                for (var j = 0; j < realtyTableConf.fields.length; j++) {
+                  var f = realtyTableConf.fields[j];
+                  $('td:nth-child(' + (j + 1) + ')', $this).html(f.val(r));
+                }
+                $this.removeClass('selected').removeClass('warning').addClass('success');
+              }
+            })
+          ;
+        });
+      });
+
+      // Set State
+      $('#btnRealtySetState').on('click', 'a[data-state]', function (e) {
+        var state = $(this).data('state');
+        var $selected = $('#realtyTable > tbody > tr.selected');
+        $selected.each(function () {
+          var $this = $(this);
+          var id = $this.data('id');
+          $.ajax({
+            type: "POST",
+            url: "/api/realty/save",
+            data: {id: id, state_code: state}
+          })
+            .done(function (data) {
+              if (data.status == 'success') {
+                var r = data.data;
+                // Обновим данные в таблице
+                for (var j = 0; j < realtyTableConf.fields.length; j++) {
+                  var f = realtyTableConf.fields[j];
+                  $('td:nth-child(' + (j + 1) + ')', $this).html(f.val(r));
+                }
+                $this.removeClass('selected').removeClass('warning').addClass('success');
+              }
+            })
+          ;
+        });
+      });
+
+      // Geo
+      !function initGeo() {
+        var geoMap, markerLG;
+        $('.modal')
+          .modal({show: false, backdrop: true, keyboard: false})
+          .on('show.bs.modal', function () {
+            if (markerLG) markerLG.clearLayers();
+          })
+          .on('shown.bs.modal', function () {
+            if (!geoMap) {
+              geoMap = L.map('realtyGeoMap', {
+                center: [48.480232846617845, 135.07203340530396],
+                zoom: 16,
+              });
+
+              L.tileLayer('http://tile{s}.maps.2gis.com/tiles?x={x}&y={y}&z={z}&v=10', {
+                maxZoom: 18,
+                subdomains: '0123',
+                errorTileUrl: 'http://maps.api.2gis.ru/images/nomap.png',
+                attribution: '<a href="http://http://2gis.ru/">2GIS</a> Layer | RplusMgmt',
+              }).addTo(geoMap);
+
+              markerLG = new L.LayerGroup();
+              markerLG.addTo(geoMap);
+            }
+            // Show realty on the map
+            $('#realtyTable > tbody > tr.selected[data-lat]').each(function () {
+              var lat = $(this).data('lat'),
+                  lng = $(this).data('lng'),
+                  r   = $(this).data('obj');
+              if (lat && lng) {
+                var marker = L.marker([lat, lng]).addTo(markerLG);
+                if (1) {
+                  var parts = [];
+                  parts.push('<strong>' + Rplus.Util.escape(Rplus.Table.realty_types[r.type_code].name) + '</strong>');
+                  if (r.rooms_count) parts.push(r.rooms_count + 'к');
+                  if (r.address_object) {
+                    parts.push(
+                      Rplus.Util.escape(r.address_object.name + ' ' + r.address_object.short_type) +
+                      (r.sublandmark ? ' (' + r.sublandmark.name + ')' : '')
+                    );
+                    parts.push(Rplus.Util.escape(r.address_object.addr_parts[1].name + ' ' + r.address_object.addr_parts[1].short_type));
+                  }
+                  if (r.ap_scheme_id) parts.push(Rplus.Table.Dict.ap_schemes[r.ap_scheme_id].metadata.description || Rplus.Table.Dict.ap_schemes[r.ap_scheme_id].name);
+                  if (r.house_type_id) parts.push(Rplus.Table.Dict.house_types[r.house_type_id].metadata.description || Rplus.Table.Dict.house_types[r.house_type_id].name);
+                  if (r.room_scheme_id) parts.push(Rplus.Table.Dict.room_schemes[r.room_scheme_id].metadata.description || Rplus.Table.Dict.room_schemes[r.room_scheme_id].name);
+                  if (r.floor && r.floors_count) { parts.push(r.floor + '/' + r.floors_count + ' эт.') } else if (r.floor || r.floors_count) { parts.push((r.floor || r.floors_count) + ' эт.'); }
+                  if (r.condition_id) parts.push(Rplus.Table.Dict.conditions[r.condition_id].metadata.description || Rplus.Table.Dict.conditions[r.condition_id].name);
+                  if (r.balcony_id) parts.push(Rplus.Table.Dict.balconies[r.balcony_id].metadata.description || Rplus.Table.Dict.balconies[r.balcony_id].name);
+                  if (r.bathroom_id) parts.push(Rplus.Table.Dict.bathrooms[r.bathroom_id].metadata.description || Rplus.Table.Dict.bathrooms[r.bathroom_id].name);
+                  {
+                    var squares = [];
+                    if (r.square_total) squares.push(r.square_total);
+                    if (r.square_living) squares.push(r.square_living);
+                    if (r.square_kitchen) squares.push(r.square_kitchen);
+                    if (squares.length) parts.push(squares.join('/') + ' кв. м.');
+                  }
+                  if (r.square_land && r.square_land_type) parts.push(r.square_land + ' ' + (r.square_land_type == 'ar' ? 'сот.' : 'га'));
+                  //if (r.description) parts.push(r.description);
+                  if (r.price) parts.push('<span class="text-primary">' + r.price + ' тыс. руб.' + '</span>');
+                  if (r.agent_id) {
+                    var agent = Rplus.Table.users[r.agent_id];
+                    parts.push('<br><span>Агент: ' + (agent.public_name || agent.name) + ', ' + (agent.public_phone_num || Rplus.Util.formatPhoneNum(Rplus.Table.users[r.agent_id].phone_num)) + '</span>');
+                  }
+
+                  marker.bindPopup(parts.join(', '));
+                }
+              }
+            });
+          })
+        ;
+        $('#btnRealtyGeo').click(function (e) {
+          $('.modal').modal('show');
+        });
+      }();
+
       // Notifications
       $.pnotify.defaults.history = false;
       $.pnotify.defaults.styling = 'bootstrap3';
@@ -381,6 +546,18 @@
     });
   }();
 </script>
+% end
+
+% content_for modals => begin
+<div class="modal fade" id="modalGeo" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-body">
+        <div class="geo-map" id="realtyGeoMap" style="width: 100%; height: 800px"></div>
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
 % end
 
 <div class="row margin-bottom-15">
@@ -414,6 +591,65 @@
         </div>
       </div>
     </div>
+
+    <div class="btn-group" style="position: fixed; bottom: 60px; right: 10px; display: block;">
+      <div class="btn-group dropup" id="btnRealtySetAgent">
+        <button type="button" class="btn btn-default btn-sm dropdown-toggle" data-toggle="dropdown">
+          <span class="glyphicon glyphicon-user"></span> Set Agent <span class="caret"></span>
+        </button>
+        <ul class="dropdown-menu pull-right" role="menu" >
+          <li><a href="#" data-agent=""><strong>Nobody</strong></a></li>
+          % {
+          % my $iter = Rplus::Model::User::Manager->get_objects_iterator(select => 'id, name', query => [role => ['agent', 'manager'], delete_date => undef], sort_by => 'name');
+          % while (my $x = $iter->next) {
+            <li><a href="#" data-agent="<%= $x->id %>"><%= $x->name %></a></li>
+          % }}
+        </ul>
+      </div>
+      <div class="btn-group dropup" id="btnRealtySetState">
+        <button type="button" class="btn btn-default btn-sm dropdown-toggle" data-toggle="dropdown">
+          <span class="glyphicon glyphicon-th-large"></span> Set State <span class="caret"></span>
+        </button>
+        <ul class="dropdown-menu pull-right" role="menu">
+          % {
+          % my $iter = Rplus::Model::RealtyState::Manager->get_objects_iterator(sort_by => 'id');
+          % while (my $x = $iter->next) {
+          % my $metadata = decode_json($x->metadata);
+            <li><a href="#" data-state="<%= $x->code %>"><span class="glyphicon <%= $metadata->{'icon-class'} %>"></span>&nbsp;&nbsp;<%= $x->name %></a></li>
+          % }}
+        </ul>
+      </div>
+    </div>
+
+    % if (0) {
+    <nav class="navbar navbar-default" style="position: fixed; bottom: 40px; right: 10px; display: none;">
+      <ul class="nav navbar-nav">
+        <li class="dropdown dropup">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-user"></span> Set Agent <b class="caret"></b></a>
+          <ul class="dropdown-menu pull-right">
+            <li><a href="#" data-agent="nobody"><strong>Nobody</strong></a></li>
+            % {
+            % my $iter = Rplus::Model::User::Manager->get_objects_iterator(select => 'id, name', query => [role => ['agent', 'manager'], delete_date => undef], sort_by => 'name');
+            % while (my $x = $iter->next) {
+              <li><a href="#" data-agent="<%= $x->id %>"><%= $x->name %></a></li>
+            % }}
+          </ul>
+        </li>
+        <li class="dropdown dropup">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-th-large"></span>&nbsp;&nbsp;Set State <b class="caret"></b></a>
+          <ul class="dropdown-menu pull-right">
+            <li><a href="#" data-state=""><span class="glyphicon glyphicon-th-large"></span>&nbsp;&nbsp;Any</a></li>
+            % {
+            % my $iter = Rplus::Model::RealtyState::Manager->get_objects_iterator(sort_by => 'id');
+            % while (my $x = $iter->next) {
+            % my $metadata = decode_json($x->metadata);
+              <li><a href="#" data-state="<%= $x->code %>"><span class="glyphicon <%= $metadata->{'icon-class'} %>"></span>&nbsp;&nbsp;<%= $x->name %></a></li>
+            % }}
+          </ul>
+        </li>
+      </ul>
+    </nav>
+    % }
 
     <nav class="navbar navbar-default navbar-fixed-bottom">
       <div class="container">

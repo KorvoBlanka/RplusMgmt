@@ -13,8 +13,6 @@
 
 % content_for after_bootstrap => begin
 <script type="application/javascript" src="/assets/typeahead.js/0.9.3/js/typeahead.min.js"></script>
-<script type="application/javascript" src="/assets/leaflet/0.6.4/leaflet.js"></script>
-<script type="application/javascript" src="/assets/leaflet.fullscreen/2013.09.30/Control.FullScreen.js"></script>
 <!-- The jQuery UI widget factory, can be omitted if jQuery UI is already included -->
 <script type="application/javascript" src="/assets/jquery-file-upload/8.8.5/js/vendor/jquery.ui.widget.js"></script>
 <!-- The Load Image plugin is included for the preview images and image resizing functionality -->
@@ -31,12 +29,9 @@
 <script type="application/javascript" src="/assets/jquery-file-upload/8.8.5/js/jquery.fileupload-image.js"></script>
 <!-- The File Upload validation plugin -->
 <script type="application/javascript" src="/assets/jquery-file-upload/8.8.5/js/jquery.fileupload-validate.js"></script>
-<script type="application/javascript" src="/assets/holder/2.1.0/holder.min.js"></script>
 % end
 
 % content_for header => begin
-<link rel="stylesheet" href="/assets/leaflet/0.6.4/leaflet.css">
-<link rel="stylesheet" href="/assets/leaflet.fullscreen/2013.09.30/Control.FullScreen.css">
 <link rel="stylesheet" href="/assets/jquery-file-upload/8.8.5/css/jquery.fileupload-ui.css">
 <style type="text/css">
   .well-md {
@@ -66,16 +61,6 @@
 
   .form-realty textarea {
     max-width: 100%;
-  }
-
-  .geo-map {
-    height: 500px;
-    width: 100%;
-    cursor: default !important;
-  }
-
-  .geo-map:active {
-    cursor: pointer !important;
   }
 
   .thumbnail > canvas {
@@ -306,7 +291,6 @@
             geoMap = L.map('geoMap-' + realty.id, {
               center: [48.480232846617845, 135.07203340530396],
               zoom: 16,
-              fullscreenControl: true,
             });
 
             L.tileLayer('http://tile{s}.maps.2gis.com/tiles?x={x}&y={y}&z={z}&v=10', {
@@ -591,26 +575,14 @@
       <div class="row margin-bottom-15">
         <div class="col-lg-12">
           <ul class="nav nav-pills nav-stacked">
-            <li class="active"><a href="#realtyCardHome-{id}" data-toggle="pill"><span class="glyphicon glyphicon-home"></span> Main</a></li>
+            <li><a href="#realtyCardOverview-{id}" data-toggle="pill"><span class="glyphicon glyphicon-list-alt"></span> Overview</a></li>
+            <li class="active"><a href="#realtyCardMain-{id}" data-toggle="pill"><span class="glyphicon glyphicon-home"></span> Main</a></li>
             <li><a href="#realtyCardGeo-{id}" data-toggle="pill"><span class="glyphicon glyphicon-globe"></span> Geo</a></li>
             <li><a href="#realtyCardPhotos-{id}" data-toggle="pill"><span class="glyphicon glyphicon-camera"></span> Photos</a></li>
             <li class="hidden"><a href="#realtyCardTasks-{id}" data-toggle="pill"><span class="glyphicon glyphicon-tasks"></span> Tasks</a></li>
             <li class="hidden"><a href="#realtyCardComments-{id}" data-toggle="pill"><span class="glyphicon glyphicon-comment"></span> Comments</a></li>
             <li class="hidden"><a href="#realtyCardInterests-{id}" data-toggle="pill"><span class="glyphicon glyphicon-eye-open"></span> Interests</a></li>
           </ul>
-        </div>
-      </div>
-
-      <div class="row" id="realtyCard-SourceBlock-{id}" style="display: none;">
-        <div class="col-lg-12">
-          <div class="panel panel-default panel-sm">
-            <div class="panel-body">
-              <small>
-                <strong>Source: </strong> <span data-name="source_media_name">?</span><br>
-                <span data-name="source_media_text">Text</span>
-              </small>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -635,11 +607,32 @@
           </div>
         </div>
       </div>
+
+      <div class="row" id="realtyCard-SourceBlock-{id}" style="display: none;">
+        <div class="col-lg-12">
+          <div class="panel panel-default panel-sm">
+            <div class="panel-body">
+              <small>
+                <strong>Source: </strong> <span data-name="source_media_name">?</span><br>
+                <span data-name="source_media_text">Text</span>
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
     </div> <!-- /Left Block -->
 
     <div class="col-lg-10">
       <div class="tab-content">
-        <div class="tab-pane active" id="realtyCardHome-{id}">
+        <div class="tab-pane" id="realtyCardOverview-{id}">
+          <div class="panel panel-default">
+            <div class="panel-body">
+              Overview example
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-pane active" id="realtyCardMain-{id}">
           <form class="form-horizontal form-realty" role="form" id="realtyCardForm-{id}">
 
             <div class="well well-md"> <!-- well -->
@@ -973,7 +966,7 @@
         </div>
 
         <div class="tab-pane" id="realtyCardGeo-{id}">
-          <div class="geo-map" id="geoMap-{id}"></div>
+          <div class="geo-map" id="geoMap-{id}" style="width: 100%; height: 500px;"></div>
         </div>
 
         <div class="tab-pane" id="realtyCardPhotos-{id}">

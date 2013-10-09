@@ -102,6 +102,14 @@
         }
       }
 
+      .geo-map {
+        cursor: default !important;
+      }
+
+      .geo-map:active {
+        cursor: -webkit-grab !important;
+      }
+
       .ui-pnotify.stack-bottomright {
         /* These are just CSS default values to reset the pnotify CSS. */
         right: auto;
