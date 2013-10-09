@@ -592,6 +592,7 @@
       </div>
     </div>
 
+    % if (session->{'user'}->{'role'} eq 'manager') {
     <div class="btn-group" style="position: fixed; bottom: 60px; right: 10px; display: block;">
       <div class="btn-group dropup" id="btnRealtySetAgent">
         <button type="button" class="btn btn-default btn-sm dropdown-toggle" data-toggle="dropdown">
@@ -620,6 +621,7 @@
         </ul>
       </div>
     </div>
+    % }
 
     % if (0) {
     <nav class="navbar navbar-default" style="position: fixed; bottom: 40px; right: 10px; display: none;">
