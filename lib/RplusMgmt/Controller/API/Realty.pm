@@ -265,22 +265,24 @@ sub save {
         next if $f eq 'fts';
         next if $f eq 'metadata';
 
-        if ($f eq 'export_media' && exists $data{$f}) {
-            my @export_media;
-            if (ref($data{$f}) eq 'ARRAY' && @{$data{$f}}) {
-                my $x = Rplus::DB->new_or_cached()->dbh->selectall_hashref(q{SELECT J.* FROM media M, json_each_text(M.metadata->'export_codes') J WHERE M.type='export' AND M.delete_date IS NULL}, 'key');
-                @export_media = grep { exists $x->{$_} } @{$data{$f}};
+        if (exists $data{$f}) {
+            if ($f eq 'export_media') {
+                my @export_media;
+                if (ref($data{$f}) eq 'ARRAY' && @{$data{$f}}) {
+                    my $x = Rplus::DB->new_or_cached()->dbh->selectall_hashref(q{SELECT J.* FROM media M, json_each_text(M.metadata->'export_codes') J WHERE M.type='export' AND M.delete_date IS NULL}, 'key');
+                    @export_media = grep { exists $x->{$_} } @{$data{$f}};
+                }
+                $realty->export_media(\@export_media);
+            } elsif ($f eq 'tags') {
+            } elsif ($f eq 'seller_phones') {
+                my @seller_phones;
+                if (ref($data{$f}) eq 'ARRAY') {
+                    @seller_phones = map { Rplus::Util::PhoneNum->parse($_) } @{$data{$f}};
+                }
+                $realty->seller_phones(\@seller_phones);
+            } else {
+                $realty->$f($data{$f});
             }
-            $realty->export_media(\@export_media);
-        } elsif ($f eq 'tags') {
-        } elsif ($f eq 'seller_phones' && exists $data{$f}) {
-            my @seller_phones;
-            if (ref($data{$f}) eq 'ARRAY') {
-                @seller_phones = map { Rplus::Util::PhoneNum->parse($_) } @{$data{$f}};
-            }
-            $realty->seller_phones(\@seller_phones);
-        } elsif (exists $data{$f}) {
-            $realty->$f($data{$f});
         }
     }
 
