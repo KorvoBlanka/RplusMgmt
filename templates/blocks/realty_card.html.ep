@@ -12,7 +12,6 @@
 % use Rplus::DB;
 
 % content_for after_bootstrap => begin
-<script type="application/javascript" src="/assets/typeahead.js/0.9.3/js/typeahead.min.js"></script>
 <!-- The jQuery UI widget factory, can be omitted if jQuery UI is already included -->
 <script type="application/javascript" src="/assets/jquery-file-upload/8.8.5/js/vendor/jquery.ui.widget.js"></script>
 <!-- The Load Image plugin is included for the preview images and image resizing functionality -->
@@ -66,64 +65,6 @@
   .thumbnail > canvas {
     display: block;
     margin: 0 auto;
-  }
-
-  /**
-    * Twitter Typeahead.js
-    */
-  .twitter-typeahead {
-    width: 100%;
-  }
-
-  .twitter-typeahead .tt-query,
-  .twitter-typeahead .tt-hint {
-    margin-bottom: 0;
-  }
-  .tt-hint {
-    display: none; /* block */
-    width: 100%;
-    height: 38px;
-    padding: 8px 12px;
-    font-size: 14px;
-    line-height: 1.428571429;
-    color: #999;
-    vertical-align: middle;
-    background-color: #ffffff;
-    border: 1px solid #cccccc;
-    border-radius: 4px;
-    -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
-          box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
-    -webkit-transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s;
-          transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s;
-  }
-
-  .tt-dropdown-menu {
-    min-width: 200px;
-    margin-top: 2px;
-    padding: 5px 0;
-    background-color: #ffffff;
-    border: 1px solid #cccccc;
-    border: 1px solid rgba(0, 0, 0, 0.15);
-    border-radius: 4px;
-    -webkit-box-shadow: 0 6px 12px rgba(0, 0, 0, 0.175);
-          box-shadow: 0 6px 12px rgba(0, 0, 0, 0.175);
-    background-clip: padding-box;
-
-  }
-  .tt-suggestion {
-    display: block;
-    padding: 3px 20px;
-  }
-  .tt-suggestion.tt-is-under-cursor {
-    color: #fff;
-    background-color: #428bca;
-  }
-  .tt-suggestion.tt-is-under-cursor a {
-    color: #fff;
-  }
-  .tt-suggestion p {
-    font-size: 0.9em;
-    margin: 0;
   }
 </style>
 % end

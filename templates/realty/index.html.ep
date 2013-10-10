@@ -8,6 +8,7 @@
 
 % content_for header => begin
 <link rel="stylesheet" href="/assets/leaflet/0.6.4/leaflet.css">
+<link rel="stylesheet" href="/assets/typeahead.js/0.9.3/css/typeahead.js-bootstrap.css">
 <style tyle="text/css">
   #navTab button.close {
     margin-left: -3px;
@@ -38,10 +39,21 @@
   #modalGeo .modal-body {
     padding: 5px;
   }
+
+  /* Typeahead.js input-sm fix */
+  .tt-hint {
+    height: 30px;
+    padding: 5px 10px;
+    font-size: 12px;
+    line-height: 1.5;
+    border-radius: 3px;
+    color: #c0c0c0;
+  }
 </style>
 % end
 
 % content_for after_bootstrap => begin
+<script type="application/javascript" src="/assets/typeahead.js/0.9.3/js/typeahead.min.js"></script>
 <script type="application/javascript" src="/assets/leaflet/0.6.4/leaflet.js"></script>
 % end
  
@@ -236,6 +248,31 @@
     }
 
     $(function () {
+      // Query completion
+      $('#searchQuery')
+        .typeahead({
+          name: 'searchQuery',
+          valueKey: "value",
+          limit: 10,
+          remote: "/api/query/complete?q=%QUERY&limit=10",
+        })
+        .bind('typeahead:selected', function (e, obj) {
+          _List(1);
+        })
+        .bind('input', function (e) {
+          if ($(this).val() == '') {
+            _List(1);
+          }
+        })
+        .bind('keydown', function (e) {
+          if (e.which == 13) {
+            _List(1);
+          }
+        })
+      ;
+
+      $('form[role="search"]').submit(function (e) { /*_List(1);*/ e.preventDefault(); });
+
       // Filter: state
       $('#filterState > ul > li > a').click(function (e) {
         $('#filterState').data('state', $(this).data('state'));
@@ -315,13 +352,6 @@
           }
         });
       }();
-
-      $('#searchQuery').bind('input', function (e) {
-        if ($(this).val() == '') {
-          _List(1);
-        }
-      });
-      $('form[role="search"]').submit(function (e) { _List(1); e.preventDefault(); });
 
       $('#realtyTableWrapper').scroll(function (e) {
         if ($(this).scrollTop() + $(this).innerHeight() >= $(this)[0].scrollHeight) {
