@@ -8,7 +8,7 @@
 
 % content_for header => begin
 <link rel="stylesheet" href="/assets/leaflet/0.6.4/leaflet.css">
-<link rel="stylesheet" href="/assets/typeahead.js/0.9.3/css/typeahead.js-bootstrap.css">
+<link rel="stylesheet" href="/assets/typeahead.js/0.9.4-dev/css/typeahead.js-bootstrap.css">
 <style tyle="text/css">
   #navTab button.close {
     margin-left: -3px;
@@ -53,7 +53,7 @@
 % end
 
 % content_for after_bootstrap => begin
-<script type="application/javascript" src="/assets/typeahead.js/0.9.3/js/typeahead.min.js"></script>
+<script type="application/javascript" src="/assets/typeahead.js/0.9.4-dev/js/typeahead.js"></script>
 <script type="application/javascript" src="/assets/leaflet/0.6.4/leaflet.js"></script>
 % end
  
@@ -266,6 +266,7 @@
         })
         .bind('keydown', function (e) {
           if (e.which == 13) {
+            $('#searchQuery').typeahead('close');
             _List(1);
           }
         })
