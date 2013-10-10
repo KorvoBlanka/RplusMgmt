@@ -41,6 +41,13 @@ sub complete {
             if ($value > 0 && $value < 1000 && ' кв. м.' =~ /^\Q$word\E/i) {
                 push @res, {value => $prefix.$value.' кв. м.'};
             }
+        } else {
+            for (qw(одно двух трех четырех пяти шести семи восьми девяти)) {
+                my $x = $_.'комнатная';
+                if ($x =~ /^\Q$term\E/i) {
+                    $vals{$x} = 1;
+                }
+            }
         }
 
         my $qc_iter = Rplus::Model::QueryCompletion::Manager->get_objects_iterator(
