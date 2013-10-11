@@ -416,6 +416,10 @@
             })
           ;
         });
+
+        $('#btnRealtyCardClose-' + realty.id, container).click(function (e) {
+          $('#navTab > li > a[data-id="' + realty.id + '"] > button.close').click();
+        });
       }
 
       var $this = {
@@ -504,7 +508,7 @@
   <nav class="navbar navbar-default navbar-fixed-bottom">
     <div class="container">
       <div class="navbar-left">
-        <button type="button" class="btn btn-warning btn-sm navbar-btn" id="btnRealtyCardClose-{id}" disabled="disabled"><span class="glyphicon glyphicon-remove"></span> Close</button>
+        <button type="button" class="btn btn-warning btn-sm navbar-btn" id="btnRealtyCardClose-{id}"><span class="glyphicon glyphicon-remove"></span> Close</button>
         <button type="submit" class="btn btn-success btn-sm navbar-btn" id="btnRealtyCardSave-{id}"><span class="glyphicon glyphicon-ok"></span> Save</button>
       </div>
       <p class="pull-right navbar-text" id="realtySaveStatus-{id}"></p>
