@@ -8,6 +8,7 @@ use Rplus::Model::Landmark::Manager;
 use Mojo::Util qw(trim);
 
 use JSON;
+use Encode qw(decode_utf8);
 
 sub auth {
     my $self = shift;
@@ -56,11 +57,20 @@ sub get {
 
     my $id = $self->param('id');
 
-    my @fields = qw(id type name keywords add_date change_date metadata);
-    my $landmark = Rplus::Model::Landmark::Manager->get_objects(select => [@fields], query => [id => $id, delete_date => undef])->[0];
+    my $landmark = Rplus::Model::Landmark::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
     return $self->render_not_found unless $landmark;
 
-    return $self->render(json => {map { $_ => $landmark->$_ } @fields});
+    my $res = {
+        id => $landmark->id,
+        type => $landmark->type,
+        name => $landmark->name,
+        keywords => $landmark->keywords,
+        add_date => $landmark->add_date,
+        change_date => $landmark->change_date,
+        metadata => decode_utf8($landmark->metadata),
+    };
+
+    return $self->render(json => $res);
 }
 
 sub save {
@@ -71,7 +81,7 @@ sub save {
     my $name = trim(scalar $self->param('name')) || undef;
     my $keywords = trim(scalar $self->param('keywords')) || undef;
     my $geojson; eval { $geojson = decode_json(scalar($self->param('geojson'))); };
-    my $metadata = $self->param('metadata') || undef;
+    my $metadata = $self->param('metadata') || {};
 
     my $wkt;
     if ($geojson) {
