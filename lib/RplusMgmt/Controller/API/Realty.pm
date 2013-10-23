@@ -9,9 +9,6 @@ use Rplus::Model::Landmark::Manager;
 use Rplus::Model::Mediator;
 use Rplus::Model::Mediator::Manager;
 
-use Rplus::DB;
-use Rose::DB::Object::QueryBuilder qw(build_where_clause);
-
 use Rplus::Util::Query;
 use Rplus::Util::Realty;
 use Rplus::Util::PhoneNum;
@@ -41,14 +38,7 @@ sub list {
     my $page = $self->param("page") || 1;
     my $per_page = $self->param("per_page") || 30;
 
-    my $res = {
-        count => 0,
-        list => [],
-        page => $page,
-    };
-
-    my $ts_query_text;
-    my @query = Rplus::Util::Query->parse($q, \$ts_query_text);
+    my @query;
     if ($state_code && $state_code ne 'any') { push @query, state_code => $state_code } else { push @query, '!state_code' => 'deleted' };   
     if ($offer_type_code && $offer_type_code ne 'any') { push @query, offer_type_code => $offer_type_code } else {};
     if ($agent_id && $agent_id ne 'any') {
@@ -59,7 +49,7 @@ sub list {
         } else {
             push @query, agent_id => $agent_id
         }
-    } else {};
+    }
 
     my (@sort_by, @with_objects);
     if  ($sort_by && $sort_by =~ /^(\w+)(\.\w+)? (asc|desc)$/) {
@@ -67,88 +57,34 @@ sub list {
       push @sort_by, $sort_by;
     }
 
+    # Распознаем номера телефонов
     my @seller_phones;
-    # Full Text Search
-    if ($ts_query_text) {
-        my $dbh = Rplus::DB->new_or_cached->dbh;
-
-        # Try to recognize phone num
-        for my $x (split /[ .,]/, $ts_query_text) {
+    {
+        my @seller_phones;
+        for my $x (split /[ .,]/, $q) {
             if ($x =~ /^\s*([\d-]{6,})\s*$/) {
                 if (my $phone_num = Rplus::Util::PhoneNum->parse($1)) {
                     push @seller_phones, $phone_num;
                 }
-                $ts_query_text =~ s/$x//;
+                $q =~ s/$x//;
             }
         }
         push @query, \("t1.seller_phones && '{".join(',', map { '"'.$_.'"' } @seller_phones)."}'") if @seller_phones;
+    }
 
-        # Try to recognize landmarks
-        my (@landmarks, @hl);
-        {
-            my $sth = $dbh->prepare("
-                SELECT id, name, ts_headline('russian', '".($ts_query_text =~ s/'/''/gr)."', plainto_tsquery('russian', keyword), 'StartSel=|,StopSel=|') hl
-                FROM (
-                    SELECT id, name, regexp_split_to_table(keywords, ',') keyword
-                    FROM landmarks L
-                    WHERE L.delete_date IS NULL
-                ) SS
-                WHERE to_tsvector('russian', ?) @@ plainto_tsquery('russian', keyword)
-                ORDER BY length(keyword) DESC
-            ");
-            $sth->execute($ts_query_text);
-            while (my $row = $sth->fetchrow_hashref) {
-                push @landmarks, $row->{'id'};
-                my ($s, $p) = (0, 0);
-                while ((my $i = index($row->{'hl'}, '|', $s)) != -1) { push @hl, $i - $p; $s = $i + 1; $p++; }
-            }
-        }
-        if (@landmarks) {
-            #push @query, \("(SELECT count(L.id) FROM landmarks L WHERE L.id IN (".join(',',@landmarks).") AND L.geodata::geography && t1.geocoords AND L.delete_date IS NULL) > 0");
-            push @query, \("t1.landmarks && '{".join(',', @landmarks)."}'");
-            my %hl = @hl;
-            while (my ($s, $e) = each %hl) {
-                substr($ts_query_text, $s, $e - $s, ' ' x ($e - $s));
-            }
-        }
+    # Остальные части запроса
+    push @query, Rplus::Util::Query->parse($self, $q);
 
-        my $ts_query = join(' | ', grep { $_ } split(/\W/, lc($ts_query_text)));
-        if ($ts_query) {
-            $ts_query =~ s/'/''/g;
-            push @query, \("t1.fts @@ to_tsquery('russian', '$ts_query')");
+    my $res = {
+        count => Rplus::Model::Realty::Manager->get_objects_count(query => \@query, with_objects => \@with_objects),
+        list => [],
+        page => $page,
+    };
 
-            my $dbh = Rplus::DB->new_or_cached->dbh;
-            my ($where, $bind) = build_where_clause(
-                dbh => $dbh,
-                tables => ['realty'],
-                columns => {realty => [Rplus::Model::Realty->meta->column_names]},
-                query => \@query,
-                query_is_sql => 1,
-            );
-            my $sql = qq{
-              SELECT round(ts_rank(t1.fts, to_tsquery('russian', '$ts_query'))::numeric, 5) rank, count(t1.id) count
-              FROM realty t1
-              WHERE $where
-              GROUP BY round(ts_rank(t1.fts, to_tsquery('russian', '$ts_query'))::numeric, 5)
-              ORDER BY rank DESC
-              LIMIT 1
-            };
-            my $sth = $dbh->prepare($sql);
-            $sth->execute(@$bind);
-            my %ranks;
-            while (my $row = $sth->fetchrow_hashref) {
-                #next unless $row->{'rank'} > 0;
-                $ranks{$row->{'rank'}} = $row->{'count'};
-                $res->{'count'} += $row->{'count'};
-            }
-
-            push @query, \("round(ts_rank(t1.fts, to_tsquery('russian', '$ts_query'))::numeric, 5) IN (".join(',', sort keys %ranks).")") if %ranks;
-            unshift @sort_by, "ts_rank(t1.fts, to_tsquery('russian', '$ts_query')) DESC";
-        } else {
-            $res->{'count'} = Rplus::Model::Realty::Manager->get_objects_count(query => \@query);
-        }
-    } else {
-        $res->{'count'} = Rplus::Model::Realty::Manager->get_objects_count(query => \@query);
+    # Небольшой костыль: если ничего не найдено, удалим FTS данные
+    if (!$res->{count}) {
+        @query = map { ref($_) eq 'SCALAR' && $$_ =~ /^t1\.fts/ ? () : $_ } @query;
+        $res->{count} = Rplus::Model::Realty::Manager->get_objects_count(query => \@query, with_objects => \@with_objects);
     }
 
     # Дополнительно проверим распознанные номера телефонов на посредников

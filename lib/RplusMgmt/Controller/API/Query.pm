@@ -6,8 +6,6 @@ use JSON;
 
 use Rplus::Model::AddressObject;
 use Rplus::Model::AddressObject::Manager;
-use Rplus::Model::QueryCompletion;
-use Rplus::Model::QueryCompletion::Manager;
 
 sub auth {
     my $self = shift;
@@ -50,12 +48,13 @@ sub complete {
             }
         }
 
-        my $qc_iter = Rplus::Model::QueryCompletion::Manager->get_objects_iterator(
-            query => [value => {like => lc($term =~ s/([%_])/\\$1/gr).'%'}],
-            limit => $limit,
+        my $items = $self->db->dbh->selectall_arrayref(
+            "SELECT DISTINCT max(QK.fval) fval FROM query_keywords QK WHERE QK.fval LIKE ? GROUP BY QK.ftype, QK.fkey LIMIT ?",
+            {Slice => {}},
+            lc($term =~ s/([%_])/\\$1/gr).'%', $limit
         );
-        while (my $qc = $qc_iter->next) {
-            $vals{$qc->value} = 1;
+        for my $x (@$items) {
+            $vals{$x->{fval}} = 1;
         }
 
         my $addrobj_iter = Rplus::Model::AddressObject::Manager->get_objects_iterator(
@@ -64,7 +63,7 @@ sub complete {
                 level => 7,
                 curr_status => 0,
                 ($self->config->{'default_city_guid'} ? (parent_guid => $self->config->{'default_city_guid'}) : ()),
-                short_type => ['б-р', 'кв-л', 'пер', 'проезд', 'пр-кт', 'ул', 'ш'],
+                '!fts' => undef,
             ],
             #sort_by => 'level DESC',
             limit => $limit,
