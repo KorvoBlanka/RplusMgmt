@@ -256,18 +256,18 @@ sub import_present {
 
         # Распознавание адреса
         if ($addr) {
-            my $ts_query = join(' | ', grep { $_ && length($_) > 1 } split(/[ .,()|&]/, $addr));
+            my $ts_query = join(' | ', grep { $_ && length($_) > 1 } split(/\W/, $addr));
             if ($ts_query) {
                 $ts_query =~ s/'/''/g;
                 my $addrobj = Rplus::Model::AddressObject::Manager->get_objects(
                     query => [
                         # english - чтобы не отбрасывались окончания
-                        \("fts @@ to_tsquery('english', '$ts_query')"),
+                        \("t1.fts @@ to_tsquery('russian', '$ts_query')"),
                         parent_guid => $META->{'params'}->{'ao_parent_guid'},
                         curr_status => 0,
                         level => 7,
                     ],
-                    sort_by => "ts_rank(fts, to_tsquery('english', '$ts_query')) desc, case when short_type='ул' then 0 else 1 end",
+                    sort_by => "ts_rank(t1.fts2, to_tsquery('russian', '$ts_query')) desc, case when short_type = 'ул' then 0 else 1 end",
                     limit => 1,
                 )->[0];
                 if ($addrobj) {
