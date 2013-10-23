@@ -305,19 +305,19 @@ sub parse {
                 } elsif ($x eq 'realty_type') {
                     push @params, \("t1.type_code IN (SELECT RT.code FROM realty_types RT WHERE RT.id IN (".join(',', @{$found{$x}})."))");
                 } elsif ($x eq 'tag') {
-                    push @params, \("t1.tags @> '{".join(',', @{$found{$x}})."}'");
+                    push @params, tags => {ltree_ancestor => $found{$x}}; # @>
                 }
             }
 
             if (@{$found{address_object}} && @{$found{landmark}}) {
                 push @params, OR => [
                     address_object_id => $found{address_object},
-                    \("t1.landmarks && '{".join(',', @{$found{landmark}})."}'")
+                    landmarks => {'&&' => $found{landmark}},
                 ];
             } elsif (@{$found{address_object}}) {
                 push @params, address_object_id => $found{address_object};
             } elsif (@{$found{landmark}}) {
-                push @params, \("t1.landmarks && '{".join(',', @{$found{landmark}})."}'");
+                push @params, landmarks => {'&&' => $found{landmark}};
             }
 
             push @params, \("t1.fts @@ '".join('|', @tsv)."'::tsquery") if @tsv;

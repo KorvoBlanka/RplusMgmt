@@ -17,4 +17,10 @@ sub init_db { Rplus::DB->new_or_cached }
 
 sub meta_class { 'Rplus::DB::Object::Metadata' }
 
+#
+# Additional operators
+#
+$Rose::DB::Object::QueryBuilder::Op_Map{'@@'} = '@@';
+$Rose::DB::Object::QueryBuilder::Op_Map{'&&'} = '&&';
+
 1;
