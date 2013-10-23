@@ -2646,7 +2646,7 @@ COMMENT ON COLUMN subscriptions.delete_date IS 'Дата/время удален
 -- Name: COLUMN subscriptions.last_check_date; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN subscriptions.last_check_date IS 'Дата/время последней проверки';
+COMMENT ON COLUMN subscriptions.last_check_date IS 'Дата/время последней проверки (поиска вариантов)';
 
 
 --
@@ -4096,6 +4096,13 @@ CREATE INDEX subscriptions_delete_date_idx ON subscriptions USING btree (delete_
 --
 
 CREATE INDEX subscriptions_end_date_idx ON subscriptions USING btree (end_date);
+
+
+--
+-- Name: subscriptions_last_check_date_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX subscriptions_last_check_date_idx ON subscriptions USING btree (last_check_date);
 
 
 --
