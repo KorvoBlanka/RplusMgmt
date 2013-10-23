@@ -257,7 +257,12 @@ sub parse {
                     my $t = $x->{txt};
                     if ($tsv =~ s/(?:^|\s+)$t(?:\s+|$)/ /) {
                         $found{$x->{ftype}} = [] unless exists $found{$x->{ftype}};
-                        push $found{$x->{ftype}}, $x->{fkey};
+                        for my $y (@xfound) {
+                            if ($y->{txt} eq $t) {
+                                push $found{$y->{ftype}}, $y->{fkey} unless $y->{'added'};
+                                $y->{'added'} = 1;
+                            }
+                        }
                     }
                 }
 
