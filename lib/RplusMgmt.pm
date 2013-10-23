@@ -4,6 +4,8 @@ use Mojo::Base 'Mojolicious';
 
 our $VERSION = '1.0';
 
+use Rplus::DB;
+
 # This method will run once at server start
 sub startup {
     my $self = shift;
@@ -13,6 +15,9 @@ sub startup {
 
     # Secret
     $self->secret('fkj49SqZ1g1k2fqrq1g31SPgh449FqjrRfNqw4aquR3v4');
+
+    # DB
+    $self->helper(db => sub { Rplus::DB->new_or_cached });
 
     # Router
     my $r = $self->routes;
