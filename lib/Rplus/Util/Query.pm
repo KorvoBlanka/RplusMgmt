@@ -194,20 +194,11 @@ sub parse {
         $q = trim($q) if $matched;
 
         if ($square1 && $square2) {
-            push @params, or => [
-                square_total => {ge_le => [$square1, $square2]},
-                square_living => {ge_le => [$square1, $square2]},
-            ];
+            push @params, square_total => {ge_le => [$square1, $square2]};
         } elsif ($square1) {
-            push @params, or => [
-                square_total => {ge => $square1},
-                square_living => {ge => $square1},
-            ];
+            push @params, square_total => {ge => $square1};
         } elsif ($square2) {
-            push @params, or => [
-                square_total => {le => $square2},
-                square_living => {le => $square2},
-            ];
+            push @params, square_total => {le => $square2};
         }
     }
 
