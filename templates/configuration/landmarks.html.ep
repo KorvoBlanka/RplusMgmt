@@ -108,8 +108,8 @@
             geojson: drawnItems.toGeoJSON(),
             center: {lat: geoMap.getCenter().lat, lng: geoMap.getCenter().lng},
             zoom: geoMap.getZoom(),
-            category: $('[name="category"]:input').val(),
-            pos: $('[name="pos"]:input').val(),
+            category: $('[name="category"]:input').val() || null,
+            pos: $('[name="pos"]:input').val() || null,
           }
       ;
       $.ajax({
