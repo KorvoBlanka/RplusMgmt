@@ -6,6 +6,7 @@
 % content_for header => begin
 <link rel="stylesheet" href="/assets/leaflet/0.6.4/leaflet.css">
 <link rel="stylesheet" href="/assets/leaflet.fullscreen/2013.09.30/Control.FullScreen.css">
+<link rel="stylesheet" href="/assets/typeahead.js/0.9.4-dev/css/typeahead.js-bootstrap.css">
 <style type="text/css">
   #searchTableWrapper {
     height: 600px;
@@ -36,12 +37,27 @@
   #geoMap:active {
     cursor: pointer !important;
   }
+
+  /* Typeahead.js input-sm fix */
+  .tt-hint {
+    height: 30px;
+    padding: 5px 10px;
+    font-size: 12px;
+    line-height: 1.5;
+    border-radius: 3px;
+    color: #c0c0c0;
+  }
+
+  .leaflet-top {
+    z-index: 99;
+  }
 </style>
 % end
 
 % content_for after_bootstrap => begin
 <script type="application/javascript" src="/assets/leaflet/0.6.4/leaflet.js"></script>
 <script type="application/javascript" src="/assets/leaflet.fullscreen/2013.09.30/Control.FullScreen.js"></script>
+<script type="application/javascript" src="/assets/typeahead.js/0.9.4-dev/js/typeahead.js"></script>
 % end
 
 % content_for javascript => begin
@@ -141,6 +157,38 @@
     }
 
     $(function () {
+      // Query completion
+      $('#searchQuery')
+        .typeahead({
+          name: 'searchQuery',
+          valueKey: "value",
+          limit: 10,
+          remote: "/api/query/complete?q=%QUERY&limit=10",
+        })
+        .bind('typeahead:selected', function (e, obj) {
+          _List(1);
+        })
+        .bind('input', function (e) {
+          if ($(this).val() == '') {
+            // clear Geo markers
+            $('#searchTable tr').each(function () {
+              if ($(this).data('marker')) {
+                geoMap.removeLayer($(this).data('marker'));
+              }
+            });
+            $('#searchTable').html('');
+            $('#searchCount').text(0);
+          }
+        })
+        .bind('keydown', function (e) {
+          if (e.which == 13) {
+            $('#searchQuery').typeahead('close');
+            _List(1);
+          }
+        })
+      ;
+      $('form[role="search"]').submit(function (e) { _List(1); e.preventDefault(); });
+
       // Filter: offerType
       $('#filterOfferType > ul > li > a').click(function (e) {
         $('#filterOfferType').data('offer-type', $(this).data('offer-type'));
@@ -190,20 +238,6 @@
           })
         ;
       });
-
-      $('#searchQuery').bind('input', function (e) {
-        if ($(this).val() == '') {
-          // clear Geo markers
-          $('#searchTable tr').each(function () {
-            if ($(this).data('marker')) {
-              geoMap.removeLayer($(this).data('marker'));
-            }
-          });
-          $('#searchTable').html('');
-          $('#searchCount').text(0);
-        }
-      });
-      $('form[role="search"]').submit(function (e) { _List(1); e.preventDefault(); });
 
       $('#searchTable').on('click', 'tr', function (e) {
         var $this = $(this);
@@ -273,7 +307,7 @@
   <div class="col-md-10 margin-bottom-20">
     <form role="search">
       <div class="input-group input-group-sm">
-        <input type="text" class="form-control" id="searchQuery" name="q" placeholder="Search" autocomplete="off" x-webkit-speech>
+        <input type="text" class="form-control input-sm" id="searchQuery" name="q" placeholder="Search" autocomplete="off" x-webkit-speech>
         <div class="input-group-btn" id="btnSubscribe">
           <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">SMS <span class="caret"></span></button>
           <ul class="dropdown-menu pull-right" role="menu">
