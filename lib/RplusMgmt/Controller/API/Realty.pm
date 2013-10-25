@@ -73,7 +73,7 @@ sub list {
     }
 
     # Остальные части запроса
-    push @query, Rplus::Util::Query->parse($self, $q);
+    push @query, Rplus::Util::Query->parse($q, $self);
 
     my $res = {
         count => Rplus::Model::Realty::Manager->get_objects_count(query => \@query, with_objects => \@with_objects),

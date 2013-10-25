@@ -38,8 +38,8 @@ sub _json2params {
 
 sub parse {
     my $class = shift;
-    my $c = shift; # Mojolicious::Controller (for config)
     my $q = shift; # Query text
+    my $c = shift; # Mojolicious::Controller (for config)
     my $orig_q = $q;
 
     return unless $q;
@@ -47,7 +47,8 @@ sub parse {
     # Rose::DB::Object query format
     my @params;
 
-    if (my $qc = Rplus::Model::QueryCache::Manager->get_objects(query => [query => $q, \"add_date >= now() - interval '3 days' "])->[0]) {
+    my $query_cache_lifetime = ($c && $c->config->{query_cache_lifetime}) || '1 day';
+    if (my $qc = Rplus::Model::QueryCache::Manager->get_objects(query => [query => $q, \"add_date >= now() - interval '$query_cache_lifetime'"])->[0]) {
         @params = _json2params($qc->params);
         return @params;
     }

@@ -97,7 +97,7 @@ sub add {
                     push @parts, decode_json($realty->agent->metadata)->{'public_phone_num'} || $realty->agent->phone_num if $realty->agent;
                 }
                 my $sms_body = join(', ', @parts);
-                my $sms_text = 'Вы интересовались: '.$sms_body.($sms_body =~ /\.$/ ? '' : '.').' Офис: тел. 470-470';
+                my $sms_text = 'Вы интересовались: '.$sms_body.($sms_body =~ /\.$/ ? '' : '.').' Офис: тел. 63-77-55. Сайт: maklerdv.ru';
                 Rplus::Model::SmsMessage->new(phone_num => $phone_num, text => $sms_text, db => $db)->save;
             }
 

@@ -3,12 +3,6 @@
 % use Rplus::Model::RealtyOfferType::Manager;
 % use JSON;
 
-% content_for after_bootstrap => begin
-<script type="application/javascript" src="/assets/leaflet/0.6.4/leaflet.js"></script>
-<script type="application/javascript" src="/assets/leaflet.fullscreen/2013.09.30/Control.FullScreen.js"></script>
-<script type="application/javascript" src="/assets/sipml5/r213/SIPml-api.js"></script>
-% end
-
 % content_for header => begin
 <link rel="stylesheet" href="/assets/leaflet/0.6.4/leaflet.css">
 <link rel="stylesheet" href="/assets/leaflet.fullscreen/2013.09.30/Control.FullScreen.css">
@@ -43,6 +37,11 @@
     cursor: pointer !important;
   }
 </style>
+% end
+
+% content_for after_bootstrap => begin
+<script type="application/javascript" src="/assets/leaflet/0.6.4/leaflet.js"></script>
+<script type="application/javascript" src="/assets/leaflet.fullscreen/2013.09.30/Control.FullScreen.js"></script>
 % end
 
 % content_for javascript => begin
@@ -222,6 +221,7 @@
         }
       });
 
+      // Infinite scrolling
       $('#searchTableWrapper').scroll(function (e) {
         if ($(this).scrollTop() + $(this).innerHeight() >= $(this)[0].scrollHeight) {
           var lastPage = $('#searchTable tr:last-child').data('page');
@@ -264,236 +264,52 @@
       });
 
       _List(1);
-
-      //
-      // SIP SoftPhone
-      //
-      % if (my $sip_conf = decode_json(session->{'user'}->{'metadata'})->{'sip'}) {
-      SIPml.init(
-        function () {
-          if (!SIPml.isWebRtcSupported() || !SIPml.isWebSocketSupported()) {
-            // Can't use SIP
-            return;
-          }
-
-          var sipStack, sipSessionRegister, sipSessionCall;
-
-          sipStack = new SIPml.Stack({
-            realm: '<%== $sip_conf->{realm} %>',
-            impi: '<%== $sip_conf->{impi} %>',
-            impu: '<%== $sip_conf->{impu} %>',
-            password: '<%== $sip_conf->{password} %>',
-            display_name: '<%== $sip_conf->{display_name} %>',
-            websocket_proxy_url: '<%== $sip_conf->{websocket_proxy_url} %>',
-
-            enable_click2call: false,
-            enable_rtcweb_breaker: false,
-            //ice_servers: [{url: 'stun:stun.l.google.com:19302'}],
-
-            //bandwidth: {audio: 64, video: 512},
-
-            events_listener: {events: '*', listener: onSipEventStack},
-
-            sip_headers: [
-              {name: 'User-Agent', value: 'Rplus SoftPhone/0.1 sipML5'}
-            ],
-          });
-
-          function UI_setSoftPhoneState(state, session) {
-            if (state == 'offline') {
-              $('#sfAudioRingTone').trigger('pause');
-              $('#sfBtnPhone').prop('disabled', true);
-              $('#sfBtnPhone').removeClass('btn-success btn-danger').addClass('btn-primary').data({session: null, action: null});
-              $('#sfDisplay').text('');
-            } else if (state == 'online') {
-              $('#sfAudioRingTone').trigger('pause');
-              $('#sfBtnPhone').prop('disabled', false);
-              $('#sfBtnPhone').removeClass('btn-success btn-danger').addClass('btn-primary').data({session: null, action: null});
-              $('#sfDisplay').text('');
-            } else if (state == 'accept') {
-              $('#sfAudioRingTone').trigger('play');
-              $('#sfBtnPhone').removeClass('btn-primary btn-danger').addClass('btn-success').data({session: session, action: 'accept'});
-            } else if (state == 'hangup') {
-              $('#sfAudioRingTone').trigger('pause');
-              $('#sfBtnPhone').removeClass('btn-primary btn-success').addClass('btn-danger').data({session: session, action: 'hangup'});
-              $('#sfDisplay').text('');
-            }
-          }
-
-          function onSipEventStack(e) {
-            //console.log("\n\nSTACK EVENT: " + e.type + "\n\n");
-
-            switch(e.type) {
-              case 'started': {
-                // REGISTER
-                sipSessionRegister = this.newSession('register', {
-                  expires: 200,
-                  events_listener: {events: '*', listener: onSipEventSession},
-                  sip_caps: [
-                    {name: '+audio', value: null},
-                    {name: 'language', value: '\"en,ru\"'},
-                  ]
-                });
-                sipSessionRegister.register();
-                break;
-              }
-              case 'stopping': case 'stopped': case 'failed_to_start': case 'failed_to_stop': {
-                sipStack = null;
-                sipSessionRegister = null;
-                sipSessionCall = null;
-
-                UI_setSoftPhoneState('offline');
-
-                break;
-              }
-              case 'i_new_call': {
-                if (sipSessionCall) {
-                  // do not accept the incoming call if we're already 'in call'
-                  e.newSession.hangup();
-                } else {
-                  sipSessionCall = e.newSession;
-
-                  var conf = {
-                    audio_remote: $('#sfAudioRemote').get(0),
-                    events_listener: {events: '*', listener: onSipEventSession},
-                    sip_caps: [
-                      { name: '+sip.ice' },
-                      { name: 'language', value: '\"en,ru\"' }
-                    ]
-                  };
-                  sipSessionCall.setConfiguration(conf);
-
-                  UI_setSoftPhoneState('accept', sipSessionCall);
-
-                  var remoteNumber = (sipSessionCall.getRemoteFriendlyName() || 'unknown');
-                  $('#sfPhoneNum').val(remoteNumber);
-                  //notify(remoteNumber);
-                }
-                break;
-              }
-              case 'm_permission_requested': {
-                break;
-              }
-              case 'm_permission_accepted': {
-                break;
-              }
-              case 'm_permission_refused': {
-                UI_setSoftPhoneState('online');
-                break;
-              }
-              case 'starting': default: break;
-            }
-          }
-
-          function onSipEventSession(e) {
-            //console.log("\n\nSESSION EVENT: " + e.type + "\n\n");
-
-            switch(e.type) {
-              case 'connecting': {
-                break;
-              }
-              case 'connected': {
-                if (e.session == sipSessionRegister) {
-                  UI_setSoftPhoneState('online');
-                } else if (e.session == sipSessionCall) {
-                  UI_setSoftPhoneState('hangup', sipSessionCall);
-                }
-                break;
-              }
-              case 'terminating': {
-                break;
-              }
-              case 'terminated': {
-                if (e.session == sipSessionRegister) {
-                  sipSessionCall = null;
-                  sipSessionRegister = null;
-                  UI_setSoftPhoneState('offline');
-                } else if (e.session == sipSessionCall) {
-                  sipSessionCall = null;
-                  UI_setSoftPhoneState('online');
-                }
-                break;
-              }
-              default: break;
-            }
-          }
-
-          $('#sfBtnPhone').click(function (e) {
-            var x = $(this),
-                session = x.data('session'),
-                action  = x.data('action')
-            ;
-            if (session) {
-              if (action == 'accept') {
-                session.accept();
-              } else if (action == 'hangup') {
-                session.hangup();
-              }
-            }
-          });
-
-          if (sipStack.start() != 0) {
-            // Can't use SIP
-            return;
-          }
-        },
-        function () {
-          // Can't use SIP
-          return;
-        }
-      );
-      % }
     });
   }();
 </script>
 % end
 
-<!-- Audios -->
-<audio id="sfAudioRemote" autoplay></audio>
-<audio id="sfAudioRingTone" src="/sounds/ringtone.wav" loop></audio>
-
 <div class="row">
-  <div class="col-lg-11">
+  <div class="col-md-10 margin-bottom-20">
     <form role="search">
-      <div class="form-group">
-        <label class="sr-only" for="searchQuery">Search</label>
-        <input type="text" class="form-control input-sm" id="searchQuery" name="q" placeholder="Search" autocomplete="off" x-webkit-speech>
+      <div class="input-group input-group-sm">
+        <input type="text" class="form-control" id="searchQuery" name="q" placeholder="Search" autocomplete="off" x-webkit-speech>
+        <div class="input-group-btn" id="btnSubscribe">
+          <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">SMS <span class="caret"></span></button>
+          <ul class="dropdown-menu pull-right" role="menu">
+            <li><a href="#" data-active="1">SMS / Subscribe</a></li>
+            <li><a href="#" data-active="0">SMS Only</a></li>
+          </ul>
+        </div>
       </div>
     </form>
   </div>
-  <div class="col-lg-1">
-    <div class="btn-group pull-right" id="btnSubscribe">
-      <button type="button" class="btn btn-default btn-sm dropdown-toggle" data-toggle="dropdown">
-        <strong>SMS</strong>&nbsp;&nbsp;<span class="caret"></span>
-      </button>
-      <ul class="dropdown-menu" role="menu">
-        <li><a href="#" data-active="0">SMS</a></li>
-        <li><a href="#" data-active="1">SMS + Subscribe</a></li>
-      </ul>
+
+  <div class="col-md-2 margin-bottom-20">
+    <div class="input-group input-group-sm">
+      <input type="text" class="form-control" id="sfPhoneNum" name="phoneNum" placeholder="Phone" autocomplete="off">
+      <div class="input-group-btn">
+        <button type="button" class="btn btn-default" id="sfBtnPhone" disabled="disabled"><span class="glyphicon glyphicon-phone"></span></button>
+      </div>
     </div>
   </div>
 </div>
+
 <div class="row">
-  <div class="col-lg-6" style="padding-right: 0;">
+  <div class="col-md-6" style="padding-right: 0;">
     <div id="searchTableWrapper">
       <table class="table table-striped table-hover table-condensed" id="searchTable">
         <tbody></tbody>
       </table>
     </div>
   </div>
-  <div class="col-lg-6" style="padding-left:0;">
+  <div class="col-md-6" style="padding-left: 0;">
     <div id="geoMap"></div>
   </div>
 </div>
 
 <nav class="navbar navbar-default navbar-fixed-bottom">
   <div class="container">
-    <form class="navbar-form navbar-left">
-      <button type="button" class="btn btn-primary btn-sm" id="sfBtnPhone" disabled="disabled"><span class="glyphicon glyphicon-phone"></span></button>
-      <div class="form-group">
-        <input type="text" class="form-control input-sm" id="sfPhoneNum" placeholder="Phone" autocomplete="off">
-      </div>
-    </form>
     <p class="navbar-text" style="margin-left: 0;"><span class="text-danger" id="sfDisplay"></span></p>
     <div class="navbar-right">
       <ul class="nav navbar-nav">
