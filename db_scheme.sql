@@ -134,7 +134,7 @@ spi_exec_query(q{
   )
 });
 spi_exec_query(q{
-  UPDATE address_objects SET fts = to_tsvector('russian', name) WHERE fts2 IS NOT NULL
+  UPDATE address_objects SET fts = to_tsvector('russian', name), fts3 = to_tsvector('simple', name||' '||short_type||' '||full_type) WHERE fts2 IS NOT NULL
 });
 $_X$;
 
@@ -426,6 +426,38 @@ ALTER SEQUENCE _query_cache_id_seq OWNED BY _query_cache.id;
 
 
 --
+-- Name: _runtime_params; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE TABLE _runtime_params (
+    key character varying NOT NULL,
+    value json DEFAULT '{}'::json NOT NULL,
+    ts timestamp with time zone
+);
+
+
+--
+-- Name: COLUMN _runtime_params.key; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN _runtime_params.key IS 'Имя параметра (ключ)';
+
+
+--
+-- Name: COLUMN _runtime_params.value; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN _runtime_params.value IS 'Значение';
+
+
+--
+-- Name: COLUMN _runtime_params.ts; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN _runtime_params.ts IS 'Некоторое значение времени';
+
+
+--
 -- Name: address_objects; Type: TABLE; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -454,7 +486,8 @@ CREATE TABLE address_objects (
     keywords character varying(128),
     metadata json DEFAULT '{}'::json NOT NULL,
     fts tsvector,
-    fts2 tsvector
+    fts2 tsvector,
+    fts3 tsvector
 );
 ALTER TABLE ONLY address_objects ALTER COLUMN postal_code SET STATISTICS 0;
 
@@ -625,6 +658,13 @@ COMMENT ON COLUMN address_objects.fts IS 'Данные для полнотекс
 --
 
 COMMENT ON COLUMN address_objects.fts2 IS 'Данные для полнотекстового поиска (имя + тип)';
+
+
+--
+-- Name: COLUMN address_objects.fts3; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN address_objects.fts3 IS 'Данные для полнотекстового поиска (simple конфигурация)';
 
 
 --
@@ -3180,6 +3220,14 @@ ALTER TABLE ONLY users ALTER COLUMN id SET DEFAULT nextval('users_id_seq'::regcl
 
 ALTER TABLE ONLY _query_cache
     ADD CONSTRAINT _query_cache_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: _runtime_params_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+--
+
+ALTER TABLE ONLY _runtime_params
+    ADD CONSTRAINT _runtime_params_pkey PRIMARY KEY (key);
 
 
 --
