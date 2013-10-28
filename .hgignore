@@ -1,4 +1,4 @@
-^log\/
+^log\/.+\.log$
 ^public\/photos
 ^script\/extras
 ^app\.conf$

@@ -29,6 +29,9 @@ sub startup {
         $r2->post('/signin')->to('authentication#signin');
         $r2->get('/signout')->to('authentication#signout');
 
+        # Task
+        $r2->get('/task/:action')->to(controller => 'task');
+
         my $r2b = $r2->bridge->to(controller => 'authentication', action => 'auth');
 
         # Main controller

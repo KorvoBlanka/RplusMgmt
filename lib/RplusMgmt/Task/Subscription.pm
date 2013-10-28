@@ -1,14 +1,4 @@
-#!/usr/bin/env perl
-
-#
-# Программа поиска подходящих вариантов недвижимости по оставленному ранее запросу
-#
-# Author: Alexander Orlenko
-# Rplus project
-#
-
-use FindBin;
-use lib "$FindBin::Bin/../../lib";
+package RplusMgmt::Task::Subscription;
 
 use Rplus::Modern;
 
@@ -25,13 +15,16 @@ use Rplus::Util::Query;
 
 use JSON;
 
-while(1) {
+sub run {
+    my $class = shift;
+    my $c = shift;
+
     # Выберем активные подписки
-    my $subscr_iter = Rplus::Model::Subscription::Manager->get_objects_iterator(query => [end_date => {gt => \'now()'}], require_objects => ['client']);
+    my $subscr_iter = Rplus::Model::Subscription::Manager->get_objects_iterator(query => [end_date => {gt => \'now()'}], require_objects => ['client'], sort_by => 'id');
     while (my $subscr = $subscr_iter->next) {
-        say "Subscription#".$subscr->id;
+        $c->app->log->debug("Processing subscription #".$subscr->id);
         for my $q (@{$subscr->queries}) {
-            say "\tQuery: $q";
+            $c->app->log->debug("Query: $q");
             # Исключим FTS данные
             my @query = map { ref($_) eq 'SCALAR' && $$_ =~ /^t1\.fts/ ? () : $_ } (Rplus::Util::Query->parse($q));
 
@@ -67,7 +60,7 @@ while(1) {
                         push @parts, decode_json($realty->agent->metadata)->{'public_phone_num'} || $realty->agent->phone_num if $realty->agent;
                     }
                     my $sms_body = join(', ', @parts);
-                    my $sms_text = 'По вашему запросу поступило: '.$sms_body.($sms_body =~ /\.$/ ? '' : '.').' Офис: тел. 63-77-55. Сайт: maklerdv.ru';
+                    my $sms_text = 'По вашему запросу поступило: '.$sms_body.($sms_body =~ /\.$/ ? '' : '.').($c->config->{subscription}->{contact_info} ? ' '.$c->config->{subscription}->{contact_info} : '');
                     Rplus::Model::SmsMessage->new(phone_num => $subscr->client->phone_num, text => $sms_text)->save;
                 }
 
@@ -87,9 +80,11 @@ while(1) {
                 }
 
             }
-            say "\tFound: $found";
+            $c->app->log->debug("Found: $found");
         }
     }
 
-    sleep 5 * 60;
+    return;
 }
+
+1;

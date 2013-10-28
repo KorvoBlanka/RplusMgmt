@@ -30,10 +30,15 @@
     },
 
     smsc => {
+        active => 0,
         psw => 'password',
         sender => 'myname',
         tz => '+7',
         login => 'login',
+    },
+
+    subscription => {
+        contact_info => 'Our company',
     },
 
     hypnotoad => {
