@@ -86,7 +86,7 @@
             });
             geoMap.setView(metadata.center, metadata.zoom);
 
-            $('[name="category"]:input').val(metadata.category);
+            $('[name="group"]:input').val(metadata.group);
             $('[name="pos"]:input').val(metadata.pos);
           }
 
@@ -108,7 +108,7 @@
             geojson: drawnItems.toGeoJSON(),
             center: {lat: geoMap.getCenter().lat, lng: geoMap.getCenter().lng},
             zoom: geoMap.getZoom(),
-            category: $('[name="category"]:input').val() || null,
+            group: $('[name="group"]:input').val() || null,
             pos: $('[name="pos"]:input').val() || null,
           }
       ;
@@ -307,12 +307,12 @@
     <p>
       <a class="accordion-toggle" data-toggle="collapse" href="#collapseAdvancedOptions">Advanced options</a>
     </p>
-    <form class="form-inline collapse out" id="collapseAdvancedOptions">
+    <form class="form-inline collapse in" id="collapseAdvancedOptions">
       <div class="form-group" style="width: 30%;">
-        <input type="text" class="form-control input-sm" name="category" placeholder="Top-level category">
+        <input type="text" class="form-control input-sm" name="group" placeholder="Group name">
       </div>
       <div class="form-group" style="width: 10%;">
-        <input type="number" class="form-control input-sm" name="pos" placeholder="Position in category" min="0">
+        <input type="number" class="form-control input-sm" name="pos" placeholder="Weight (in group)" min="0">
       </div>
     </form>
   </div>
