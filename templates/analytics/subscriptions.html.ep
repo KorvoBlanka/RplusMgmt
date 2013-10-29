@@ -1,0 +1,162 @@
+% layout 'default';
+
+% use Rplus::Model::RealtyOfferType::Manager;
+
+% content_for header => begin
+<link rel="stylesheet" href="/assets/bootstrap-daterangepicker/2013.10.15/daterangepicker-bs3.css">
+<style type="text/css">
+  #subscriptionTable > tbody > tr > td:nth-child(1),
+  #subscriptionTable > tbody > tr > td:nth-child(2),
+  #subscriptionTable > tbody > tr > td:nth-child(3),
+  #subscriptionTable > tbody > tr > td:nth-child(4) {
+    white-space: nowrap;
+  }
+</style>
+% end
+
+% content_for before_bootstrap => begin
+<script type="application/javascript" src="/assets/bootstrap-daterangepicker/2013.10.15/daterangepicker.js"></script>
+% end
+
+% content_for javascript => begin
+%= include 'javascript/rplus_table';
+<script type="text/javascript">
+  "use strict";
+
+  !function () {
+    var date1 = moment(), date2 = moment();
+
+    function describeRealty(r) {
+      var parts = [];
+      parts.push(Rplus.Util.escape(Rplus.Table.realty_types[r.type_code].name));
+      if (r.rooms_count) parts.push(r.rooms_count + 'к');
+      if (r.address_object) {
+        parts.push(
+          Rplus.Util.escape(r.address_object.name + ' ' + r.address_object.short_type) +
+          (r.sublandmark ? ' (' + r.sublandmark.name + ')' : '')
+        );
+        //parts.push(Rplus.Util.escape(r.address_object.addr_parts[1].name + ' ' + r.address_object.addr_parts[1].short_type));
+      }
+      if (r.floor && r.floors_count) { parts.push(r.floor + '/' + r.floors_count + ' эт.') } else if (r.floor || r.floors_count) { parts.push((r.floor || r.floors_count) + ' эт.'); }
+      if (r.price) parts.push(r.price + ' тыс. руб.');
+      if (r.agent_id) {
+        var agent = Rplus.Table.users[r.agent_id];
+        parts.push('Агент: ' + (agent.public_name || agent.name));
+      }
+
+      return parts.join(', ');
+    }
+
+    function _List() {
+      $.ajax({
+        type: 'POST',
+        url: '/api/analytics-subscription/list',
+        data: {
+          date1: date1.format('YYYY-MM-DD'),
+          date2: date2.format('YYYY-MM-DD'),
+          offer_type: $('#filterOfferType').data('offer-type'),
+          active: $('[name="active"]:input').val(),
+        }
+      })
+        .done(function (data) {
+          $('#subscriptionTable > tbody').html('');
+          for (var i = 0; i < data.list.length; i++) {
+            var x = data.list[i];
+            var xhtml = '<tr>';
+            xhtml += '<td>' + (i + 1) + '</td>';
+            xhtml += '<td>' + moment(x.add_date).format('DD.MM.YYYY HH:mm') + '</td>';
+            xhtml += '<td>' + moment(x.end_date).format('DD.MM.YYYY HH:mm') + '</td>';
+            xhtml += '<td>' + Rplus.Util.formatPhoneNum(x.client.phone_num) + '</td>';
+            xhtml += '<td>' + x.queries.map(function (x) { return Rplus.Util.escape(x) }).join('<br>') + '</td>';
+            xhtml += '<td>' + x.realty.map(function (x) { return describeRealty(x) }).join('<br>') + '</td>';
+            xhtml += '</tr>';
+            $('#subscriptionTable > tbody').append(xhtml);
+          }
+        })
+      ;
+    }
+
+    $(function () {
+      $('input[name="daterange"]').daterangepicker(
+        {
+          format: 'DD.MM.YYYY',
+          startDate: moment(),
+          endDate: moment()
+        },
+        function(start, end) {
+          date1 = start;
+          date2 = end;
+        }
+      ).val(moment().format('DD.MM.YYYY') + ' - ' + moment().format('DD.MM.YYYY'));
+
+      $('#subscriptionFilterForm').submit(function (e) {
+        e.preventDefault();
+        _List();
+      });
+
+      // Filter: offerType
+      $('#filterOfferType > ul > li > a').click(function (e) {
+        $('#filterOfferType').data('offer-type', $(this).data('offer-type'));
+        $('#filterOfferType > a').html($(this).html() + ' <b class="caret"></b>');
+        _List();
+      });
+    });
+  }();
+</script>
+% end
+
+<div class="row margin-bottom-20">
+  <div class="col-md-12">
+    <form class="form-inline" role="form" id="subscriptionFilterForm">
+      <div class="form-group" style="padding-right: 15px;">
+        <input type="text" class="form-control input-sm" name="daterange" id="dateRange" placeholder="Date range" style="min-width: 160px;">
+      </div>
+      <div class="checkbox" style="padding-right: 15px;">
+        <label>
+          <input type="checkbox" name="active" value="1"> active
+        </label>
+      </div>
+      <button type="submit" class="btn btn-default btn-sm">Submit</button>
+    </form>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-lg-12 col-md-12">
+    <div class="table-responsive">
+      <table class="table table-hover table-condensed" id="subscriptionTable">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Add date</th>
+            <th>End date</th>
+            <th>Client</th>
+            <th>Queries</th>
+            <th>Realty</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<nav class="navbar navbar-default navbar-fixed-bottom">
+  <div class="container">
+    <div class="navbar-right">
+      <ul class="nav navbar-nav">
+        <li class="dropdown" id="filterOfferType" data-offer-type="sale">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown">Продажа <b class="caret"></b></a>
+          <ul class="dropdown-menu">
+            % {
+            % my $iter = Rplus::Model::RealtyOfferType::Manager->get_objects_iterator(sort_by => 'id');
+            % while (my $x = $iter->next) {
+              <li><a href="#" data-offer-type="<%= $x->code %>"><%= $x->name %></a></li>
+            % }}
+          </ul>
+        </li>
+      </ul>
+      <p class="navbar-text"><span class="glyphicon glyphicon-refresh animation-rotate invisible" id="searchLoading"></span> <span class="text-primary">Found</span> <span class="text-primary" id="searchCount">0</span></p>
+    </div>
+  </div>
+</nav>
