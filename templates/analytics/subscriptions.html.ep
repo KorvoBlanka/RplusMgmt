@@ -63,7 +63,7 @@
           date1: date1.format('YYYY-MM-DD'),
           date2: date2.format('YYYY-MM-DD'),
           offer_type: $('#filterOfferType').data('offer-type'),
-          active: $('[name="active"]:input').val(),
+          active: $('[name="active"]:input').prop('checked') ? 1 : 0,
         }
       })
         .done(function (data) {
