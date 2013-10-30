@@ -60,7 +60,6 @@ sub list {
     # Распознаем номера телефонов
     my @seller_phones;
     {
-        my @seller_phones;
         for my $x (split /[ .,]/, $q) {
             if ($x =~ /^\s*([\d-]{6,})\s*$/) {
                 if (my $phone_num = Rplus::Util::PhoneNum->parse($1)) {
