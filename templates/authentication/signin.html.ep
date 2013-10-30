@@ -55,8 +55,8 @@
     </div> <!-- /container -->
 
     <!-- JavaScript -->
-    <script type="application/javascript" src="<%= $assets %>/jquery/2.0.3/jquery-2.0.3.min.js"></script>
-    <script type="application/javascript" src="<%= $assets %>/bootstrap/<%= $bootstrap_ver %>/js/bootstrap.min.js"></script>
+    <script type="application/javascript" src="<%= $assets_url %>/jquery/2.0.3/jquery-2.0.3.min.js"></script>
+    <script type="application/javascript" src="<%= $assets_url %>/bootstrap/<%= $bootstrap_ver %>/js/bootstrap.min.js"></script>
 
     <script type="application/javascript">
       $(function () {
