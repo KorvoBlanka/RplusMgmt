@@ -7,23 +7,18 @@
     <meta name="description" content="Rplus Management">
     <meta name="author" content="Alexander Orlenko">
 
-    % my $bootstrap_ver = '3.0.0-wip';
+    % my $bootstrap_ver = '3.0.0-dev';
     % my $role = session->{'user'}->{'role'};
 
     <!-- Bootstrap -->
-    <link rel="stylesheet" href="/assets/bootstrap/<%= $bootstrap_ver %>/css/bootstrap.min.css">
+    <link rel="stylesheet" href="<%= $assets_url %>/bootstrap/<%= $bootstrap_ver %>/css/bootstrap.min.css">
     <!-- Pines Notify -->
-    <link rel="stylesheet" href="/assets/pnotify/1.2.2/jquery.pnotify.default.css">
+    <link rel="stylesheet" href="<%= $assets_url %>/pnotify/1.2.2/jquery.pnotify.default.css">
 
     <style type="text/css">
       body {
         padding-top: 70px;
         padding-bottom: 50px;
-      }
-
-      /* Workaround to fix https://github.com/twbs/bootstrap/issues/9855 */
-      .modal-open, .modal-open .navbar-fixed-top, .modal-open .navbar-fixed-bottom {
-        margin-right: auto !important;
       }
 
       .margin-bottom-15 {
@@ -181,14 +176,16 @@
     </div>
 
     <!-- JavaScript -->
-    <script type="application/javascript" src="/assets/jquery/2.0.3/jquery-2.0.3.min.js"></script>
+    <script type="application/javascript" src="<%= $assets_url %>/jquery/2.0.3/jquery-2.0.3.min.js"></script>
     <%= content_for 'before_bootstrap' %>
     <!-- Bootstrap -->
-    <script type="application/javascript" src="/assets/bootstrap/<%= $bootstrap_ver %>/js/bootstrap.min.js"></script>
+    <script type="application/javascript" src="<%= $assets_url %>/bootstrap/<%= $bootstrap_ver %>/js/bootstrap.min.js"></script>
     <!-- MomentJS -->
-    <script type="application/javascript" src="/assets/moment/2.2.1/moment.min.js"></script>
+    <script type="application/javascript" src="<%= $assets_url %>/moment/2.2.1/moment.min.js"></script>
+    <!-- HolderJS -->
+    <script type="application/javascript" src="<%= $assets_url %>/holder/2.2.0/holder.min.js"></script>
     <!-- Pines Notify -->
-    <script type="application/javascript" src="/assets/pnotify/1.2.2/jquery.pnotify.js"></script>
+    <script type="application/javascript" src="<%= $assets_url %>/pnotify/1.2.2/jquery.pnotify.js"></script>
     <%= content_for 'after_bootstrap' %>
 
     <%= include 'javascript/rplus' %>

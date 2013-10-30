@@ -7,10 +7,10 @@
     <meta name="description" content="Rplus Management">
     <meta name="author" content="Alexander Orlenko">
 
-    % my $bootstrap_ver = '3.0.0-wip';
+    % my $bootstrap_ver = '3.0.0-dev';
 
     <!-- Bootstrap -->
-    <link rel="stylesheet" href="/assets/bootstrap/<%= $bootstrap_ver %>/css/bootstrap.min.css">
+    <link rel="stylesheet" href="<%= $assets_url %>/bootstrap/<%= $bootstrap_ver %>/css/bootstrap.min.css">
 
     <style type="text/css">
       body {
@@ -55,8 +55,8 @@
     </div> <!-- /container -->
 
     <!-- JavaScript -->
-    <script type="application/javascript" src="/assets/jquery/2.0.3/jquery-2.0.3.min.js"></script>
-    <script type="application/javascript" src="/assets/bootstrap/<%= $bootstrap_ver %>/js/bootstrap.min.js"></script>
+    <script type="application/javascript" src="<%= $assets %>/jquery/2.0.3/jquery-2.0.3.min.js"></script>
+    <script type="application/javascript" src="<%= $assets %>/bootstrap/<%= $bootstrap_ver %>/js/bootstrap.min.js"></script>
 
     <script type="application/javascript">
       $(function () {

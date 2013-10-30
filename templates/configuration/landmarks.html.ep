@@ -6,15 +6,15 @@
 % my $leaflet_draw_ver = '0.2.1-dev';
 
 % content_for after_bootstrap => begin
-<script type="application/javascript" src="/assets/leaflet/0.6.4/leaflet.js"></script>
-<script type="application/javascript" src="/assets/leaflet.fullscreen/2013.09.30/Control.FullScreen.js"></script>
-<script type="application/javascript" src="/assets/leaflet.draw/<%= $leaflet_draw_ver %>/leaflet.draw.js"></script>
+<script type="application/javascript" src="<%= $assets_url %>/leaflet/0.6.4/leaflet.js"></script>
+<script type="application/javascript" src="<%= $assets_url %>/leaflet.fullscreen/2013.09.30/Control.FullScreen.js"></script>
+<script type="application/javascript" src="<%= $assets_url %>/leaflet.draw/<%= $leaflet_draw_ver %>/leaflet.draw.js"></script>
 % end
 
 % content_for header => begin
-<link rel="stylesheet" href="/assets/leaflet/0.6.4/leaflet.css">
-<link rel="stylesheet" href="/assets/leaflet.fullscreen/2013.09.30/Control.FullScreen.css">
-<link rel="stylesheet" href="/assets/leaflet.draw/<%= $leaflet_draw_ver %>/leaflet.draw.css">
+<link rel="stylesheet" href="<%= $assets_url %>/leaflet/0.6.4/leaflet.css">
+<link rel="stylesheet" href="<%= $assets_url %>/leaflet.fullscreen/2013.09.30/Control.FullScreen.css">
+<link rel="stylesheet" href="<%= $assets_url %>/leaflet.draw/<%= $leaflet_draw_ver %>/leaflet.draw.css">
 <style type="text/css">
   #landmarkList {
     height: 600px;

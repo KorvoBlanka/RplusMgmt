@@ -3,7 +3,7 @@
 % use Rplus::Model::RealtyOfferType::Manager;
 
 % content_for header => begin
-<link rel="stylesheet" href="/assets/bootstrap-daterangepicker/2013.10.15/daterangepicker-bs3.css">
+<link rel="stylesheet" href="<%= $assets_url %>/bootstrap-daterangepicker/2013.10.15/daterangepicker-bs3.css">
 <style type="text/css">
   #subscriptionTable > tbody > tr > td:nth-child(1),
   #subscriptionTable > tbody > tr > td:nth-child(2),
@@ -15,7 +15,7 @@
 % end
 
 % content_for before_bootstrap => begin
-<script type="application/javascript" src="/assets/bootstrap-daterangepicker/2013.10.15/daterangepicker.js"></script>
+<script type="application/javascript" src="<%= $assets_url %>/bootstrap-daterangepicker/2013.10.15/daterangepicker.js"></script>
 % end
 
 % content_for javascript => begin

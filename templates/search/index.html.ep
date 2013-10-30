@@ -4,9 +4,9 @@
 % use JSON;
 
 % content_for header => begin
-<link rel="stylesheet" href="/assets/leaflet/0.6.4/leaflet.css">
-<link rel="stylesheet" href="/assets/leaflet.fullscreen/2013.09.30/Control.FullScreen.css">
-<link rel="stylesheet" href="/assets/typeahead.js/0.9.4-dev/css/typeahead.js-bootstrap.css">
+<link rel="stylesheet" href="<%= $assets_url %>/leaflet/0.6.4/leaflet.css">
+<link rel="stylesheet" href="<%= $assets_url %>/leaflet.fullscreen/2013.09.30/Control.FullScreen.css">
+<link rel="stylesheet" href="<%= $assets_url %>/typeahead.js/0.9.4-dev/css/typeahead.js-bootstrap.css">
 <style type="text/css">
   #searchTableWrapper {
     height: 600px;
@@ -55,9 +55,9 @@
 % end
 
 % content_for after_bootstrap => begin
-<script type="application/javascript" src="/assets/leaflet/0.6.4/leaflet.js"></script>
-<script type="application/javascript" src="/assets/leaflet.fullscreen/2013.09.30/Control.FullScreen.js"></script>
-<script type="application/javascript" src="/assets/typeahead.js/0.9.4-dev/js/typeahead.js"></script>
+<script type="application/javascript" src="<%= $assets_url %>/leaflet/0.6.4/leaflet.js"></script>
+<script type="application/javascript" src="<%= $assets_url %>/leaflet.fullscreen/2013.09.30/Control.FullScreen.js"></script>
+<script type="application/javascript" src="<%= $assets_url %>/typeahead.js/0.9.4-dev/js/typeahead.js"></script>
 % end
 
 % content_for javascript => begin

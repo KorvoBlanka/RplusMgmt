@@ -11,13 +11,16 @@ sub startup {
     my $self = shift;
 
     # Plugins
-    $self->plugin('Config' => {file => 'app.conf'});
+    my $config = $self->plugin('Config' => {file => 'app.conf'});
 
     # Secret
     $self->secret('fkj49SqZ1g1k2fqrq1g31SPgh449FqjrRfNqw4aquR3v4');
 
     # DB
     $self->helper(db => sub { Rplus::DB->new_or_cached });
+
+    # Default stash values
+    $self->defaults(assets_url => $config->{assets}->{url} || '/assets');
 
     # Router
     my $r = $self->routes;

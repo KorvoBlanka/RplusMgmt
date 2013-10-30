@@ -29,6 +29,10 @@
         url => 'http://storage.dvnic.com/mgmt',
     },
 
+    assets => {
+        url => 'http://assets.dvnic.com',
+    },
+
     smsc => {
         active => 0,
         psw => 'password',
