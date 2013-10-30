@@ -505,7 +505,7 @@
             if (!geoMap) {
               geoMap = L.map('realtyGeoMap', {
                 center: [48.480232846617845, 135.07203340530396],
-                zoom: 16,
+                zoom: 15,
               });
 
               L.tileLayer('http://tile{s}.maps.2gis.com/tiles?x={x}&y={y}&z={z}&v=10', {
@@ -519,12 +519,14 @@
               markerLG.addTo(geoMap);
             }
             // Show realty on the map
+            var bounds = [];
             $('#realtyTable > tbody > tr.selected[data-lat]').each(function () {
               var lat = $(this).data('lat'),
                   lng = $(this).data('lng'),
                   r   = $(this).data('obj');
               if (lat && lng) {
                 var marker = L.marker([lat, lng]).addTo(markerLG);
+                bounds.push([lat, lng]);
                 if (1) {
                   var parts = [];
                   parts.push('<strong>' + Rplus.Util.escape(Rplus.Table.realty_types[r.type_code].name) + '</strong>');
@@ -562,6 +564,12 @@
                 }
               }
             });
+            if (bounds.length) {
+              // Freeze workaround
+              setTimeout(function () {
+                geoMap.fitBounds(bounds);
+              }, 1000);
+            }
           })
         ;
         $('#btnRealtyGeo').click(function (e) {
