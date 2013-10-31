@@ -7,7 +7,7 @@
     <meta name="description" content="Rplus Management">
     <meta name="author" content="Alexander Orlenko">
 
-    % my $bootstrap_ver = '3.0.0-dev';
+    % my $bootstrap_ver = '3.0.1';
 
     <!-- Bootstrap -->
     <link rel="stylesheet" href="<%= $assets_url %>/bootstrap/<%= $bootstrap_ver %>/css/bootstrap.min.css">

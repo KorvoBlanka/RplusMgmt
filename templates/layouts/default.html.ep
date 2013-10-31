@@ -7,7 +7,7 @@
     <meta name="description" content="Rplus Management">
     <meta name="author" content="Alexander Orlenko">
 
-    % my $bootstrap_ver = '3.0.0-dev';
+    % my $bootstrap_ver = '3.0.1';
     % my $role = session->{'user'}->{'role'};
 
     <!-- Bootstrap -->
@@ -140,31 +140,33 @@
         <div class="collapse navbar-collapse navbar-top-collapse">
           <ul class="nav navbar-nav">
             % if ($role eq 'dispatcher' || $role eq 'manager') {
-            <li class="<%= $controller eq 'search' && 'active' %>"><a href="/search"><span class="glyphicon glyphicon-search"></span> Search</a></li>
+            <li role="presentation" class="<%= $controller eq 'search' && 'active' %>"><a href="/search"><span class="glyphicon glyphicon-search"></span> Search</a></li>
             % }
             % if ($role ne 'dispatcher') {
-            <li class="<%= $controller eq 'realty' && 'active' %>"><a href="/realty"><span class="glyphicon glyphicon-home"></span> Realty</a></li>
+            <li role="presentation" class="<%= $controller eq 'realty' && 'active' %>"><a href="/realty"><span class="glyphicon glyphicon-home"></span> Realty</a></li>
             % }
             <!--li class="<%= $controller eq 'tasks' && 'active' %>"><a href="/tasks"><span class="glyphicon glyphicon-tasks"></span> Tasks</a></li-->
             % if ($role eq 'manager') {
             <li class="dropdown">
               <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-star"></span> Services <b class="caret"></b></a>
               <ul class="dropdown-menu">
-                <li><a href="/service/export"><span class="glyphicon glyphicon-export"></span> Export Media</a></li>
+                <li role="presentation"><a href="/clients"><span class="glyphicon glyphicon-user"></span> Clients</a></li>
+                <li role="presentation" class="divider"></li>
+                <li role="presentation"><a href="/service/export"><span class="glyphicon glyphicon-export"></span> Export Media</a></li>
               </ul>
             </li>
             <li class="dropdown">
               <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-stats"></span> Analytics <b class="caret"></b></a>
               <ul class="dropdown-menu">
-                <li><a href="/analytics/subscriptions"><span class="glyphicon glyphicon-list-alt"></span> Subscriptions</a></li>
+                <li role="presentation"><a href="/analytics/subscriptions"><span class="glyphicon glyphicon-list-alt"></span> Subscriptions</a></li>
               </ul>
             </li>
             <li class="dropdown">
               <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-cog"></span> Configuration <b class="caret"></b></a>
               <ul class="dropdown-menu">
-                <li><a href="/conf/mediators"><span class="glyphicon glyphicon-ban-circle"></span> Mediators</a></li>
-                <li><a href="/conf/landmarks"><span class="glyphicon glyphicon-globe"></span> Landmarks</a></li>
-                <li><a href="/conf/users"><span class="glyphicon glyphicon-user"></span> Users</a></li>
+                <li role="presentation"><a href="/conf/mediators"><span class="glyphicon glyphicon-ban-circle"></span> Mediators</a></li>
+                <li role="presentation"><a href="/conf/landmarks"><span class="glyphicon glyphicon-globe"></span> Landmarks</a></li>
+                <li role="presentation"><a href="/conf/users"><span class="glyphicon glyphicon-user"></span> Users</a></li>
               </ul>
             </li>
             % }
