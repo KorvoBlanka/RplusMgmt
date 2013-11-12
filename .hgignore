@@ -4,3 +4,4 @@
 ^app\.conf$
 ^lib\/Rplus\/Model
 ^lib\/Rplus\/DB.pm$
+^hypnotoad\.pid$
