@@ -60,6 +60,8 @@
 <script type="application/javascript" src="<%= $assets_url %>/typeahead.js/0.9.4-dev/js/typeahead.js"></script>
 % end
 
+%= include 'blocks/client_card';
+
 % content_for javascript => begin
 %= include 'javascript/rplus_table';
 <script type="application/javascript">
@@ -295,6 +297,26 @@
             alert('Ошибка оформления подписки');
           })
         ;
+      });
+
+      // Open ClientCard by client on Phone
+      $('#sfBtnPhone').prop('disabled', false).click(function (e) {
+        var phoneNum = $('#sfPhoneNum').val();
+        if (phoneNum) {
+          $.ajax({
+            type: "POST",
+            url: "/api/client/get",
+            data: {phone_num: phoneNum}
+          })
+            .done(function (data) {
+              var clientCard = ClientCard().open(data.id);
+            })
+            .fail(function () {
+              var clientCard = ClientCard().create({phone_num: phoneNum});
+            });
+        } else {
+          var clientCard = ClientCard().create({phone_num: phoneNum});
+        }
       });
 
       _List(1);

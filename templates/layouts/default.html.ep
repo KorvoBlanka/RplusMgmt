@@ -171,8 +171,10 @@
             <li class="dropdown">
               <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-star"></span> Services <b class="caret"></b></a>
               <ul class="dropdown-menu">
+                <!--
                 <li role="presentation"><a href="/clients"><span class="glyphicon glyphicon-user"></span> Clients</a></li>
                 <li role="presentation" class="divider"></li>
+                -->
                 <li role="presentation"><a href="/service/export"><span class="glyphicon glyphicon-export"></span> Export Media</a></li>
               </ul>
             </li>

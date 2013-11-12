@@ -199,9 +199,11 @@
       $('#clientCard_clientForm [name="description"]:input', $modal).val(client.description);
       $('#clientCard_addDate', $modal).text(moment(client.add_date).format('DD.MM.YYYY'));
 
-      if (!client.subscriptions) return;
-      for (var i = 0; i < client.subscriptions.length; i++) {
-        view_pushSubscriptionToTable(client.subscriptions[i]);
+      $('#clientCard_subscriptionsTable > tbody', $modal).empty();
+      if (client.subscriptions) {
+        for (var i = 0; i < client.subscriptions.length; i++) {
+          view_pushSubscriptionToTable(client.subscriptions[i]);
+        }
       }
     }
 

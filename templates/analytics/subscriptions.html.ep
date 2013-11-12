@@ -76,7 +76,7 @@
             xhtml += '<td>' + (i + 1) + '</td>';
             xhtml += '<td>' + add_date.format('DD.MM.YYYY HH:mm') + '</td>';
             xhtml += '<td><span class="label label-' + (end_date < moment() ? 'danger' : 'success') + '">' + end_date.format('DD.MM.YYYY') + '</span></td>';
-            xhtml += '<td>' + Rplus.Util.formatPhoneNum(x.client.phone_num) + '</td>';
+            xhtml += '<td><a href="#" data-action="client-open" data-id="' + x.client.id + '">' + Rplus.Util.formatPhoneNum(x.client.phone_num) + '</a></td>';
             xhtml += '<td>' + x.queries.map(function (x) { return Rplus.Util.escape(x) }).join('<br>') + '</td>';
             xhtml += '<td>' + x.realty.map(function (x) { return describeRealty(x) }).join('<br>') + '</td>';
             xhtml += '</tr>';
@@ -110,6 +110,11 @@
         $('#filterOfferType').data('offer-type', $(this).data('offer-type'));
         $('#filterOfferType > a').html($(this).html() + ' <b class="caret"></b>');
         _List();
+      });
+
+      $('#subscriptionTable').on('click', 'a[data-action="client-open"]', function (e) {
+        var id = $(this).data('id');
+        var clientCard = ClientCard().open(id);
       });
     });
   }();
@@ -171,3 +176,5 @@
     </div>
   </div>
 </nav>
+
+%= include 'blocks/client_card';

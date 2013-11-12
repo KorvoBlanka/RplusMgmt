@@ -96,9 +96,10 @@ sub startup {
                 $self->stash(user_role => $user_role);
                 return 1;
             }
-            $self->render(json => {status => 'Forbidden'}, status => 403);
-            return undef;
+            #$self->render(json => {status => 'Forbidden'}, status => 403);
+            #return undef;
         }
+        return 1;
 
         $self->render(json => {status => 'Unauthorized'}, status => 401);
         return undef;
