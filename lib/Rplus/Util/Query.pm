@@ -212,7 +212,7 @@ sub parse {
             if ($q =~ s/${sta_re}(?:(?:от|с)\s+)?(\d+)\s*(?:до|по|\-)\s*(\d+)\s*${sqr_re}${end_re}/ /i) {
                 ($square1, $square2) = ($1, $2);
             }
-            # Одиночное значение
+            # Single value
             elsif ($q =~ s/${sta_re}(?:(${tofrom_re})\s+)?(\d+)\s*${sqr_re}${end_re}/ /i) {
                 my $prefix = $1 || '';
                 if ($prefix eq 'до' || $prefix eq 'по') { $square2 = $2; } else { $square1 = $2; };
@@ -266,7 +266,7 @@ sub parse {
             my %found = (address_object => [], landmark => []);
 
             # First processing - technical params
-            # Try to find keywords, lists in query_keywords table
+            # Try to find keywords listed in query_keywords table
             {
                 my @xfound;
                 my $sql = "SELECT QK.* FROM query_keywords QK WHERE QK.fts @@ '".join('|', @tsv)."'::tsquery AND ts_rank_cd('{1.0, 1.0, 1.0, 1.0}', QK.fts, '".join('|', @tsv)."'::tsquery) = length(QK.fts)";
