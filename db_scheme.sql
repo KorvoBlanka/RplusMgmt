@@ -493,6 +493,13 @@ ALTER TABLE ONLY address_objects ALTER COLUMN postal_code SET STATISTICS 0;
 
 
 --
+-- Name: TABLE address_objects; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE address_objects IS 'Справочник адресов в формате ФИАС';
+
+
+--
 -- Name: COLUMN address_objects.guid; Type: COMMENT; Schema: public; Owner: -
 --
 
@@ -692,8 +699,8 @@ ALTER SEQUENCE address_objects_id_seq OWNED BY address_objects.id;
 
 CREATE TABLE clients (
     id integer NOT NULL,
-    name character varying(64) NOT NULL,
-    login character varying(24) NOT NULL,
+    name character varying(64),
+    login character varying(24),
     password character varying(32),
     phone_num character varying(10) NOT NULL,
     email character varying(64),
@@ -702,6 +709,7 @@ CREATE TABLE clients (
     add_date timestamp with time zone DEFAULT now() NOT NULL,
     delete_date timestamp with time zone,
     last_signin_date timestamp with time zone,
+    CONSTRAINT clients_delete_date_chk CHECK ((delete_date >= add_date)),
     CONSTRAINT clients_email_chk CHECK (((email)::text ~ '^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'::text)),
     CONSTRAINT clients_phone_num_chk CHECK (((phone_num)::text ~ '^\d{10}$'::text))
 );
@@ -2615,7 +2623,9 @@ CREATE TABLE subscriptions (
     add_date timestamp with time zone DEFAULT now() NOT NULL,
     end_date timestamp with time zone,
     delete_date timestamp with time zone,
-    last_check_date timestamp with time zone
+    last_check_date timestamp with time zone,
+    CONSTRAINT subscriptions_delete_date_chk CHECK ((delete_date >= add_date)),
+    CONSTRAINT subscriptions_end_date_chk CHECK ((end_date >= add_date))
 );
 
 
