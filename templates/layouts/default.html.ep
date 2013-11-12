@@ -53,6 +53,27 @@
         border-bottom: 0;
       }
 
+      .panel-sm {
+        margin-bottom: 15px;
+      }
+
+      .panel-sm .panel-body {
+        padding: 9px;
+      }
+
+      .form-group-sm {
+        margin-bottom: 10px;
+      }
+
+      .nav-sm > li > a {
+        padding: 8px 12px;
+      }
+
+      .hr-sm {
+        margin-top: 10px;
+        margin-bottom: 10px;
+      }
+
       % if ($self->req->headers->user_agent =~ /Windows/) {
         ::-webkit-scrollbar {
           width: 5px;
