@@ -22,7 +22,11 @@ sub startup {
     $self->secret($config->{secret}) if $config->{secret};
 
     # Default stash values
-    $self->defaults(assets_url => $config->{assets}->{url} || '/assets');
+    $self->defaults(
+        jquery_ver => '2.0.3',
+        bootstrap_ver => '3.0.2',
+        assets_url => $config->{assets}->{url} || '/assets',
+    );
 
     # DB helper
     $self->helper(db => sub { Rplus::DB->new_or_cached });
