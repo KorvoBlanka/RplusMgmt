@@ -19,6 +19,8 @@
         }
     },
 
+    secret => 'changeMe',
+
     default_city_guid => 'a4859da8-9977-4b62-8436-4e1b98c5d13f',
     default_phone_prefix => '4212',
 

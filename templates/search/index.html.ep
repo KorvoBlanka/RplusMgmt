@@ -283,7 +283,7 @@
 
         $.ajax({
           type: "POST",
-          url: "/api/subscription/add",
+          url: "/api/realty/interest",
           data: {q: q, offer_type: offerType, realty_id: realtyId, active: active, phone_num: phoneNum}
         })
           .done(function (data) {
@@ -299,24 +299,17 @@
         ;
       });
 
-      // Open ClientCard by client on Phone
-      $('#sfBtnPhone').prop('disabled', false).click(function (e) {
+      // Open ClientCard
+      $('#sfBtnClient').click(function (e) {
         var phoneNum = $('#sfPhoneNum').val();
-        if (phoneNum) {
-          $.ajax({
-            type: "POST",
-            url: "/api/client/get",
-            data: {phone_num: phoneNum}
-          })
-            .done(function (data) {
-              var clientCard = ClientCard().open(data.id);
-            })
-            .fail(function () {
-              var clientCard = ClientCard().create({phone_num: phoneNum});
-            });
-        } else {
-          var clientCard = ClientCard().create({phone_num: phoneNum});
-        }
+        var card = ClientCard({
+          events: {
+            save: function (client) {
+              $('#sfPhoneNum').val(client.phone_num);
+              card.close();
+            },
+          }
+        }).findOrCreate(phoneNum);
       });
 
       _List(1);
@@ -345,7 +338,8 @@
     <div class="input-group input-group-sm">
       <input type="text" class="form-control" id="sfPhoneNum" name="phoneNum" placeholder="Phone" autocomplete="off">
       <div class="input-group-btn">
-        <button type="button" class="btn btn-default" id="sfBtnPhone" disabled="disabled"><span class="glyphicon glyphicon-phone"></span></button>
+        <button type="button" class="btn btn-default" id="sfBtnClient"><span class="glyphicon glyphicon-user"></span></button>
+        <!--button type="button" class="btn btn-default" id="sfBtnPhone" disabled="disabled"><span class="glyphicon glyphicon-phone"></span></button-->
       </div>
     </div>
   </div>
