@@ -62,7 +62,8 @@
 
     <script type="application/javascript">
       $(function () {
-        $('.form-signin').submit(function (event) {
+        $('.form-signin').submit(function (e) {
+          e.preventDefault();
           var login = $('input[name="login"]').val();
           var password = $('input[name="password"]').val();
           var rememberMe = $('input[name="remember_me"]').prop('checked');
@@ -82,7 +83,6 @@
               }
             })
           ;
-          event.preventDefault();
         });
       });
     </script>
