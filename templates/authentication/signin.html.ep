@@ -7,8 +7,6 @@
     <meta name="description" content="Rplus Management">
     <meta name="author" content="Alexander Orlenko">
 
-    % my $bootstrap_ver = '3.0.1';
-
     <!-- Bootstrap -->
     <link rel="stylesheet" href="<%= $assets_url %>/bootstrap/<%= $bootstrap_ver %>/css/bootstrap.min.css">
 
@@ -20,34 +18,38 @@
 
       .panel {
         max-width: 350px;
-        margin: 0 auto 20px;
       }
 
       .panel-body {
         padding: 19px 29px 29px;
+      }
+
+      .alert-sm {
+        padding: 9px;
       }
     </style>
   </head>
   <body>
 
     <div class="container">
-      <div class="panel panel-default">
+      <div class="panel panel-default center-block">
         <div class="panel-body">
           <form class="form-signin">
             <fieldset>
               <legend>Please Sign In</legend>
+              <div class="alert alert-danger alert-sm hidden">Invalid login or password</div>
               <div class="form-group">
-                <input type="text" class="form-control" name="login" placeholder="Login" autocomplete="off" required autofocus>
+                <input type="text" class="form-control" name="login" placeholder="Login" required autofocus>
               </div>
               <div class="form-group">
-                <input type="password" class="form-control" name="password" placeholder="Password" autocomplete="off" required>
+                <input type="password" class="form-control" name="password" placeholder="Password">
               </div>
               <div class="checkbox">
                 <label>
-                  <input type="checkbox" name="remember_me" value="1"> Remember me
+                  <input type="checkbox" name="remember_me"> Remember me
                 </label>
               </div>
-              <button type="submit" class="btn btn-primary">Sign in</button>
+              <button type="submit" class="btn btn-primary" data-loading-text="Loading...">Sign in</button>
             </fieldset>
           </form>
         </div>
@@ -55,7 +57,7 @@
     </div> <!-- /container -->
 
     <!-- JavaScript -->
-    <script type="application/javascript" src="<%= $assets_url %>/jquery/2.0.3/jquery-2.0.3.min.js"></script>
+    <script type="application/javascript" src="<%= $assets_url %>/jquery/<%= $jquery_ver %>/jquery-<%= $jquery_ver %>.min.js"></script>
     <script type="application/javascript" src="<%= $assets_url %>/bootstrap/<%= $bootstrap_ver %>/js/bootstrap.min.js"></script>
 
     <script type="application/javascript">
@@ -63,15 +65,18 @@
         $('.form-signin').submit(function (event) {
           var login = $('input[name="login"]').val();
           var password = $('input[name="password"]').val();
-          var rememberMe = $('input[name="remember_me"]:checked').val();
+          var rememberMe = $('input[name="remember_me"]').prop('checked');
           $.ajax({
             type: "POST",
             url: "/signin",
             data: {login: login, password: password, remember_me: rememberMe},
+            beforeSend: function (jqXHR, settings) { $('.form-signin button[type="submit"]').button('loading'); },
+            complete: function (jqXHR, textStatus) { $('.form-signin button[type="submit"]').button('reset'); },
           })
             .done(function (data) {
               if (data.status == 'failed') {
                 $('.form-group').addClass('has-error');
+                $('.alert-danger').removeClass('hidden');
               } else {
                 location.reload();
               }

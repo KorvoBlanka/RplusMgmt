@@ -22,9 +22,11 @@ sub signin {
 
     my $login = $self->param('login');
     my $password = $self->param('password');
-    my $remember_me = $self->param('remember_me');
+    my $remember_me = $self->param('remember_me') || 'false';
 
-    my $user = Rplus::Model::User::Manager->get_objects(query => [ login => $login, password => $password, delete_date => undef ])->[0];
+    return $self->render(json => {status => 'failed'}) unless $login && defined $password;
+
+    my $user = Rplus::Model::User::Manager->get_objects(query => [login => $login, password => $password, delete_date => undef])->[0];
     return $self->render(json => {status => 'failed'}) unless $user;
 
     $self->session->{'user'} = {
@@ -32,10 +34,9 @@ sub signin {
         login => $user->login,
         name => $user->name,
         role => $user->role,
-        metadata => $user->metadata,
     };
 
-    if ($remember_me) {
+    if ($remember_me && $remember_me ne 'false') {
         $self->session(expiration => 604800);
     } else {
         $self->session(expiration => 3600); # default expiration
