@@ -73,7 +73,7 @@
     var _List_started  = 0, _List_finished = 0;
     function _List(page) {
       var q = $('#searchQuery').val();
-      var offerType = $('#filterOfferType').data('offer-type');
+      var offerType = $('#filterOfferType').data('offer-type-code');
 
       if (!q) return;
 
@@ -193,7 +193,7 @@
 
       // Filter: offerType
       $('#filterOfferType > ul > li > a').click(function (e) {
-        $('#filterOfferType').data('offer-type', $(this).data('offer-type'));
+        $('#filterOfferType').data('offer-type-code', $(this).data('offer-type-code'));
         $('#filterOfferType > a').html($(this).html() + ' <b class="caret"></b>');
         _List(1);
       });
@@ -267,26 +267,32 @@
 
       // Subscribe
       $('#btnSubscribe > ul > li > a').click(function (e) {
-        var q = $('#searchQuery').val(),
-            offerType = $('#filterOfferType').data('offer-type'),
-            active = $(this).data('active'),
-            realtyId = [],
+        var q = $('#searchQuery').val().trim(),
+            offerTypeCode = $('#filterOfferType').data('offer-type-code'),
+            days = $(this).data('days'),
+            realtyIds = [],
             phoneNum = $('#sfPhoneNum').val()
         ;
-        $('#searchTable > tbody > tr.selected').each(function () {
-          realtyId.push($(this).data('id'));
+        $('#searchTable > tbody > tr.selected').each(function (idx, elem) {
+          realtyIds.push($(this).data('id'));
         });
 
         if (!q) { alert('Запрос не указан'); return; };
-        if (!active && !realtyId.length) return;
+        if (!days && !realtyIds.length) return;
         if (!phoneNum) { alert('Номер телефона не указан'); return; }
 
         $.ajax({
           type: "POST",
-          url: "/api/realty/interest",
-          data: {q: q, offer_type: offerType, realty_id: realtyId, active: active, phone_num: phoneNum}
+          url: "/api/client/subscribe",
+          data: {
+            q: q,
+            offer_type_code: offerTypeCode,
+            realty_ids: realtyIds,
+            end_date: days ? moment().add('days', days).format('YYYY-MM-DDTHH:mm:ssZZ') : null,
+            phone_num: phoneNum
+          }
         })
-          .done(function (data) {
+          .done(function (data, textStatus, jqXHR) {
             if (data.status == 'success') {
               alert('Действие успешно завершено');
             } else {
@@ -303,12 +309,10 @@
       $('#sfBtnClient').click(function (e) {
         var phoneNum = $('#sfPhoneNum').val();
         var card = ClientCard({
-          events: {
-            save: function (client) {
-              $('#sfPhoneNum').val(client.phone_num);
-              card.close();
-            },
-          }
+          save: function (client) {
+            $('#sfPhoneNum').val(client.phone_num);
+            card.close();
+          },
         }).findOrCreate(phoneNum);
       });
 
@@ -326,8 +330,8 @@
         <div class="input-group-btn" id="btnSubscribe">
           <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">SMS <span class="caret"></span></button>
           <ul class="dropdown-menu pull-right" role="menu">
-            <li><a href="#" data-active="1">SMS / Subscribe</a></li>
-            <li><a href="#" data-active="0">SMS Only</a></li>
+            <li><a href="#">SMS</a></li>
+            <li><a href="#" data-days="14">SMS + Subscribe (14 days)</a></li>
           </ul>
         </div>
       </div>
@@ -363,13 +367,13 @@
     <p class="navbar-text" style="margin-left: 0;"><span class="text-danger" id="sfDisplay"></span></p>
     <div class="navbar-right">
       <ul class="nav navbar-nav">
-        <li class="dropdown" id="filterOfferType" data-offer-type="sale">
+        <li class="dropdown" id="filterOfferType" data-offer-type-code="sale">
           <a href="#" class="dropdown-toggle" data-toggle="dropdown">Продажа <b class="caret"></b></a>
           <ul class="dropdown-menu">
             % {
             % my $iter = Rplus::Model::RealtyOfferType::Manager->get_objects_iterator(sort_by => 'id');
             % while (my $x = $iter->next) {
-              <li><a href="#" data-offer-type="<%= $x->code %>"><%= $x->name %></a></li>
+              <li><a href="#" data-offer-type-code="<%= $x->code %>"><%= $x->name %></a></li>
             % }}
           </ul>
         </li>

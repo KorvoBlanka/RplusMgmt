@@ -18,9 +18,7 @@
   // Singletone dialog
   var ClientCard = (function () {
     // Global variables
-    var $modal;
-    // Events
-    var events;
+    var $modal, events = {};
 
     // Init here
     $(function () {
@@ -39,7 +37,7 @@
 
       // Action: create subscription
       $('[data-action="subscription-create"]', $modal).click(function (e) {
-        view_setSubscriptionForm({
+        view_setSubscription({
           offer_type_code: "sale",
           guid: Rplus.Util.guid(),
           end_date: moment().add('days', 14).format(),
@@ -50,7 +48,7 @@
       // Action: edit subscription
       $modal.on('click', '[data-action="subscription-edit"]', function (e) {
         var subscription = $(this).closest('tr').data('obj');
-        view_setSubscriptionForm(subscription);
+        view_setSubscription(subscription);
         $('a[href="#clientCard_subscriptionTab"]', $modal).tab('show').parent().show();
       });
 
@@ -81,7 +79,7 @@
 
       // Action: add query to subscription
       $('[data-action="query-add"]', $modal).click(function (e) {
-        var q = $('#clientCard_queriesForm [name="new_query"]:input', $modal).val();
+        var q = $('#clientCard_queriesForm [name="new_query"]:input', $modal).val().trim();
         if (q) {
           view_addQueryToSubscription(q);
           $('#clientCard_queriesForm [name="new_query"]:input', $modal).val(null);
@@ -116,8 +114,8 @@
     // Global functions
     function saveSubscription() {
       var $form = $('#clientCard_subscriptionForm', $modal);
-      var subscription = $form.data('obj');
 
+      var subscription = $form.data('obj');
       subscription.offer_type_code = $('[name="offer_type_code"]:input', $form).val();
       if (!subscription.add_date) subscription.add_date = moment().format('YYYY-MM-DDTHH:mm:ssZZ');
       subscription.end_date = moment($('[name="end_date"]:input', $form).datepicker('getDate')).format('YYYY-MM-DD') + 'T' + moment(subscription.add_date).format('HH:mm:ssZZ');
@@ -126,7 +124,7 @@
 
       subscription.queries = [];
       $('#clientCard_queryList', $modal).children().each(function (i) {
-        var q = $.trim($('[name="query"]:input', $(this)).val());
+        var q = $('[name="query"]:input', $(this)).val().trim();
         if (q) subscription.queries.push(q);
       });
 
@@ -242,7 +240,7 @@
       }
     }
 
-    function view_setSubscriptionForm(subscription) {
+    function view_setSubscription(subscription) {
       $('#clientCard_subscriptionForm', $modal).data('obj', subscription);
 
       // fill left block (params) of subscription
@@ -276,8 +274,11 @@
 
     return function (options) {
       if (!options) options = {};
-      // Per-instance events (now are global)
-      events = options.events || {};
+
+      // Set events
+      events = {
+        save: options.save
+      };
 
       var $this = {
         // Methods
