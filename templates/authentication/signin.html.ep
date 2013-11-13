@@ -74,13 +74,16 @@
             beforeSend: function (jqXHR, settings) { $('.form-signin button[type="submit"]').button('loading'); },
             complete: function (jqXHR, textStatus) { $('.form-signin button[type="submit"]').button('reset'); },
           })
-            .done(function (data) {
+            .done(function (data, textStatus, jqXHR) {
               if (data.status == 'failed') {
                 $('.form-group').addClass('has-error');
                 $('.alert-danger').removeClass('hidden');
               } else {
                 location.reload();
               }
+            })
+            .fail(function (jqXHR, textStatus, errorThrown) {
+              alert('Error while processing request. Please, try again later.');
             })
           ;
         });
