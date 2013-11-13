@@ -19,15 +19,22 @@
   var ClientCard = (function () {
     // Global variables
     var $modal;
+    // Events
+    var events;
 
     // Init here
     $(function () {
-      $modal = $('#clientCard_modal').modal({show: false});
+      $modal = $('#clientCard_modal').modal({show: false, backdrop: 'static'});
 
       $('#clientCard_subscriptionForm [name="end_date"]:input', $modal).datepicker({
         format: "dd.mm.yyyy",
         weekStart: 1,
         autoclose: true
+      });
+
+      $modal.on('shown.bs.modal', function (e) {
+        $('a[href="#clientCard_subscriptionTab"]', $modal).parent().hide();
+        $('a[href="#clientCard_mainTab"]', $modal).tab('show');
       });
 
       // Action: create subscription
@@ -131,7 +138,7 @@
       return subscription;
     }
 
-    function save(onSuccess, onError) {
+    function save() {
       var client = {
         id: $('#clientCard_clientForm [name="id"]:input', $modal).val(),
         name: $('#clientCard_clientForm [name="name"]:input', $modal).val(),
@@ -146,7 +153,7 @@
         complete: function (jqXHR, textStatus) { $('[data-action="client-save"]', $modal).button('reset'); },
       })
         .done(function (data, textStatus, jqXHR) {
-          var clientId = data.id;
+          client.id = data.id;
 
           // Delete old queries
           $('#clientCard_subscriptionsTable > tbody > tr:hidden', $modal).each(function (index, elem) {
@@ -168,6 +175,7 @@
           // Save (add/update) queries
           $('#clientCard_subscriptionsTable > tbody > tr:visible', $modal).each(function (index, elem) {
             var subscription = $(this).data('obj');
+            if (!subscription.client_id) subscription.client_id = client.id;
             if (subscription.updated) {
               $.ajax({
                 type: "POST",
@@ -182,16 +190,15 @@
             }
           });
 
-          if ($.isFunction(onSuccess)) onSuccess(client);
+          if ($.isFunction(events.save)) events.save(client);
         })
         .fail(function (jqXHR, textStatus, errorThrown) {
           alert('Error while saving client');
-          if ($.isFunction(onError)) onError(client);
         })
       ;
     }
 
-    function view_setClientForm(client) {
+    function view_setClient(client) {
       if (!client) return;
       $('#clientCard_clientForm [name="id"]:input', $modal).val(client.id);
       $('#clientCard_clientForm [name="name"]:input', $modal).val(client.name);
@@ -199,6 +206,7 @@
       $('#clientCard_clientForm [name="description"]:input', $modal).val(client.description);
       $('#clientCard_addDate', $modal).text(moment(client.add_date).format('DD.MM.YYYY'));
 
+      // Clear subscriptions table
       $('#clientCard_subscriptionsTable > tbody', $modal).empty();
       if (client.subscriptions) {
         for (var i = 0; i < client.subscriptions.length; i++) {
@@ -267,12 +275,16 @@
     }
 
     return function (options) {
-      // Per-instance events
+      if (!options) options = {};
+      // Per-instance events (now are global)
+      events = options.events || {};
 
       var $this = {
         // Methods
         create: function (skel) {
-          view_setClientForm(skel);
+          if (!skel) skel = {};
+          skel.id = null;
+          view_setClient(skel);
           $modal.modal('show');
         },
 
@@ -283,7 +295,7 @@
             data: {id: id, with_subscriptions: true},
           })
             .done(function (data, textStatus, jqXHR) {
-              view_setClientForm(data);
+              view_setClient(data);
               $modal.modal('show');
             })
             .fail(function (jqXHR, textStatus, errorThrown) {
@@ -293,8 +305,26 @@
           return $this;
         },
 
+        findOrCreate: function (phoneNum) {
+          $.ajax({
+            type: "GET",
+            url: "/api/client/get",
+            data: {phone_num: phoneNum, with_subscriptions: true},
+            success: function (data, textStatus, jqXHR) {
+              view_setClient(data);
+              $modal.modal('show');
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+              view_setClient({phone_num: phoneNum});
+              $modal.modal('show');
+            },
+          });
+          return $this;
+        },
+
         close: function () {
           $modal.modal('hide');
+          return $this;
         }
       };
 
