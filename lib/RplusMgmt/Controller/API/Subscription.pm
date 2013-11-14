@@ -64,17 +64,17 @@ sub save {
     my $client_id = $self->param('client_id');
     my $offer_type_code = $self->param('offer_type_code');
     my $end_date = $self->parse_datetime(scalar $self->param('end_date'));
-    my @queries = Mojo::Collection->new($self->param('queries[]'))->map(sub { trim $_ })->compact->uniq;
+    my $queries = Mojo::Collection->new($self->param('queries[]'))->map(sub { trim $_ })->compact->uniq;
     my $realty_limit = $self->param('realty_limit') || undef;
     my $send_seller_phone = $self->param('send_seller_phone') || 'false';
 
-    return $self->render(json => {errors => [{queries => 'Empty queries'}]}, status => 400) unless @queries;
+    return $self->render(json => {errors => [{queries => 'Empty queries'}]}, status => 400) unless @$queries;
 
     # Save
     my $metadata = decode_json($subscription->metadata || '{}');
     $subscription->client_id($client_id);
     $subscription->offer_type_code($offer_type_code);
-    $subscription->queries(\@queries);
+    $subscription->queries($queries);
     $subscription->end_date($end_date);
     $metadata->{realty_limit} = $realty_limit;
     $metadata->{send_seller_phone} = $send_seller_phone eq 'false' ? JSON::false : JSON::true;
