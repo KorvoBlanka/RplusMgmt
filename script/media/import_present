@@ -44,7 +44,7 @@ sub import_present {
 
         # Выясним, какой архив актуален
         my $ua = LWP::UserAgent->new;
-        my $response = $ua->get('http://www.present-dv.ru/');
+        my $response = $ua->get('http://www.present-dv.ru/present/archives');
         die $response->status_line unless $response->is_success;
         if ($response->decoded_content =~ /<a href="(\/archive\/\?y=(\d{4}).+?n=(\d+))"[^>]*>Скачать номер<\/a>/) {
             $arch_url = $1;
