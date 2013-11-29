@@ -20,7 +20,7 @@ sub run {
     my $c = shift;
 
     # Выберем активные подписки
-    my $subscr_iter = Rplus::Model::Subscription::Manager->get_objects_iterator(query => [end_date => {gt => \'now()'}], require_objects => ['client'], sort_by => 'id');
+    my $subscr_iter = Rplus::Model::Subscription::Manager->get_objects_iterator(query => [end_date => {gt => \'now()'}, delete_date => undef], require_objects => ['client'], sort_by => 'id');
     while (my $subscr = $subscr_iter->next) {
         $c->app->log->debug("Processing subscription #".$subscr->id);
         for my $q (@{$subscr->queries}) {
@@ -37,6 +37,7 @@ sub run {
                         price_change_date => {gt => ($subscr->last_check_date || $subscr->add_date)},
                     ],
                     [\"t1.id NOT IN (SELECT SR.realty_id FROM subscription_realty SR WHERE SR.subscription_id = ? AND SR.delete_date IS NULL)" => $subscr->id],
+                    delete_date => undef,
                     @query
                 ],
                 with_objects => ['address_object', 'agent', 'type', 'sublandmark'],
