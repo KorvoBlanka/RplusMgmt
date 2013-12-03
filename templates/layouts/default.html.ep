@@ -50,6 +50,15 @@
         border-bottom: 0;
       }
 
+      .well-md {
+        padding: 15px;
+        margin-bottom: 15px;
+      }
+
+      .panel-md {
+        margin-bottom: 15px;
+      }
+
       .panel-sm {
         margin-bottom: 15px;
       }
@@ -131,6 +140,11 @@
         cursor: -webkit-grab !important;
       }
 
+      .disable-on-ajax.disabled {
+        /*opacity: 0.5;*/
+        pointer-events: none;
+      }
+
       .ui-pnotify.stack-bottomright {
         /* These are just CSS default values to reset the pnotify CSS. */
         right: auto;
@@ -157,48 +171,59 @@
 
         <div class="collapse navbar-collapse navbar-top-collapse">
           <ul class="nav navbar-nav">
-            % if ($user_role eq 'dispatcher' || $user_role eq 'manager') {
-            <li role="presentation" class="<%= $controller eq 'search' && 'active' %>"><a href="/search"><span class="glyphicon glyphicon-search"></span> Search</a></li>
-            % }
-            % if ($user_role ne 'dispatcher') {
-            <li role="presentation" class="<%= $controller eq 'realty' && 'active' %>"><a href="/realty"><span class="glyphicon glyphicon-home"></span> Realty</a></li>
-            % }
-            <!--li class="<%= $controller eq 'tasks' && 'active' %>"><a href="/tasks"><span class="glyphicon glyphicon-tasks"></span> Tasks</a></li-->
-            % if ($user_role eq 'manager') {
+          % if (has_permission(realty => 'read') && !is_hidden_nav('search')) {
+            <li class="<%= $controller eq 'search' && 'active' %>"><a href="/search"><span class="glyphicon glyphicon-search"></span> <%= ucfloc q{search} %></a></li>
+          % }
+          % if (has_permission(realty => 'read') && !is_hidden_nav('realty')) {
+            <li class="<%= $controller eq 'realty' && 'active' %>"><a href="/realty"><span class="glyphicon glyphicon-home"></span> <%= ucfloc q{realty} %></a></li>
+          % }
+          % if (has_permission(realty => 'export')) {
             <li class="dropdown">
-              <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-star"></span> Services <b class="caret"></b></a>
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-star"></span> <%= ucfloc q{services} %> <b class="caret"></b></a>
               <ul class="dropdown-menu">
-                <!--
-                <li role="presentation"><a href="/clients"><span class="glyphicon glyphicon-user"></span> Clients</a></li>
-                <li role="presentation" class="divider"></li>
-                -->
-                <li role="presentation"><a href="/service/export"><span class="glyphicon glyphicon-export"></span> Export Media</a></li>
+              % if (has_permission(realty => 'export')) {
+                <li><a href="/service/export"><span class="glyphicon glyphicon-export"></span> <%= ucfloc q{export media} %></a></li>
+              % }
               </ul>
             </li>
+          % }
+          % if (has_permission(subscriptions => 'read')) {
             <li class="dropdown">
-              <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-stats"></span> Analytics <b class="caret"></b></a>
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-stats"></span> <%= ucfloc q{analytics} %> <b class="caret"></b></a>
               <ul class="dropdown-menu">
-                <li role="presentation"><a href="/analytics/subscriptions"><span class="glyphicon glyphicon-list-alt"></span> Subscriptions</a></li>
+              % if (has_permission(subscriptions => 'read')) {
+                <li><a href="/analytics/subscriptions"><span class="glyphicon glyphicon-list-alt"></span> <%= ucfloc q{subscriptions} %></a></li>
+              % }
               </ul>
             </li>
+          % }
+          % if (
+          %  has_permission(mediators => 'read') || has_permission(landmarks => 'read') || has_permission(users => 'manage')
+          % ) {
             <li class="dropdown">
-              <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-cog"></span> Configuration <b class="caret"></b></a>
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-cog"></span> <%= ucfloc q{configuration} %> <b class="caret"></b></a>
               <ul class="dropdown-menu">
-                <li role="presentation"><a href="/conf/mediators"><span class="glyphicon glyphicon-ban-circle"></span> Mediators</a></li>
-                <li role="presentation"><a href="/conf/landmarks"><span class="glyphicon glyphicon-globe"></span> Landmarks</a></li>
-                <li role="presentation"><a href="/conf/users"><span class="glyphicon glyphicon-user"></span> Users</a></li>
+              % if (has_permission(mediators => 'read')) {
+                <li><a href="/configuration/mediators"><span class="glyphicon glyphicon-ban-circle"></span> <%= ucfloc q{mediators} %></a></li>
+              % }
+              % if (has_permission(landmarks => 'read')) {
+                <li><a href="/configuration/landmarks"><span class="glyphicon glyphicon-globe"></span> <%= ucfloc q{landmarks} %></a></li>
+              % }
+              % if (has_permission(users => 'manage')) {
+                <li><a href="/configuration/users"><span class="glyphicon glyphicon-user"></span> <%= ucfloc q{users} %></a></li>
+              % }
               </ul>
             </li>
-            % }
+          % }
           </ul>
           <p class="navbar-text navbar-right visible-lg">
-            Signed in as [<a href="/signout" class="navbar-link"><%= session->{'user'}->{'name'} %></a>]
+            <%= ucfloc q{signed in as} %> [<a href="/signout" class="navbar-link"><%= $user->{'name'} %></a>]
           </p>
         </div>
       </div>
     </nav>
 
-    <div class="container">
+    <div class="container disable-on-ajax">
       <%= content %>
 
       <!-- Modal Definitions -->
@@ -220,9 +245,27 @@
 
     <%= include 'javascript/rplus' %>
 
+    <script type="application/javascript">
+      "use strict";
+
+      var globalAjaxEventsRegistered = 0;
+      function registerGlobalAjaxEvents() {
+        if (globalAjaxEventsRegistered) return;
+        $(document)
+          .ajaxStart(function () {
+            $('.disable-on-ajax').addClass('disabled'); $('.indicator-ajax').removeClass('invisible');
+          })
+          .ajaxStop(function () {
+            $('.disable-on-ajax').removeClass('disabled'); $('.indicator-ajax').addClass('invisible');
+          })
+        ;
+        globalAjaxEventsRegistered = 1;
+      }
+    </script>
     <%= content_for 'javascript' %>
 
     <script type="application/javascript">
+      "use strict";
       $(function () {
         $(document).on('click', 'a[href="#"]', function (event) { event.preventDefault(); });
       });

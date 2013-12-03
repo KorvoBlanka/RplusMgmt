@@ -183,11 +183,11 @@ sub find_similar {
     # Универсальное правило
     # Совпадение: один из номеров телефонов + проверка по остальным параметрам
     #
-    if (ref($data{'seller_phones'}) eq 'ARRAY' && @{$data{'seller_phones'}}) {
+    if (ref($data{'owner_phones'}) eq 'ARRAY' && @{$data{'owner_phones'}}) {
         my $realty = Rplus::Model::Realty::Manager->get_objects(
             select => 'id',
             query => [
-                \("seller_phones && '{".join(',', map { '"'.$_.'"' } @{$data{'seller_phones'}})."}'"),
+                \("owner_phones && '{".join(',', map { '"'.$_.'"' } @{$data{'owner_phones'}})."}'"),
 
                 type_code => $data{'type_code'},
                 offer_type_code => $data{'offer_type_code'},

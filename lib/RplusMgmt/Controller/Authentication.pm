@@ -8,10 +8,7 @@ use Rplus::Model::User::Manager;
 sub auth {
     my $self = shift;
 
-    if ($self->session->{'user'}->{'id'}) {
-        $self->stash(user_role => $self->session->{'user'}->{'role'});
-        return 1;
-    }
+    return 1 if $self->stash('user') && $self->stash('user')->{'id'};
 
     $self->render(template => 'authentication/signin');
     return undef;
@@ -20,9 +17,9 @@ sub auth {
 sub signin {
     my $self = shift;
 
-    my $login = $self->param('login');
+    my $login = $self->param_n('login');
     my $password = $self->param('password');
-    my $remember_me = $self->param('remember_me') || 'false';
+    my $remember_me = $self->param_b('remember_me');
 
     return $self->render(json => {status => 'failed'}) unless $login && defined $password;
 
@@ -32,11 +29,10 @@ sub signin {
     $self->session->{'user'} = {
         id => $user->id,
         login => $user->login,
-        name => $user->name,
         role => $user->role,
     };
 
-    if ($remember_me && $remember_me ne 'false') {
+    if ($remember_me) {
         $self->session(expiration => 604800);
     } else {
         $self->session(expiration => 3600); # default expiration

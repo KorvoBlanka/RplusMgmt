@@ -7,7 +7,7 @@ use base qw(Rose::DB);
 __PACKAGE__->use_private_registry;
 
 __PACKAGE__->register_db(
-    domain   => 'development',
+    domain   => 'production',
     type     => 'main',
     driver   => 'Pg',
     database => 'rplus',
@@ -27,7 +27,7 @@ __PACKAGE__->register_db(
     ]
 );
 
-__PACKAGE__->default_domain('development');
+__PACKAGE__->default_domain('production');
 __PACKAGE__->default_type('main');
 
 1;

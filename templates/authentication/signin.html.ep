@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>Sign in &middot; RplusMgmt</title>
+    <title><%= ucfloc 'sign in' %> &middot; RplusMgmt</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Rplus Management">
     <meta name="author" content="Alexander Orlenko">
@@ -36,20 +36,20 @@
         <div class="panel-body">
           <form class="form-signin">
             <fieldset>
-              <legend>Please Sign In</legend>
-              <div class="alert alert-danger alert-sm hidden">Invalid login or password</div>
+              <legend><%= loc 'Please Sign In' %></legend>
+              <div class="alert alert-danger alert-sm hidden"><%= ucfloc 'invalid login or password' %></div>
               <div class="form-group">
-                <input type="text" class="form-control" name="login" placeholder="Login" required autofocus>
+                <input type="text" class="form-control" name="login" placeholder="<%= ucfloc 'login' %>" required autofocus>
               </div>
               <div class="form-group">
-                <input type="password" class="form-control" name="password" placeholder="Password">
+                <input type="password" class="form-control" name="password" placeholder="<%= ucfloc 'password' %>">
               </div>
               <div class="checkbox">
                 <label>
-                  <input type="checkbox" name="remember_me"> Remember me
+                  <input type="checkbox" name="remember_me"> <%= ucfloc 'remember me' %>
                 </label>
               </div>
-              <button type="submit" class="btn btn-primary" data-loading-text="Loading...">Sign in</button>
+              <button type="submit" class="btn btn-primary" data-loading-text="<%= ucfloc 'loading...' %>"><%= ucfloc 'sign in' %></button>
             </fieldset>
           </form>
         </div>
@@ -72,10 +72,10 @@
             url: "/signin",
             data: {login: login, password: password, remember_me: rememberMe},
             beforeSend: function (jqXHR, settings) { $('.form-signin button[type="submit"]').button('loading'); },
-            complete: function (jqXHR, textStatus) { $('.form-signin button[type="submit"]').button('reset'); },
           })
             .done(function (data, textStatus, jqXHR) {
               if (data.status == 'failed') {
+                $('.form-signin button[type="submit"]').button('reset');
                 $('.form-group').addClass('has-error');
                 $('.alert-danger').removeClass('hidden');
               } else {
@@ -83,6 +83,7 @@
               }
             })
             .fail(function (jqXHR, textStatus, errorThrown) {
+              $('.form-signin button[type="submit"]').button('reset');
               alert('Error while processing request. Please, try again later.');
             })
           ;

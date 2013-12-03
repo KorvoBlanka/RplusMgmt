@@ -8,103 +8,30 @@ use Rplus::Model::Landmark;
 use Rplus::Model::Landmark::Manager;
 use Rplus::Model::Mediator;
 use Rplus::Model::Mediator::Manager;
+use Rplus::Model::Photo;
+use Rplus::Model::Photo::Manager;
 
 use Rplus::Util::Query;
 use Rplus::Util::Realty;
-use Rplus::Util::PhoneNum;
 
 use JSON;
+use Mojo::Collection;
 
-sub auth {
+no warnings 'experimental::smartmatch';
+
+# Private function: serialize realty object(s)
+my $_serialize = sub {
     my $self = shift;
+    my @realty_objs = (ref($_[0]) eq 'ARRAY' ? @{shift()} : shift);
+    my %params = @_;
 
-    my $user_role = $self->session->{'user'}->{'role'};
-    if ($user_role && $self->config->{'roles'}->{$user_role}->{'realty'}) {
-        return 1;
-    }
+    my @exclude_fields = qw(ap_num source_media_id source_media_text owner_phones work_info);
 
-    $self->render_not_found;
-    return undef;
-}
+    my (@serialized, %realty_h);
+    for my $realty (@realty_objs) {
+        my $x = {
+            (map { $_ => ($_ =~ /_date$/ ? $self->format_datetime($realty->$_) : scalar($realty->$_)) } grep { !($_ ~~ [qw(delete_date geocoords landmarks metadata fts)]) } $realty->meta->column_names),
 
-sub list {
-    my $self = shift;
-
-    my $q = $self->param('q');
-    my $state_code = $self->param('state');
-    my $offer_type_code = $self->param('offer_type');
-    my $agent_id = $self->param('agent');
-    my $sort_by = $self->param('sort');
-    my $page = $self->param("page") || 1;
-    my $per_page = $self->param("per_page") || 30;
-
-    my @query;
-    if ($state_code && $state_code ne 'any') { push @query, state_code => $state_code } else { push @query, '!state_code' => 'deleted' };   
-    if ($offer_type_code && $offer_type_code ne 'any') { push @query, offer_type_code => $offer_type_code } else {};
-    if ($agent_id && $agent_id ne 'any') {
-        if ($agent_id eq 'nobody') {
-            push @query, agent_id => undef
-        } elsif ($agent_id eq 'all') {
-            push @query, '!agent_id' => undef
-        } else {
-            push @query, agent_id => $agent_id
-        }
-    }
-
-    my (@sort_by, @with_objects);
-    if  ($sort_by && $sort_by =~ /^(\w+)(\.\w+)? (asc|desc)$/) {
-      push @with_objects, $1 if $1 && $2;
-      push @sort_by, $sort_by;
-    }
-
-    # Распознаем номера телефонов
-    my @seller_phones;
-    {
-        for my $x (split /[ .,]/, $q) {
-            if ($x =~ /^\s*([\d-]{6,})\s*$/) {
-                if (my $phone_num = Rplus::Util::PhoneNum->parse($1)) {
-                    push @seller_phones, $phone_num;
-                }
-                $q =~ s/$x//;
-            }
-        }
-        push @query, \("t1.seller_phones && '{".join(',', map { '"'.$_.'"' } @seller_phones)."}'") if @seller_phones;
-    }
-
-    # Остальные части запроса
-    push @query, Rplus::Util::Query->parse($q, $self);
-
-    my $res = {
-        count => Rplus::Model::Realty::Manager->get_objects_count(query => \@query, with_objects => \@with_objects),
-        list => [],
-        page => $page,
-    };
-
-    # Небольшой костыль: если ничего не найдено, удалим FTS данные
-    if (!$res->{count}) {
-        @query = map { ref($_) eq 'SCALAR' && $$_ =~ /^t1\.fts/ ? () : $_ } @query;
-        $res->{count} = Rplus::Model::Realty::Manager->get_objects_count(query => \@query, with_objects => \@with_objects);
-    }
-
-    # Дополнительно проверим распознанные номера телефонов на посредников
-    if (@seller_phones) {
-        my $mediator_iter = Rplus::Model::Mediator::Manager->get_objects_iterator(query => [phone_num => \@seller_phones, delete_date => undef], require_objects => ['company']);
-        while (my $mediator = $mediator_iter->next) {
-            push @{$res->{'mediators'}}, {id => $mediator->id, company => $mediator->company->name, phone_num => $mediator->phone_num};
-        }
-    }
-
-    my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
-        select => ['realty.*', map { 'address_object.'.$_ } ('id', 'name', 'short_type', 'expanded_name', 'metadata')],
-        query => \@query,
-        sort_by => [@sort_by, 'realty.id desc'],
-        page => $page,
-        per_page => $per_page,
-        with_objects => ['address_object', 'sublandmark', @with_objects],
-    );
-    while (my $realty = $realty_iter->next) {
-        my $metadata = decode_json($realty->metadata);
-        push @{$res->{'list'}}, {
             address_object => $realty->address_object_id ? {
                 id => $realty->address_object->id,
                 name => $realty->address_object->name,
@@ -115,150 +42,337 @@ sub list {
 
             sublandmark => $realty->sublandmark ? {id => $realty->sublandmark->id, name => $realty->sublandmark->name} : undef,
 
-            (map { $_ => scalar $realty->$_ } grep { !/^(?:metadata)|(?:geocoords)|(?:fts)|(?:landmarks)$/ } $realty->meta->column_names)
+            main_photo_thumbnail => undef,
         };
+
+        # Exclude fields for read permission "2"
+        if ($self->has_permission(realty => read => $realty->agent_id) == 2) {
+            $x->{$_} = undef for @exclude_fields;
+        }
+
+        if ($params{with_sublandmarks}) {
+            if (@{$realty->landmarks} || $realty->sublandmark_id) {
+                my $sublandmarks = Rplus::Model::Landmark::Manager->get_objects(
+                    select => 'id, name',
+                    query => [
+                        id => [@{$realty->landmarks}, $realty->sublandmark_id || ()],
+                        type => 'sublandmark',
+                        delete_date => undef,
+                    ],
+                    sort_by => 'name',
+                );
+                $x->{sublandmarks} = [map { {id => $_->id, name => $_->name} } @$sublandmarks];
+            } else {
+                $x->{sublandmarks} = [];
+            }
+        }
+
+        push @serialized, $x;
+        $realty_h{$realty->id} = $x;
     }
 
-    $self->render(json => $res);
+    # Fetch photos
+    if (keys %realty_h) {
+        my $photo_iter = Rplus::Model::Photo::Manager->get_objects_iterator(query => [realty_id => [keys %realty_h], delete_date => undef], sort_by => 'is_main DESC, id ASC');
+        while (my $photo = $photo_iter->next) {
+            next if $realty_h{$photo->realty_id}->{main_photo_thumbnail};
+            $realty_h{$photo->realty_id}->{main_photo_thumbnail} = $self->config->{'storage'}->{'url'}.'/photos/'.$photo->realty_id.'/'.$photo->thumbnail_filename;
+        }
+    }
+
+    return @realty_objs == 1 ? $serialized[0] : @serialized;
+};
+
+sub list {
+    my $self = shift;
+
+    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => 'read');
+
+    # Input validation
+    $self->validation->optional('agent_id')->like(qr/^(?:\d+|any|all|nobody)$/);
+    $self->validation->optional('page')->like(qr/^\d+$/);
+    $self->validation->optional('per_page')->like(qr/^\d+$/);
+
+    if ($self->validation->has_error) {
+        my @errors;
+        push @errors, {agent_id => 'Invalid value'} if $self->validation->has_error('agent_id');
+        push @errors, {page => 'Invalid value'} if $self->validation->has_error('page');
+        push @errors, {per_page => 'Invalid value'} if $self->validation->has_error('per_page');
+        return $self->render(json => {errors => \@errors}, status => 400);
+    }
+
+    # Input params
+    my $q = $self->param_n('q');
+    my $state_code = $self->param('state_code') || 'any';
+    my $offer_type_code = $self->param('offer_type_code') || 'any';
+    my $agent_id = $self->param('agent_id') || 'any';
+    my $sort_by = $self->param('sort_by');
+    my $page = $self->param("page") || 1;
+    my $per_page = $self->param("per_page") || 30;
+
+    # "where" query
+    my @query;
+    {
+        if ($state_code ne 'any') { push @query, state_code => $state_code } else { push @query, '!state_code' => 'deleted' };
+        if ($offer_type_code ne 'any') { push @query, offer_type_code => $offer_type_code };
+
+        my $agent_ok;
+        if ($agent_id eq 'nobody' && $self->has_permission(realty => 'read')->{nobody}) {
+            push @query, agent_id => undef;
+            $agent_ok = 1;
+        } elsif ($agent_id eq 'all' && $self->has_permission(realty => 'read')->{others}) {
+            push @query, '!agent_id' => undef;
+            $agent_ok = 1;
+        } elsif ($agent_id =~ /^\d+$/ && $self->has_permission(realty => read => $agent_id)) {
+            push @query, agent_id => $agent_id;
+            $agent_ok = 1;
+        }
+        if (!$agent_ok) {
+            if ($self->has_permission(realty => 'read')->{nobody} && $self->has_permission(realty => 'read')->{others}) {
+                # Ok, give access to all objects
+            } elsif ($self->has_permission(realty => 'read')->{nobody}) {
+                push @query, or => [
+                    agent_id => $self->stash('user')->{id},
+                    agent_id => undef,
+                ];
+            } elsif ($self->has_permission(realty => 'read')->{others}) {
+                push @query, '!agent_id' => undef;
+            } else {
+                push @query, agent_id => $self->stash('user')->{id};
+            }
+        }
+    }
+
+    my (@sort_by, @with_objects);
+    if  ($sort_by && $sort_by =~ /^(\w+)(\.\w+)?(?: (asc|desc))?$/) {
+      push @with_objects, $1 if $1 && $2;
+      push @sort_by, $sort_by;
+    }
+
+    # Recognize phone numbers from query
+    my @owner_phones;
+    if ($q) {
+        for my $x (split /[ .,]/, $q) {
+            if ($x =~ /^\s*[0-9-]{6,}\s*$/) {
+                if (my $phone_num = $self->parse_phone_num($x)) {
+                    push @owner_phones, $phone_num;
+                    $q =~ s/$x//;
+                }
+            }
+        }
+        push @query, \("t1.owner_phones && '{".join(',', map { '"'.$_.'"' } @owner_phones)."}'") if @owner_phones;
+    }
+
+    # Parse query
+    push @query, Rplus::Util::Query->parse($q, $self);
+
+    my $res = {
+        count => Rplus::Model::Realty::Manager->get_objects_count(query => [@query, delete_date => undef], with_objects => \@with_objects),
+        list => [],
+        page => $page,
+    };
+
+    # Delete FTS data if no objects found
+    if (!$res->{count}) {
+        @query = map { ref($_) eq 'SCALAR' && $$_ =~ /^t1\.fts/ ? () : $_ } @query;
+        $res->{count} = Rplus::Model::Realty::Manager->get_objects_count(query => [@query, delete_date => undef], with_objects => \@with_objects);
+    }
+
+    # Additionaly check found phones for mediators
+    if (@owner_phones) {
+        my $mediator_iter = Rplus::Model::Mediator::Manager->get_objects_iterator(query => [phone_num => \@owner_phones, delete_date => undef], require_objects => ['company']);
+        while (my $mediator = $mediator_iter->next) {
+            push @{$res->{'mediators'}}, {id => $mediator->id, company => $mediator->company->name, phone_num => $mediator->phone_num};
+        }
+    }
+
+    # Fetch realty objects
+    my $realty_objs = Rplus::Model::Realty::Manager->get_objects(
+        select => ['realty.*', (map { 'address_object.'.$_ } qw(id name short_type expanded_name metadata))],
+        query => [@query, delete_date => undef],
+        sort_by => [@sort_by, 'realty.id desc'],
+        page => $page,
+        per_page => $per_page,
+        with_objects => ['address_object', 'sublandmark', @with_objects],
+    );
+    $res->{list} = [$_serialize->($self, $realty_objs)];
+
+    return $self->render(json => $res);
 }
 
 sub get {
     my $self = shift;
 
+    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => 'read');
+
     my $id = $self->param('id');
 
-    my $realty = Rplus::Model::Realty::Manager->get_objects(query => [id => $id], with_objects => ['address_object'])->[0];
-    return $self->render_not_found unless $realty;
+    my $realty = Rplus::Model::Realty::Manager->get_objects(query => [id => $id, delete_date => undef], with_objects => ['address_object'])->[0];
+    return $self->render(json => {error => 'Not Found'}, status => 404) unless $realty;
+    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => read => $realty->agent_id);
 
-    # TODO: Access Control
-
-    my $metadata = decode_json($realty->metadata);
-    my $res = {
-        address_object => $realty->address_object_id ? {
-            id => $realty->address_object->id,
-            name => $realty->address_object->name,
-            short_type => $realty->address_object->short_type,
-            expanded_name => $realty->address_object->expanded_name,
-            addr_parts => decode_json($realty->address_object->metadata)->{'addr_parts'},
-        } : undef,
-
-        sublandmarks => @{$realty->landmarks} ? [
-            map { {id => $_->id, name => $_->name} } @{Rplus::Model::Landmark::Manager->get_objects(
-                select => 'id, name',
-                query => [id => [@{$realty->landmarks}, $realty->sublandmark_id || ()], type => 'sublandmark', delete_date => undef],
-                sort_by => 'name'
-            )}
-        ] : [],
-
-        (map { $_ => scalar $realty->$_ } grep { !/^(?:metadata)|(?:geocoords)|(?:fts)|(?:landmarks)$/ } $realty->meta->column_names)
-    };
+    my $res = $_serialize->($self, $realty, with_sublandmarks => 1);
 
     return $self->render(json => $res);
-}
-
-sub create {
-    my $self = shift;
-
-    my $x = Rplus::DB->new_or_cached->dbh->selectrow_arrayref("SELECT nextval('realty_id_seq')");
-
-    $self->render(json => {id => $x->[0]});
 }
 
 sub save {
     my $self = shift;
 
-    my $id = $self->param('id');
+    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => 'write');
+
+    my $realty;
+    if (my $id = $self->param('id')) {
+        $realty = Rplus::Model::Realty::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
+    } else {
+        $realty = Rplus::Model::Realty->new(
+            creator_id => $self->stash('user')->{id},
+            agent_id => scalar $self->param('agent_id'),
+        );
+    }
+    return $self->render(json => {error => 'Not Found'}, status => 404) unless $realty;
+    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => write => $realty->agent_id);
+
+    # Input validation
+    $self->validation->required('type_code'); # TODO: check value
+    $self->validation->required('offer_type_code')->in(qw(sale rent));
+    $self->validation->required('state_code'); # TODO: check value
+    $self->validation->optional('address_object_id')->like(qr/^\d+$/);
+    $self->validation->optional('house_type_id')->like(qr/^\d+$/);
+    $self->validation->optional('ap_num')->like(qr/^\d+$/);
+    $self->validation->optional('ap_scheme_id')->like(qr/^\d+$/);
+    $self->validation->optional('rooms_count')->like(qr/^\d+$/);
+    $self->validation->optional('rooms_offer_count')->like(qr/^\d+$/);
+    $self->validation->optional('room_scheme_id')->like(qr/^\d+$/);
+    $self->validation->optional('floor')->like(qr/^\d+$/);
+    $self->validation->optional('floors_count')->like(qr/^\d+$/);
+    $self->validation->optional('levels_count')->like(qr/^\d+$/);
+    $self->validation->optional('condition_id')->like(qr/^\d+$/);
+    $self->validation->optional('balcony_id')->like(qr/^\d+$/);
+    $self->validation->optional('bathroom_id')->like(qr/^\d+$/);
+    $self->validation->optional('square_total')->like(qr/^\d+(?:(?:\.|,)\d+)?$/);
+    $self->validation->optional('square_living')->like(qr/^\d+(?:(?:\.|,)\d+)?$/);
+    $self->validation->optional('square_kitchen')->like(qr/^\d+(?:(?:\.|,)\d+)?$/);
+    $self->validation->optional('square_land')->like(qr/^\d+(?:(?:\.|,)\d+)?$/);
+    $self->validation->optional('square_land_type')->in(qw/ar hectare/);
+    $self->validation->optional('owner_price')->like(qr/^\d+(?:(?:\.|,)\d+)?$/);
+    $self->validation->optional('agent_id')->like(qr/^\d+$/);
+    $self->validation->optional('agency_price')->like(qr/^\d+(?:(?:\.|,)\d+)?$/);
+    $self->validation->optional('latitude')->like(qr/^\d+\.\d+$/);
+    $self->validation->optional('longitude')->like(qr/^\d+\.\d+$/);
+    $self->validation->optional('sublandmark_id')->like(qr/^\d+$/);
+
+    # Fields to save
+    my @fields = (
+        'type_code', 'offer_type_code', 'state_code',
+        'address_object_id', 'house_num', 'house_type_id', 'ap_num', 'ap_scheme_id',
+        'rooms_count', 'rooms_offer_count', 'room_scheme_id',
+        'floor', 'floors_count', 'levels_count', 'condition_id', 'balcony_id', 'bathroom_id',
+        'square_total', 'square_living', 'square_kitchen', 'square_land', 'square_land_type',
+        'description', 'owner_info', 'owner_price', 'work_info', 'agent_id', 'agency_price',
+        'latitude', 'longitude', 'sublandmark_id',
+    );
+    my @fields_array = ('owner_phones', 'tags', 'export_media');
+
+    my @errors;
+    if ($self->validation->has_error) {
+        for (@fields) {
+            push @errors, {$_ => 'Invalid value'} if $self->validation->has_error($_);
+        }
+    }
+
+    # Prepare data
     my %data;
-    for my $p ($self->param) {
-        if ($p =~ /\[\]$/) {
-            $data{$p =~ s/\[\]$//r} = [$self->param($p)];
-        } else {
-            $data{$p} = $self->param($p) || undef;
-            if ($p =~ /ˆsquare_/ || $p=~ /_price$/) {
-                $data{$p} =~ s/,/./ if $data{$p};
-            }
-        }
+    for (@fields) {
+        $data{$_} = $self->param_n($_);
+        $data{$_} =~ s/,/./ if $data{$_} && $_ =~ /^square_/;
     }
 
-    return $self->render(json => {status => 'failed', error_msg => 'No id specified'}) unless $id;
+    # Owner phones
+    $data{owner_phones} = Mojo::Collection->new($self->param('owner_phones[]'))->map(sub { $self->parse_phone_num($_) })->compact->uniq;
+    push @errors, {owner_phones => 'Empty phones'} unless @{$data{owner_phones}};
+    
+    # Tags
+    my $tags_ok = Rplus::DB->new_or_cached->dbh->selectall_hashref(q{SELECT T.id, T.name FROM tags T WHERE T.delete_date IS NULL}, 'id');
+    $data{tags} = Mojo::Collection->new($self->param('tags[]'))->grep(sub { exists $tags_ok->{$_} })->uniq;
+    
+    # Export media
+    my $export_media_ok = Rplus::DB->new_or_cached->dbh->selectall_hashref(q{SELECT J.* FROM media M, json_each_text(M.metadata->'export_codes') J WHERE M.type='export' AND M.delete_date IS NULL}, 'key');
+    $data{export_media} = Mojo::Collection->new($self->param('export_media[]'))->grep(sub { exists $export_media_ok->{$_} })->uniq;
 
-    # Поиск похожих вариантов
+    # Check for errors & check that we can rewrite agent
+    return $self->render(json => {errors => \@errors}, status => 400) if @errors;
+    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => write => $data{agent_id});
+
+    # Find similar realty
     my $similar_realty_id = Rplus::Util::Realty->find_similar(%data, state_code => ['raw', 'work', 'suspended']);
-    my $similar_realty = Rplus::Model::Realty->new(id => $similar_realty_id)->load(with => ['address_object']) if $similar_realty_id;
+    #my $similar_realty = Rplus::Model::Realty->new(id => $similar_realty_id)->load(with => ['address_object']) if $similar_realty_id;
 
-    my $realty = Rplus::Model::Realty->new(id => $id)->load(speculative => 1);
-    # TODO: Access control
-    $realty = Rplus::Model::Realty->new(id => $id) unless $realty;
+    # Save data
+    $realty->$_($data{$_}) for keys %data;
+    $realty->change_date('now()');
 
-    for my $f (@{$realty->meta->column_names}) {
-        next if $f eq 'id';
-        next if $f =~ /_date$/;
-        next if $f eq 'creator_id';
-        next if $f eq 'price';
-        next if $f eq 'geocoords';
-        next if $f eq 'landmarks';
-        next if $f eq 'fts';
-        next if $f eq 'metadata';
-
-        if (exists $data{$f}) {
-            if ($f eq 'export_media') {
-                my @export_media;
-                if (ref($data{$f}) eq 'ARRAY' && @{$data{$f}}) {
-                    my $x = Rplus::DB->new_or_cached()->dbh->selectall_hashref(q{SELECT J.* FROM media M, json_each_text(M.metadata->'export_codes') J WHERE M.type='export' AND M.delete_date IS NULL}, 'key');
-                    @export_media = grep { exists $x->{$_} } @{$data{$f}};
-                }
-                $realty->export_media(\@export_media);
-            } elsif ($f eq 'tags') {
-            } elsif ($f eq 'seller_phones') {
-                my @seller_phones;
-                if (ref($data{$f}) eq 'ARRAY') {
-                    @seller_phones = map { Rplus::Util::PhoneNum->parse($_) } @{$data{$f}};
-                }
-                $realty->seller_phones(\@seller_phones);
-            } else {
-                $realty->$f($data{$f});
-            }
-        }
-    }
-
-    $realty->save($realty->id ? (changes_only => 1) : (insert => 1));
-    Rplus::Model::Realty::Manager->update_objects(set => {change_date => \"now()"}, where => [id => $realty->id]);
-    $realty->load;
-
-    my $metadata = decode_json($realty->metadata);
-    my $res = {
-        address_object => $realty->address_object_id ? {
-            id => $realty->address_object->id,
-            name => $realty->address_object->name,
-            short_type => $realty->address_object->short_type,
-            expanded_name => $realty->address_object->expanded_name,
-            addr_parts => decode_json($realty->address_object->metadata)->{'addr_parts'},
-        } : undef,
-
-        sublandmarks => @{$realty->landmarks} ? [
-            map { {id => $_->id, name => $_->name} } @{Rplus::Model::Landmark::Manager->get_objects(
-                select => 'id, name',
-                query => [id => [@{$realty->landmarks}, $realty->sublandmark_id || ()], type => 'sublandmark', delete_date => undef],
-                sort_by => 'name'
-            )}
-        ] : [],
-
-        (map { $_ => scalar $realty->$_ } grep { !/^(?:metadata)|(?:geocoords)|(?:fts)$/ } $realty->meta->column_names),
-
-        ($similar_realty ? (similar => {
-            id => $similar_realty->id,
-            type_code => $similar_realty->type_code,
-            address_object => $similar_realty->address_object_id ? {
-                id => $similar_realty->address_object->id,
-                name => $similar_realty->address_object->name,
-                short_type => $similar_realty->address_object->short_type,
-                expanded_name => $similar_realty->address_object->expanded_name,
-            } : undef,
-            house_num => $similar_realty->house_num,
-        }) : ())
+    eval {
+        $realty->save($realty->id ? (changes_only => 1) : (insert => 1));
+        1;
+    } or do {
+        return $self->render(json => {error => $@}, status => 500) unless $realty;
     };
 
-    $self->render(json => {status => 'success', data => $res});
+    $realty->load;
+
+    my $res = {
+        status => 'success',
+        id => $realty->id,
+        realty => $_serialize->($self, $realty),
+        similar_realty_id => $similar_realty_id,
+        #($similar_realty ? (similar_realty => $_serialize->($self, $similar_realty)) : ()),
+    };
+
+    $self->render(json => $res);
+}
+
+sub update {
+    my $self = shift;
+
+    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => 'write');
+
+    my $id = $self->param('id');
+
+    my $realty = Rplus::Model::Realty::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
+    return $self->render(json => {error => 'Not Found'}, status => 404) unless $realty;
+    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => write => $realty->agent_id);
+
+    # Available fields to set: agent_id, state_code
+    for ($self->param) {
+        if ($_ eq 'agent_id') {
+            $realty->agent_id(scalar $self->param('agent_id'));
+        } elsif ($_ eq 'state_code') {
+            $realty->state_code(scalar $self->param('state_code'));
+        }
+    }
+
+    # Check that we can rewrite agent
+    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => write => $realty->agent_id);
+
+    # Save data
+    $realty->change_date('now()');
+    eval {
+        $realty->save(changes_only => 1);
+        1;
+    } or do {
+        return $self->render(json => {error => $@}, status => 500) unless $realty;
+    };
+
+    $realty->load;
+
+    my $res = {
+        status => 'success',
+        id => $realty->id,
+        realty => $_serialize->($self, $realty),
+    };
+
+    return $self->render(json => $res);
 }
 
 1;

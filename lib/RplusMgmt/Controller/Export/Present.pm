@@ -14,16 +14,11 @@ use JSON;
 use File::Temp qw(tmpnam);
 use RTF::Writer;
 
-sub auth {
-    my $self = shift;
-
-    return 1;
-}
-
 sub index {
     my $self = shift;
 
     return $self->render_not_found unless $self->req->method eq 'POST';
+    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => 'export');
 
     my $media = Rplus::Model::Media::Manager->get_objects(query => [code => 'present', type => 'export', delete_date => undef])->[0];
     return $self->render_not_found unless $media;

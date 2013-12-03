@@ -2,16 +2,8 @@
 
 % content_for header => begin
 <style type="text/css">
-  #userCardModal .modal-dialog {
+  #userCard_modal .modal-dialog {
     width: 720px;
-  }
-
-  .form-group-sm {
-    margin-bottom: 10px;
-  }
-
-  .nav-sm > li > a {
-    padding: 8px 12px;
   }
 </style>
 % end
@@ -20,26 +12,39 @@
 <script type="text/javascript">
   "use strict";
 
-  !function () {
+  registerGlobalAjaxEvents();
+
+  (function () {
+    var $modal, $form;
+
     function listUsers() {
       $.ajax({
         type: "POST",
         url: "/api/user/list",
       })
         .done(function (data) {
-          $('#userTable > tbody').html('');
+          //$('#userList').html('');
+          var xhtml = '';
           for (var i = 0; i < data.list.length; i++) {
             var x = data.list[i];
-            var xhtml = '<tr data-id="' + x.id + '">';
-            //xhtml += '<td>' + (i + 1) + '</td>';
-            xhtml += '<td><a href="#"><img data-src="holder.js/70x70/sky/text:No Photo"></a></td>';
-            xhtml += '<td>' + x.name + '</td>';
-            xhtml += '<td>' + x.login + '</td>';
-            xhtml += '<td>' + x.role + '</td>';
-            xhtml += '<td>' + x.phone_num + '</td>';
-            xhtml += '<td>' + moment(x.add_date).format('DD.MM.YYYY') + '</td>';
-            $('#userTable > tbody').append(xhtml);
+            xhtml += '<div class="col-lg-4 user-preview margin-bottom-15" data-id="' + x.id + '">';
+            xhtml += '<div class="media">';
+            xhtml += '<a class="pull-left" href="#">';
+            xhtml += '<img data-src="holder.js/110x110/text:<%= ucfloc q{no photo} %>" class="img-thumbnail">';
+            xhtml += '</a>';
+            xhtml += '<div class="media-body">';
+            xhtml += '<h4 class="media-heading">' + Rplus.Util.escape(x.name) + '</h4>';
+            xhtml += '<p><span class="label label-' + (x.role == 'manager' ? 'warning' : 'primary') + '">' + x.role_loc + '</span></p>';
+            xhtml += '<p>';
+            if (x.phone_num) xhtml += '<small><%= ucfloc q{phone num} %>: ' + Rplus.Util.formatPhoneNum(x.phone_num) + '</small><br>';
+            xhtml += '<small><%= ucfloc q{add date} %>: ' + moment(x.add_date).format('DD.MM.YYYY') + '</small><br>';
+            xhtml += '</p>';
+            xhtml += '</div>';
+            xhtml += '</div>';
+            xhtml += '</div>';
+            //$('#userList').append(xhtml);
           }
+          $('#userList').html(xhtml);
           $('#userCount').text(data.count);
 
           Holder.run();
@@ -47,34 +52,35 @@
     }
 
     function createUserCard() {
-      $('#userCardAddDate').text(moment().format('DD.MM.YYYY'));
-      $('#userCardModalLabel').text('New User');
-      $('#userCardModal :input').val(null);
-      $('#userCardModal [name="role"]:input').val('agent'); // TODO: Fixme
-      $('#userCardModal').modal('show');
+      $('#userCard_addDate').text(moment().format('DD.MM.YYYY'));
+      $('#userCard_modalLabel').text('<%= ucfloc q{new user} %>');
+      $(':input', $modal).val(null);
+      $('[name="role"]:input', $modal).val($('[name="role"]:input > option:first', $modal).attr('value'));
+      $modal.modal('show');
     }
 
     function openUserCard(id) {
       $.ajax({
         type: "POST",
         url: "/api/user/get",
-        data: {id :id}
+        data: {id :id},
       })
-        .done(function (data) {
+        .done(function (data, textStatus, jqXHR) {
+          $(':input', $modal).val(null);
           for (var x in data) {
-            $('[name="' + x + '"]:input', '#userCardModal').val(data[x]);
+            $('[name="' + x + '"]:input', $modal).val(data[x]);
           }
-          $('#userCardAddDate').text(moment(data.add_date).format('DD.MM.YYYY'));
-          $('#userCardModalLabel').text(data.name);
-          $('#userCardModal').modal('show');
+          $('#userCard_addDate').text(moment(data.add_date).format('DD.MM.YYYY'));
+          $('#userCard_modalLabel').text(data.name);
+          $('#userCard_modal').modal('show');
         })
-        .fail(function () {
+        .fail(function (jqXHR, textStatus, errorThrown) {
           alert('Cannot open user card');
         });
     }
 
-    function initSaveAction() {
-      $('#userCardForm').submit(function (e) {
+    function initUserSave() {
+      $form.submit(function (e) {
         e.preventDefault();
 
         var formData = {};
@@ -91,139 +97,139 @@
         })
           .done(function (data) {
             if (data.status == 'success') {
-              $('#userCardModal').modal('hide');
+              $modal.modal('hide');
               listUsers();
-            } else {
-              alert('An error occurred. Please, check input values.');
             }
           })
-          .fail(function () {
-            alert('An error occurred. Please, check input values.');
+          .fail(function (jqXHR, textStatus, errorThrown) {
+            alert('An error occurred while saving user. Please, check input values.');
           })
         ;
       });
     }
 
     $(function () {
-      $('#userCardModal')
-        .modal({show: false})
+      $form = $('#userCard_userForm');
+      $modal = 
+        $('#userCard_modal')
+        .modal({show: false, backdrop: 'static'})
         .on('shown.bs.modal', function (e) {
-          $('#inputShowPassword').prop('checked', false);
-          $('#inputPassword').attr('type', 'password');
-          $('#userCardPills a:first').tab('show');
+          $('#userCard_userForm_inputShowPassword', $modal).prop('checked', false);
+          $('[name="password"]:input', $modal).attr('type', 'password');
+          $('#userCard_pills a:first').tab('show');
         })
       ;
 
-      $('#inputShowPassword').change(function (e) {
-        if ($(this).prop('checked')) { $('#inputPassword').attr('type', 'text'); } else { $('#inputPassword').attr('type', 'password'); }
+      $('#userCard_userForm_inputShowPassword', $modal).change(function (e) {
+        if ($(this).prop('checked')) { $('[name="password"]:input', $modal).attr('type', 'text'); } else { $('[name="password"]:input', $modal).attr('type', 'password'); }
       });
 
-      $('#userTable').on('click', 'tbody > tr > td:nth-child(1)', function (e) {
-        openUserCard($(this).closest('tr').data('id'));
+      $('#userList').on('click', '.user-preview .img-thumbnail', function (e) {
+        openUserCard($(this).closest('.user-preview').data('id'));
       });
 
-      // Add new user
-      $('#btnAdd').click(function (e) { createUserCard(); });
+      // Create new user
+      $('button[data-action="user-create"]').click(function (e) { createUserCard(); });
 
-      initSaveAction();
+      initUserSave();
       listUsers();
     });
-  }();
+  })();
 </script>
 % end
 
 % content_for modals => begin
-<div class="modal" id="userCardModal" tabindex="-1" role="dialog" aria-labelledby="userCardModalLabel" aria-hidden="true">
+<div class="modal" id="userCard_modal" tabindex="-1" role="dialog" aria-labelledby="userCard_modalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-        <h4 class="modal-title" id="userCardModalLabel">User name</h4>
+        <h4 class="modal-title" id="userCard_modalLabel"><%= ucfloc 'user' %></h4>
       </div>
       <div class="modal-body">
-        <h4 class="pull-right"><span class="label label-info" id="userCardAddDate">New</span></h4>
-        <ul class="nav nav-pills nav-sm margin-bottom-15" id="userCardPills">
-          <li class="active"><a href="#profile" data-toggle="pill">Profile</a></li>
-          <li><a href="#additional" data-toggle="pill">Additional</a></li>
+        <h4 class="pull-right"><span class="label label-info" id="userCard_addDate"><%= ucfloc 'new' %></span></h4>
+        <ul class="nav nav-pills nav-sm margin-bottom-15" id="userCard_pills">
+          <li class="active"><a href="#userCard_profileTab" data-toggle="pill"><%= ucfloc 'profile' %></a></li>
+          <li><a href="#userCard_addTab" data-toggle="pill"><%= ucfloc 'additional' %></a></li>
         </ul>
 
         <div class="tab-content">
-          <div class="tab-pane active" id="profile">
+          <div class="tab-pane active" id="userCard_profileTab">
             <div class="row">
               <div class="col-md-4">
                 <p>
-                  <img data-src="holder.js/200x200/text:No Photo" class="img-responsive img-thumbnail">
+                  <img data-src="holder.js/200x200/text:<%= ucfloc q{no photo} %>" class="img-responsive img-thumbnail">
                 </p>
               </div>
               <div class="col-md-8">
-                <form class="form-horizontal" role="form" id="userCardForm">
+                <form class="form-horizontal" role="form" id="userCard_userForm">
                   <input type="hidden" name="id" value="">
                   <div class="form-group form-group-sm">
-                    <label for="inputName" class="col-md-3 control-label">Name</label>
+                    <label for="userCard_userForm_inputName" class="col-md-3 control-label"><%= ucfloc 'name' %></label>
                     <div class="col-md-9">
-                      <input type="text" class="form-control input-sm" name="name" id="inputName" placeholder="Name" required>
+                      <input type="text" class="form-control input-sm" name="name" id="userCard_userForm_inputName" placeholder="<%= ucfloc 'name' %>" required>
                     </div>
                   </div>
                   <div class="form-group form-group-sm">
-                    <label for="inputLogin" class="col-md-3 control-label">Login</label>
+                    <label for="userCard_userForm_inputLogin" class="col-md-3 control-label"><%= ucfloc 'login' %></label>
                     <div class="col-md-9">
-                      <input type="text" class="form-control input-sm" name="login" id="inputLogin" placeholder="Login" required>
+                      <input type="text" class="form-control input-sm" name="login" id="userCard_userForm_inputLogin" placeholder="<%= ucfloc 'login' %>" required>
                     </div>
                   </div>
                   <div class="form-group form-group-sm">
-                    <label for="inputPassword" class="col-md-3 control-label">Password</label>
+                    <label for="userCard_userForm_inputPassword" class="col-md-3 control-label"><%= ucfloc 'password' %></label>
                     <div class="col-md-9">
                       <div class="input-group input-group-sm">
-                        <input type="password" class="form-control" name="password" id="inputPassword" placeholder="Password" required>
+                        <input type="password" class="form-control" name="password" id="userCard_userForm_inputPassword" placeholder="<%= ucfloc 'new password' %>">
                         <span class="input-group-addon">
-                          <input type="checkbox" id="inputShowPassword">
+                          <input type="checkbox" id="userCard_userForm_inputShowPassword">
                         </span>
                       </div>
                     </div>
                   </div>
                   <div class="form-group form-group-sm">
-                    <label for="inputRole" class="col-md-3 control-label">Role</label>
+                    <label for="userCard_userForm_inputRole" class="col-md-3 control-label"><%= ucfloc 'role' %></label>
                     <div class="col-md-9">
-                      <select class="form-control input-sm" name="role" id="inputRole">
-                        <option value="agent">Agent</option>
-                        <option value="dispatcher">Dispatcher</option>
-                        <option value="manager">Manager</option>
+                      <select class="form-control input-sm" name="role" id="userCard_userForm_inputRole">
+                        <option value="agent"><%= ucfloc 'agent' %></option>
+                        <option value="dispatcher"><%= ucfloc 'dispatcher' %></option>
+                        <option value="manager"><%= ucfloc 'manager' %></option>
                       </select>
                     </div>
                   </div>
                   <div class="form-group form-group-sm">
-                    <label for="inputPhoneNum" class="col-md-3 control-label">Phone Num</label>
+                    <label for="userCard_userForm_inputPhoneNum" class="col-md-3 control-label"><%= ucfloc 'phone num' %></label>
                     <div class="col-md-9">
-                      <input type="text" class="form-control input-sm" name="phone_num" id="inputPhoneNum" placeholder="Phone Num">
+                      <input type="text" class="form-control input-sm" name="phone_num" id="userCard_userForm_inputPhoneNum" placeholder="<%= ucfloc 'phone num' %>">
                     </div>
                   </div>
                 </form>
               </div>
             </div>
           </div>
-          <div class="tab-pane" id="additional">
+          <div class="tab-pane" id="userCard_addTab">
             <form role="form">
               <div class="row">
                 <div class="col-md-6">
                   <div class="form-group form-group-sm">
-                    <label for="inputPublicName">Public / Name</label>
-                    <input type="text" class="form-control input-sm" name="public_name" id="inputPublicName" form="userCardForm" placeholder="Public visible name">
+                    <label for="userCard_userForm_inputPublicName"><%= loc q{Public / Name} %></label>
+                    <input type="text" class="form-control input-sm" name="public_name" id="userCard_userForm_inputPublicName" form="userCard_userForm" placeholder="<%= ucfloc q{public visible name} %>">
                   </div>
                 </div>
               </div>
               <div class="row">
                 <div class="col-md-6">
                   <div class="form-group form-group-sm">
-                    <label for="inputPublicPhoneNum">Public / PhoneNum</label>
-                    <input type="text" class="form-control input-sm" name="public_phone_num" id="inputPublicPhoneNum" form="userCardForm" placeholder="Public visible phone num">
+                    <label for="userCard_userForm_inputPublicPhoneNum"><%= loc q{Public / Phone num} %></label>
+                    <input type="text" class="form-control input-sm" name="public_phone_num" id="userCard_userForm_inputPublicPhoneNum" form="userCard_userForm" placeholder="<%= ucfloc q{public visible phone num} %>">
                   </div>
                 </div>
               </div>
               <div class="row">
                 <div class="col-md-12">
                   <div class="form-group form-group-sm">
-                    <label for="inputDescription">Description</label>
-                    <textarea class="form-control input-sm" name="description" id="inputDescription" rows="3" form="userCardForm" placeholder="Additional information"></textarea>
+                    <label for="userCard_userForm_inputDescription"><%= ucfloc 'description' %></label>
+                    <textarea class="form-control input-sm" name="description" id="userCard_userForm_inputDescription" rows="3" form="userCard_userForm" placeholder="<%= ucfloc q{additional information} %>"></textarea>
                   </div>
                 </div>
               </div>
@@ -233,43 +239,31 @@
 
       </div><!-- /.modal-body -->
       <div class="modal-footer">
-        <button type="button" class="btn btn-link btn-sm pull-left" disabled><span class="glyphicon glyphicon-open"></span> Change photo</button>
+        <button type="button" class="btn btn-link btn-sm pull-left" disabled><span class="glyphicon glyphicon-open"></span> <%= ucfloc 'change photo' %></button>
         <!--button type="button" class="btn btn-danger btn-sm" data-action="delete" disabled><span class="glyphicon glyphicon-trash"></span> Delete</button-->
-        <button type="submit" class="btn btn-primary btn-sm" form="userCardForm" data-action="save"><span class="glyphicon glyphicon-ok"></span> Save</button>
+        <button type="submit" class="btn btn-primary btn-sm" form="userCard_userForm" data-action="save"><span class="glyphicon glyphicon-ok"></span> <%= ucfloc 'save' %></button>
       </div>
     </div><!-- /.modal-content -->
   </div><!-- /.modal-dialog -->
 </div><!-- /.modal -->
 % end
 
+<!--
 <div class="row">
   <div class="col-lg-12">
-    <div class="table-responsive">
-      <table class="table table-striped table-hover table-condensed" id="userTable">
-        <thead>
-          <tr>
-            <!--th>#</th-->
-            <th>Photo</th>
-            <th>Name</th>
-            <th>Login</th>
-            <th>Role</th>
-            <th>PhoneNum</th>
-            <th>Add Date</th>
-            <!--th>Delete Date</th-->
-          </tr>
-        </thead>
-        <tbody>
-        </tbody>
-      </table>
-    </div>
+    <div class="page-header" style="margin-top: 0;"><h3 style="margin-top: 0;">Users</h3></div>
   </div>
 </div>
+-->
+
+<div class="row" id="userList"></div>
 
 <nav class="navbar navbar-default navbar-fixed-bottom">
   <div class="container">
-    <div class="navbar-right">
-      <p class="navbar-text"><span class="text-primary">Found</span> <span class="text-primary" id="userCount">0</span></p>
+    <div class="navbar-right navbar-text">
+      <span class="text-primary"><%= ucfloc 'found' %></span> <span class="text-primary" id="userCount">0</span>
+      <span class="glyphicon glyphicon-refresh animation-rotate invisible indicator-ajax"></span>
     </div>
-    <button type="button" class="btn btn-primary btn-sm navbar-btn" id="btnAdd"><span class="glyphicon glyphicon-plus"></span> Add</button>
+    <button type="button" class="btn btn-primary btn-sm navbar-btn" data-action="user-create"><span class="glyphicon glyphicon-plus"></span> <%= ucfloc 'add' %></button>
   </div>
 </nav>

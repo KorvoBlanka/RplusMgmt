@@ -9,57 +9,18 @@
 % use Rplus::Model::DictRoomScheme::Manager;
 % use Rplus::Model::User::Manager;
 
-% use Rplus::DB;
-
-% content_for after_bootstrap => begin
-<!-- The jQuery UI widget factory, can be omitted if jQuery UI is already included -->
-<script type="application/javascript" src="<%= $assets_url %>/jquery-file-upload/8.8.5/js/vendor/jquery.ui.widget.js"></script>
-<!-- The Load Image plugin is included for the preview images and image resizing functionality -->
-<script type="application/javascript" src="<%= $assets_url %>/javascript-load-image/1.9.1/js/load-image.min.js"></script>
-<!-- The Canvas to Blob plugin is included for image resizing functionality -->
-<script type="application/javascript" src="<%= $assets_url %>/javascript-canvas-to-blob/2.0.7/js/canvas-to-blob.min.js"></script>
-<!-- The Iframe Transport is required for browsers without support for XHR file uploads -->
-<script type="application/javascript" src="<%= $assets_url %>/jquery-file-upload/8.8.5/js/jquery.iframe-transport.js"></script>
-<!-- The basic File Upload plugin -->
-<script type="application/javascript" src="<%= $assets_url %>/jquery-file-upload/8.8.5/js/jquery.fileupload.js"></script>
-<!-- The File Upload processing plugin -->
-<script type="application/javascript" src="<%= $assets_url %>/jquery-file-upload/8.8.5/js/jquery.fileupload-process.js"></script>
-<!-- The File Upload image preview & resize plugin -->
-<script type="application/javascript" src="<%= $assets_url %>/jquery-file-upload/8.8.5/js/jquery.fileupload-image.js"></script>
-<!-- The File Upload validation plugin -->
-<script type="application/javascript" src="<%= $assets_url %>/jquery-file-upload/8.8.5/js/jquery.fileupload-validate.js"></script>
-% end
-
 % content_for header => begin
-<link rel="stylesheet" href="<%= $assets_url %>/jquery-file-upload/8.8.5/css/jquery.fileupload-ui.css">
+%= css_once "$assets_url/typeahead.js/$typeaheadjs_ver/css/typeahead.js-bootstrap.css";
+%= css_once "$assets_url/leaflet/$leafletjs_ver/leaflet.css";
+%= css_once "$assets_url/leaflet.fullscreen/$leafletjs_fullscreen_ver/Control.FullScreen.css";
+%= css_once "$assets_url/jquery-file-upload/8.8.5/css/jquery.fileupload-ui.css";
 <style type="text/css">
-  .well-md {
-    padding: 15px;
-    margin-bottom: 15px;
-  }
-
-  .panel-md {
-    margin-bottom: 15px;
-  }
-
-  .panel-sm {
-    margin-bottom: 15px;
-  }
-
-  .panel-sm .panel-body {
-    padding: 9px;
-  }
-
-  .form-realty .well > .row:last-of-type .form-group {
+  .realty-form .well > .row:last-of-type .form-group {
     margin-bottom: 0;
   }
 
-  .form-realty .panel > .panel-body > .row:last-of-type .form-group {
+  .realty-form .panel > .panel-body > .row:last-of-type .form-group {
     margin-bottom: 0;
-  }
-
-  .form-realty textarea {
-    max-width: 100%;
   }
 
   .thumbnail > canvas {
@@ -67,6 +28,29 @@
     margin: 0 auto;
   }
 </style>
+% end
+
+% content_for after_bootstrap => begin
+%= js_once "$assets_url/typeahead.js/$typeaheadjs_ver/js/typeahead.js";
+%= js_once "$assets_url/leaflet/$leafletjs_ver/leaflet.js";
+%= js_once "$assets_url/leaflet.fullscreen/$leafletjs_fullscreen_ver/Control.FullScreen.js";
+%= js_once "/js/leaflet/layer-2gis.js";
+<!-- The jQuery UI widget factory, can be omitted if jQuery UI is already included -->
+%= js_once "$assets_url/jquery-file-upload/8.8.5/js/vendor/jquery.ui.widget.js";
+<!-- The Load Image plugin is included for the preview images and image resizing functionality -->
+%= js_once "$assets_url/javascript-load-image/1.9.1/js/load-image.min.js";
+<!-- The Canvas to Blob plugin is included for image resizing functionality -->
+%= js_once "$assets_url/javascript-canvas-to-blob/2.0.7/js/canvas-to-blob.min.js";
+<!-- The Iframe Transport is required for browsers without support for XHR file uploads -->
+%= js_once "$assets_url/jquery-file-upload/8.8.5/js/jquery.iframe-transport.js";
+<!-- The basic File Upload plugin -->
+%= js_once "$assets_url/jquery-file-upload/8.8.5/js/jquery.fileupload.js";
+<!-- The File Upload processing plugin -->
+%= js_once "$assets_url/jquery-file-upload/8.8.5/js/jquery.fileupload-process.js";
+<!-- The File Upload image preview & resize plugin -->
+%= js_once "$assets_url/jquery-file-upload/8.8.5/js/jquery.fileupload-image.js";
+<!-- The File Upload validation plugin -->
+%= js_once "$assets_url/jquery-file-upload/8.8.5/js/jquery.fileupload-validate.js";
 % end
 
 % content_for javascript => begin
@@ -83,12 +67,13 @@
 
     return function (options) {
       // Per-object variables
-      var realty;
-      var container;
-      var geoMap;
+      var guid, realty, container, geoMap;
 
       // Per-object events
-      var events = options.events || {};
+      var events = {
+        loaded: options.loaded,
+        saved: options.saved,
+      };
 
       function getTitle() {
         var title = 'Object';
@@ -109,18 +94,18 @@
           if (f == 'address_object' && v) {
             $('[name="address_object_id"]:input').data('addrobj', v);
             $('[name="address_object_name"]:input', container).typeahead('setQuery', v.expanded_name);
-          } else if (f == 'seller_phones') {
-            $('[name="seller_phones"]:input', container).each(function (i) {
+          } else if (f == 'owner_phones' && v) {
+            $('[name="owner_phones"]:input', container).each(function (i) {
               $(this).val(Rplus.Util.formatPhoneNum(v[i]));
             });
           } else if (f == 'add_date' || f == 'change_date') {
             $('span[data-name="' + f + '"]', container).text(moment(v).format("DD.MM.YYYY"));
           } else if (f == 'source_media_id' && v) {
             $('span[data-name="source_media_name"]', container).text(Rplus.Table.media[v].name);
-            $('#realtyCard-SourceBlock-' + realty.id, container).show();
+            $('#sourceBlock-' + guid, container).show();
           } else if (f == 'source_media_text' && v) {
             $('span[data-name="' + f + '"]', container).text(v);
-            $('#realtyCard-SourceBlock-' + realty.id, container).show();
+            $('#sourceBlock-' + guid, container).show();
           } else if (el.length) {
             el.val(v);
           }
@@ -210,13 +195,11 @@
         var updateGeoTimeout = null;
         $('[name="house_num"]:input', container).bind('input', function (e) {
           if (updateGeoTimeout) { clearTimeout(updateGeoTimeout); updateGeoTimeout = null; }
-          updateGeoTimeout = setTimeout(function () {
-            updateGeo();
-          }, 700);
+          updateGeoTimeout = setTimeout(function () { updateGeo(); }, 700);
         });
 
         // Sublandmark field
-        if (realty.sublandmarks && realty.sublandmarks.length) {
+        if (realty.sublandmarks) {
           for (var i = 0; i < realty.sublandmarks.length; i++) {
             var x = realty.sublandmarks[i];
             $('[name="sublandmark_id"]:input', container).append('<option value="' + x.id + '">' + Rplus.Util.escape(x.name) + '</option>');
@@ -227,19 +210,14 @@
       function initGeoTab() {
         var marker;
 
-        $('a[href="#realtyCardGeo-' + realty.id + '"]', container).bind('shown.bs.tab', function (e) {
+        $('a[href="#geoTab-' + guid + '"]', container).bind('shown.bs.tab', function (e) {
           if (!geoMap) {
-            geoMap = L.map('geoMap-' + realty.id, {
+            geoMap = L.map('geoMap-' + guid, {
               center: [48.480232846617845, 135.07203340530396],
               zoom: 16,
             });
 
-            L.tileLayer('http://tile{s}.maps.2gis.com/tiles?x={x}&y={y}&z={z}&v=10', {
-              maxZoom: 18,
-              subdomains: '0123',
-              errorTileUrl: 'http://maps.api.2gis.ru/images/nomap.png',
-              attribution: '<a href="http://http://2gis.ru/">2GIS</a> Layer | RplusMgmt',
-            }).addTo(geoMap);
+            Rplus.GeoMap.initLayer(geoMap);
           }
 
           if (realty.latitude && realty.longitude) {
@@ -258,9 +236,9 @@
       }
 
       function initPhotosTab() {
-        var xcontainer = $('#realtyCardPhotos-' + realty.id, container);
+        var photosContainer = $('#photosTab-' + guid, container);
 
-        function _ListPhotos() {
+        function listPhotos() {
           $.ajax({
             type: 'POST',
             url: '/api/photo/list',
@@ -268,8 +246,8 @@
           })
             .done(function (data) {
               var xhtml = '';
-              for (var i = 0; i < data.length; i++) {
-                var x = data[i];
+              for (var i = 0; i < data.list.length; i++) {
+                var x = data.list[i];
                 xhtml += '<div class="col-md-3 col-lg-3 photo-container" data-id="' + x.id + '">';
                 xhtml += '<div class="pull-right">';
                 xhtml += '<a href="#" data-action="main"><span class="glyphicon glyphicon-ok-circle text-muted" title="Set as main photo"></span></a>';
@@ -281,12 +259,12 @@
                 xhtml += '</a>';
                 xhtml += '</div>';
               }
-              $('.photo-list', xcontainer).html(xhtml);
+              $('.photo-list', photosContainer).html(xhtml);
             })
           ;
         }
 
-        $('input[type="file"]', xcontainer).fileupload({
+        $('input[type="file"]', photosContainer).fileupload({
           url: '/api/photo/add',
           dataType: 'json',
           formData: function () { var formData = [{ name: 'realty_id', value: realty.id }]; return formData; },
@@ -303,7 +281,7 @@
           previewOrientation: false,
         })
           .on('fileuploadadd', function (e, data) {
-            data.context = $('<div class="col-md-3 col-lg-3 photo-container"></div>').appendTo($('.photo-queue', xcontainer));
+            data.context = $('<div class="col-md-3 col-lg-3 photo-container"></div>').appendTo($('.photo-queue', photosContainer));
             var node = $(
               '<div class="pull-right">' +
               '<a href="#" data-action="delete"><span class="glyphicon glyphicon-remove" title="Delete photo"></span></a>' +
@@ -321,33 +299,33 @@
           })
           .on('fileuploadprogressall', function (e, data) {
             var progress = parseInt(data.loaded / data.total * 100, 10);
-            $('.progress .progress-bar', xcontainer).css('width', progress + '%');
+            $('.progress .progress-bar', photosContainer).css('width', progress + '%');
           })
           .on('fileuploaddone', function (e, data) {
             data.context.remove();
-            $('.progress .progress-bar', xcontainer).css('width', '0%');
-            _ListPhotos();
+            $('.progress .progress-bar', photosContainer).css('width', '0%');
+            listPhotos();
           })
           .on('fileuploadfail', function (e, data) {
             alert('Error while uploading file');
             data.context.remove();
-            $('.progress .progress-bar', xcontainer).css('width', '0%');
+            $('.progress .progress-bar', photosContainer).css('width', '0%');
           })
         ;
 
-        $('.start', xcontainer).click(function (e) {
-          $('.photo-queue > .photo-container', xcontainer).each(function (index, el) {
+        $('.start', photosContainer).click(function (e) {
+          $('.photo-queue > .photo-container', photosContainer).each(function (index, el) {
             var $this = $(this),
                 data = $this.data();
             data.submit();
           });
         });
 
-        $('.photo-queue', xcontainer).on('click', '.photo-container a[data-action="delete"]', function (e) {
+        $('.photo-queue', photosContainer).on('click', '.photo-container a[data-action="delete"]', function (e) {
           $(this).closest('.photo-container').remove();
         });
 
-        $('.photo-list', xcontainer).on('click', '.photo-container a[data-action="delete"]', function (e) {
+        $('.photo-list', photosContainer).on('click', '.photo-container a[data-action="delete"]', function (e) {
           var parent = $(this).closest('.photo-container'),
               id = parent.data('id');
           $.ajax({
@@ -364,19 +342,20 @@
             });
         });
 
-        _ListPhotos();
+        listPhotos();
       }
 
       function initActions() {
-        $('#btnRealtyCardSave-' + realty.id, container).click(function (e) {
+        // Save action
+        $('[data-action="realty-obj-save"]', container).click(function (e) {
           var formData = {
             id: realty.id,
             export_media: [],
-            seller_phones: [],
+            owner_phones: [],
             latitude: realty.latitude,
             longitude: realty.longitude,
           };
-          var formArray = $('#realtyCardForm-' + realty.id).serializeArray();
+          var formArray = $('#form-' + guid).serializeArray();
           for (var i = 0; i < formArray.length; i++) {
             var x = formArray[i];
             if ((typeof formData[x.name] == 'object') && (formData[x.name] instanceof Array)) {
@@ -392,80 +371,87 @@
             type: "POST",
             url: "/api/realty/save",
             data: formData,
+            beforeSend: function (jqXHR, settings) { $('[data-action="realty-obj-save"]').button('loading'); },
+            complete: function (jqXHR, textStatus) { $('[data-action="realty-obj-save"]').button('reset'); },
           })
             .done(function (data) {
-              realty = data.data;
-              realty.meta = {title: getTitle()};
+              realty = data.realty;
+              realty.guid = guid;
+              realty.title = getTitle();
 
               if (data.status == 'success') {
-                if (!realty.similar) {
-                  $('#realtySaveStatus-' + realty.id, container).html('<span class="text-success">Success</span>');
+                if (!realty.similar_realty_id) {
+                  $('[data-display="realty-save-status"]', container).html('<span class="text-success">Success</span>');
                 } else {
-                  $('#realtySaveStatus-' + realty.id, container).html('<span class="text-warning">Success (Found similar)</span>');
+                  $('[data-display="realty-save-status"]', container).html('<span class="text-warning">Success (Found similar)</span>');
                 }
               } else {
-                $('#realtySaveStatus-' + realty.id, container).html('<span class="text-danger">Error</span>');
+                $('[data-display="realty-save-status"]', container).html('<span class="text-danger">Error</span>');
               }
 
-              // Вызовем событие
-              if ($.isFunction(events.save)) {
-                events.save(data.data);
+              // Emit event
+              if ($.isFunction(events.saved)) {
+                events.saved(realty);
               }
+
+              % if (config->{realty} && config->{realty}->{close_on_save}) {
+                if ($.isFunction(options.close)) { options.close(realty); }
+              % }
             })
             .fail(function (jqXHR, textStatus, errorThrown) {
+              $('[data-display="realty-save-status"]', container).html('<span class="text-danger">Error</span>');
             })
           ;
         });
 
-        $('#btnRealtyCardClose-' + realty.id, container).click(function (e) {
-          $('#navTab > li > a[data-id="' + realty.id + '"] > button.close').click();
+        // Close action
+        $('[data-action="realty-obj-close"]', container).click(function (e) {
+          if ($.isFunction(options.close)) {
+            options.close(realty);
+          }
         });
       }
 
       var $this = {
-        create: function (x) {
-          $.ajax({
-            type: "POST",
-            url: "<%= q{/api/realty/create} %>",
-          })
-            .done(function (data) {
-              realty = data;
-              realty.meta = {title: 'New#' + realty.id};
+        create: function (obj) {
+          realty = obj || {};
+          guid = realty.guid = Rplus.Util.guid();
+          realty.title = '<%= ucfloc q{new} %>';
 
-              if ($.isFunction(options.container)) {
-                container = options.container(data);
-              } else {
-                container = options.container;
-              }
-              if (!container) return;
-              container.html(template.replace(/{id}/g, realty.id));
+          if ($.isFunction(options.container)) {
+            container = options.container(obj);
+          } else {
+            container = options.container;
+          }
+          if (!container) return;
+          container.html(template.replace(/{guid}/g, realty.guid));
 
-              initMainTab();
-              initGeoTab();
-              initPhotosTab();
-              initActions();
+          initMainTab();
+          initGeoTab();
+          initPhotosTab();
+          initActions();
 
-              fillForm();
+          fillForm();
 
-              $('span[data-name="add_date"], span[data-name="change_date"]', container).html(moment().format("DD.MM.YYYY"));
+          $('span[data-name="add_date"], span[data-name="change_date"]', container).html(moment().format("DD.MM.YYYY"));
 
-              if ($.isFunction(events.done)) {
-                events.done(realty);
-              }
-            })
-          ;
+          if ($.isFunction(events.loaded)) {
+            events.loaded(realty);
+          }
+
           return $this;
         },
 
         open: function (id) {
           $.ajax({
             type: "POST",
-            url: "<%= q{/api/realty/get} %>",
+            url: "/api/realty/get",
             data: {id: id},
           })
-            .done(function (data) {
+            .done(function (data, textStatus, jqXHR) {
               realty = data;
-              realty.meta = {title: getTitle()};
+              guid = realty.guid = Rplus.Util.guid();
+              realty.title = getTitle();
 
               if ($.isFunction(options.container)) {
                 container = options.container(realty);
@@ -473,7 +459,7 @@
                 container = options.container;
               }
               if (!container) return;
-              container.html(template.replace(/{id}/g, realty.id));
+              container.html(template.replace(/{guid}/g, realty.guid));
 
               initMainTab();
               initGeoTab();
@@ -482,8 +468,8 @@
 
               fillForm();
 
-              if ($.isFunction(events.done)) {
-                events.done(realty);
+              if ($.isFunction(events.loaded)) {
+                events.loaded(realty);
               }
             })
           ;
@@ -501,137 +487,134 @@
 </script>
 % end
 
-% content_for modals => begin
-% end
-
-<div class="hidden" id="realtyCardTemplate"> <!-- RealtyCardTemplate -->
+<!-- #RealtyCardTemplate -->
+<div class="hidden" id="realtyCardTemplate">
   <nav class="navbar navbar-default navbar-fixed-bottom">
     <div class="container">
       <div class="navbar-left">
-        <button type="button" class="btn btn-warning btn-sm navbar-btn" id="btnRealtyCardClose-{id}"><span class="glyphicon glyphicon-remove"></span> Close</button>
-        <button type="submit" class="btn btn-success btn-sm navbar-btn" id="btnRealtyCardSave-{id}"><span class="glyphicon glyphicon-ok"></span> Save</button>
+        % unless (config->{realty} && config->{realty}->{close_on_save}) {
+        <button type="button" class="btn btn-warning btn-sm navbar-btn" data-action="realty-obj-close"><span class="glyphicon glyphicon-remove"></span> <%= ucfloc 'close' %></button>
+        % }
+        <button type="button" class="btn btn-success btn-sm navbar-btn" data-action="realty-obj-save" data-loading-text="<%= ucfloc 'saving...' %>"><span class="glyphicon glyphicon-ok"></span> <%= ucfloc 'save' %></button>
       </div>
-      <p class="pull-right navbar-text" id="realtySaveStatus-{id}"></p>
+      <p class="navbar-text pull-right" data-display="realty-save-status"></p>
     </div>
   </nav>
 
   <div class="row">
-    <div class="col-lg-2"> <!-- Left Block -->
+    <div class="col-lg-2">
+      <!-- Menu block -->
       <div class="row margin-bottom-15">
         <div class="col-lg-12">
-          <ul class="nav nav-pills nav-stacked">
-            <li><a href="#realtyCardOverview-{id}" data-toggle="pill"><span class="glyphicon glyphicon-list-alt"></span> Overview</a></li>
-            <li class="active"><a href="#realtyCardMain-{id}" data-toggle="pill"><span class="glyphicon glyphicon-home"></span> Main</a></li>
-            <li><a href="#realtyCardGeo-{id}" data-toggle="pill"><span class="glyphicon glyphicon-globe"></span> Geo</a></li>
-            <li><a href="#realtyCardPhotos-{id}" data-toggle="pill"><span class="glyphicon glyphicon-camera"></span> Photos</a></li>
-            <li class="hidden"><a href="#realtyCardTasks-{id}" data-toggle="pill"><span class="glyphicon glyphicon-tasks"></span> Tasks</a></li>
-            <li class="hidden"><a href="#realtyCardComments-{id}" data-toggle="pill"><span class="glyphicon glyphicon-comment"></span> Comments</a></li>
-            <li class="hidden"><a href="#realtyCardInterests-{id}" data-toggle="pill"><span class="glyphicon glyphicon-eye-open"></span> Interests</a></li>
+          <ul class="nav nav-pills nav-stacked" role="menu">
+            <li class="active"><a href="#mainTab-{guid}" data-toggle="pill"><span class="glyphicon glyphicon-home"></span> <%= ucfloc 'main' %></a></li>
+            <li><a href="#geoTab-{guid}" data-toggle="pill"><span class="glyphicon glyphicon-globe"></span> <%= ucfloc 'geo' %></a></li>
+            <li><a href="#photosTab-{guid}" data-toggle="pill"><span class="glyphicon glyphicon-camera"></span> <%= ucfloc 'photos' %></a></li>
           </ul>
         </div>
       </div>
 
+      <!-- Export block -->
       <div class="row">
         <div class="col-lg-12">
           <div class="panel panel-default panel-sm">
             <div class="panel-body">
-              <a data-toggle="collapse" href="#collapseExport-{id}"><small>Export</small></a>
-              <div id="collapseExport-{id}" class="collapse">
+              <strong><small><%= ucfloc 'export' %></small></strong>
               % {
-              % my $export_codes = Rplus::DB->new_or_cached()->dbh->selectall_arrayref(
+              % my $export_codes = db->dbh->selectall_arrayref(
               %   q{SELECT J.* FROM media M, json_each_text(M.metadata->'export_codes') J WHERE M.type='export' AND M.delete_date IS NULL ORDER BY J.value},
               %   {Slice => {}}
               % );
               % for my $x (@$export_codes) {
                 <div class="checkbox">
-                  <label><input type="checkbox" name="export_media" value="<%= $x->{'key'} %>" form="realtyCardForm-{id}"> <small><%= $x->{'value'} %></small></label>
+                  <label><input type="checkbox" name="export_media" value="<%= $x->{'key'} %>" form="form-{guid}"> <small><%= $x->{'value'} %></small></label>
                 </div>
               % }}
-              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="row" id="realtyCard-SourceBlock-{id}" style="display: none;">
+      <!-- Source block -->
+      <div class="row" id="sourceBlock-{guid}" style="display: none;">
         <div class="col-lg-12">
           <div class="panel panel-default panel-sm">
             <div class="panel-body">
               <small>
-                <strong>Source: </strong> <span data-name="source_media_name">?</span><br>
+                <strong><%= ucfloc 'source' %>: </strong> <span data-name="source_media_name">?</span><br>
                 <span data-name="source_media_text">Text</span>
               </small>
             </div>
           </div>
         </div>
       </div>
-    </div> <!-- /Left Block -->
+    </div>
 
     <div class="col-lg-10">
       <div class="tab-content">
-        <div class="tab-pane" id="realtyCardOverview-{id}">
-          <div class="panel panel-default">
-            <div class="panel-body">
-              Overview example
-            </div>
-          </div>
-        </div>
-
-        <div class="tab-pane active" id="realtyCardMain-{id}">
-          <form class="form-horizontal form-realty" role="form" id="realtyCardForm-{id}">
+        <!-- Main tab -->
+        <div class="tab-pane active" id="mainTab-{guid}">
+          <form class="form-horizontal realty-form" id="form-{guid}" role="form">
 
             <div class="well well-md"> <!-- well -->
                 <div class="row">
                   <div class="col-lg-4">
                     <div class="form-group">
-                      <label class="col-lg-4 control-label" for="realtyCardForm-Type-{id}">Type</label>
+                      <label class="col-lg-4 control-label" for="typeInput-{guid}"><%= ucfloc 'type' %></label>
                       <div class="col-lg-8">
-                        <select class="form-control input-sm" name="type_code" id="realtyCardForm-Type-{id}">
-                          <!--option class="text-muted" value="">-</option-->
-                        % {
-                        % my $iter = Rplus::Model::RealtyType::Manager->get_objects_iterator(sort_by => 'category_code, name');
-                        % while (my $x = $iter->next) {
-                          <option value="<%= $x->code %>"><%= $x->name %></option>
-                        % }}
-                        </select>
-                      </div>
-                    </div>
-                  </div>
+                        %#<select class="form-control input-sm" name="type_code" id="typeInput-{guid}">
+                        %# for my $x (@{Rplus::Model::RealtyType::Manager->get_objects(sort_by => 'name')}) {
+                        %#  <option value="<%= $x->code %>"><%= $x->name %></option>
+                        %# }
+                        %#</select>
 
-                  <div class="col-lg-4">
-                    <div class="form-group">
-                      <label class="col-lg-4 control-label" for="realtyCardForm-OfferType-{id}">Offer</label>
-                      <div class="col-lg-8">
-                        <select class="form-control input-sm" name="offer_type_code" id="realtyCardForm-OfferType-{id}">
-                          <!--option class="text-muted" value="">-</option-->
+                        %# New experimental types
                         % {
-                        % my $iter = Rplus::Model::RealtyOfferType::Manager->get_objects_iterator;
-                        % while (my $x = $iter->next) {
-                          <option value="<%= $x->code %>"><%= $x->name %></option>
-                        % }}
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="col-lg-4">
-                    <div class="form-group">
-                      <label class="col-lg-4 control-label" for="realtyCardForm-Agent-{id}">Agent</label>
-                      <div class="col-lg-8">
-                        % if (session->{'user'}->{'role'} eq 'agent') {
-                        <select class="form-control input-sm" name="agent_id" id="realtyCardForm-Agent-{id}">
-                          <option value="<%= session->{'user'}->{'id'} %>"><%= session->{'user'}->{'name'} %></option>
-                        </select>
-                        % } else {
-                        <select class="form-control input-sm" name="agent_id" id="realtyCardForm-Agent-{id}">
-                          <option class="text-muted" value="">-</option>
-                        % {
-                        % my $iter = Rplus::Model::User::Manager->get_objects_iterator(select => 'id, name', query => [role => ['agent', 'manager'], delete_date => undef], sort_by => 'name');
-                        % while (my $x = $iter->next) {
-                          <option value="<%= $x->id %>"><%= $x->name %></option>
-                        % }}
-                        </select>
+                        %   my $type_optgroups = [];
+                        %   my $realty_types = db->dbh->selectall_arrayref(q{SELECT t1.id, t1.name, t1.code, t2.name AS category_name FROM realty_types t1 JOIN realty_categories t2 ON (t1.category_code = t2.code) ORDER BY t2.id, t1.id}, {Slice => {}});
+                        %   my %categories;
+                        %   for (@$realty_types) {
+                        %     my $x = $_->{category_name};
+                        %     unless (exists $categories{$x}) {
+                        %       $categories{$x} = scalar keys %categories;
+                        %       $type_optgroups->[$categories{$x}] = {$x => []};
+                        %     }
+                        %     push $type_optgroups->[$categories{$x}]->{$x}, [$_->{name}, $_->{code}];
+                        %   }
+                        %= select_field 'type_code' => $type_optgroups, class => 'form-control input-sm', id => 'typeInput-{guid}'
                         % }
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="col-lg-4">
+                    <div class="form-group">
+                      <label class="col-lg-4 control-label" for="offerTypeInput-{guid}"><%= ucfloc 'offer', 2 %></label>
+                      <div class="col-lg-8">
+                        <select class="form-control input-sm" name="offer_type_code" id="offerTypeInput-{guid}">
+                        % for my $x (@{Rplus::Model::RealtyOfferType::Manager->get_objects(sort_by => 'name')}) {
+                          <option value="<%= $x->code %>"><%= $x->name %></option>
+                        % }
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="col-lg-4">
+                    <div class="form-group">
+                      <label class="col-lg-4 control-label" for="agentInput-{guid}"><%= ucfloc 'agent' %></label>
+                      <div class="col-lg-8">
+                        <select class="form-control input-sm" name="agent_id" id="agentInput-{guid}">
+                        %# check read (!) permission to prevent empty list
+                        % if (has_permission(realty => read => undef)) {
+                          <option class="text-muted" value="">-</option>
+                        % }
+                        % for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [role => ['agent', 'manager'], delete_date => undef], sort_by => 'name')}) {
+                          % if (has_permission(realty => read => $x->id)) {
+                            <option value="<%= $x->id %>"><%= $x->name %></option>
+                          % }
+                        % }
+                        </select>
                       </div>
                     </div>
                   </div>
@@ -646,9 +629,9 @@
                       <input type="hidden" name="address_object_id">
                       <div class="col-lg-12">
                         <div class="form-group">
-                          <label class="col-lg-2 control-label" for="realtyCardForm-AddrObj-{id}">Addr</label>
+                          <label class="col-lg-2 control-label" for="addrObjInput-{guid}"><%= ucfloc 'addr' %></label>
                           <div class="col-lg-10">
-                            <input type="text" class="form-control input-sm" name="address_object_name" id="realtyCardForm-AddrObj-{id}" placeholder="Street, City">
+                            <input type="text" class="form-control input-sm" name="address_object_name" id="addrObjInput-{guid}" placeholder="<%= ucfloc 'street' %>, <%= ucfloc 'city' %>">
                           </div>
                         </div>
                       </div>
@@ -657,18 +640,18 @@
                     <div class="row">
                       <div class="col-lg-6">
                         <div class="form-group">
-                          <label class="col-lg-4 control-label" for="realtyCardForm-HouseNum-{id}">Num</label>
+                          <label class="col-lg-4 control-label" for="houseNumInput-{guid}"><%= ucfloc 'num' %></label>
                           <div class="col-lg-8">
-                            <input type="text" class="form-control input-sm" name="house_num" id="realtyCardForm-HouseNum-{id}" placeholder="House" style="width: 55%; display: inline-block;">&nbsp;/&nbsp;<input type="text" class="form-control input-sm" name="ap_num" placeholder="Ap" style="width: 35%; display: inline-block;">
+                            <input type="text" class="form-control input-sm" name="house_num" id="houseNumInput-{guid}" placeholder="<%= ucfloc 'house' %>" style="width: 55%; display: inline-block;">&nbsp;/&nbsp;<input type="text" class="form-control input-sm" name="ap_num" placeholder="<%= ucfloc 'ap' %>" style="width: 35%; display: inline-block;">
                           </div>
                         </div>
                       </div>
 
                       <div class="col-lg-6">
                         <div class="form-group">
-                          <label class="col-lg-4 control-label" for="realtyCardForm-SubLandmark-{id}">SubL</label>
+                          <label class="col-lg-4 control-label" for="sublandmarkInput-{guid}"><%= ucfloc 'landmark' %></label>
                           <div class="col-lg-8">
-                            <select class="form-control input-sm" name="sublandmark_id" id="realtyCardForm-SubLandmark-{id}">
+                            <select class="form-control input-sm" name="sublandmark_id" id="sublandmarkInput-{guid}">
                               <option class="text-muted" value="">-</option>
                             </select>
                           </div>
@@ -685,7 +668,7 @@
                     <div class="row">
                       <div class="col-lg-12">
                         <div class="form-group">
-                          <label class="col-lg-4 control-label">Date</label>
+                          <label class="col-lg-4 control-label"><%= ucfloc 'date' %></label>
                           <div class="col-lg-8">
                             <p class="form-control-static text-left"><small><span class="text-primary" data-name="add_date">dd.mm.yyyy</span>&nbsp;/&nbsp;<span class="text-success" data-name="change_date">dd.mm.yyyy</span></small></p>
                           </div>
@@ -695,15 +678,12 @@
                     <div class="row">
                       <div class="col-lg-12">
                         <div class="form-group">
-                          <label class="col-lg-4 control-label" for="realtyCardForm-State-{id}">State</label>
+                          <label class="col-lg-4 control-label" for="stateInput-{guid}"><%= ucfloc 'state' %></label>
                           <div class="col-lg-8">
-                            <select class="form-control input-sm" name="state_code" id="realtyCardForm-State-{id}">
-                              <!--option class="text-muted" value="">-</option-->
-                            % {
-                            % my $iter = Rplus::Model::RealtyState::Manager->get_objects_iterator;
-                            % while (my $x = $iter->next) {
+                            <select class="form-control input-sm" name="state_code" id="stateInput-{guid}">
+                            % for my $x (@{Rplus::Model::RealtyState::Manager->get_objects(sort_by => 'id')}) {
                               <option value="<%= $x->code %>"><%= $x->name %></option>
-                            % }}
+                            % }
                             </select>
                           </div>
                         </div>
@@ -718,15 +698,13 @@
                 <div class="row">
                   <div class="col-lg-4">
                     <div class="form-group">
-                      <label class="col-lg-4 control-label" for="realtyCardForm-ApScheme-{id}">Scheme</label>
+                      <label class="col-lg-4 control-label" for="apSchemeInput-{guid}"><%= ucfloc 'scheme', 2 %></label>
                       <div class="col-lg-8">
-                        <select class="form-control input-sm" name="ap_scheme_id" id="realtyCardForm-ApScheme-{id}">
+                        <select class="form-control input-sm" name="ap_scheme_id" id="apSchemeInput-{guid}">
                           <option class="text-muted" value="">-</option>
-                        % {
-                        % my $iter = Rplus::Model::DictApScheme::Manager->get_objects_iterator(sort_by => 'name');
-                        % while (my $x = $iter->next) {
-                          <option value="<%= $x->id %>"><%= $x->name %></option>
-                        % }}
+                          % for my $x (@{Rplus::Model::DictApScheme::Manager->get_objects(sort_by => 'name')}) {
+                            <option value="<%= $x->id %>"><%= $x->name %></option>
+                          % }
                         </select>
                       </div>
                     </div>
@@ -734,15 +712,13 @@
 
                   <div class="col-lg-4">
                     <div class="form-group">
-                      <label class="col-lg-4 control-label" for="realtyCardForm-HouseType-{id}">House</label>
+                      <label class="col-lg-4 control-label" for="houseTypeInput-{guid}"><%= ucfloc 'house' %></label>
                       <div class="col-lg-8">
-                        <select class="form-control input-sm" name="house_type_id" id="realtyCardForm-HouseType-{id}">
+                        <select class="form-control input-sm" name="house_type_id" id="houseTypeInput-{guid}">
                           <option class="text-muted" value="">-</option>
-                        % {
-                        % my $iter = Rplus::Model::DictHouseType::Manager->get_objects_iterator(sort_by => 'name');
-                        % while (my $x = $iter->next) {
-                          <option value="<%= $x->id %>"><%= $x->name %></option>
-                        % }}
+                          % for my $x (@{Rplus::Model::DictHouseType::Manager->get_objects(sort_by => 'name')}) {
+                            <option value="<%= $x->id %>"><%= $x->name %></option>
+                          % }
                         </select>
                       </div>
                     </div>
@@ -750,15 +726,13 @@
 
                   <div class="col-lg-4">
                     <div class="form-group">
-                      <label class="col-lg-4 control-label" for="realtyCardForm-RoomScheme-{id}">Rooms</label>
+                      <label class="col-lg-4 control-label" for="roomSchemeInput-{guid}"><%= ucfloc 'rooms' %></label>
                       <div class="col-lg-8">
-                        <select class="form-control input-sm" name="room_scheme_id" id="realtyCardForm-RoomScheme-{id}">
+                        <select class="form-control input-sm" name="room_scheme_id" id="roomSchemeInput-{guid}">
                           <option class="text-muted" value="">-</option>
-                        % {
-                        % my $iter = Rplus::Model::DictRoomScheme::Manager->get_objects_iterator(sort_by => 'name');
-                        % while (my $x = $iter->next) {
-                          <option value="<%= $x->id %>"><%= $x->name %></option>
-                        % }}
+                          % for my $x (@{Rplus::Model::DictRoomScheme::Manager->get_objects(sort_by => 'name')}) {
+                            <option value="<%= $x->id %>"><%= $x->name %></option>
+                          % }
                         </select>
                       </div>
                     </div>
@@ -768,18 +742,18 @@
                 <div class="row">
                   <div class="col-lg-4">
                     <div class="form-group">
-                      <label class="col-lg-4 control-label" for="realtyCardForm-RoomsCount-{id}">Rooms</label>
+                      <label class="col-lg-4 control-label" for="roomsCountInput-{guid}"><%= ucfloc 'rooms' %></label>
                       <div class="col-lg-8">
-                        <input type="text" class="form-control input-sm" name="rooms_offer_count" placeholder="Sale" style="width: 45%; display: inline-block;">&nbsp;/&nbsp;<input type="text" class="form-control input-sm" id="realtyCardForm-RoomsCount-{id}" name="rooms_count" placeholder="Total" style="width: 45%; display: inline-block;">
+                        <input type="text" class="form-control input-sm" name="rooms_offer_count" placeholder="<%= ucfloc 'sale' %>" style="width: 45%; display: inline-block;">&nbsp;/&nbsp;<input type="text" class="form-control input-sm" id="roomsCountInput-{guid}" name="rooms_count" placeholder="<%= ucfloc 'total' %>" style="width: 45%; display: inline-block;">
                       </div>
                     </div>
                   </div>
 
                   <div class="col-lg-8">
                     <div class="form-group">
-                      <label class="col-lg-2 control-label" for="realtyCardForm-Floor-{id}">Floors</label>
+                      <label class="col-lg-2 control-label" for="floorInput-{guid}"><%= ucfloc 'floors' %></label>
                       <div class="col-lg-6">
-                        <input type="text" class="form-control input-sm" name="floor" id="realtyCardForm-Floor-{id}" placeholder="Num" style="width: 28%; display: inline-block;">&nbsp;/&nbsp;<input type="text" class="form-control input-sm" name="floors_count" placeholder="Total" style="width: 28%; display: inline-block;">&nbsp;/&nbsp;<input type="text" class="form-control input-sm" name="levels_count" placeholder="Levels" style="width: 28%; display: inline-block;">
+                        <input type="text" class="form-control input-sm" name="floor" id="floorInput-{guid}" placeholder="<%= ucfloc 'floor' %>" style="width: 28%; display: inline-block;">&nbsp;/&nbsp;<input type="text" class="form-control input-sm" name="floors_count" placeholder="<%= ucfloc 'total' %>" style="width: 28%; display: inline-block;">&nbsp;/&nbsp;<input type="text" class="form-control input-sm" name="levels_count" placeholder="<%= ucfloc 'levels' %>" style="width: 28%; display: inline-block;">
                       </div>
                     </div>
                   </div>
@@ -788,13 +762,13 @@
                 <div class="row">
                   <div class="col-lg-4">
                     <div class="form-group">
-                      <label class="col-lg-4 control-label" for="realtyCardForm-SquareLand-{id}">Land</label>
+                      <label class="col-lg-4 control-label" for="squareLandInput-{guid}"><%= ucfloc 'land' %></label>
                       <div class="col-lg-8">
-                        <input type="text" class="form-control input-sm" name="square_land" id="realtyCardForm-SquareLand-{id}" placeholder="Total" style="width: 46%; display: inline-block;">&nbsp;
+                        <input type="text" class="form-control input-sm" name="square_land" id="squareLandInput-{guid}" placeholder="<%= ucfloc 'total' %>" style="width: 46%; display: inline-block;">&nbsp;
                         <select class="form-control input-sm" name="square_land_type" style="width:46%; display: inline-block;">
                           <option class="text-muted" value="">-</option>
-                          <option value="ar">сот</option>
-                          <option value="hectare">га</option>
+                          <option value="ar"><%= ucfloc 'ar' %></option>
+                          <option value="hectare"><%= ucfloc 'hectare' %></option>
                         </select>
                       </div>
                     </div>
@@ -802,9 +776,9 @@
 
                   <div class="col-lg-8">
                     <div class="form-group">
-                      <label class="col-lg-2 control-label" for="realtyCardForm-SquareTotal-{id}">Square</label>
+                      <label class="col-lg-2 control-label" for="squareTotalInput-{guid}"><%= ucfloc 'square' %></label>
                       <div class="col-lg-6">
-                        <input type="text" class="form-control input-sm" name="square_total" id="realtyCardForm-SquareTotal-{id}" placeholder="Total" style="width: 28%; display: inline-block;">&nbsp;/&nbsp;<input type="text" class="form-control input-sm" name="square_living" placeholder="Living" style="width: 28%; display: inline-block;">&nbsp;/&nbsp;<input type="text" class="form-control input-sm" name="square_kitchen" placeholder="Kitchen" style="width: 28%; display: inline-block;">
+                        <input type="text" class="form-control input-sm" name="square_total" id="squareTotalInput-{guid}" placeholder="<%= ucfloc 'total' %>" style="width: 28%; display: inline-block;">&nbsp;/&nbsp;<input type="text" class="form-control input-sm" name="square_living" placeholder="<%= ucfloc 'living' %>" style="width: 28%; display: inline-block;">&nbsp;/&nbsp;<input type="text" class="form-control input-sm" name="square_kitchen" placeholder="<%= ucfloc 'kitchen' %>" style="width: 28%; display: inline-block;">
                       </div>
                     </div>
                   </div>
@@ -813,15 +787,13 @@
                 <div class="row">
                   <div class="col-lg-4">
                     <div class="form-group">
-                      <label class="col-lg-4 control-label" for="realtyCardForm-Condition-{id}">Condition</label>
+                      <label class="col-lg-4 control-label" for="conditionInput-{guid}"><%= ucfloc 'condition' %></label>
                       <div class="col-lg-8">
-                        <select class="form-control input-sm" name="condition_id" id="realtyCardForm-Condition-{id}">
+                        <select class="form-control input-sm" name="condition_id" id="conditionInput-{guid}">
                           <option class="text-muted" value="">-</option>
-                        % {
-                        % my $iter = Rplus::Model::DictCondition::Manager->get_objects_iterator(sort_by => 'name');
-                        % while (my $x = $iter->next) {
-                          <option value="<%= $x->id %>"><%= $x->name %></option>
-                        % }}
+                          % for my $x (@{Rplus::Model::DictCondition::Manager->get_objects(sort_by => 'name')}) {
+                            <option value="<%= $x->id %>"><%= $x->name %></option>
+                          % }
                         </select>
                       </div>
                     </div>
@@ -829,15 +801,13 @@
 
                   <div class="col-lg-4">
                     <div class="form-group">
-                      <label class="col-lg-4 control-label" for="realtyCardForm-Balcony-{id}">Balcony</label>
+                      <label class="col-lg-4 control-label" for="balconyInput-{guid}"><%= ucfloc 'balcony' %></label>
                       <div class="col-lg-8">
-                        <select class="form-control input-sm" name="balcony_id" id="realtyCardForm-Balcony-{id}">
+                        <select class="form-control input-sm" name="balcony_id" id="balconyInput-{guid}">
                           <option class="text-muted" value="">-</option>
-                        % {
-                        % my $iter = Rplus::Model::DictBalcony::Manager->get_objects_iterator(sort_by => 'name');
-                        % while (my $x = $iter->next) {
-                          <option value="<%= $x->id %>"><%= $x->name %></option>
-                        % }}
+                          % for my $x (@{Rplus::Model::DictBalcony::Manager->get_objects(sort_by => 'name')}) {
+                            <option value="<%= $x->id %>"><%= $x->name %></option>
+                          % }
                         </select>
                       </div>
                     </div>
@@ -845,15 +815,13 @@
 
                   <div class="col-lg-4">
                     <div class="form-group">
-                      <label class="col-lg-4 control-label" for="realtyCardForm-Bathroom-{id}">Bathroom</label>
+                      <label class="col-lg-4 control-label" for="bathroomInput-{guid}"><%= ucfloc 'bathroom' %></label>
                       <div class="col-lg-8">
-                        <select class="form-control input-sm" name="bathroom_id" id="realtyCardForm-Bathroom-{id}">
+                        <select class="form-control input-sm" name="bathroom_id" id="bathroomInput-{guid}">
                           <option class="text-muted" value="">-</option>
-                        % {
-                        % my $iter = Rplus::Model::DictBathroom::Manager->get_objects_iterator(sort_by => 'name');
-                        % while (my $x = $iter->next) {
-                          <option value="<%= $x->id %>"><%= $x->name %></option>
-                        % }}
+                          % for my $x (@{Rplus::Model::DictBathroom::Manager->get_objects(sort_by => 'name')}) {
+                            <option value="<%= $x->id %>"><%= $x->name %></option>
+                          % }
                         </select>
                       </div>
                     </div>
@@ -866,18 +834,18 @@
                 <div class="row">
                   <div class="col-lg-4">
                     <div class="form-group">
-                      <label class="col-lg-4 control-label" for="realtyCardForm-SellerPrice-{id}">Price</label>
+                      <label class="col-lg-4 control-label" for="ownerPriceInput-{guid}"><%= ucfloc 'price' %></label>
                       <div class="col-lg-8">
-                        <input type="text" class="form-control input-sm" name="seller_price" id="realtyCardForm-SellerPrice-{id}" placeholder="Seller" style="width: 45%; display: inline-block;">&nbsp;/&nbsp;<input type="text" class="form-control input-sm" name="agency_price" placeholder="Agency" style="width: 45%; display: inline-block;">
+                        <input type="text" class="form-control input-sm" name="owner_price" id="ownerPriceInput-{guid}" placeholder="<%= ucfloc 'owner' %>" style="width: 45%; display: inline-block;">&nbsp;/&nbsp;<input type="text" class="form-control input-sm" name="agency_price" placeholder="<%= ucfloc 'agency' %>" style="width: 45%; display: inline-block;">
                       </div>
                     </div>
                   </div>
 
                   <div class="col-lg-8">
                     <div class="form-group">
-                      <label class="col-lg-2 control-label" for="realtyCardForm-Phone1-{id}">Phones</label>
+                      <label class="col-lg-2 control-label" for="ownerPhoneInput-{guid}"><%= ucfloc 'phones' %></label>
                       <div class="col-lg-10">
-                        <input type="text" class="form-control input-sm" style="display: inline-block; width: 30%;" name="seller_phones" id="realtyCardForm-Phone1-{id}" placeholder="Phone1">&nbsp;&nbsp;<input type="text" class="form-control input-sm" style="display: inline-block; width: 30%;" name="seller_phones" placeholder="Phone2">&nbsp;&nbsp;<input type="text" class="form-control input-sm" style="display: inline-block; width: 30%;" name="seller_phones" placeholder="Phone3">
+                        <input type="text" class="form-control input-sm" style="display: inline-block; width: 30%;" name="owner_phones" id="ownerPhoneInput-{guid}" placeholder="<%= ucfloc 'phone' %> 1">&nbsp;&nbsp;<input type="text" class="form-control input-sm" style="display: inline-block; width: 30%;" name="owner_phones" placeholder="<%= ucfloc 'phone' %> 2">&nbsp;&nbsp;<input type="text" class="form-control input-sm" style="display: inline-block; width: 30%;" name="owner_phones" placeholder="<%= ucfloc 'phone' %> 3">
                       </div>
                     </div>
                   </div>
@@ -889,18 +857,18 @@
                 <div class="row">
                   <div class="col-lg-6">
                     <div class="form-group">
-                      <label class="col-lg-3 control-label" for="realtyCardForm-Description-{id}">Description</label>
+                      <label class="col-lg-3 control-label" for="descriptionInput-{guid}"><%= ucfloc 'description' %></label>
                       <div class="col-lg-9">
-                        <textarea class="form-control input-sm" name="description" id="realtyCardForm-Description-{id}" rows="3" placeholder="Additional description"></textarea>
+                        <textarea class="form-control input-sm" name="description" id="descriptionInput-{guid}" rows="3" placeholder="<%= ucfloc 'additional description' %>"></textarea>
                       </div>
                     </div>
                   </div>
 
                   <div class="col-lg-6">
                     <div class="form-group">
-                      <label class="col-lg-3 control-label" for="realtyCardForm-WorkInfo-{id}">Work info</label>
+                      <label class="col-lg-3 control-label" for="workInfoInput-{guid}"><%= ucfloc 'work info' %></label>
                       <div class="col-lg-9">
-                        <textarea class="form-control input-sm" name="work_info" id="realtyCardForm-WorkInfo-{id}" rows="3" placeholder="Work info"></textarea>
+                        <textarea class="form-control input-sm" name="work_info" id="workInfoInput-{guid}" rows="3" placeholder="<%= ucfloc 'work info' %>"></textarea>
                       </div>
                     </div>
                   </div>
@@ -910,11 +878,11 @@
           </form>
         </div>
 
-        <div class="tab-pane" id="realtyCardGeo-{id}">
-          <div class="geo-map" id="geoMap-{id}" style="width: 100%; height: 500px;"></div>
+        <div class="tab-pane" id="geoTab-{guid}">
+          <div class="geo-map" id="geoMap-{guid}" style="width: 100%; height: 500px;"></div>
         </div>
 
-        <div class="tab-pane" id="realtyCardPhotos-{id}">
+        <div class="tab-pane" id="photosTab-{guid}">
           <div class="row">
             <div class="col-lg-7">
               <p>
@@ -922,7 +890,7 @@
                   <i class="glyphicon glyphicon-plus"></i>
                   <span>Add files...</span>
                   <!-- The file input field used as target for the file upload widget -->
-                  <input id="fileupload-{id}" type="file" name="files[]" multiple>
+                  <input id="fileupload-{guid}" type="file" name="files[]" multiple>
                 </span>
                 <button class="btn btn-primary btn-sm start">
                     <i class="glyphicon glyphicon-upload"></i>
@@ -943,4 +911,5 @@
       </div>
     </div>
   </div>
-</div> <!-- /RealtyCardTemplate -->
+</div>
+<!-- /#RealtyCardTemplate -->

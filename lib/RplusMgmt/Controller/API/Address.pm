@@ -2,18 +2,15 @@ package RplusMgmt::Controller::API::Address;
 
 use Mojo::Base 'Mojolicious::Controller';
 
-use JSON;
-
 use Rplus::Model::AddressObject;
 use Rplus::Model::AddressObject::Manager;
 
-sub auth {
-    my $self = shift;
-    return 1;
-}
+use JSON;
 
 sub complete {
     my $self = shift;
+
+    # Can be executed by all users
 
     my $term;
     if ($term = $self->param('term')) {

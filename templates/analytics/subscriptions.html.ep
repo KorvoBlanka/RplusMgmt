@@ -2,20 +2,27 @@
 
 % use Rplus::Model::RealtyOfferType::Manager;
 
+%= include 'blocks/client_card';
+
 % content_for header => begin
-<link rel="stylesheet" href="<%= $assets_url %>/bootstrap-daterangepicker/2013.10.15/daterangepicker-bs3.css">
+%= css_once "$assets_url/bootstrap-daterangepicker/2013.11.11/daterangepicker-bs3.css"
 <style type="text/css">
+  #subscriptionTable {
+    /*font-size: 85%;*/
+  }
+
   #subscriptionTable > tbody > tr > td:nth-child(1),
   #subscriptionTable > tbody > tr > td:nth-child(2),
   #subscriptionTable > tbody > tr > td:nth-child(3),
-  #subscriptionTable > tbody > tr > td:nth-child(4) {
+  #subscriptionTable > tbody > tr > td:nth-child(4),
+  #subscriptionTable > tbody > tr > td:nth-child(6) {
     white-space: nowrap;
   }
 </style>
 % end
 
 % content_for before_bootstrap => begin
-<script type="application/javascript" src="<%= $assets_url %>/bootstrap-daterangepicker/2013.10.15/daterangepicker.js"></script>
+%= js_once "$assets_url/bootstrap-daterangepicker/2013.11.11/daterangepicker.js"
 % end
 
 % content_for javascript => begin
@@ -23,17 +30,19 @@
 <script type="text/javascript">
   "use strict";
 
-  !function () {
-    var date1 = moment(), date2 = moment();
+  registerGlobalAjaxEvents();
+
+  (function () {
+    var dateFrom = moment(), dateTo = moment();
 
     function describeRealty(r) {
       var parts = [];
-      parts.push(Rplus.Util.escape(Rplus.Table.realty_types[r.type_code].name));
+      parts.push('<strong>' + Rplus.Util.escape(Rplus.Table.realty_types[r.type_code].name) + '</strong>');
       if (r.rooms_count) parts.push(r.rooms_count + 'к');
       if (r.address_object) {
         parts.push(
-          Rplus.Util.escape(r.address_object.name + ' ' + r.address_object.short_type) +
-          (r.sublandmark ? ' (' + r.sublandmark.name + ')' : '')
+          Rplus.Util.escape(r.address_object.name + ' ' + r.address_object.short_type) //+
+          //(r.sublandmark ? ' (' + r.sublandmark.name + ')' : '')
         );
         //parts.push(Rplus.Util.escape(r.address_object.addr_parts[1].name + ' ' + r.address_object.addr_parts[1].short_type));
       }
@@ -41,48 +50,53 @@
       if (r.price) parts.push(r.price + ' тыс. руб.');
       if (r.agent_id) {
         var agent = Rplus.Table.users[r.agent_id];
-        parts.push('Агент: ' + (agent.public_name || agent.name));
+        //parts.push('Агент: ' + (agent.public_name || agent.name));
+        parts.push(agent.public_name || agent.name);
       }
 
       return parts.join(', ');
     }
 
-    function _List() {
+    function listSubscriptions() {
       $.ajax({
         type: 'POST',
-        url: '/api/analytics-subscription/list',
-        beforeSend: function (jqXHR, settings) {
-          $('#subscriptionLoading').removeClass('invisible');
-          $('#subscriptionFilterForm > button[type="submit"]').button('loading');
-        },
-        complete: function (jqXHR, textStatus) {
-          $('#subscriptionLoading').addClass('invisible');
-          $('#subscriptionFilterForm > button[type="submit"]').button('reset');
-        },
+        url: '/api/subscription/list',
+        beforeSend: function (jqXHR, settings) { $('#subscriptionFilterForm > button[type="submit"]').button('loading'); },
+        complete: function (jqXHR, textStatus) { $('#subscriptionFilterForm > button[type="submit"]').button('reset'); },
         data: {
-          date1: date1.format('YYYY-MM-DD'),
-          date2: date2.format('YYYY-MM-DD'),
-          offer_type: $('#filterOfferType').data('offer-type'),
-          active: $('[name="active"]:input').prop('checked') ? 1 : 0,
+          date_from: dateFrom.format('YYYY-MM-DDT00:00:00ZZ'),
+          date_to: dateTo.format('YYYY-MM-DDT23:59:59ZZ'),
+          offer_type_code: $('#filterOfferType').data('offer-type-code'),
+          phone_num: $('[name="phone_num"]:input').val(),
+          active: $('[name="active"]:input').prop('checked'),
+          with_realty: true,
         }
       })
         .done(function (data) {
           $('#subscriptionTable > tbody').html('');
-          for (var i = 0; i < data.list.length; i++) {
+          for (var i = data.list.length - 1; i >= 0; i--) {
             var x = data.list[i];
             var add_date = moment(x.add_date),
                 end_date = moment(x.end_date);
             var xhtml = '<tr>';
             xhtml += '<td>' + (i + 1) + '</td>';
             xhtml += '<td>' + add_date.format('DD.MM.YYYY HH:mm') + '</td>';
-            xhtml += '<td><span class="label label-' + (end_date < moment() ? 'danger' : 'success') + '">' + end_date.format('DD.MM.YYYY') + '</span></td>';
-            xhtml += '<td><a href="#" data-action="client-open" data-id="' + x.client.id + '">' + Rplus.Util.formatPhoneNum(x.client.phone_num) + '</a></td>';
-            xhtml += '<td>' + x.queries.map(function (x) { return Rplus.Util.escape(x) }).join('<br>') + '</td>';
-            xhtml += '<td>' + x.realty.map(function (x) { return describeRealty(x) }).join('<br>') + '</td>';
+            if (end_date) {
+              xhtml += '<td><span class="label label-' + (end_date < moment() ? 'danger' : 'success') + '">' + end_date.format('DD.MM.YYYY') + '</span></td>';
+            } else {
+              xhtml += '<td><span class="label label-default"><%= loc q{inactive} %></span></td>';
+            }
+            % if (has_permission(clients => 'read')) {
+              xhtml += '<td><a href="#" data-action="client-open" data-id="' + x.client.id + '">' + Rplus.Util.formatPhoneNum(x.client.phone_num) + '</a></td>';
+            % } else {
+              xhtml += '<td>' + Rplus.Util.formatPhoneNum(x.client.phone_num) + '</td>';
+            % }
+            xhtml += '<td><ul class="list-unstyled">' + x.queries.map(function (x) { x = Rplus.Util.escape(x); return '<li>' + '<strong>' + x.substr(0, 1).toUpperCase() + '</strong>' + x.substr(1) + '</li>' }).join("\n") + '</ul></td>';
+            xhtml += '<td><ul class="list-unstyled">' + x.realty.map(function (x) { return '<li>' + describeRealty(x) + '</li>' }).join("\n") + '</ul></td>';
             xhtml += '</tr>';
             $('#subscriptionTable > tbody').append(xhtml);
           }
-          $('#subscriptionCount').text(data.count);
+          $('#objectsCount').text(data.count);
         })
       ;
     }
@@ -92,32 +106,45 @@
         {
           format: 'DD.MM.YYYY',
           startDate: moment(),
-          endDate: moment()
+          endDate: moment(),
+          locale: {
+            applyLabel: '<%= ucfloc q{apply} %>',
+            cancelLabel: '<%= ucfloc q{cancel} %>',
+            fromLabel: '<%= ucfloc q{from} %>',
+            toLabel: '<%= ucfloc q{to} %>',
+          },
+          buttonClasses: ['btn', 'btn-sm'],
         },
         function(start, end) {
-          date1 = start;
-          date2 = end;
+          dateFrom = start;
+          dateTo = end;
         }
       ).val(moment().format('DD.MM.YYYY') + ' - ' + moment().format('DD.MM.YYYY'));
 
       $('#subscriptionFilterForm').submit(function (e) {
         e.preventDefault();
-        _List();
+        listSubscriptions();
       });
 
       // Filter: offerType
       $('#filterOfferType > ul > li > a').click(function (e) {
-        $('#filterOfferType').data('offer-type', $(this).data('offer-type'));
+        $('#filterOfferType').data('offer-type-code', $(this).data('offer-type-code'));
         $('#filterOfferType > a').html($(this).html() + ' <b class="caret"></b>');
-        _List();
+        listSubscriptions();
       });
 
       $('#subscriptionTable').on('click', 'a[data-action="client-open"]', function (e) {
         var id = $(this).data('id');
-        var clientCard = ClientCard().open(id);
+        var card = ClientCard({
+          saved: function (client) {
+            card.close();
+          },
+        }).open(id);
       });
+
+      listSubscriptions();
     });
-  }();
+  })();
 </script>
 % end
 
@@ -125,14 +152,17 @@
   <div class="col-md-12">
     <form class="form-inline" role="form" id="subscriptionFilterForm">
       <div class="form-group" style="padding-right: 15px;">
-        <input type="text" class="form-control input-sm" name="daterange" id="dateRange" placeholder="Date range" style="min-width: 160px;">
+        <input type="text" class="form-control input-sm" name="daterange" placeholder="<%= ucfloc 'date range' %>" style="min-width: 160px;">
+      </div>
+      <div class="form-group" style="padding-right: 15px;">
+        <input type="text" class="form-control input-sm" name="phone_num" placeholder="<%= ucfloc 'phone num' %>" style="min-width: 160px;">
       </div>
       <div class="checkbox" style="padding-right: 15px;">
         <label>
-          <input type="checkbox" name="active" value="1"> active
+          <input type="checkbox" name="active"> <%= ucfloc 'active', 2 %>
         </label>
       </div>
-      <button type="submit" data-loading-text="Loading..." class="btn btn-default btn-sm">Submit</button>
+      <button type="submit" data-loading-text="<%= ucfloc 'loading...' %>" class="btn btn-primary btn-sm"><%= ucfloc 'apply' %></button>
     </form>
   </div>
 </div>
@@ -144,11 +174,11 @@
         <thead>
           <tr>
             <th>#</th>
-            <th>Add date</th>
-            <th>End date</th>
-            <th>Client</th>
-            <th>Queries</th>
-            <th>Realty</th>
+            <th><%= ucfloc 'add date' %></th>
+            <th><%= ucfloc 'end date' %></th>
+            <th><%= ucfloc 'client' %></th>
+            <th><%= ucfloc 'queries' %></th>
+            <th><%= ucfloc 'realty' %></th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -161,20 +191,21 @@
   <div class="container">
     <div class="navbar-right">
       <ul class="nav navbar-nav">
-        <li class="dropdown" id="filterOfferType" data-offer-type="sale">
-          <a href="#" class="dropdown-toggle" data-toggle="dropdown">Продажа <b class="caret"></b></a>
+        <li class="dropdown" id="filterOfferType" data-offer-type-code="sale">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown"><%= ucfloc 'sale' %> <b class="caret"></b></a>
           <ul class="dropdown-menu">
             % {
             % my $iter = Rplus::Model::RealtyOfferType::Manager->get_objects_iterator(sort_by => 'id');
             % while (my $x = $iter->next) {
-              <li><a href="#" data-offer-type="<%= $x->code %>"><%= $x->name %></a></li>
+              <li><a href="#" data-offer-type-code="<%= $x->code %>"><%= ucfloc $x->code %></a></li>
             % }}
           </ul>
         </li>
       </ul>
-      <p class="navbar-text"><span class="glyphicon glyphicon-refresh animation-rotate invisible" id="subscriptionLoading"></span> <span class="text-primary">Found</span> <span class="text-primary" id="subscriptionCount">0</span></p>
+      <p class="navbar-text">
+        <span class="text-primary"><%= ucfloc 'found' %></span> <span class="text-primary" id="objectsCount">0</span>
+        <span class="glyphicon glyphicon-refresh animation-rotate invisible indicator-ajax"></span>
+      </p>
     </div>
   </div>
 </nav>
-
-%= include 'blocks/client_card';

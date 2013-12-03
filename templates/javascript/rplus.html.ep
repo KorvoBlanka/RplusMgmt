@@ -1,7 +1,7 @@
 <script type="application/javascript">
   "use strict";
 
-  window.Rplus = {};
+  if (!window.Rplus) { window.Rplus = {}; }
 
   Rplus.Util = {
     escape: function (text) {
@@ -9,8 +9,12 @@
     },
 
     formatPhoneNum: function (phoneNum) {
+      var defaultPhonePrefix = "<%= config->{default_phone_prefix} %>";
       if (!phoneNum) return;
-      return phoneNum.replace(/^(\d{3})(\d{3})(\d{4})$/, "($1) $2 $3");
+      if (defaultPhonePrefix && phoneNum.indexOf(defaultPhonePrefix) == 0) {
+        return "(" + defaultPhonePrefix + ")" + phoneNum.substring(defaultPhonePrefix.length, phoneNum.length);
+      }
+      return phoneNum.replace(/^(\d{3})(\d{3})(\d{4})$/, "($1)$2$3");
     },
 
     /**

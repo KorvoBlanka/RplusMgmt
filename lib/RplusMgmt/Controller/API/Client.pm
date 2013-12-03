@@ -13,17 +13,10 @@ use Rplus::Model::Realty::Manager;
 use Rplus::Model::SmsMessage;
 use Rplus::Model::SmsMessage::Manager;
 
-use Rplus::DB;
-
-use JSON;
-use Mojo::Util qw(trim);
-use Rplus::Util::PhoneNum;
-
 sub list {
     my $self = shift;
 
-    #return $self->render(json => {error => 'Method Not Allowed'}, status => 405) unless $self->req->method eq 'GET';
-    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->stash('controller_role_conf')->{$self->stash('action')};
+    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(clients => 'read');
 
     # Not Implemented
 
@@ -33,31 +26,29 @@ sub list {
 sub get {
     my $self = shift;
 
-    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->stash('controller_role_conf')->{$self->stash('action')};
+    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(clients => 'read');
 
     # Retrieve client (by id or phone_num)
     my $client;
     if (my $id = $self->param('id')) {
         $client = Rplus::Model::Client::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
-    }
-    elsif (my $phone_num = Rplus::Util::PhoneNum->parse(scalar $self->param('phone_num'))) {
+    } elsif (my $phone_num = $self->parse_phone_num(scalar $self->param('phone_num'))) {
         $client = Rplus::Model::Client::Manager->get_objects(query => [phone_num => $phone_num, delete_date => undef])->[0];
     }
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $client;
 
-    my $metadata = decode_json($client->metadata);
     my $res = {
         id => $client->id,
         name => $client->name,
         phone_num => $client->phone_num,
         add_date => $self->format_datetime($client->add_date),
-        description => $metadata->{description},
+        description => $client->description,
     };
 
-    if ($self->param('with_subscriptions') eq 'true') {
+    if ($self->param_b('with_subscriptions')) {
         $res->{subscriptions} = [];
 
-        # Retrieve client subscriptions including found realty count
+        # Retrieve client subscriptions including count of found realty
         my $sth = $self->db->dbh->prepare(qq{
             SELECT S.*, count(SR.id) realty_count
             FROM subscriptions S
@@ -68,7 +59,6 @@ sub get {
         });
         $sth->execute($client->id);
         while (my $row = $sth->fetchrow_hashref) {
-            my $metadata = decode_json($row->{metadata});
             my $x = {
                 id => $row->{id},
                 client_id => $row->{client_id},
@@ -78,8 +68,8 @@ sub get {
                 add_date => $self->format_datetime($row->{add_date}),
                 end_date => $self->format_datetime($row->{end_date}),
                 realty_count => $row->{realty_count},
-                realty_limit => $metadata->{realty_limit},
-                send_seller_phone => $metadata->{send_seller_phone} ? \1 : \0,
+                realty_limit => $row->{realty_limit},
+                send_owner_phone => $row->{send_owner_phone} ? \1 : \0,
             };
             push @{$res->{subscriptions}}, $x;
         }
@@ -91,7 +81,7 @@ sub get {
 sub save {
     my $self = shift;
 
-    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->stash('controller_role_conf')->{$self->stash('action')};
+    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(clients => 'write');
 
     # Retrieve client
     my $client;
@@ -103,7 +93,7 @@ sub save {
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $client;
 
     # Validation
-    $self->validation->required('phone_num')->is_phone;
+    $self->validation->required('phone_num')->is_phone_num;
 
     if ($self->validation->has_error) {
         my @errors;
@@ -112,16 +102,14 @@ sub save {
     }
 
     # Prepare data
-    my $name = $self->param('name'); $name = trim($name) || undef if defined $name;
-    my $phone_num = $self->param('phone_num'); $phone_num = Rplus::Util::PhoneNum->parse($phone_num);
-    my $description = $self->param('description') || undef;
+    my $name = $self->param_n('name');
+    my $phone_num = $self->parse_phone_num(scalar $self->param('phone_num'));
+    my $description = $self->param_n('description');
 
     # Save
-    my $metadata = decode_json($client->metadata || '{}');
     $client->name($name);
     $client->phone_num($phone_num);
-    $metadata->{description} = $description;
-    $client->metadata(encode_json($metadata));
+    $client->description($description);
 
     eval {
         $client->save($client->id ? (changes_only => 1) : (insert => 1));
@@ -129,31 +117,41 @@ sub save {
         return $self->render(json => {error => $@}, status => 500);
     };
 
-    return $self->render(json => {id => $client->id});
+    return $self->render(json => {status => 'success', id => $client->id});
 }
 
 sub delete {
     my $self = shift;
 
-    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->stash('controller_role_conf')->{$self->stash('action')};
+    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(clients => 'write');
 
     my $id = $self->param('id');
+
+    # Delete client
     my $num_rows_updated = Rplus::Model::Client::Manager->update_objects(
         set => {delete_date => \'now()'},
         where => [id => $id, delete_date => undef],
     );
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $num_rows_updated;
 
-    return $self->render(json => {delete => \1});
+    # Delete client subscriptions
+    $num_rows_updated = Rplus::Model::Subscription::Manager->update_objects(
+        set => {delete_date => \'now()'},
+        where => [client_id => $id, delete_date => undef],
+    );
+
+    # I think, it's unnecessary to delete subscription realty & client owned realty
+
+    return $self->render(json => {status => 'success'});
 }
 
 sub subscribe {
     my $self = shift;
 
-    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->stash('controller_role_conf')->{$self->stash('action')};
+    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(clients => 'subscribe');
 
     # Validation
-    $self->validation->required('phone_num')->is_phone;
+    $self->validation->required('phone_num')->is_phone_num;
     $self->validation->required('q');
     $self->validation->required('offer_type_code')->in(qw(sale rent));
     $self->validation->optional('end_date')->is_datetime;
@@ -168,14 +166,14 @@ sub subscribe {
     }
 
     # Input params
-    my $phone_num = Rplus::Util::PhoneNum->parse(scalar $self->param('phone_num'));
-    my $q = $self->param('q');
+    my $phone_num = $self->parse_phone_num(scalar $self->param('phone_num'));
+    my $q = $self->param_n('q');
     my $offer_type_code = $self->param('offer_type_code');
     my $realty_ids = Mojo::Collection->new($self->param('realty_ids[]'))->compact->uniq;
     my $end_date = $self->parse_datetime(scalar $self->param('end_date'));
 
-    # DB
-    my $db = Rplus::DB->new_or_cached;
+    # Begin transaction
+    my $db = $self->db;
     $db->begin_work;
 
     # Find/create client by phone number
@@ -188,7 +186,7 @@ sub subscribe {
     # Add subscription
     my $subscription = Rplus::Model::Subscription->new(
         client_id => $client->id,
-        user_id => $self->session->{'user'}->{'id'},
+        user_id => $self->session->{user}->{id},
         queries => [$q],
         offer_type_code => $offer_type_code,
         end_date => $end_date,
@@ -206,9 +204,9 @@ sub subscribe {
         if ($realty) {
             Rplus::Model::SubscriptionRealty->new(subscription_id => $subscription->id, realty_id => $realty->id, db => $db)->save;
 
-            # Подготовим СМС для _клиента_
+            # Prepare SMS for client
             if ($phone_num =~ /^9\d{9}$/) {
-                # TODO: Добавить настройки шаблонов
+                # TODO: Add template settings
                 my @parts;
                 {
                     push @parts, $realty->type->name;
@@ -216,24 +214,24 @@ sub subscribe {
                     push @parts, $realty->address_object->name.' '.$realty->address_object->short_type.($realty->address_object->name !~ /[()]/ && $realty->sublandmark ? ' ('.$realty->sublandmark->name.')' : '') if $realty->address_object;
                     push @parts, ($realty->floor || '?').'/'.($realty->floors_count || '?').' эт.' if $realty->floor || $realty->floors_count;
                     push @parts, $realty->price.' тыс. руб.' if $realty->price;
-                    push @parts, decode_json($realty->agent->metadata)->{'public_name'} || $realty->agent->name if $realty->agent;
-                    push @parts, decode_json($realty->agent->metadata)->{'public_phone_num'} || $realty->agent->phone_num if $realty->agent;
+                    push @parts, $realty->agent->public_name || $realty->agent->name if $realty->agent;
+                    push @parts, $realty->agent->public_phone_num || $realty->agent->phone_num if $realty->agent;
                 }
                 my $sms_body = join(', ', @parts);
-                my $sms_text = 'Вы интересовались: '.$sms_body.($sms_body =~ /\.$/ ? '' : '.').($self->config->{subscription}->{contact_info} ? ' '.$self->config->{subscription}->{contact_info} : '');
+                my $sms_text = 'Вы интересовались: '.$sms_body.($sms_body =~ /\.$/ ? '' : '.').($self->config->{subscriptions}->{contact_info} ? ' '.$self->config->{subscriptions}->{contact_info} : '');
                 Rplus::Model::SmsMessage->new(phone_num => $phone_num, text => $sms_text, db => $db)->save;
             }
 
-            # Подготовим СМС для _агента_
+            # Prepare SMS for agent
             if ($realty->agent && ($realty->agent->phone_num || '') =~ /^9\d{9}$/) {
-                # TODO: Добавить настройки шаблонов
+                # TODO: Add template settings
                 my @parts;
                 {
                     push @parts, $realty->type->name;
                     push @parts, $realty->rooms_count.'к' if $realty->rooms_count;
                     push @parts, $realty->address_object->name.' '.$realty->address_object->short_type.($realty->house_num ? ', '.$realty->house_num : '') if $realty->address_object;
                     push @parts, $realty->price.' тыс. руб.' if $realty->price;
-                    push @parts, 'Клиент: '.($phone_num =~ s/^(\d{3})(\d{3})(\d{4})/($1) $2 $3/r);
+                    push @parts, 'Клиент: '.$self->format_phone_num($phone_num);
                 }
                 my $sms_text = join(', ', @parts);
                 Rplus::Model::SmsMessage->new(phone_num => $realty->agent->phone_num, text => $sms_text, db => $db)->save;

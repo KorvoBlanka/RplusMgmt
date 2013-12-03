@@ -232,25 +232,25 @@ sub import_present {
                 my $price_th = $2 if $body =~ s/((\d+)\s*тыс\.)//;
                 $price = ($price_ml || 0)*1000 + ($price_th || 0);
             }
-            $data->{'seller_price'} = $price if $price;
+            $data->{'owner_price'} = $price if $price;
 
-            my @seller_phones;
+            my @owner_phones;
             for my $x (split /[ .,]/, $body) {
                 if ($x =~ /^\s*([\d-]{6,})\s*$/) {
                     if (my $phone_num = Rplus::Util::PhoneNum->parse($1, $META->{'params'}->{'default_phone_prefix'})) {
-                        push @seller_phones, $phone_num;
+                        push @owner_phones, $phone_num;
                     }
                     $body =~ s/$x//;
                 }
             }
-            $data->{'seller_phones'} = \@seller_phones;
+            $data->{'owner_phones'} = \@owner_phones;
         }
 
         # Пропустим объявления без номеров телефонов
         # Пропустим объявления посредников
         # Возможно не следует это делать в этом месте, но зато сэкономим ресурсы
-        return unless @{$data->{'seller_phones'}};
-        for (@{$data->{'seller_phones'}}) {
+        return unless @{$data->{'owner_phones'}};
+        for (@{$data->{'owner_phones'}}) {
             return if exists $MEDIATOR_PHONES{$_};
         }
 
@@ -355,9 +355,9 @@ sub import_present {
             };
 
             if ($_recognize_adv->($_, $data)) { # Функция может пропускать объявления посредников и ничего не возвращять
-                next unless @{$data->{'seller_phones'}};
+                next unless @{$data->{'owner_phones'}};
                 push @{$REALTY{'list'}}, $data;
-                for my $phone_num (@{$data->{'seller_phones'}}) {
+                for my $phone_num (@{$data->{'owner_phones'}}) {
                     push @{$REALTY{'by_phone_num'}->{$phone_num}}, $data;
                 }
             }

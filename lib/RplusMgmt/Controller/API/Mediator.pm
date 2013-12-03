@@ -9,45 +9,65 @@ use Rplus::Model::Mediator::Manager;
 use Rplus::Model::Realty;
 use Rplus::Model::Realty::Manager;
 
-use Rplus::DB;
-
-use Mojo::Util qw(trim);
 use Mojo::Collection;
-use Rplus::Util::PhoneNum;
-
-sub auth {
-    my $self = shift;
-
-    my $user_role = $self->session->{'user'}->{'role'};
-    if ($user_role && $self->config->{'roles'}->{$user_role}->{'configuration'}->{'mediators'}) {
-        return 1;
-    }
-
-    $self->render_not_found;
-    return undef;
-}
 
 sub list {
     my $self = shift;
 
-    my $company_id = $self->param('company_id');
+    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(mediators => 'read');
 
-    my $company = Rplus::Model::MediatorCompany::Manager->get_objects(query => [id => $company_id, delete_date => undef])->[0];
-    return $self->render_not_found unless $company;
+    my $company_id = $self->param('company_id');
+    my $with_company = $self->param_b('with_company');
 
     my $res = {
         count => 0,
         list => [],
     };
-    my $mediator_iter = Rplus::Model::Mediator::Manager->get_objects_iterator(query => [company_id => $company->id, delete_date => undef], sort_by => 'phone_num');
+
+    my $mediator_iter = Rplus::Model::Mediator::Manager->get_objects_iterator(
+        query => [
+            ($company_id ? (company_id => $company_id) : ()),
+            delete_date => undef,
+        ],
+        sort_by => 'phone_num',
+        require_objects => ['company'],
+    );
     while (my $mediator = $mediator_iter->next) {
-        push @{$res->{'list'}}, {
+        my $x = {
             id => $mediator->id,
             name => $mediator->name,
             phone_num => $mediator->phone_num,
+            company_id => $mediator->company_id,
+            ($with_company ? (company => {map { $_ => $mediator->company->$_ } qw(id name)}) : ()),
         };
-        $res->{'count'}++;
+        push @{$res->{list}}, $x;
     }
+
+    $res->{count} = scalar @{$res->{list}};
+
+    return $self->render(json => $res);
+}
+
+sub get {
+    my $self = shift;
+
+    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(mediators => 'read');
+
+    my $mediator;
+    if (my $id = $self->param('id')) {
+        $mediator = Rplus::Model::Mediator::Manager->get_objects(query => [id => $id, delete_date => undef], require_objects => ['company'])->[0];
+    } elsif (my $phone_num = $self->parse_phone_num(scalar $self->param('phone_num'))) {
+        $mediator = Rplus::Model::Mediator::Manager->get_objects(query => [phone_num => $phone_num, delete_date => undef], require_objects => ['company'])->[0];
+    }
+    return $self->render(json => {error => 'Not Found'}, status => 404) unless $mediator;
+
+    my $res = {
+        id => $mediator->id,
+        name => $mediator->name,
+        phone_num => $mediator->phone_num,
+        company_id => $mediator->company_id,
+        company => {map { $_ => $mediator->company->$_ } qw(id name)},
+    };
 
     return $self->render(json => $res);
 }
@@ -55,45 +75,51 @@ sub list {
 sub save {
     my $self = shift;
 
-    my $id = $self->param('id');
-    my $company_name = trim scalar($self->param('company_name'));
-    my $name = trim scalar($self->param('name'));
-    my $phone_num = Rplus::Util::PhoneNum->parse(scalar($self->param('phone_num')));
+    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(mediators => 'write');
 
-    my @errors;
-    {
-        push @errors, {field => 'company_name', msg => 'Empty company name'} unless $company_name;
-        #push @errors, {field => 'name', msg => 'Empty mediatior name'} unless $name;
-        push @errors, {field => 'phone_num', 'Invalid phone num'} unless $phone_num;
+    # Retrieve mediator
+    my $mediator;
+    if (my $id = $self->param('id')) {
+        $mediator = Rplus::Model::Mediator::Manager->get_objects(query => [id => $id, delete_date => undef], require_objects => ['company'])->[0];
+    } else {
+        $mediator = Rplus::Model::Mediator->new;
     }
-    return $self->render(json => {status => 'failed', errors => \@errors}) if @errors;
+    return $self->render(json => {error => 'Not Found'}, status => 404) unless $mediator;
 
-    my $db = Rplus::DB->new_or_cached;
+    # Validation
+    $self->validation->required('company_name');
+    $self->validation->required('phone_num')->is_phone_num;
+
+    if ($self->validation->has_error) {
+        my @errors;
+        push @errors, {company_name => 'Invalid value'} if $self->validation->has_error('company_name');
+        push @errors, {phone_num => 'Invalid value'} if $self->validation->has_error('phone_num');
+        return $self->render(json => {errors => \@errors}, status => 400);
+    }
+
+    # Prepare data
+    my $company_name = $self->param_n('company_name');
+    my $name = $self->param_n('name');
+    my $phone_num = $self->parse_phone_num(scalar $self->param('phone_num'));
+
+    # Begin transaction
+    my $db = $self->db;
     $db->begin_work;
 
-    my $mediator;
-    if ($id) {
-        $mediator = Rplus::Model::Mediator::Manager->get_objects(query => [id => $id, delete_date => undef], db => $db)->[0];
-        unless ($mediator) {
-            $db->rollback;
-            return $self->render_not_found;
-        }
-    } else {
-        $mediator = Rplus::Model::Mediator->new(db => $db);
-    }
-
+    $mediator->db($db);
     $mediator->name($name);
     $mediator->phone_num($phone_num);
 
-    my ($num_realty_deleted, $update_company_list);
+    my ($num_realty_deleted, $reload_company_list) = (0, 0);
     eval {
         my $company = $mediator->company;
-        unless ($company && lc($company->name) eq lc($company_name)) {
+        if (!$company || lc($company->name) ne lc($company_name)) {
+            # Add new company or move mediator to another company
             $company = Rplus::Model::MediatorCompany::Manager->get_objects(query => [[\'lower(name) = ?' => lc($company_name)], delete_date => undef], db => $db)->[0];
-            unless ($company) {
+            if (!$company) {
                 $company = Rplus::Model::MediatorCompany->new(name => $company_name, db => $db);
                 $company->save;
-                $update_company_list = 1;
+                $reload_company_list = 1;
             }
             $mediator->company($company);
         }
@@ -101,16 +127,16 @@ sub save {
         $mediator->save;
 
         # Search for additional mediator phones
-        my $search_phones = Mojo::Collection->new();
-        my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(select => 'id, seller_phones', query => ['!state_code' => 'deleted', \("seller_phones && '{".$phone_num."}'")], db => $db);
+        my $found_phones = Mojo::Collection->new();
+        my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(select => 'id, owner_phones', query => ['!state_code' => 'deleted', \("owner_phones && '{".$phone_num."}'")], db => $db);
         while (my $realty = $realty_iter->next) {
-            push @$search_phones, ($realty->seller_phones);
+            push @$found_phones, ($realty->owner_phones);
         }
-        $search_phones = $search_phones->uniq;
+        $found_phones = $found_phones->uniq;
 
-        if ($search_phones->size) {
-            # Add additional mediators
-            for (@$search_phones) {
+        if ($found_phones->size) {
+            # Add additional mediators from realty owner phones
+            for (@$found_phones) {
                 if ($_ ne $phone_num && !Rplus::Model::Mediator::Manager->get_objects_count(query => [phone_num => $_, delete_date => undef], db => $db)) {
                     Rplus::Model::Mediator->new(db => $db, name => $name, phone_num => $_, company => $company)->save;
                 }
@@ -120,7 +146,7 @@ sub save {
                 set => {state_code => 'deleted', change_date => \'now()'},
                 where => [
                     '!state_code' => 'deleted',
-                    \("seller_phones && '{".$search_phones->join(',')."}'")
+                    \("owner_phones && '{".$found_phones->join(',')."}'")
                 ],
                 db => $db,
             );
@@ -131,17 +157,19 @@ sub save {
     } or do {
         $db->rollback;
         if ($@ =~ /\Qphone_num_uniq_idx\E/) {
-            return $self->render(json => {status => 'failed', errors => [{field => 'phone_num', msg => 'Duplicate phone num'}]});
+            return $self->render(json => {errors => [{phone_num => 'Duplicate phone num'}]}, status => 400);
         } else {
-            return $self->render(json => {status => 'failed'});
+            return $self->render(json => {error => $@}, status => 500);
         }
     };
 
-    return $self->render(json => {status => 'success', num_realty_deleted => $num_realty_deleted, update_company_list => $update_company_list});
+    return $self->render(json => {status => 'success', num_realty_deleted => $num_realty_deleted, reload_company_list => $reload_company_list});
 }
 
 sub delete {
     my $self = shift;
+
+    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(mediators => 'write');
 
     my $id = $self->param('id');
 
@@ -149,7 +177,7 @@ sub delete {
         set => {delete_date => \'now()'},
         where => [id => $id, delete_date => undef],
     );
-    return $self->render(json => {status => 'failed'}) unless $num_rows_updated;
+    return $self->render(json => {error => 'Not Found'}, status => 404) unless $num_rows_updated;
 
     $self->render(json => {status => 'success'});
 }

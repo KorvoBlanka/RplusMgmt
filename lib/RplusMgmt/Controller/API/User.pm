@@ -5,25 +5,10 @@ use Mojo::Base 'Mojolicious::Controller';
 use Rplus::Model::User;
 use Rplus::Model::User::Manager;
 
-use JSON;
-use Rplus::Util::PhoneNum;
-use Mojo::Util qw(trim);
-
-sub auth {
-    my $self = shift;
-
-    #my $user_role = $self->session->{'user'}->{'role'};
-    #if ($user_role && $self->config->{'roles'}->{$user_role}->{'configuration'}->{'landmarks'}) {
-    #    return 1;
-    #}
-    return 1;
-
-    $self->render_not_found;
-    return undef;
-}
-
 sub list {
     my $self = shift;
+
+    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(users => 'manage');
 
     my $res = {
         count => 0,
@@ -36,13 +21,15 @@ sub list {
             id => $user->id,
             login => $user->login,
             role => $user->role,
+            role_loc => $self->ucfloc($user->role),
             name => $user->name,
             phone_num => $user->phone_num,
             description => $user->description,
-            add_date => $user->add_date,
+            add_date => $self->format_datetime($user->add_date),
         };
         push @{$res->{list}}, $x;
     }
+
     $res->{count} = scalar @{$res->{list}};
 
     return $self->render(json => $res);
@@ -51,23 +38,24 @@ sub list {
 sub get {
     my $self = shift;
 
+    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(users => 'manage');
+
     my $id = $self->param('id');
 
     my $user = Rplus::Model::User::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
-    return $self->render_not_found unless $user;
+    return $self->render(json => {error => 'Not Found'}, status => 404) unless $user;
 
-    my $meta = decode_json($user->metadata);
     my $res = {
         id => $user->id,
         login => $user->login,
-        password => $user->password,
         role => $user->role,
+        role_loc => $self->ucfloc($user->role),
         name => $user->name,
         phone_num => $user->phone_num,
         description => $user->description,
-        add_date => $user->add_date,
-        public_name => $meta->{public_name},
-        public_phone_num => $meta->{public_phone_num},
+        add_date => $self->format_datetime($user->add_date),
+        public_name => $user->public_name,
+        public_phone_num => $user->public_phone_num,
     };
 
     return $self->render(json => $res);
@@ -76,36 +64,74 @@ sub get {
 sub save {
     my $self = shift;
 
-    no warnings 'uninitialized';
+    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(users => 'manage');
 
+    # Retrieve user
     my $user;
     if (my $id = $self->param('id')) {
         $user = Rplus::Model::User::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
     } else {
         $user = Rplus::Model::User->new;
     }
-    return $self->render_not_found unless $user;
+    return $self->render(json => {error => 'Not Found'}, status => 404) unless $user;
 
-    # Validate role
-    return $self->render(json => {status => 'failed'}) unless exists $self->config->{roles}->{scalar($self->param('role')) || 'unknown'};
+    # Input validation
+    $self->validation->required('login');
+    $self->validation->required('role')->in(keys %{$self->config->{roles}});
+    $self->validation->required('name');
+    $self->validation->optional('phone_num')->is_phone_num;
 
-    my $meta = decode_json($user->metadata);
-    for my $f (qw(name login password role description)) {
-        $user->$f(trim(scalar($self->param($f))) || undef);
+    if ($self->validation->has_error) {
+        my @errors;
+        push @errors, {login => 'Invalid value'} if $self->validation->has_error('login');
+        push @errors, {role => 'Invalid value'} if $self->validation->has_error('role');
+        push @errors, {name => 'Invalid value'} if $self->validation->has_error('name');
+        push @errors, {phone_num => 'Invalid value'} if $self->validation->has_error('phone_num');
+        return $self->render(json => {errors => \@errors}, status => 400);
     }
-    $user->phone_num(Rplus::Util::PhoneNum->parse(scalar $self->param('phone_num')));
 
-    for my $f (qw(public_name public_phone_num)) {
-        $meta->{$f} = trim($self->param($f)) || undef;
-    }
-    $user->metadata(encode_json($meta));
+    # Input params
+    my $login = $self->param_n('login');
+    my $password = $self->param_n('password');
+    my $role = $self->param('role');
+    my $name = $self->param_n('name');
+    my $phone_num = $self->parse_phone_num(scalar $self->param('phone_num'));
+    my $description = $self->param_n('description');
+    my $public_name = $self->param_n('public_name');
+    my $public_phone_num = $self->param_n('public_phone_num');
+
+    # Save
+    $user->login($login);
+    $user->password($password) if $password;
+    $user->role($role);
+    $user->name($name);
+    $user->phone_num($phone_num);
+    $user->description($description);
+    $user->public_name($public_name);
+    $user->public_phone_num($public_phone_num);
 
     eval {
-        $user->save;
+        $user->save($user->id ? (changes_only => 1) : (insert => 1));
         1;
     } or do {
-        return $self->render(json => {status => 'failed'});
+        return $self->render(json => {error => $@}, status => 500);
     };
+
+    return $self->render(json => {status => 'success', });
+}
+
+sub delete {
+    my $self = shift;
+
+    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(users => 'manage');
+
+    my $id = $self->param('id');
+
+    my $num_rows_updated = Rplus::Model::User::Manager->update_objects(
+        set => {delete_date => \'now()'},
+        where => [id => $id, delete_date => undef],
+    );
+    return $self->render(json => {error => 'Not Found'}, status => 404) unless $num_rows_updated;
 
     return $self->render(json => {status => 'success'});
 }

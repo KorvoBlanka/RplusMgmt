@@ -1,26 +1,45 @@
 {
+    # Signed cookies key
+    secret => 'change me!',
+
+    # Base permissions
     roles => {
         manager => {
-            realty => 1,
-            tasks => 1,
-            configuration => {
-                landmarks => 1,
-                mediators => 1,
+            realty => {
+                read => {others => 1, nobody => 1},
+                write => {others => 1, nobody => 1},
+                delete => {others => 1, nobody => 1},
+                export => 1,
             },
+            clients => {read => 1, write => 1, subscribe => 1},
+            subscriptions => {read => 1, write => 1},
+            mediators => {read => 1, write => 1},
+            landmarks => {read => 1, write => 1},
+            users => {manage => 1},
         },
         agent => {
-            realty => 1,
-            configuration => {
-                landmarks => 1,
+            realty => {
+                read => {others => 0, nobody => 0},
+                write => {others => 0, nobody => 0},
             },
+            subscriptions => {read => 1, write => 0},
         },
         dispatcher => {
-            realty => 1,
-        }
+            realty => {
+                read => {others => 2, nobody => 0},
+                write => {others => 0, nobody => 0},
+            },
+            clients => {read => 1, write => 1, subscribe => 1},
+            subscriptions => {read => 1, write => 1},
+        },
     },
 
-    secret => 'changeMe',
+    force_hide_nav => {
+        agent => ['search'],
+        dispatcher => ['realty'],
+    },
 
+    default_lang => 'ru',
     default_city_guid => 'a4859da8-9977-4b62-8436-4e1b98c5d13f',
     default_phone_prefix => '4212',
 
@@ -43,8 +62,12 @@
         login => 'login',
     },
 
-    subscription => {
-        contact_info => 'Our company',
+    subscriptions => {
+        contact_info => 'Тест',
+    },
+
+    realty => {
+        close_on_save => 1,
     },
 
     hypnotoad => {

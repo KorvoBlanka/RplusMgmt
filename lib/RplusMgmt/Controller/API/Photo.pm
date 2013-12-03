@@ -11,55 +11,57 @@ use Time::HiRes;
 use File::Path qw(make_path);
 use Image::Magick;
 
-sub auth {
-    my $self = shift;
-
-    my $user_role = $self->session->{'user'}->{'role'};
-    if ($user_role && $self->config->{'roles'}->{$user_role}->{'realty'}) {
-        return 1;
-    }
-
-    $self->render_not_found;
-    return undef;
-}
-
 sub list {
     my $self = shift;
 
-    my $realty_id = $self->param('realty_id');
-    return $self->render(json => []) unless $realty_id;
+    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => 'read');
 
-    my @photos;
+    my $realty_id = $self->param('realty_id');
+    my $realty = Rplus::Model::Realty::Manager->get_objects(select => 'id, agent_id', query => [id => $realty_id, delete_date => undef])->[0];
+    return $self->render(json => {error => 'Not Found'}, status => 404) unless $realty;
+    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => read => $realty->agent_id);
+
+    my $res = {
+        count => 0,
+        list => [],
+    };
+
     my $photo_iter = Rplus::Model::Photo::Manager->get_objects_iterator(query => [realty_id => $realty_id, delete_date => undef], sort_by => 'id');
     while (my $photo = $photo_iter->next) {
-        push @photos, {
+        my $x = {
             id => $photo->id,
             photo_url => $self->config->{'storage'}->{'url'}.'/photos/'.$photo->realty_id.'/'.$photo->filename,
             thumbnail_url => $self->config->{'storage'}->{'url'}.'/photos/'.$photo->realty_id.'/'.$photo->thumbnail_filename,
         };
+        push @{$res->{list}}, $x;
     }
 
-    return $self->render(json => \@photos);
+    $res->{count} = scalar @{$res->{list}};
+
+    return $self->render(json => $res);
 }
 
-sub add {
+sub upload {
     my $self = shift;
 
-    my $realty_id = $self->param('realty_id');
+    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => 'write');
+    return $self->render(json => {error => 'Limit is exceeded'}, status => 500) if $self->req->is_limit_exceeded;
 
-    return $self->render(json => {status => 'failed'}) if $self->req->is_limit_exceeded;
-    return $self->render(json => {status => 'failed'}) unless $realty_id;
-    return $self->render(json => {status => 'failed'}) unless Rplus::Model::Realty::Manager->get_objects_count(query => [id => $realty_id]);
+    my $realty_id = $self->param('realty_id');
+    my $realty = Rplus::Model::Realty::Manager->get_objects(select => 'id, agent_id', query => [id => $realty_id, delete_date => undef])->[0];
+    return $self->render(json => {error => 'Not Found'}, status => 404) unless $realty;
+    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => write => $realty->agent_id);
 
     if (my $file = $self->param('files[]')) {
         my $path = $self->config->{'storage'}->{'path'}.'/photos/'.$realty_id;
         my $name = Time::HiRes::time =~ s/\.//r; # Unique name
 
+        my $photo = Rplus::Model::Photo->new;
         eval {
             make_path($path);
             $file->move_to($path.'/'.$name.'.jpg');
 
-            # Конвертируем изображение
+            # Convert image to jpeg
             my $image = Image::Magick->new;
             $image->Read($path.'/'.$name.'.jpg');
             if ($image->Get('width') > 1920 || $image->Get('height') > 1080 || $image->Get('mime') ne 'image/jpeg') {
@@ -71,38 +73,68 @@ sub add {
             $image->Thumbnail(geometry => '320x240');
             $image->Write($path.'/'.$name.'_thumbnail.jpg');
 
-            # Сохраним в БД
-            my $photo = Rplus::Model::Photo->new(
-                realty_id => $realty_id,
-                filename => $name.'.jpg',
-                thumbnail_filename => $name.'_thumbnail.jpg',
-            );
+            # Save
+            $photo->realty_id($realty_id);
+            $photo->filename($name.'.jpg');
+            $photo->thumbnail_filename($name.'_thumbnail.jpg');
+
             $photo->save;
         } or do {
-            return $self->render(json => {status => 'failed'});
+            return $self->render(json => {error => $@}, status => 500);
         };
 
-        # Проставим время изменения объекта недвижимости
+        # Update realty change_date
         Rplus::Model::Realty::Manager->update_objects(
             set => {change_date => \'now()'},
             where => [id => $realty_id],
         );
 
-        return $self->render(json => {status => 'success'});
+        return $self->render(json => {status => 'success', id => $photo->id});
     }
 
-    $self->render(json => {status => 'failed'});
+    return $self->render(json => {error => 'Bad Request'}, status => 400);
+}
+
+sub update {
+    my $self = shift;
+
+    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => 'write');
+
+    my $id = $self->param('id');
+    my $photo = Rplus::Model::Photo::Manager->get_objects(query => [id => $id, delete_date => undef, 'realty.delete_date' => undef], require_objects => ['realty'])->[0];
+    return $self->render(json => {error => 'Not Found'}, status => 404) unless $photo;
+    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => write => $photo->realty->agent_id);
+
+    # Validation
+    $self->validation->required('is_main')->in(qw/0 1 true false/);
+
+    if ($self->validation->has_error) {
+        my @errors;
+        push @errors, {is_main => 'Invalid value'} if $self->validation->has_error('is_main');
+        return $self->render(json => {errors => \@errors}, status => 400);
+    }
+
+    # Prepare data
+    my $is_main = $self->param_b('is_main');
+
+    # Save
+    $photo->is_main($is_main);
+
+    $photo->save;
+
+    return $self->render(json => {status => 'success'});
 }
 
 sub delete {
     my $self = shift;
 
+    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => 'write');
+
     my $id = $self->param('id');
 
-    my $photo = Rplus::Model::Photo::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
-    return $self->render(json => {status => 'failed'}) unless $photo;
-
-    # TODO: Проверка прав доступа
+    my $photo = Rplus::Model::Photo::Manager->get_objects(query => [id => $id, delete_date => undef], require_objects => ['realty'])->[0];
+    return $self->render(json => {error => 'Not Found'}, status => 404) unless $photo;
+    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => write => $photo->realty->agent_id);
 
     Rplus::Model::Photo::Manager->update_objects(
         set => {delete_date => \'now()'},

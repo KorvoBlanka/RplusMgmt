@@ -7,29 +7,16 @@ use Rplus::Model::MediatorCompany::Manager;
 use Rplus::Model::Mediator;
 use Rplus::Model::Mediator::Manager;
 
-use Rplus::DB;
 use Mojo::Util qw(trim);
-
-sub auth {
-    my $self = shift;
-
-    my $user_role = $self->session->{'user'}->{'role'};
-    if ($user_role && $self->config->{'roles'}->{$user_role}->{'configuration'}->{'mediators'}) {
-        return 1;
-    }
-
-    $self->render_not_found;
-    return undef;
-}
 
 sub list {
     my $self = shift;
 
-    my $filter = $self->param('filter');
+    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(mediators => 'read');
 
     my ($name_filter, $phone_filter);
-    if ($filter) {
-        $filter = trim $filter;
+    if (my $filter = $self->param('filter')) {
+        $filter = trim($filter);
         $filter =~ s/([%_])/\\$1/g;
         $name_filter = lc $filter;
         if ($filter =~ /^\+?\d{1,11}$/) {
@@ -38,9 +25,8 @@ sub list {
         }
     }
 
-    # Используется для _быстрого_ подсчета количества телефонов в компании
-    my $db = Rplus::DB->new_or_cached;
-    my $mediators_count = $db->dbh->selectall_hashref(q{
+    # This code is used to fast counting of company phone numbers
+    my $mediators_count = $self->db->dbh->selectall_hashref(q{
         SELECT MC.id, count(M.id) mediators_count
         FROM mediator_companies MC
         LEFT JOIN mediators M ON (M.company_id = MC.id AND M.delete_date IS NULL)
@@ -51,93 +37,125 @@ sub list {
     my $res = {
         count => 0,
         list => [],
+        phone_filter => $phone_filter,
     };
-    my $company_iter = Rplus::Model::MediatorCompany::Manager->get_objects_iterator(
-        query => [
-            delete_date => undef,
-            ($name_filter ? (
-                or => [
-                    [\'lower(name) LIKE ?' => lc($filter).'%'],
-                    ($phone_filter ? (
-                        [\'t1.id IN (SELECT M.company_id FROM mediators M WHERE M.delete_date IS NULL AND M.phone_num LIKE ?)' => '%'.$phone_filter.'%']
-                    ) : ()),
-                ]
-            ) : ()),
-        ],
-        sort_by => 'lower(name)',
-    );
-    while (my $company = $company_iter->next) {
-        push @{$res->{'list'}}, {
-            id => $company->id,
-            name => $company->name,
-            mediators_count => $mediators_count->{$company->id}->{'mediators_count'},
-        };
-        $res->{'count'}++;
+
+    my @filter;
+    if ($name_filter && $phone_filter) {
+        push @filter, or => [
+            [\'lower(name) LIKE ?' => lc($name_filter).'%'],
+            [\'t1.id IN (SELECT M.company_id FROM mediators M WHERE M.delete_date IS NULL AND M.phone_num LIKE ?)' => '%'.$phone_filter.'%'],
+        ];
+    } elsif ($name_filter) {
+        push @filter, [\'lower(name) LIKE ?' => lc($name_filter).'%'];
+    } elsif ($phone_filter) {
+        push @filter, [\'t1.id IN (SELECT M.company_id FROM mediators M WHERE M.delete_date IS NULL AND M.phone_num LIKE ?)' => '%'.$phone_filter.'%'];
     }
 
+    my $company_iter = Rplus::Model::MediatorCompany::Manager->get_objects_iterator(query => [delete_date => undef, @filter], sort_by => 'lower(name)');
+    while (my $company = $company_iter->next) {
+        my $x = {
+            id => $company->id,
+            name => $company->name,
+            mediators_count => $mediators_count->{$company->id}->{mediators_count},
+        };
+        push @{$res->{list}}, $x;
+    }
+
+    $res->{count} = scalar @{$res->{list}};
+
     return $self->render(json => $res);
+}
+
+sub get {
+    my $self = shift;
+
+    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(mediators => 'read');
+
+    # Not Implemented
+
+    return $self->render(json => {error => 'Not Implemented'}, status => 501);
 }
 
 sub save {
     my $self = shift;
 
-    my $id = $self->param('id');
-    my $name = trim(scalar $self->param('name')) || undef;
+    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(mediators => 'write');
 
-    my $company = Rplus::Model::MediatorCompany::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
-    return $self->render_not_found unless $company;
+    # Retrieve company
+    my $company;
+    if (my $id = $self->param('id')) {
+        $company = Rplus::Model::MediatorCompany::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
+    } else {
+        # We cannot create new companies here
+        #$company = Rplus::Model::MediatorCompany->new;
+    }
+    return $self->render(json => {error => 'Not Found'}, status => 404) unless $company;
 
-    return $self->render(json => {status => 'failed', errors => [{field => 'name', msg => 'Empty company name'}]}) unless $name;
+    # Validation
+    $self->validation->required('name');
 
-    # Попробуем найти компанию с таким же именем
-    my $company_dest = Rplus::Model::MediatorCompany::Manager->get_objects(query => [[\'lower(t1.name) LIKE ?' => lc($name)], delete_date => undef])->[0];
-    if ($company_dest && $company->id != $company_dest->id) {
-        # Выполним перенос
-        my $db = Rplus::DB->new_or_cached;
+    if ($self->validation->has_error) {
+        my @errors;
+        push @errors, {name => 'Invalid value'} if $self->validation->has_error('name');
+        return $self->render(json => {errors => \@errors}, status => 400);
+    }
+
+    # Prepare data
+    my $name = $self->param_n('name');
+
+    # Try to find existing company with the same name
+    my $company_dst = Rplus::Model::MediatorCompany::Manager->get_objects(query => [[\'lower(t1.name) LIKE ?' => lc($name)], delete_date => undef])->[0];
+    if ($company_dst && $company->id != $company_dst->id) {
+        # Ok, move phones from src company to desctination company in transaction
+        my $db = $self->db;
         $db->begin_work;
+
+        # Move phones from the source company
         Rplus::Model::Mediator::Manager->update_objects(
-            set => {company_id => $company_dest->id},
+            set => {company_id => $company_dst->id},
             where => [company_id => $company->id, delete_date => undef],
             db => $db,
         );
+
+        # Delete source company
         Rplus::Model::MediatorCompany::Manager->update_objects(
             set => {delete_date => \'now()'},
             where => [id => $company->id],
             db => $db,
         );
+
         $db->commit;
-        $company = $company_dest;
+        $company = $company_dst;
     } else {
-        # Выполним сохранение
+        # Save
+        $company->name($name);
         eval {
-            $company->name($name);
             $company->save;
             1;
         } or do {
-            if ($@ =~ /\Qname_uniq_idx\E/) {
-                return $self->render(json => {status => 'failed', errors => [{field => 'name', msg => 'Duplicate company name'}]});
-            } else {
-                return $self->render(json => {status => 'failed', errors => [{msg => 'An error occurred'}]});
-            }
+            return $self->render(json => {error => $@}, status => 500);
         };
     }
 
-    return $self->render(json => {status => 'success', data => {id => $company->id, name => $company->name}});
+    return $self->render(json => {status => 'success', id => $company->id});
 }
 
 sub delete {
     my $self = shift;
 
+    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(mediators => 'write');
+
     my $id = $self->param('id');
 
-    # Удалим компанию
+    # Delete company
     my $num_rows_updated = Rplus::Model::MediatorCompany::Manager->update_objects(
         set => {delete_date => \'now()'},
         where => [id => $id, delete_date => undef],
     );
-    return $self->render(json => {status => 'failed'}) unless $num_rows_updated;
+    return $self->render(json => {error => 'Not Found'}, status => 404) unless $num_rows_updated;
 
-    # Теперь удалим номера телефонов данной компании
+    # Delete mediators from the deleted company
     my $num_rows_updated2 = Rplus::Model::Mediator::Manager->update_objects(
         set => {delete_date => \'now()'},
         where => [company_id => $id, delete_date => undef],

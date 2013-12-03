@@ -3,10 +3,12 @@
 % use Rplus::Model::RealtyOfferType::Manager;
 % use JSON;
 
+%= include 'blocks/client_card';
+
 % content_for header => begin
-<link rel="stylesheet" href="<%= $assets_url %>/leaflet/0.6.4/leaflet.css">
-<link rel="stylesheet" href="<%= $assets_url %>/leaflet.fullscreen/2013.09.30/Control.FullScreen.css">
-<link rel="stylesheet" href="<%= $assets_url %>/typeahead.js/0.9.4-dev/css/typeahead.js-bootstrap.css">
+%= css_once "$assets_url/leaflet/$leafletjs_ver/leaflet.css";
+%= css_once "$assets_url/leaflet.fullscreen/$leafletjs_fullscreen_ver/Control.FullScreen.css";
+%= css_once "$assets_url/typeahead.js/$typeaheadjs_ver/css/typeahead.js-bootstrap.css";
 <style type="text/css">
   #searchTableWrapper {
     height: 600px;
@@ -31,11 +33,6 @@
 
   #geoMap {
     height: 600px;
-    cursor: default !important;
-  }
-
-  #geoMap:active {
-    cursor: pointer !important;
   }
 
   /* Typeahead.js input-sm fix */
@@ -55,105 +52,65 @@
 % end
 
 % content_for after_bootstrap => begin
-<script type="application/javascript" src="<%= $assets_url %>/leaflet/0.6.4/leaflet.js"></script>
-<script type="application/javascript" src="<%= $assets_url %>/leaflet.fullscreen/2013.09.30/Control.FullScreen.js"></script>
-<script type="application/javascript" src="<%= $assets_url %>/typeahead.js/0.9.4-dev/js/typeahead.js"></script>
+%= js_once "$assets_url/leaflet/$leafletjs_ver/leaflet.js";
+%= js_once "$assets_url/leaflet.fullscreen/$leafletjs_fullscreen_ver/Control.FullScreen.js";
+%= js_once "/js/leaflet/layer-2gis.js";
+%= js_once "$assets_url/typeahead.js/$typeaheadjs_ver/js/typeahead.js";
 % end
-
-%= include 'blocks/client_card';
 
 % content_for javascript => begin
 %= include 'javascript/rplus_table';
+%= include 'javascript/rplus_realty';
 <script type="application/javascript">
   "use strict";
 
-  !function () {
+  registerGlobalAjaxEvents();
+
+  (function () {
     var geoMap;
 
-    var _List_started  = 0, _List_finished = 0;
-    function _List(page) {
+    var _listRealty_started  = 0, _listRealty_finished = 0;
+    function listRealty(page) {
       var q = $('#searchQuery').val();
-      var offerType = $('#filterOfferType').data('offer-type-code');
+      var offerTypeCode = $('[data-filter="offer_type_code"]').data('val');
 
-      if (!q) return;
+      //if (!q) return;
 
-      _List_started = 1; $('#searchLoading').removeClass('invisible');
+      _listRealty_started = true;
       $.ajax({
         type: "POST",
         url: "<%= url_for q{/api/realty/list} %>",
-        data: {q: q, state: 'work', offer_type: offerType, page: page, per_page: 30},
-        complete: function () { _List_started = 0; $('#searchLoading').addClass('invisible'); }
+        data: {q: q, state_code: 'work', offer_type_code: offerTypeCode, page: page, per_page: 30},
+        complete: function () { _listRealty_started = false; }
       })
         .done(function (data) {
-          var xhtml = '';
-          for (var i = 0; i < data.list.length; i++) {
-            var r = data.list[i];
-            var parts = [];
-            //parts.push('<span class="label label-default">' + r.offer_type_code + '</span>');
-            parts.push('<strong>' + Rplus.Util.escape(Rplus.Table.realty_types[r.type_code].name) + '</strong>');
-            if (r.rooms_count) parts.push(r.rooms_count + 'к');
-            if (r.address_object) {
-              parts.push(
-                Rplus.Util.escape(r.address_object.name + ' ' + r.address_object.short_type) +
-                (r.sublandmark ? ' (' + r.sublandmark.name + ')' : '')
-              );
-              parts.push(Rplus.Util.escape(r.address_object.addr_parts[1].name + ' ' + r.address_object.addr_parts[1].short_type));
-            }
-            if (r.ap_scheme_id) parts.push(Rplus.Table.Dict.ap_schemes[r.ap_scheme_id].metadata.description || Rplus.Table.Dict.ap_schemes[r.ap_scheme_id].name);
-            if (r.house_type_id) parts.push(Rplus.Table.Dict.house_types[r.house_type_id].metadata.description || Rplus.Table.Dict.house_types[r.house_type_id].name);
-            if (r.room_scheme_id) parts.push(Rplus.Table.Dict.room_schemes[r.room_scheme_id].metadata.description || Rplus.Table.Dict.room_schemes[r.room_scheme_id].name);
-            if (r.floor && r.floors_count) { parts.push(r.floor + '/' + r.floors_count + ' эт.') } else if (r.floor || r.floors_count) { parts.push((r.floor || r.floors_count) + ' эт.'); }
-            if (r.condition_id) parts.push(Rplus.Table.Dict.conditions[r.condition_id].metadata.description || Rplus.Table.Dict.conditions[r.condition_id].name);
-            if (r.balcony_id) parts.push(Rplus.Table.Dict.balconies[r.balcony_id].metadata.description || Rplus.Table.Dict.balconies[r.balcony_id].name);
-            if (r.bathroom_id) parts.push(Rplus.Table.Dict.bathrooms[r.bathroom_id].metadata.description || Rplus.Table.Dict.bathrooms[r.bathroom_id].name);
-            {
-              var squares = [];
-              if (r.square_total) squares.push(r.square_total);
-              if (r.square_living) squares.push(r.square_living);
-              if (r.square_kitchen) squares.push(r.square_kitchen);
-              if (squares.length) parts.push(squares.join('/') + ' кв. м.');
-            }
-            if (r.square_land && r.square_land_type) parts.push(r.square_land + ' ' + (r.square_land_type == 'ar' ? 'сот.' : 'га'));
-            if (r.description) parts.push(r.description);
-            if (r.price) parts.push('<span class="text-primary">' + r.price + ' тыс. руб.' + '</span>');
-            if (r.agent_id) {
-              var agent = Rplus.Table.users[r.agent_id];
-              parts.push('<br><span>Агент: ' + (agent.public_name || agent.name) + ', ' + (agent.public_phone_num || Rplus.Util.formatPhoneNum(Rplus.Table.users[r.agent_id].phone_num)) + '</span>');
-            }
-
-            xhtml += '<tr data-id="' + r.id + '" data-page="' + data.page + '" data-lat="' + r.latitude + '" data-lng="' + r.longitude + '"><td>' + parts.join(', ') + '</td></tr>';
-          }
-
-          if (data.list.length > 0) {
-            _List_finished = 0;
-          } else {
-            _List_finished = 1;
-          }
-
           if (page == 1) {
-            // clear Geo markers
-            $('#searchTable tr').each(function () {
+            // Clear map markers
+            $('#searchTable > tbody > tr').each(function () {
               if ($(this).data('marker')) {
                 geoMap.removeLayer($(this).data('marker'));
               }
             });
 
             $('#searchTableWrapper').scrollTop(0);
-            $('#searchTable').html(xhtml);
-            $('#searchCount').text(data.count);
-          } else {
-            $('#searchTable').append(xhtml);
+            $('#searchTable > tbody').html('');
+            $('#objectsCount').text(data.count);
           }
 
-          // Display new results on map
-          $('#searchTable tr[data-page="' + data.page + '"]').each(function () {
-            var $this = $(this);
-            var  lat = $this.data('lat'), lng = $this.data('lng');
-            if (lat && lng) {
-              var marker = L.marker([lat, lng]).addTo(geoMap).bindPopup($('> td', $this).text());
-              $this.data('marker', marker);
+          for (var i = 0; i < data.list.length; i++) {
+            var r = data.list[i];
+            var $obj = $('<tr data-id="' + r.id + '" data-page="' + data.page + '" data-lat="' + r.latitude + '" data-lng="' + r.longitude + '"><td>' + Rplus.Realty.getDigest(r, true) + '</td></tr>');
+
+            // Display realty object on the map
+            if (r.latitude && r.longitude) {
+              var marker = L.marker([r.latitude, r.longitude]).addTo(geoMap).bindPopup(Rplus.Realty.getDigest(r));
+              $obj.data('marker', marker);
             }
-          });
+
+            $('#searchTable > tbody').append($obj);
+          }
+
+          if (data.list.length > 0) { _listRealty_finished = false } else { _listRealty_finished = true };
         })
       ;
     }
@@ -168,34 +125,35 @@
           remote: "/api/query/complete?q=%QUERY&limit=10",
         })
         .bind('typeahead:selected', function (e, obj) {
-          _List(1);
+          listRealty(1);
         })
         .bind('input', function (e) {
           if ($(this).val() == '') {
             // clear Geo markers
-            $('#searchTable tr').each(function () {
+            $('#searchTable > tbody > tr').each(function () {
               if ($(this).data('marker')) {
                 geoMap.removeLayer($(this).data('marker'));
               }
             });
-            $('#searchTable').html('');
-            $('#searchCount').text(0);
+            $('#searchTable > tbody').html('');
+            $('#objectsCount').text(0);
           }
         })
         .bind('keydown', function (e) {
           if (e.which == 13) {
             $('#searchQuery').typeahead('close');
-            _List(1);
+            listRealty(1);
           }
         })
       ;
-      $('form[role="search"]').submit(function (e) { _List(1); e.preventDefault(); });
 
-      // Filter: offerType
-      $('#filterOfferType > ul > li > a').click(function (e) {
-        $('#filterOfferType').data('offer-type-code', $(this).data('offer-type-code'));
-        $('#filterOfferType > a').html($(this).html() + ' <b class="caret"></b>');
-        _List(1);
+      $('form[role="search"]').submit(function (e) { e.preventDefault(); });
+
+      // Filters
+      $('[data-filter] > ul > li > a').click(function (e) {
+        var $display = $(this).closest('[data-filter]').data('val', $(this).data('val')).find('> a [role="display"]');
+        if ($(this).data('type') == 'text') { $display.text($(this).text()) } else { $display.html($(this).html()) };
+        listRealty(1);
       });
 
       // Geo
@@ -205,50 +163,17 @@
         fullscreenControl: true,
       });
 
-      L.tileLayer('http://tile{s}.maps.2gis.com/tiles?x={x}&y={y}&z={z}&v=10', {
-        maxZoom: 18,
-        subdomains: '0123',
-        errorTileUrl: 'http://maps.api.2gis.ru/images/nomap.png',
-        attribution: '<a href="http://http://2gis.ru/">2GIS</a> Layer | RplusMgmt',
-      }).addTo(geoMap);
+      Rplus.GeoMap.initLayer(geoMap);
 
-      geoMap.on('click', function (event) {
-        $.ajax({
-          url: 'http://catalog.api.2gis.ru/geo/search',
-          data: {
-            q: event.latlng.lng + ',' + event.latlng.lat,
-            key: 'rujrdp3400',
-            version: 1.3,
-            output: 'jsonp',
-            types: 'house,station,station_platform,place,sight,metro'
-          },
-          dataType: 'jsonp',
-        })
-          .done(function (data) {
-            if (data.result) {
-              var content = '';
-              content += '<b>Информация:</b><br>';
-              content += data.result[0].name + '<br>';
-              if (data.result[0].attributes && data.result[0].attributes.purpose) {
-                content += data.result[0].attributes.purpose;
-              }
-              var popup = L.popup()
-                           .setLatLng(event.latlng)
-                           .setContent(content)
-                           .openOn(geoMap);
-            }
-          })
-        ;
-      });
-
-      $('#searchTable').on('click', 'tr', function (e) {
+      // Objects selection in realty table
+      $('#searchTable > tbody').on('click', 'tr', function (e) {
         var $this = $(this);
         $this.toggleClass('selected').toggleClass('warning');
 
         var marker = $this.data('marker');
         if ($this.hasClass('selected')) {
           if (marker) {
-            // display marker popup
+            // Display marker popup
             geoMap.panTo(marker.getLatLng());
             marker.openPopup();
           }
@@ -260,26 +185,25 @@
       // Infinite scrolling
       $('#searchTableWrapper').scroll(function (e) {
         if ($(this).scrollTop() + $(this).innerHeight() >= $(this)[0].scrollHeight) {
-          var lastPage = $('#searchTable tr:last-child').data('page');
-          if (!_List_started && !_List_finished) _List(lastPage + 1);
+          var lastPage = $('#searchTable > tbody > tr:last-child').data('page');
+          if (!_listRealty_started && !_listRealty_finished) listRealty(lastPage + 1);
         }
       });
 
-      // Subscribe
-      $('#btnSubscribe > ul > li > a').click(function (e) {
+      // Subscribe client
+      $('[data-action="client-subscribe"]').click(function (e) {
         var q = $('#searchQuery').val().trim(),
-            offerTypeCode = $('#filterOfferType').data('offer-type-code'),
+            offerTypeCode = $('[data-filter="offer_type_code"]').data('val'),
             days = $(this).data('days'),
             realtyIds = [],
-            phoneNum = $('#sfPhoneNum').val()
-        ;
+            phoneNum = $('#sfPhoneNum').val();
         $('#searchTable > tbody > tr.selected').each(function (idx, elem) {
           realtyIds.push($(this).data('id'));
         });
 
-        if (!q) { alert('Запрос не указан'); return; };
+        if (!q) { alert("<%= ucfloc 'query cannot be empty' %>"); return; };
         if (!days && !realtyIds.length) return;
-        if (!phoneNum) { alert('Номер телефона не указан'); return; }
+        if (!phoneNum) { alert("<%= ucfloc 'phone num cannot be empty' %>"); return; }
 
         $.ajax({
           type: "POST",
@@ -287,38 +211,38 @@
           data: {
             q: q,
             offer_type_code: offerTypeCode,
-            realty_ids: realtyIds,
             end_date: days ? moment().add('days', days).format('YYYY-MM-DDTHH:mm:ssZZ') : null,
-            phone_num: phoneNum
+            phone_num: phoneNum,
+            realty_ids: realtyIds,
           }
         })
           .done(function (data, textStatus, jqXHR) {
             if (data.status == 'success') {
-              alert('Действие успешно завершено');
+              alert("<%= ucfloc 'action completed successfully' %>");
             } else {
-              alert('Ошибка оформления подписки');
+              alert("<%= ucfloc 'an error occurred while subscribing client' %>");
             }
           })
           .fail(function (jqXHR, textStatus, errorThrown) {
-            alert('Ошибка оформления подписки');
+            alert("<%= ucfloc 'an error occurred while subscribing client' %>");
           })
         ;
       });
 
       // Open ClientCard
-      $('#sfBtnClient').click(function (e) {
+      $('[data-action="client-open"]').click(function (e) {
         var phoneNum = $('#sfPhoneNum').val();
         var card = ClientCard({
-          save: function (client) {
+          saved: function (client) {
             $('#sfPhoneNum').val(client.phone_num);
             card.close();
           },
         }).findOrCreate(phoneNum);
       });
 
-      _List(1);
+      listRealty(1);
     });
-  }();
+  })();
 </script>
 % end
 
@@ -326,12 +250,12 @@
   <div class="col-md-10 margin-bottom-20">
     <form role="search">
       <div class="input-group input-group-sm">
-        <input type="text" class="form-control input-sm" id="searchQuery" name="q" placeholder="Search" autocomplete="off" x-webkit-speech>
-        <div class="input-group-btn" id="btnSubscribe">
-          <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">SMS <span class="caret"></span></button>
+        <input type="text" class="form-control input-sm" id="searchQuery" name="q" placeholder="<%= ucfloc 'search' %>" autocomplete="off" x-webkit-speech>
+        <div class="input-group-btn">
+          <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown"><%= loc 'SMS' %> <span class="caret"></span></button>
           <ul class="dropdown-menu pull-right" role="menu">
-            <li><a href="#">SMS</a></li>
-            <li><a href="#" data-days="14">SMS + Subscribe (14 days)</a></li>
+            <li><a href="#" data-action="client-subscribe"><%= loc 'SMS' %></a></li>
+            <li><a href="#" data-action="client-subscribe" data-days="14"><%= loc 'SMS' %> + <%= ucfloc 'subscription' %></a></li>
           </ul>
         </div>
       </div>
@@ -340,10 +264,9 @@
 
   <div class="col-md-2 margin-bottom-20">
     <div class="input-group input-group-sm">
-      <input type="text" class="form-control" id="sfPhoneNum" name="phoneNum" placeholder="Phone" autocomplete="off">
+      <input type="text" class="form-control" id="sfPhoneNum" name="phoneNum" placeholder="<%= ucfloc 'phone' %>" autocomplete="off">
       <div class="input-group-btn">
-        <button type="button" class="btn btn-default" id="sfBtnClient"><span class="glyphicon glyphicon-user"></span></button>
-        <!--button type="button" class="btn btn-default" id="sfBtnPhone" disabled="disabled"><span class="glyphicon glyphicon-phone"></span></button-->
+        <button type="button" class="btn btn-default" data-action="client-open"><span class="glyphicon glyphicon-user"></span></button>
       </div>
     </div>
   </div>
@@ -358,27 +281,30 @@
     </div>
   </div>
   <div class="col-md-6" style="padding-left: 0;">
-    <div id="geoMap"></div>
+    <div class="geo-map" id="geoMap"></div>
   </div>
 </div>
 
 <nav class="navbar navbar-default navbar-fixed-bottom">
   <div class="container">
-    <p class="navbar-text" style="margin-left: 0;"><span class="text-danger" id="sfDisplay"></span></p>
+    <!--button type="button" class="btn btn-default" id="sfBtnPhone" disabled="disabled"><span class="glyphicon glyphicon-phone"></span></button-->
+    <!--p class="navbar-text" style="margin-left: 0;"><span class="text-danger" id="sfDisplay"></span></p-->
     <div class="navbar-right">
       <ul class="nav navbar-nav">
-        <li class="dropdown" id="filterOfferType" data-offer-type-code="sale">
-          <a href="#" class="dropdown-toggle" data-toggle="dropdown">Продажа <b class="caret"></b></a>
+        <!-- Offer type filter -->
+        <li class="dropdown" data-filter="offer_type_code" data-val="sale">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span role="display"><%= ucfloc 'sale' %></span> <b class="caret"></b></a>
           <ul class="dropdown-menu">
-            % {
-            % my $iter = Rplus::Model::RealtyOfferType::Manager->get_objects_iterator(sort_by => 'id');
-            % while (my $x = $iter->next) {
-              <li><a href="#" data-offer-type-code="<%= $x->code %>"><%= $x->name %></a></li>
-            % }}
+            % for my $x (@{Rplus::Model::RealtyOfferType::Manager->get_objects(sort_by => 'id')}) {
+              <li><a href="#" data-val="<%= $x->code %>"><%= $x->name %></a></li>
+            % }
           </ul>
         </li>
       </ul>
-      <p class="navbar-text"><span class="glyphicon glyphicon-refresh animation-rotate invisible" id="searchLoading"></span> <span class="text-primary">Found</span> <span class="text-primary" id="searchCount">0</span></p>
+      <p class="navbar-text">
+        <span class="text-primary"><%= ucfloc 'found' %></span> <span class="text-primary" id="objectsCount">0</span>
+        <span class="glyphicon glyphicon-refresh animation-rotate invisible indicator-ajax"></span>
+      </p>
     </div>
   </div>
 </nav>

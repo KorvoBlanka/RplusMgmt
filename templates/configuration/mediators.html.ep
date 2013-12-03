@@ -3,7 +3,7 @@
 % content_for header => begin
 <style type="text/css">
   #companyList, #mediatorList {
-    height: 600px;
+    max-height: 600px;
     overflow-y: auto;
   }
 
@@ -19,20 +19,27 @@
 <script type="text/javascript">
   "use strict";
 
-  !function () {
-    function _ListCompanies() {
+  registerGlobalAjaxEvents();
+
+  (function () {
+    var $modal, $form;
+
+    function listCompanies(events) {
+      if (!events) events = {};
+      var filter = $('form[role="search"] [name="filter"]:input').val();
+
       $.ajax({
         type: "POST",
         url: "/api/mediator-company/list",
-        data: {filter: $('form[role="search"] input').val()}
+        data: {filter: filter},
       })
-        .done(function (data) {
+        .done(function (data, textStatus, jqXHR) {
           var xhtml = '';
           for (var i = 0; i < data.list.length; i++) {
             var x = data.list[i];
             xhtml +=
               '<a href="#" class="list-group-item' + (data.count == 1 && $('#companyList a.active').data('id') == x.id ? ' active' : '') + '" data-id="' + x.id + '" data-name="' + x.name + '">' +
-                (x.mediators_count == 0 ? '<span class="label label-warning pull-right">Empty</span>' : '') + x.name +
+                (x.mediators_count == 0 ? '<span class="label label-warning pull-right"><%= loc q{empty} %></span>' : '') + x.name +
               '</a>'
             ;
           }
@@ -41,20 +48,29 @@
 
           if (data.count == 1) {
             // Select this company
-            _ListMediators(data.list[0].id);
+            listMediators(data.list[0].id);
           } else {
             // Clear selected company
             $('#companyList a.active').removeClass('active');
             $('#mediatorList').html('');
             $('#mediatorCount').text(0);
-            $('#btnEdit').prop('disabled', true);
-            $('#btnDelete').prop('disabled', true);
+            $('button[data-action="mediator-edit"]').prop('disabled', true);
+            $('button[data-action="mediator-delete"]').prop('disabled', true);
           }
+
+          $('form[role="search"] [name="filter"]:input').data('phone_filter', data.phone_filter);
+
+          if ($.isFunction(events.success)) events.success();
+        })
+        .fail(function (jqXHR, textStatus, errorThrown) {
+          alert('<%= loc q{An error occurred while fetching companies} %>');
+          if ($.isFunction(events.error)) events.error();
         })
       ;
     }
 
-    function _ListMediators(companyId) {
+    function listMediators(companyId, events) {
+      if (!events) events = {};
       if (!$('#companyList a[data-id="' + companyId + '"]').length) return;
 
       $.ajax({
@@ -62,82 +78,94 @@
         url: "/api/mediator/list",
         data: {company_id: companyId}
       })
-        .done(function (data) {
+        .done(function (data, textStatus, jqXHR) {
+          var filter = $('form[role="search"] [name="filter"]:input').data('phone_filter');
           var xhtml = '';
           for (var i = 0; i < data.list.length; i++) {
             var x = data.list[i];
-            var filter = $('form[role="search"] input').val();
-            //if (filter && x.phone_num.indexOf(filter) != -1) {
-            //  xhtml += '<a href="#" class="list-group-item active" data-id="' + x.id + '" data-name="' + x.name + '" data-phone_num="' + x.phone_num + '">' + x.phone_num + '</a>';
-            //} else {
-              //xhtml += '<a href="#" class="list-group-item" data-id="' + x.id + '" data-name="' + x.name + '" data-phone_num="' + x.phone_num + '">' + x.phone_num + '</a>';
+            if (filter && x.phone_num.indexOf(filter) != -1) {
+              xhtml += '<li><a href="#" class="btn btn-link active" data-id="' + x.id + '" data-name="' + x.name + '" data-phone_num="' + x.phone_num + '">' + Rplus.Util.formatPhoneNum(x.phone_num) + '</a></li>';
+              filter = null;
+            } else {
               xhtml += '<li><a href="#" class="btn btn-link" data-id="' + x.id + '" data-name="' + x.name + '" data-phone_num="' + x.phone_num + '">' + Rplus.Util.formatPhoneNum(x.phone_num) + '</a></li>';
-            //}
+            }
           }
           $('#mediatorList').html(xhtml);
           $('#mediatorCount').html(data.count);
 
+          var $elem = $('#mediatorList a.active');
+          if ($elem.length) {
+            $elem.get(0).scrollIntoView(true);
+          }
+
           if ($('#companyList a.active').data('id') != companyId) {
             $('#companyList a.active').removeClass('active');
             $('#companyList a[data-id="' + companyId + '"]').addClass('active');
-            $('#btnEdit').prop('disabled', false);
-            $('#btnDelete').prop('disabled', false);
+            % if (has_permission(mediators => 'write')) {
+            $('button[data-action="mediator-edit"]').prop('disabled', false);
+            $('button[data-action="mediator-delete"]').prop('disabled', false);
+            % }
           }
+
+          if ($.isFunction(events.success)) events.success();
+        })
+        .fail(function (jqXHR, textStatus, errorThrown) {
+          alert('<%= loc q{An error occurred while fetching mediators} %>');
+          if ($.isFunction(events.error)) events.error();
         })
       ;
     }
 
-    function _SaveCompany() {
-      var id   = $('#mediatorForm [name="id"]:input').val(),
-          name = $('#mediatorForm [name="company_name"]:input').val()
-      ;
+    function saveCompany() {
+      var id   = $('[name="id"]:input', $form).val(),
+          name = $('[name="company_name"]:input', $form).val();
       $.ajax({
         type: "POST",
         url: "/api/mediator-company/save",
         data: {id: id, name: name}
       })
-        .done(function (data) {
+        .done(function (data, textStatus, jqXHR) {
           if (data.status == 'success') {
-            $('#companyModal').modal('hide');
-            _ListCompanies();
-            $('.modal'). modal('hide');
-          } else {
-            alert('An error occured');
+            listCompanies();
+            $('#mediatorCard_modal').modal('hide');
           }
+        })
+        .fail(function (jqXHR, textStatus, errorThrown) {
+          alert('<%= loc q{An error occurred while saving company} %>');
         })
       ;
     }
 
-    function _SaveMediator() {
-      var id          = $('#mediatorForm [name="id"]:input').val(),
+    function saveMediator() {
+      var id          = $('[name="id"]:input', $form).val(),
           companyId   = $('#companyList a.active').data('id'),
-          companyName = $('#mediatorForm [name="company_name"]:input').val(),
-          name        = $('#mediatorForm [name="name"]:input').val(),
-          phoneNum    = $('#mediatorForm [name="phone_num"]:input').val()
-      ;
+          companyName = $('[name="company_name"]:input', $form).val(),
+          name        = $('[name="name"]:input', $form).val(),
+          phoneNum    = $('[name="phone_num"]:input', $form).val();
       $.ajax({
         type: "POST",
         url: "/api/mediator/save",
         data: {id: id, company_name: companyName, name: name, phone_num: phoneNum}
       })
-        .done(function (data) {
+        .done(function (data, textStatus, jqXHR) {
           if (data.status == 'success') {
-            if (data.update_company_list) {
-            //_ListCompanies(function () {
-              _ListMediators(companyId);
-            //});
+            if (data.reload_company_list) {
+              listCompanies({
+                success: function () { listMediators(companyId); }
+              });
             } else {
-              _ListMediators(companyId);
+              listMediators(companyId);
             }
-            $('.modal').modal('hide');
-          } else {
-            alert('An error occured');
+            $modal.modal('hide');
           }
+        })
+        .fail(function (jqXHR, textStatus, errorThrown) {
+          alert('<%= loc q{An error occurred while saving mediator} %>');
         })
       ;
     }
 
-    function _DeleteCompany(id) {
+    function deleteCompany(id) {
       $.ajax({
         type: "POST",
         url: "/api/mediator-company/delete",
@@ -145,15 +173,13 @@
       })
         .done(function (data) {
           if (data.status == 'success') {
-            _ListCompanies();
-          } else {
-            alert('An error occured');
+            listCompanies();
           }
         })
       ;
     }
 
-    function _DeleteMediator(id) {
+    function deleteMediator(id) {
       var companyId = $('#companyList a.active').data('id');
       $.ajax({
         type: "POST",
@@ -162,22 +188,29 @@
       })
         .done(function (data) {
           if (data.status == 'success') {
-            _ListMediators(companyId);
-          } else {
-            alert('An error occured');
+            listMediators(companyId);
           }
         })
       ;
     }
 
     $(function () {
+      $form = $('#mediatorCard_mediatorForm');
+      $modal =
+        $('#mediatorCard_modal')
+        .modal({show: false, backdrop: 'static'})
+        .on('shown.bs.modal', function (e) {
+          $('[name="company_name"]:input', $form).focus();
+        })
+      ;
+
       // Search filter
       var searchTimeout = null;
       $('form[role="search"]').submit(function (e) { return false; });
-      $('form[role="search"] input').bind('input', function (e) {
+      $('form[role="search"] [name="filter"]:input').bind('input', function (e) {
         if (searchTimeout) { clearTimeout(searchTimeout); searchTimeout = null; }
         searchTimeout = setTimeout(function () {
-          _ListCompanies();
+          listCompanies();
         }, 300);
       });
 
@@ -187,7 +220,7 @@
         if ($('#companyList a.active').data('id') == id) {
           $('#mediatorList a.active').removeClass('active');
         } else {
-          _ListMediators(id);
+          listMediators(id);
         }
       });
 
@@ -197,120 +230,120 @@
         $(this).addClass('active');
       });
 
-      // Add
-      $('#btnAdd').click(function (e) {
-        $('#mediatorForm :input').val('').prop('disabled', false); // init form
+      // Create mediator
+      $('button[data-action="mediator-create"]').click(function (e) {
+        $(':input', $form).val('').prop('disabled', false); // init form
         if ($('#companyList a.active').length) {
-          $('#mediatorForm [name="company_name"]:input').val($('#companyList a.active').data('name'));
+          $('[name="company_name"]:input', $form).val($('#companyList a.active').data('name'));
         }
-        $('#mediatorForm').data('target', 'mediator');
-        $('.modal').modal('show');
+        $form.data('target', 'mediator');
+        $modal.modal('show');
       });
 
       // Edit
-      $('#btnEdit').click(function (e) {
-        $('#mediatorForm :input').val('').prop('disabled', false); // init form
+      $('button[data-action="mediator-edit"]').click(function (e) {
+        $(':input', $form).val('').prop('disabled', false); // init form
 
         var companyId   = $('#companyList a.active').data('id'),
-            companyName = $('#companyList a.active').data('name')
-        ;
-        // Edit Mediator
+            companyName = $('#companyList a.active').data('name');
+
         if ($('#mediatorList a.active').length) {
+          // Edit Mediator
           var id        = $('#mediatorList a.active').data('id'),
               name      = $('#mediatorList a.active').data('name'),
               phoneNum = $('#mediatorList a.active').data('phone_num')
           ;
-          $('#mediatorForm').data('target', 'mediator');
-          $('#mediatorForm [name="id"]:input').val(id);
-          $('#mediatorForm [name="company_name"]:input').val(companyName);
-          $('#mediatorForm [name="name"]:input').val(name);
-          $('#mediatorForm [name="phone_num"]:input').val(phoneNum);
+          $form.data('target', 'mediator');
+          $('[name="id"]:input', $form).val(id);
+          $('[name="company_name"]:input', $form).val(companyName);
+          $('[name="name"]:input', $form).val(name);
+          $('[name="phone_num"]:input', $form).val(phoneNum);
         } else {
           // Edit Company
-          $('#mediatorForm').data('target', 'company');
-          $('#mediatorForm [name="id"]:input').val(companyId);
-          $('#mediatorForm [name="company_name"]:input').val(companyName);
-          $('#mediatorForm [name="name"]:input').prop('disabled', true);
-          $('#mediatorForm [name="phone_num"]:input').prop('disabled', true);
+          $form.data('target', 'company');
+          $('[name="id"]:input', $form).val(companyId);
+          $('[name="company_name"]:input', $form).val(companyName);
+          $('[name="name"]:input', $form).prop('disabled', true);
+          $('[name="phone_num"]:input', $form).prop('disabled', true);
         }
-        $('.modal').modal('show');
+        $modal.modal('show');
       });
 
       // Delete
-      $('#btnDelete').click(function (e) {
-        // Delete Mediator
+      $('button[data-action="mediator-delete"]').click(function (e) {
         if ($('#mediatorList a.active').length) {
+          // Delete Mediator
           var id       = $('#mediatorList a.active').data('id'),
-              phoneNum = $('#mediatorList a.active').data('phone_num')
-          ;
+              phoneNum = $('#mediatorList a.active').data('phone_num');
           if (confirm('Are you sure to delete mediator "' + phoneNum + '"?')) {
-            _DeleteMediator(id);
+            deleteMediator(id);
           }
         } else {
           // Delete company
           var id   = $('#companyList a.active').data('id'),
-              name = $('#companyList a.active').data('name')
-          ;
+              name = $('#companyList a.active').data('name');
           if (confirm('Are you sure to delete company "' + name + '"?')) {
-            _DeleteCompany(id);
+            deleteCompany(id);
           }
         }
       });
 
-      $('#mediatorForm').submit(function (e) {
+      $form.submit(function (e) {
+        e.preventDefault();
         var target = $(this).data('target');
         if (target == 'mediator') {
-          _SaveMediator();
+          saveMediator();
         } else {
-          _SaveCompany();
+          saveCompany();
         }
-        e.preventDefault();
       });
 
-      $('.modal').modal({show: false});
-      $('.modal').on('shown.bs.modal', function (e) {
-        $('#mediatorForm [name="company_name"]:input').focus();
-      });
+      listCompanies();
 
-      _ListCompanies();
+      % if (!has_permission(mediators => 'write')) {
+      // RO mode
+      $('button[data-action="mediator-create"]').prop('disabled', true);
+      $('button[data-action="mediator-edit"]').prop('disabled', true);
+      $('button[data-action="mediator-delete"]').prop('disabled', true);
+      % }
     });
-  }();
+  })();
 </script>
 % end
 
 % content_for modals => begin
-<div class="modal" id="mediatorModal" tabindex="-1" role="dialog" aria-hidden="true">
+<div class="modal" id="mediatorCard_modal" tabindex="-1" role="dialog" aria-labelledby="mediatorCard_modalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-        <h4 class="modal-title">Edit</h4>
+        <h4 class="modal-title" id="mediatorCard_modalLabel"><%= ucfloc 'mediator' %></h4>
       </div>
       <div class="modal-body">
-        <form class="form-horizontal" role="form" id="mediatorForm">
+        <form class="form-horizontal" role="form" id="mediatorCard_mediatorForm">
           <input type="hidden" name="id" value="">
           <div class="form-group">
-            <label for="companyName" class="control-label col-lg-2">Company</label>
+            <label for="mediatorCard_mediatorForm_inputCompanyName" class="control-label col-lg-3"><%= ucfloc 'company' %></label>
             <div class="col-lg-8">
-              <input type="text" class="form-control" name="company_name" id="companyName" placeholder="Company name" autocomplete="off" required>
+              <input type="text" class="form-control" name="company_name" id="mediatorCard_mediatorForm_inputCompanyName" placeholder="<%= ucfloc 'company name' %>" required>
             </div>
           </div>
           <div class="form-group">
-            <label for="mediatorName" class="control-label col-lg-2">Name</label>
+            <label for="mediatorCard_mediatorForm_inputMediatorName" class="control-label col-lg-3"><%= ucfloc 'mediator' %></label>
             <div class="col-lg-6">
-              <input type="text" class="form-control" name="name" id="mediatorName" placeholder="Mediator name" autocomplete="off">
+              <input type="text" class="form-control" name="name" id="mediatorCard_mediatorForm_inputMediatorName" placeholder="<%= ucfloc 'mediator name' %>">
             </div>
           </div>
           <div class="form-group">
-            <label for="phoneNum" class="control-label col-lg-2">PhoneNum</label>
+            <label for="mediatorCard_mediatorForm_inputPhoneNum" class="control-label col-lg-3"><%= ucfloc 'phone num', 2 %></label>
             <div class="col-lg-4">
-              <input type="text" class="form-control" name="phone_num" id="phoneNum" placeholder="Phone num" autocomplete="off" required>
+              <input type="text" class="form-control" name="phone_num" id="mediatorCard_mediatorForm_inputPhoneNum" placeholder="<%= ucfloc 'phone num' %>" autocomplete="off" required>
             </div>
           </div>
         </form>
       </div>
       <div class="modal-footer">
-        <button type="submit" class="btn btn-primary btn-sm" form="mediatorForm" data-action="save"><span class="glyphicon glyphicon-ok"></span> Save</button>
+        <button type="submit" class="btn btn-primary btn-sm" form="mediatorCard_mediatorForm" data-action="mediator-save"><span class="glyphicon glyphicon-ok"></span> <%= ucfloc 'save' %></button>
       </div>
     </div><!-- /.modal-content -->
   </div><!-- /.modal-dialog -->
@@ -318,10 +351,10 @@
 % end
 
 <div class="row">
-  <div class="col-lg-offset-6 col-lg-6">
+  <div class="col-lg-offset-8 col-lg-4">
     <form role="search">
       <div class="form-group">
-        <input type="text" class="form-control input-sm" placeholder="Search">
+        <input type="text" name="filter" class="form-control input-sm" placeholder="<%= ucfloc 'search' %>">
       </div>
     </form>
   </div>
@@ -329,19 +362,20 @@
 
 <div class="row">
   <div class="col-lg-4">
-    <h4>Companies <span id="companyCount">0</span></h4>
+    <h4><%= ucfloc 'companies' %> <span id="companyCount">0</span></h4>
     <div class="list-group list-compact" id="companyList"></div>
   </div>
   <div class="col-lg-8">
-    <h4> Phones <span id="mediatorCount">0</span></h4>
+    <h4><%= ucfloc 'phones' %> <span id="mediatorCount">0</span></h4>
     <ul class="list-inline" id="mediatorList"></ul>
   </div>
 </div>
 
 <nav class="navbar navbar-default navbar-fixed-bottom">
   <div class="container">
-    <button type="button" class="btn btn-primary btn-sm navbar-btn" id="btnAdd"><span class="glyphicon glyphicon-plus"></span> Add</button>
-    <button type="button" class="btn btn-warning btn-sm navbar-btn" id="btnEdit" disabled="disabled"><span class="glyphicon glyphicon-pencil"></span></button>
-    <button type="button" class="btn btn-danger btn-sm navbar-btn"  id="btnDelete" disabled="disabled"><span class="glyphicon glyphicon-trash"></span></button>
+    <button type="button" class="btn btn-primary btn-sm navbar-btn" data-action="mediator-create"><span class="glyphicon glyphicon-plus"></span> <%= ucfloc 'add' %></button>
+    <button type="button" class="btn btn-warning btn-sm navbar-btn" data-action="mediator-edit" disabled="disabled"><span class="glyphicon glyphicon-pencil"></span></button>
+    <button type="button" class="btn btn-danger btn-sm navbar-btn"  data-action="mediator-delete" disabled="disabled"><span class="glyphicon glyphicon-trash"></span></button>
+    <p class="navbar-text navbar-right"><span class="glyphicon glyphicon-refresh animation-rotate invisible indicator-ajax"></span></p>
   </div>
 </nav>

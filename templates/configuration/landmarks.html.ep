@@ -3,188 +3,170 @@
 % use Rplus::Model::Media::Manager;
 % use JSON;
 
-% my $leaflet_draw_ver = '0.2.1-dev';
-
-% content_for after_bootstrap => begin
-<script type="application/javascript" src="<%= $assets_url %>/leaflet/0.6.4/leaflet.js"></script>
-<script type="application/javascript" src="<%= $assets_url %>/leaflet.fullscreen/2013.09.30/Control.FullScreen.js"></script>
-<script type="application/javascript" src="<%= $assets_url %>/leaflet.draw/<%= $leaflet_draw_ver %>/leaflet.draw.js"></script>
-% end
-
 % content_for header => begin
-<link rel="stylesheet" href="<%= $assets_url %>/leaflet/0.6.4/leaflet.css">
-<link rel="stylesheet" href="<%= $assets_url %>/leaflet.fullscreen/2013.09.30/Control.FullScreen.css">
-<link rel="stylesheet" href="<%= $assets_url %>/leaflet.draw/<%= $leaflet_draw_ver %>/leaflet.draw.css">
+%= css_once "$assets_url/leaflet/$leafletjs_ver/leaflet.css";
+%= css_once "$assets_url/leaflet.fullscreen/$leafletjs_fullscreen_ver/Control.FullScreen.css";
+%= css_once "$assets_url/leaflet.draw/$leafletjs_draw_ver/leaflet.draw.css";
 <style type="text/css">
   #landmarkList {
-    height: 600px;
+    max-height: 600px;
     overflow-y: auto;
   }
 
   #geoMap {
     height: 600px;
-    cursor: default !important;
-  }
-
-  #geoMap:active {
-    cursor: pointer !important;
   }
 </style>
 % end
 
+% content_for after_bootstrap => begin
+%= js_once "$assets_url/leaflet/$leafletjs_ver/leaflet.js";
+%= js_once "$assets_url/leaflet.fullscreen/$leafletjs_fullscreen_ver/Control.FullScreen.js";
+%= js_once "$assets_url/leaflet.draw/$leafletjs_draw_ver/leaflet.draw.js";
+%= js_once "/js/leaflet/layer-2gis.js";
+% end
+
 % content_for javascript => begin
 <script type="application/javascript">
-  !function () {
+  "use strict";
+
+  registerGlobalAjaxEvents();
+
+  (function () {
     var geoMap, drawnItems;
 
-    function _Clear() {
-      drawnItems.clearLayers();
-      $('[name="id"]:input').val(null);
-      $('[name="name"]:input').val(null).focus();
-      $('[name="keywords"]:input').val(null);
-      $('#btnDelete').prop('disabled', true);
-      $('#landmarkList > a.active').removeClass('active');
-    }
-
-    function _List() {
-      var type = $('[name="type"]:input').val() || 'landmark',
+    function listLandmarks() {
+      var type = $('[name="type"]:input').val(),
           id   = $('[name="id"]:input').val()
       ;
       $.ajax({
         type: 'POST',
         url: '/api/landmark/list',
-        data: {type: type}
+        data: {type: type},
       })
-        .done(function (data) {
+        .done(function (data, textStatus, jqXHR) {
           var xhtml = '';
           for (var i = 0; i < data.list.length; i++) {
             var x = data.list[i];
-            xhtml += '<a href="#" class="list-group-item' + (id == x.id ? ' active' : '') + '" data-toggle="landmark" data-id="' + x.id + '">' + Rplus.Util.escape(x.name) + '</a>';
+            xhtml += '<a href="#" class="list-group-item' + (id == x.id ? ' active' : '') + '" data-id="' + x.id + '">' + Rplus.Util.escape(x.name) + '</a>';
           }
           $('#landmarkList').html(xhtml);
+        })
+        .fail(function (jqXHR, textStatus, errorThrown) {
+          alert('An error occurred while fetching landmarks');
         })
       ;
     }
 
-    function _Load(id) {
+    function loadLandmark(id) {
       $.ajax({
         type: 'POST',
         url: '/api/landmark/get',
         data: {id: id},
       })
-        .done(function (data) {
+        .done(function (data, textStatus, jqXHR) {
           $('[name="id"]:input').val(data.id);
           $('[name="name"]:input').val(data.name);
           $('[name="keywords"]:input').val(data.keywords);
 
           drawnItems.clearLayers();
-          if (data.metadata) {
-            var metadata = JSON.parse(data.metadata);
-            drawnItems.addData(metadata.geojson);
-            drawnItems.setStyle(function (feature) {
-              return {color: '#662d91'};
-            });
-            geoMap.setView(metadata.center, metadata.zoom);
+          drawnItems.addData(data.geojson);
+          drawnItems.setStyle(function (feature) {
+            return {color: '#662d91'};
+          });
+          geoMap.setView(data.center, data.zoom);
 
-            $('[name="group"]:input').val(metadata.group);
-            $('[name="pos"]:input').val(metadata.pos);
-          }
+          $('[name="grp"]:input').val(data.grp);
+          $('[name="grp_pos"]:input').val(data.grp_pos);
 
+          // Mark landmark in #landmarkList as active
           if ($('#landmarkList > a.active').data('id') != id) {
             $('#landmarkList > a.active').removeClass('active');
             $('#landmarkList > a[data-id="' + id + '"]').addClass('active');
           }
-          $('#btnDelete').prop('disabled', false);
+          % if (has_permission(landmarks => 'write')) {
+          $('[data-action="landmark-delete"]').prop('disabled', false);
+          % }
+        })
+        .fail(function (jqXHR, textStatus, errorThrown) {
+          alert('An error occurred while fetching landmark');
         })
       ;
     }
 
-    function _Save() {
-      var id       = $('[name="id"]:input').val(),
-          type     = $('[name="type"]:input').val(),
-          name     = $('[name="name"]:input').val(),
-          keywords = $('[name="keywords"]:input').val(),
-          metadata = {
-            geojson: drawnItems.toGeoJSON(),
-            center: {lat: geoMap.getCenter().lat, lng: geoMap.getCenter().lng},
-            zoom: geoMap.getZoom(),
-            group: $('[name="group"]:input').val() || null,
-            pos: $('[name="pos"]:input').val() || null,
-          }
-      ;
+    function saveLandmark() {
       $.ajax({
         type: "POST",
         url: "/api/landmark/save",
-        data: {id: id, type: type, name: name,keywords: keywords, geojson: JSON.stringify(metadata.geojson), metadata: JSON.stringify(metadata)}
+        beforeSend: function (jqXHR, settings) { $('[data-action="landmark-save"]').addClass('disabled'); },
+        complete: function (jqXHR, textStatus) { $('[data-action="landmark-save"]').removeClass('disabled'); },
+        data: {
+          id: $('[name="id"]:input').val(),
+          type: $('[name="type"]:input').val(),
+          name: $('[name="name"]:input').val(),
+          keywords: $('[name="keywords"]:input').val(),
+          geojson: JSON.stringify(drawnItems.toGeoJSON()),
+          center: JSON.stringify({lat: geoMap.getCenter().lat, lng: geoMap.getCenter().lng}),
+          zoom: geoMap.getZoom(),
+          grp: $('[name="grp"]:input').val(),
+          grp_pos: $('[name="grp_pos"]:input').val(),
+        }
       })
-        .done(function (data) {
+        .done(function (data, textStatus, jqXHR) {
           if (data.status == 'success') {
-            $('[name="id"]:input').val(data.data.id);
-            $('#btnNew').prop('disabled', false);
-            _List();
-          } else {
-            alert('Error');
+            $('[name="id"]:input').val(data.id);
+            listLandmarks();
           }
+        })
+        .fail(function (jqXHR, textStatus, errorThrown) {
+          alert('An error occurred while saving landmark');
+          /*
+          if (jqXHR.responseJSON.errors) {
+            for (var i = 0; i < jqXHR.responseJSON.errors.length; i++) {
+              var err = jqXHR.responseJSON.errors[i];
+              var field = Object.keys(err)[0];
+              var $el = $('[name="' + field + '"]:input');
+              if ($el.length) {
+                $el.closest('.form-group').addClass('has-error');
+              }
+            }
+          }
+          */
         })
       ;
     }
 
-    function _Delete(id) {
+    function deleteLandmark(id) {
       $.ajax({
         type: "POST",
         url: "/api/landmark/delete",
         data: {id: id}
       })
-        .done(function (data) {
-          _Clear();
-          _List();
+        .done(function (data, textStatus, jqXHR) {
+          clearView();
+          listLandmarks();
         })
       ;
     }
 
+    function clearView() {
+      drawnItems.clearLayers();
+      $('[name="id"]:input').val(null);
+      $('[name="name"]:input').val(null).focus();
+      $('[name="keywords"]:input').val(null);
+      $('[data-action="landmark-delete"]').prop('disabled', true);
+      $('#landmarkList > a.active').removeClass('active');
+    }
+
     $(function () {
       // Geo
-      !function () {
+      (function () {
         geoMap = L.map('geoMap', {
           center: [48.480232846617845, 135.07203340530396],
           zoom: 16,
         });
 
-        L.tileLayer('http://tile{s}.maps.2gis.com/tiles?x={x}&y={y}&z={z}&v=10', {
-          maxZoom: 18,
-          subdomains: '0123',
-          errorTileUrl: 'http://maps.api.2gis.ru/images/nomap.png',
-          attribution: '<a href="http://http://2gis.ru/">2GIS</a> Layer | RplusMgmt',
-        }).addTo(geoMap);
-
-        geoMap.on('click', function (event) {
-          $.ajax({
-            url: 'http://catalog.api.2gis.ru/geo/search',
-            data: {
-              q: event.latlng.lng + ',' + event.latlng.lat,
-              key: 'rujrdp3400',
-              version: 1.3,
-              output: 'jsonp',
-              types: 'house,station,station_platform,place,sight,metro'
-            },
-            dataType: 'jsonp',
-          })
-            .done(function (data) {
-              if (data.result) {
-                var content = '';
-                content += '<b>Info:</b><br>';
-                content += data.result[0].name + '<br>';
-                if (data.result[0].attributes && data.result[0].attributes.purpose) {
-                  content += data.result[0].attributes.purpose;
-                }
-                var popup = L.popup()
-                             .setLatLng(event.latlng)
-                             .setContent(content)
-                             .openOn(geoMap);
-              }
-            })
-          ;
-        });
+        Rplus.GeoMap.initLayer(geoMap);
 
         var fullScreen = new L.Control.FullScreen({position: 'topleft'});
         geoMap.addControl(fullScreen);
@@ -192,6 +174,7 @@
         drawnItems = new L.GeoJSON();
         geoMap.addLayer(drawnItems);
 
+        % if (has_permission(landmarks => 'write')) {
         var drawControl = new L.Control.Draw({
           position: 'topleft',
           draw: {
@@ -227,45 +210,60 @@
 
           drawnItems.addLayer(layer);
         });
-      }();
+        % }
+      })();
 
       $('[name="type"]:input').change(function (e) {
-        _List();
+        listLandmarks();
       });
 
       $('#landmarkForm').submit(function (e) {
-        _Save();
         e.preventDefault();
+        saveLandmark();
       });
 
-      $('#btnDelete').click(function (e) {
+      // Delete landmark
+      $('[data-action="landmark-delete"]').click(function (e) {
         var id   = $('[name="id"]:input').val(),
             name = $('[name="name"]:input').val();
         if (id && confirm('Are you sure to delete "' + name + '"?')) {
-          _Delete(id);
+          deleteLandmark(id);
         }
       });
 
-      $('#btnNew').click(function (e) {
-        _Clear();
+      // New landmark
+      $('[data-action="landmark-create"]').click(function (e) {
+        clearView();
       });
 
+      // Load landmark
       $('#landmarkList').on('click', 'a', function (e) {
         var id = $(this).data('id');
-        _Load(id);
+        loadLandmark(id);
       });
 
-      _List();
+      listLandmarks();
+
+      % if (!has_permission(landmarks => 'write')) {
+      // RO mode
+      $('button[data-action="landmark-create"]').prop('disabled', true);
+      $('button[data-action="landmark-save"]').prop('disabled', true);
+      $('button[data-action="landmark-delete"]').prop('disabled', true);
+      $('[name="name"]:input').prop('disabled', true);
+      $('[name="keywords"]:input').prop('disabled', true);
+      $('[name="grp"]:input').prop('disabled', true);
+      $('[name="grp_pos"]:input').prop('disabled', true);
+      % }
     });
-  }();
+  })();
 </script>
 % end
 
 <div class="row">
   <div class="col-lg-3 margin-bottom-20">
     <select class="form-control input-sm" name="type" form="landmarkForm">
-      <option value="landmark">Landmarks</option>
-      <option value="sublandmark">Sublandmars</option>
+      <option value="landmark"><%= ucfloc q{landmarks} %></option>
+      <option value="sublandmark"><%= ucfloc q{sublandmarks} %></option>
       % {
       % my $iter = Rplus::Model::Media::Manager->get_objects_iterator(query => [type => 'export', delete_date => undef]);
       % while (my $x = $iter->next) {
@@ -280,39 +278,39 @@
     <form class="form-inline" id="landmarkForm">
       <input type="hidden" name="id" value="">
       <div class="form-group" style="width: 25%;">
-        <input type="text" class="form-control input-sm" name="name" placeholder="Name" autocomplete="off" required>
+        <input type="text" class="form-control input-sm" name="name" placeholder="<%= ucfloc q{name}, 2 %>" autocomplete="off" required>
       </div>
       <div class="form-group" style="width: 65%">
-        <input type="text" class="form-control input-sm" name="keywords" placeholder="Keywords" autocomplete="off">
+        <input type="text" class="form-control input-sm" name="keywords" placeholder="<%= ucfloc q{keywords} %>" autocomplete="off">
       </div>
       <div class="form-group pull-right">
-        <button type="submit" class="btn btn-success btn-sm" id="btnOk"><span class="glyphicon glyphicon-ok"></span></button>
-        <button type="button" class="btn btn-danger btn-sm" id="btnDelete" disabled="disabled"><span class="glyphicon glyphicon-trash"></span></button>
+        <button type="submit" class="btn btn-success btn-sm" data-action="landmark-save"><span class="glyphicon glyphicon-ok"></span></button>
+        <button type="button" class="btn btn-danger btn-sm" data-action="landmark-delete" disabled="disabled"><span class="glyphicon glyphicon-trash"></span></button>
       </div>
     </form>
   </div>
 </div>
 
-<div class="row">
+<div class="row margin-bottom-10">
   <div class="col-lg-3">
     <div class="list-group list-compact" id="landmarkList"></div>
   </div>
   <div class="col-lg-9">
-    <div id="geoMap"></div>
+    <div class="geo-map" id="geoMap"></div>
   </div>
 </div>
 
 <div class="row">
   <div class="col-lg-9 col-lg-offset-3">
     <p>
-      <a class="accordion-toggle" data-toggle="collapse" href="#collapseAdvancedOptions">Advanced options</a>
+      <a class="accordion-toggle" data-toggle="collapse" href="#collapseAdvancedOptions"><%= ucfloc q{advanced options} %></a>
     </p>
     <form class="form-inline collapse in" id="collapseAdvancedOptions">
       <div class="form-group" style="width: 30%;">
-        <input type="text" class="form-control input-sm" name="group" placeholder="Group name">
+        <input type="text" class="form-control input-sm" name="grp" placeholder="<%= ucfloc q{group name} %>">
       </div>
       <div class="form-group" style="width: 10%;">
-        <input type="number" class="form-control input-sm" name="pos" placeholder="Weight (in group)" min="0">
+        <input type="number" class="form-control input-sm" name="grp_pos" placeholder="<%= ucfloc q{weight (in group)} %>" min="0" max="999">
       </div>
     </form>
   </div>
@@ -320,6 +318,7 @@
 
 <nav class="navbar navbar-default navbar-fixed-bottom">
   <div class="container">
-    <button type="button" class="btn btn-primary btn-sm navbar-btn" id="btnNew"><span class="glyphicon glyphicon-plus"></span> New</button>
+    <button type="button" class="btn btn-primary btn-sm navbar-btn" data-action="landmark-create"><span class="glyphicon glyphicon-plus"></span> <%= ucfloc q{add} %></button>
+    <p class="navbar-text navbar-right"><span class="glyphicon glyphicon-refresh animation-rotate invisible indicator-ajax"></span></p>
   </div>
 </nav>

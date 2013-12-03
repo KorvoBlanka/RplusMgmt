@@ -265,8 +265,8 @@ CREATE FUNCTION realty_before_insert() RETURNS trigger
     AS $$
 BEGIN
   -- Заполним price
-  NEW.price = COALESCE(NEW.agency_price, NEW.seller_price);
-  
+  NEW.price = COALESCE(NEW.agency_price, NEW.owner_price);
+
   RETURN NEW;
 END;
 $$;
@@ -286,7 +286,7 @@ BEGIN
     NEW.state_change_date = now();
   END IF;
 
-  NEW.price = COALESCE(NEW.agency_price, NEW.seller_price);
+  NEW.price = COALESCE(NEW.agency_price, NEW.owner_price);
   -- Изменение цены
   IF COALESCE(OLD.price, 0) != COALESCE(NEW.price, 0) THEN
       NEW.price_change_date = now();
@@ -298,16 +298,16 @@ $$;
 
 
 --
--- Name: realty_seller_phones_chk(); Type: FUNCTION; Schema: public; Owner: -
+-- Name: realty_owner_phones_chk(); Type: FUNCTION; Schema: public; Owner: -
 --
 
-CREATE FUNCTION realty_seller_phones_chk() RETURNS trigger
+CREATE FUNCTION realty_owner_phones_chk() RETURNS trigger
     LANGUAGE plpgsql
     AS $_$
 DECLARE
   x_phone_num VARCHAR;
 BEGIN
-  FOREACH x_phone_num IN ARRAY NEW.seller_phones LOOP
+  FOREACH x_phone_num IN ARRAY NEW.owner_phones LOOP
     IF NOT (x_phone_num ~ '^\d{10}$') THEN
       RAISE EXCEPTION 'Invalid phone number: %', phone_num;
       RETURN NULL;
@@ -709,6 +709,7 @@ CREATE TABLE clients (
     add_date timestamp with time zone DEFAULT now() NOT NULL,
     delete_date timestamp with time zone,
     last_signin_date timestamp with time zone,
+    description text,
     CONSTRAINT clients_delete_date_chk CHECK ((delete_date >= add_date)),
     CONSTRAINT clients_email_chk CHECK (((email)::text ~ '^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'::text)),
     CONSTRAINT clients_phone_num_chk CHECK (((phone_num)::text ~ '^\d{10}$'::text))
@@ -790,6 +791,13 @@ COMMENT ON COLUMN clients.delete_date IS 'Дата/время удаления';
 --
 
 COMMENT ON COLUMN clients.last_signin_date IS 'Дата/время последнего входа';
+
+
+--
+-- Name: COLUMN clients.description; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN clients.description IS 'Дополнительная информация по клиенту';
 
 
 --
@@ -1275,6 +1283,13 @@ CREATE TABLE landmarks (
     add_date timestamp with time zone DEFAULT now() NOT NULL,
     change_date timestamp with time zone DEFAULT now() NOT NULL,
     delete_date timestamp with time zone,
+    geojson json NOT NULL,
+    center json NOT NULL,
+    zoom integer NOT NULL,
+    grp character varying(64),
+    grp_pos integer,
+    CONSTRAINT landmarks_change_date_chk CHECK ((change_date >= add_date)),
+    CONSTRAINT landmarks_delete_date_chk CHECK ((delete_date >= add_date)),
     CONSTRAINT landmarks_geodata_chk CHECK (postgis.st_isvalid(geodata))
 );
 
@@ -1304,14 +1319,14 @@ COMMENT ON COLUMN landmarks.keywords IS 'Ключевые слова для по
 -- Name: COLUMN landmarks.geodata; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN landmarks.geodata IS 'Географические данные (области на карте)';
+COMMENT ON COLUMN landmarks.geodata IS 'PostGIS данные';
 
 
 --
 -- Name: COLUMN landmarks.metadata; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN landmarks.metadata IS 'Метаданные (например: центр и зум карты в момент сохранения)';
+COMMENT ON COLUMN landmarks.metadata IS 'Метаданные';
 
 
 --
@@ -1333,6 +1348,41 @@ COMMENT ON COLUMN landmarks.change_date IS 'Дата/время последне
 --
 
 COMMENT ON COLUMN landmarks.delete_date IS 'Дата/время удаления';
+
+
+--
+-- Name: COLUMN landmarks.geojson; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN landmarks.geojson IS 'GeoJSON данные';
+
+
+--
+-- Name: COLUMN landmarks.center; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN landmarks.center IS 'Leaflet LatLng объект';
+
+
+--
+-- Name: COLUMN landmarks.zoom; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN landmarks.zoom IS 'Zoom карты во время сохранения';
+
+
+--
+-- Name: COLUMN landmarks.grp; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN landmarks.grp IS 'Группа, к которой принадлежит ориентир';
+
+
+--
+-- Name: COLUMN landmarks.grp_pos; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN landmarks.grp_pos IS 'Позиция внутри группы (NULL - макс)';
 
 
 --
@@ -1807,10 +1857,10 @@ CREATE TABLE realty (
     add_date timestamp with time zone DEFAULT now() NOT NULL,
     change_date timestamp with time zone DEFAULT now() NOT NULL,
     delete_date timestamp with time zone,
-    seller_id integer,
-    seller_phones character varying(10)[] NOT NULL,
-    seller_info text,
-    seller_price real,
+    owner_id integer,
+    owner_phones character varying(10)[] NOT NULL,
+    owner_info text,
+    owner_price real,
     work_info text,
     agent_id integer,
     agency_price real,
@@ -1830,10 +1880,10 @@ CREATE TABLE realty (
     CONSTRAINT realty_agency_price_chk CHECK ((agency_price > (0)::double precision)),
     CONSTRAINT realty_floor_chk CHECK ((((floors_count > 0) AND (floors_count <= 100)) AND (floor <= floors_count))),
     CONSTRAINT realty_levels_count_chk CHECK ((levels_count > 0)),
+    CONSTRAINT realty_owner_phones_length_chk CHECK ((array_length(owner_phones, 1) > 0)),
+    CONSTRAINT realty_owner_price_chk CHECK ((owner_price > (0)::double precision)),
     CONSTRAINT realty_rooms_count_chk CHECK ((rooms_count > 0)),
     CONSTRAINT realty_rooms_offer_count_chk CHECK ((rooms_offer_count > 0)),
-    CONSTRAINT realty_seller_phones_length_chk CHECK ((array_length(seller_phones, 1) > 0)),
-    CONSTRAINT realty_seller_price_chk CHECK ((seller_price > (0)::double precision)),
     CONSTRAINT realty_square_kitchen_chk CHECK ((square_kitchen > (0)::double precision)),
     CONSTRAINT realty_square_land_chk CHECK ((square_land > (0)::double precision)),
     CONSTRAINT realty_square_land_type_chk CHECK (((square_land_type)::text = ANY (ARRAY[('ar'::character varying)::text, ('hectare'::character varying)::text]))),
@@ -2059,35 +2109,35 @@ COMMENT ON COLUMN realty.change_date IS 'Дата/время изменения'
 -- Name: COLUMN realty.delete_date; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN realty.delete_date IS 'Дата/время удаления (не используется)';
+COMMENT ON COLUMN realty.delete_date IS 'Дата/время удаления';
 
 
 --
--- Name: COLUMN realty.seller_id; Type: COMMENT; Schema: public; Owner: -
+-- Name: COLUMN realty.owner_id; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN realty.seller_id IS 'Продавец';
-
-
---
--- Name: COLUMN realty.seller_phones; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN realty.seller_phones IS 'Контактные телефоны продавца для данного объекта недвижимости';
+COMMENT ON COLUMN realty.owner_id IS 'Собственник';
 
 
 --
--- Name: COLUMN realty.seller_info; Type: COMMENT; Schema: public; Owner: -
+-- Name: COLUMN realty.owner_phones; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN realty.seller_info IS 'Доп. информация от продавца (контакты, удобное время звонка, и т.д.)';
+COMMENT ON COLUMN realty.owner_phones IS 'Контактные телефоны собственника данного объекта недвижимости';
 
 
 --
--- Name: COLUMN realty.seller_price; Type: COMMENT; Schema: public; Owner: -
+-- Name: COLUMN realty.owner_info; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN realty.seller_price IS 'Цена продавца';
+COMMENT ON COLUMN realty.owner_info IS 'Доп. информация от собственника (контакты, удобное время звонка, и т.д.)';
+
+
+--
+-- Name: COLUMN realty.owner_price; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN realty.owner_price IS 'Цена собственника';
 
 
 --
@@ -2115,7 +2165,7 @@ COMMENT ON COLUMN realty.agency_price IS 'Цена агентства';
 -- Name: COLUMN realty.price; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN realty.price IS 'COALESCE(agency_price, seller_price)';
+COMMENT ON COLUMN realty.price IS 'COALESCE(agency_price, owner_price)';
 
 
 --
@@ -2624,6 +2674,8 @@ CREATE TABLE subscriptions (
     end_date timestamp with time zone,
     delete_date timestamp with time zone,
     last_check_date timestamp with time zone,
+    realty_limit integer DEFAULT 0 NOT NULL,
+    send_owner_phone boolean DEFAULT false NOT NULL,
     CONSTRAINT subscriptions_delete_date_chk CHECK ((delete_date >= add_date)),
     CONSTRAINT subscriptions_end_date_chk CHECK ((end_date >= add_date))
 );
@@ -2697,6 +2749,20 @@ COMMENT ON COLUMN subscriptions.delete_date IS 'Дата/время удален
 --
 
 COMMENT ON COLUMN subscriptions.last_check_date IS 'Дата/время последней проверки (поиска вариантов)';
+
+
+--
+-- Name: COLUMN subscriptions.realty_limit; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN subscriptions.realty_limit IS 'Ограничение макс. количества подобранных объектов недвижимости';
+
+
+--
+-- Name: COLUMN subscriptions.send_owner_phone; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN subscriptions.send_owner_phone IS 'Отправлять в СМС номер собственника или нет';
 
 
 --
@@ -2977,6 +3043,9 @@ CREATE TABLE users (
     metadata json DEFAULT '{}'::json NOT NULL,
     add_date timestamp with time zone DEFAULT now() NOT NULL,
     delete_date timestamp with time zone,
+    public_name character varying(64),
+    public_phone_num character varying(16),
+    permissions json DEFAULT '{}'::json NOT NULL,
     CONSTRAINT users_phone_num_chk CHECK (((phone_num)::text ~ '^\d{10}$'::text))
 );
 
@@ -3049,6 +3118,27 @@ COMMENT ON COLUMN users.add_date IS 'Дата/время добавления';
 --
 
 COMMENT ON COLUMN users.delete_date IS 'Дата/время удаления';
+
+
+--
+-- Name: COLUMN users.public_name; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN users.public_name IS 'Паблик имя';
+
+
+--
+-- Name: COLUMN users.public_phone_num; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN users.public_phone_num IS 'Паблик номер телефона';
+
+
+--
+-- Name: COLUMN users.permissions; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN users.permissions IS 'Локальные права пользователя';
 
 
 --
@@ -3716,6 +3806,13 @@ CREATE INDEX landmarks_geodata_idx ON landmarks USING gist (geodata);
 
 
 --
+-- Name: landmarks_grp_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX landmarks_grp_idx ON landmarks USING btree (grp);
+
+
+--
 -- Name: landmarks_type_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -3982,6 +4079,20 @@ CREATE INDEX realty_offer_type_idx ON realty USING btree (offer_type_code);
 
 
 --
+-- Name: realty_owner_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX realty_owner_idx ON realty USING btree (owner_id);
+
+
+--
+-- Name: realty_owner_phones_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX realty_owner_phones_idx ON realty USING gin (owner_phones);
+
+
+--
 -- Name: realty_price_change_date_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -4007,20 +4118,6 @@ CREATE INDEX realty_room_scheme_idx ON realty USING btree (room_scheme_id);
 --
 
 CREATE INDEX realty_rooms_count_idx ON realty USING btree (rooms_count);
-
-
---
--- Name: realty_seller_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE INDEX realty_seller_idx ON realty USING btree (seller_id);
-
-
---
--- Name: realty_seller_phones_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE INDEX realty_seller_phones_idx ON realty USING gin (seller_phones);
 
 
 --
@@ -4300,14 +4397,14 @@ CREATE TRIGGER realty_before_insert_tr BEFORE INSERT ON realty FOR EACH ROW EXEC
 -- Name: realty_before_update_tr; Type: TRIGGER; Schema: public; Owner: -
 --
 
-CREATE TRIGGER realty_before_update_tr BEFORE UPDATE OF state_code, seller_price, agency_price ON realty FOR EACH ROW EXECUTE PROCEDURE realty_before_update();
+CREATE TRIGGER realty_before_update_tr BEFORE UPDATE OF state_code, owner_price, agency_price ON realty FOR EACH ROW EXECUTE PROCEDURE realty_before_update();
 
 
 --
--- Name: realty_seller_phones_chk_tr; Type: TRIGGER; Schema: public; Owner: -
+-- Name: realty_owner_phones_chk_tr; Type: TRIGGER; Schema: public; Owner: -
 --
 
-CREATE TRIGGER realty_seller_phones_chk_tr BEFORE INSERT OR UPDATE OF seller_phones ON realty FOR EACH ROW EXECUTE PROCEDURE realty_seller_phones_chk();
+CREATE TRIGGER realty_owner_phones_chk_tr BEFORE INSERT OR UPDATE OF owner_phones ON realty FOR EACH ROW EXECUTE PROCEDURE realty_owner_phones_chk();
 
 
 --
@@ -4444,19 +4541,19 @@ ALTER TABLE ONLY realty
 
 
 --
+-- Name: realty_owner_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY realty
+    ADD CONSTRAINT realty_owner_fk FOREIGN KEY (owner_id) REFERENCES clients(id);
+
+
+--
 -- Name: realty_room_scheme_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY realty
     ADD CONSTRAINT realty_room_scheme_fk FOREIGN KEY (room_scheme_id) REFERENCES dict_room_schemes(id);
-
-
---
--- Name: realty_seller_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY realty
-    ADD CONSTRAINT realty_seller_fk FOREIGN KEY (seller_id) REFERENCES clients(id);
 
 
 --

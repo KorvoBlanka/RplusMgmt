@@ -1,14 +1,14 @@
 % content_for header => begin
-%= css_once "$assets_url/bootstrap-datepicker/2013.10.25/css/datepicker3.css";
+%= css_once "$assets_url/bootstrap-datepicker/2013.11.26/css/datepicker3.css";
 <style type="text/css">
   #clientCard_modal .modal-dialog {
-    width: 720px;
+    width: 780px;
   }
 </style>
 % end
 
 % content_for after_bootstrap => begin
-%= js_once "$assets_url/bootstrap-datepicker/2013.10.25/js/bootstrap-datepicker.js";
+%= js_once "$assets_url/bootstrap-datepicker/2013.11.26/js/bootstrap-datepicker.js";
 % end
 
 % content_for javascript => begin
@@ -37,7 +37,7 @@
 
       // Action: create subscription
       $('[data-action="subscription-create"]', $modal).click(function (e) {
-        view_setSubscription({
+        setSubscriptionView({
           offer_type_code: "sale",
           guid: Rplus.Util.guid(),
           end_date: moment().add('days', 14).format(),
@@ -48,7 +48,7 @@
       // Action: edit subscription
       $modal.on('click', '[data-action="subscription-edit"]', function (e) {
         var subscription = $(this).closest('tr').data('obj');
-        view_setSubscription(subscription);
+        setSubscriptionView(subscription);
         $('a[href="#clientCard_subscriptionTab"]', $modal).tab('show').parent().show();
       });
 
@@ -70,7 +70,7 @@
         var x = saveSubscription();
         if (x) {
           x.updated = true;
-          view_pushSubscriptionToTable(x);
+          pushSubscriptionToTableView(x);
           // Close opened subscription form
           $('a[href="#clientCard_subscriptionTab"]', $modal).parent().hide();
           $('a[href="#clientCard_mainTab"]', $modal).tab('show');
@@ -81,10 +81,10 @@
       $('[data-action="query-add"]', $modal).click(function (e) {
         var q = $('#clientCard_queriesForm [name="new_query"]:input', $modal).val().trim();
         if (q) {
-          view_addQueryToSubscription(q);
+          addQueryToSubscriptionView(q);
           $('#clientCard_queriesForm [name="new_query"]:input', $modal).val(null);
         } else {
-          alert("Query cannot be empty");
+          alert('<%= ucfloc q{query cannot be empty} %>');
         }
       });
 
@@ -120,7 +120,7 @@
       if (!subscription.add_date) subscription.add_date = moment().format('YYYY-MM-DDTHH:mm:ssZZ');
       subscription.end_date = moment($('[name="end_date"]:input', $form).datepicker('getDate')).format('YYYY-MM-DD') + 'T' + moment(subscription.add_date).format('HH:mm:ssZZ');
       subscription.realty_limit = $('[name="realty_limit"]:input', $form).val() || null;
-      subscription.send_seller_phone = $('[name="send_seller_phone"]').prop('checked');
+      subscription.send_owner_phone = $('[name="send_owner_phone"]').prop('checked');
 
       subscription.queries = [];
       $('#clientCard_queryList', $modal).children().each(function (i) {
@@ -129,7 +129,7 @@
       });
 
       if (!subscription.queries.length) {
-        alert('Cannot save subscription without queries');
+        alert('<%= ucfloc q{cannot save subscription without queries} %>');
         return null;
       }
 
@@ -188,7 +188,7 @@
             }
           });
 
-          if ($.isFunction(events.save)) events.save(client);
+          if ($.isFunction(events.saved)) events.saved(client);
         })
         .fail(function (jqXHR, textStatus, errorThrown) {
           alert('Error while saving client');
@@ -196,7 +196,7 @@
       ;
     }
 
-    function view_setClient(client) {
+    function setClientView(client) {
       if (!client) return;
       $('#clientCard_clientForm [name="id"]:input', $modal).val(client.id);
       $('#clientCard_clientForm [name="name"]:input', $modal).val(client.name);
@@ -208,19 +208,19 @@
       $('#clientCard_subscriptionsTable > tbody', $modal).empty();
       if (client.subscriptions) {
         for (var i = 0; i < client.subscriptions.length; i++) {
-          view_pushSubscriptionToTable(client.subscriptions[i]);
+          pushSubscriptionToTableView(client.subscriptions[i]);
         }
       }
     }
 
-    function view_pushSubscriptionToTable(subscription) {
+    function pushSubscriptionToTableView(subscription) {
       if (!subscription.guid) subscription.guid = Rplus.Util.guid();
 
       var add_date = moment(subscription.add_date),
           end_date = moment(subscription.end_date);
       var xhtml = '<tr data-guid="' + subscription.guid + '">';
       xhtml += '<td>' + (subscription.offer_type_code == 'sale' ? 'Продажа' : 'Аренда') + '</td>';
-      xhtml += '<td>' + subscription.queries.map(function (x) { return Rplus.Util.escape(x) }).join('<br>') + '</td>';
+      xhtml += '<td><ul class="list-unstyled">' + subscription.queries.map(function (x) { return '<li>' + Rplus.Util.escape(x) + '</li>' }).join("\n") + '</ul></td>';
       xhtml += '<td>' + add_date.format('DD.MM.YYYY') + '</td>';
       xhtml += '<td><span class="label label-' + (end_date < moment() ? 'danger' : 'success') + '">' + end_date.format('DD.MM.YYYY') + '</span></td>';
       xhtml += '<td>' + (subscription.realty_count || 0) + (subscription.realty_limit ? ' / ' + subscription.realty_limit : '') + '</td>';
@@ -240,7 +240,7 @@
       }
     }
 
-    function view_setSubscription(subscription) {
+    function setSubscriptionView(subscription) {
       $('#clientCard_subscriptionForm', $modal).data('obj', subscription);
 
       // fill left block (params) of subscription
@@ -249,18 +249,18 @@
       $('#clientCard_subscriptionForm [name="offer_type_code"]:input', $modal).val(subscription.offer_type_code);
       $('#clientCard_subscriptionForm [name="end_date"]:input', $modal).val(subscription.end_date ? moment(subscription.end_date).format('DD.MM.YYYY') : null).datepicker('update');
       $('#clientCard_subscriptionForm [name="realty_limit"]:input', $modal).val(subscription.realty_limit);
-      $('#clientCard_subscriptionForm [name="send_seller_phone"]', $modal).prop('checked', subscription.send_seller_phone);
+      $('#clientCard_subscriptionForm [name="send_onwer_phone"]', $modal).prop('checked', subscription.send_owner_phone);
 
       // Add queries of subscription
       $('#clientCard_queryList', $modal).empty();
       if (subscription.queries) {
         for (var i = 0; i < subscription.queries.length ; i++) {
-          view_addQueryToSubscription(subscription.queries[i]);
+          addQueryToSubscriptionView(subscription.queries[i]);
         }
       }
     }
 
-    function view_addQueryToSubscription(q) {
+    function addQueryToSubscriptionView(q) {
       var xhtml = '<div class="form-group">';
       xhtml += '<div class="input-group input-group-sm">';
       xhtml += '<input type="text" class="form-control" name="query" value="' + Rplus.Util.escape(q) + '">';
@@ -277,7 +277,8 @@
 
       // Set events
       events = {
-        save: options.save
+        //loaded: options.loaded,
+        saved: options.saved,
       };
 
       var $this = {
@@ -285,8 +286,9 @@
         create: function (skel) {
           if (!skel) skel = {};
           skel.id = null;
-          view_setClient(skel);
+          setClientView(skel);
           $modal.modal('show');
+          return $this;
         },
 
         open: function (id) {
@@ -296,7 +298,7 @@
             data: {id: id, with_subscriptions: true},
           })
             .done(function (data, textStatus, jqXHR) {
-              view_setClient(data);
+              setClientView(data);
               $modal.modal('show');
             })
             .fail(function (jqXHR, textStatus, errorThrown) {
@@ -312,11 +314,11 @@
             url: "/api/client/get",
             data: {phone_num: phoneNum, with_subscriptions: true},
             success: function (data, textStatus, jqXHR) {
-              view_setClient(data);
+              setClientView(data);
               $modal.modal('show');
             },
             error: function (jqXHR, textStatus, errorThrown) {
-              view_setClient({phone_num: phoneNum});
+              setClientView({phone_num: phoneNum});
               $modal.modal('show');
             },
           });
@@ -341,13 +343,13 @@
     <div class="modal-content">
       <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-        <h4 class="modal-title" id="clientCard_modalLabel">Client</h4>
+        <h4 class="modal-title" id="clientCard_modalLabel"><%= ucfloc 'client' %></h4>
       </div>
       <div class="modal-body">
-        <h4 class="pull-right"><span class="label label-info" id="clientCard_addDate">New</span></h4>
+        <h4 class="pull-right"><span class="label label-info" id="clientCard_addDate"><%= ucfloc 'new' %></span></h4>
         <ul class="nav nav-pills nav-sm margin-bottom-15" id="clientCard_pills">
-          <li class="active"><a href="#clientCard_mainTab" data-toggle="pill">Main</a></li>
-          <li style="display: none;"><a href="#clientCard_subscriptionTab" data-toggle="pill">Subscription</a></li>
+          <li class="active"><a href="#clientCard_mainTab" data-toggle="pill"><%= ucfloc 'main' %></a></li>
+          <li style="display: none;"><a href="#clientCard_subscriptionTab" data-toggle="pill"><%= ucfloc 'subscription' %></a></li>
         </ul>
 
         <div class="tab-content">
@@ -359,18 +361,18 @@
               <div class="row">
                 <div class="col-md-5">
                   <div class="form-group form-group-sm">
-                    <label for="clientCard_clientForm_inputName">Name</label>
-                    <input type="text" class="form-control input-sm" name="name" id="clientCard_clientForm_inputName" placeholder="Name">
+                    <label for="clientCard_clientForm_inputName"><%= ucfloc 'name' %></label>
+                    <input type="text" class="form-control input-sm" name="name" id="clientCard_clientForm_inputName" placeholder="<%= ucfloc 'name' %>">
                   </div>
                   <div class="form-group form-group-sm">
-                    <label for="clientCard_clientForm_inputPhoneNum">PhoneNum</label>
-                    <input type="text" class="form-control input-sm" name="phone_num" id="clientCard_clientForm_inputPhoneNum" placeholder="Phone num">
+                    <label for="clientCard_clientForm_inputPhoneNum"><%= ucfloc 'phone num' %></label>
+                    <input type="text" class="form-control input-sm" name="phone_num" id="clientCard_clientForm_inputPhoneNum" placeholder="<%= ucfloc 'phone num' %>">
                   </div>
                 </div>
                 <div class="col-md-7">
                   <div class="form-group form-group-sm">
-                    <label for="clientCard_clientForm_inputDescription">Description</label>
-                    <textarea class="form-control input-sm" id="clientCard_clientForm_inputDescription" name="description" rows="3"></textarea>
+                    <label for="clientCard_clientForm_inputDescription"><%= ucfloc 'description' %></label>
+                    <textarea class="form-control input-sm" id="clientCard_clientForm_inputDescription" name="description" rows="4"></textarea>
                   </div>
                 </div>
               </div>
@@ -378,16 +380,16 @@
 
             <div class="row">
               <div class="col-md-12">
-                <h4 style="margin-bottom: 5px;">Subscriptions <small><a href="#" class="pull-right" data-action="subscription-create"><span class="glyphicon glyphicon-plus"></span></a></small></h4>
+                <h4 style="margin-bottom: 5px;"><%= ucfloc 'subscriptions' %> <small><a href="#" class="pull-right" data-action="subscription-create"><span class="glyphicon glyphicon-plus"></span></a></small></h4>
                 <hr class="hr-sm" style="margin-top: 0px;">
-                <table class="table table-striped table-condensed table-hover" id="clientCard_subscriptionsTable">
+                <table class="table table-striped table-condensed table-hover" id="clientCard_subscriptionsTable" style="font-size: 85%;">
                   <thead>
                     <tr>
-                      <th>Offer</th>
-                      <th>Queries</th>
-                      <th>Add Date</th>
-                      <th>End Date</th>
-                      <th>Found</th>
+                      <th><%= ucfloc 'type' %></th>
+                      <th><%= ucfloc 'queries' %></th>
+                      <th><%= ucfloc 'add date' %></th>
+                      <th><%= ucfloc 'end date' %></th>
+                      <th><%= ucfloc 'found' %></th>
                       <th></th>
                     </tr>
                   </thead>
@@ -409,18 +411,18 @@
                     <div class="form-group">
                       <select class="form-control input-sm" name="offer_type_code">
                         %# TODO: Add usage of preloaded table data
-                        <option value="rent">Аренда</option>
-                        <option value="sale">Продажа</option>
+                        <option value="rent"><%= ucfloc 'rent' %></option>
+                        <option value="sale"><%= ucfloc 'sale' %></option>
                       </select>
                     </div>
                     <div class="form-group">
-                      <input type="text" class="form-control input-sm" name="end_date" placeholder="End date">
+                      <input type="text" class="form-control input-sm" name="end_date" placeholder="<%= ucfloc 'end date' %>">
                     </div>
                     <div class="form-group">
-                      <input type="number" class="form-control input-sm" name="realty_limit" placeholder="Limit" min="0" max="1000">
+                      <input type="number" class="form-control input-sm" name="realty_limit" placeholder="<%= ucfloc 'limit' %>" min="0" max="1000">
                     </div>
                     <div class="checkbox">
-                      <label><input type="checkbox" name="send_seller_phone"> Seller phone</label>
+                      <label><input type="checkbox" name="send_owner_phone"> <small><%= ucfloc 'owner phone' %></small></label>
                     </div>
                   </form>
                 </div>
@@ -432,7 +434,7 @@
                       <div id="clientCard_queryList"></div>
                       <div class="form-group">
                         <div class="input-group input-group-sm">
-                          <input type="text" class="form-control" name="new_query" placeholder="New query">
+                          <input type="text" class="form-control" name="new_query" placeholder="<%= ucfloc 'query' %>">
                           <span class="input-group-btn">
                             <button class="btn btn-default" type="button" data-action="query-add"><span class="glyphicon glyphicon-plus text-success"></span></button>
                           </span>
@@ -450,8 +452,8 @@
 
       </div><!-- /.modal-body -->
       <div class="modal-footer">
-        <button type="button" class="btn btn-default btn-sm" data-action="subscription-save" style="display: none;">Save subscription</button>
-        <button type="button" class="btn btn-primary btn-sm" data-loading-text="Saving..." data-action="client-save"><span class="glyphicon glyphicon-ok"></span>&nbsp;&nbsp;Save</button>
+        <button type="button" class="btn btn-default btn-sm" data-action="subscription-save" style="display: none;"><%= ucfloc 'save subscription' %></button>
+        <button type="button" class="btn btn-primary btn-sm" data-loading-text="<%= ucfloc 'saving...' %>" data-action="client-save"><span class="glyphicon glyphicon-ok"></span> <%= ucfloc 'save' %></button>
       </div>
     </div><!-- /.modal-content -->
   </div><!-- /.modal-dialog -->
