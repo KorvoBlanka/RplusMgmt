@@ -32,6 +32,7 @@ sub list {
             id => $photo->id,
             photo_url => $self->config->{'storage'}->{'url'}.'/photos/'.$photo->realty_id.'/'.$photo->filename,
             thumbnail_url => $self->config->{'storage'}->{'url'}.'/photos/'.$photo->realty_id.'/'.$photo->thumbnail_filename,
+            is_main => $photo->is_main ? \1 : \0,
         };
         push @{$res->{list}}, $x;
     }
@@ -101,6 +102,7 @@ sub update {
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => 'write');
 
     my $id = $self->param('id');
+
     my $photo = Rplus::Model::Photo::Manager->get_objects(query => [id => $id, delete_date => undef, 'realty.delete_date' => undef], require_objects => ['realty'])->[0];
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $photo;
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => write => $photo->realty->agent_id);
@@ -113,6 +115,12 @@ sub update {
         push @errors, {is_main => 'Invalid value'} if $self->validation->has_error('is_main');
         return $self->render(json => {errors => \@errors}, status => 400);
     }
+
+    # Remove old "is_main" photo
+    my $num_rows_updated = Rplus::Model::Photo::Manager->update_objects(
+        set => {is_main => 0},
+        where => [realty_id => $photo->realty_id, is_main => 1], # delete_date is not used
+    );
 
     # Prepare data
     my $is_main = $self->param_b('is_main');

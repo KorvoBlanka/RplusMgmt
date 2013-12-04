@@ -244,14 +244,14 @@
             url: '/api/photo/list',
             data: {realty_id: realty.id},
           })
-            .done(function (data) {
+            .done(function (data, textStatus, jqXHR) {
               var xhtml = '';
               for (var i = 0; i < data.list.length; i++) {
                 var x = data.list[i];
                 xhtml += '<div class="col-md-3 col-lg-3 photo-container" data-id="' + x.id + '">';
                 xhtml += '<div class="pull-right">';
-                xhtml += '<a href="#" data-action="main"><span class="glyphicon glyphicon-ok-circle text-muted" title="Set as main photo"></span></a>';
-                xhtml += '<a href="#" data-action="delete" style="margin-left: 6px;"><span class="glyphicon glyphicon-remove" title="Delete photo"></span></a>';
+                xhtml += '<a href="#" data-action="set-main-photo"><span class="glyphicon glyphicon-ok-circle text-muted' + (x.is_main ? ' text-danger' : '') + '" title="Set as main photo"></span></a>';
+                xhtml += '<a href="#" data-action="delete-photo" style="margin-left: 6px;"><span class="glyphicon glyphicon-remove" title="Delete photo"></span></a>';
                 xhtml += '</div>';
                 xhtml += '<div class="clearfix"></div>';
                 xhtml += '<a href="#" class="thumbnail">';
@@ -265,7 +265,7 @@
         }
 
         $('input[type="file"]', photosContainer).fileupload({
-          url: '/api/photo/add',
+          url: '/api/photo/upload',
           dataType: 'json',
           formData: function () { var formData = [{ name: 'realty_id', value: realty.id }]; return formData; },
           autoUpload: false,
@@ -284,7 +284,7 @@
             data.context = $('<div class="col-md-3 col-lg-3 photo-container"></div>').appendTo($('.photo-queue', photosContainer));
             var node = $(
               '<div class="pull-right">' +
-              '<a href="#" data-action="delete"><span class="glyphicon glyphicon-remove" title="Delete photo"></span></a>' +
+              '<a href="#" data-action="delete-photo"><span class="glyphicon glyphicon-remove" title="Delete photo"></span></a>' +
               '</div>' +
               '<div class="clearfix"></div>' +
               '<div class="thumbnail"></div>'
@@ -321,13 +321,15 @@
           });
         });
 
-        $('.photo-queue', photosContainer).on('click', '.photo-container a[data-action="delete"]', function (e) {
+        // Delete pre-uploaded photo
+        $('.photo-queue', photosContainer).on('click', '.photo-container [data-action="delete-photo"]', function (e) {
           $(this).closest('.photo-container').remove();
         });
 
-        $('.photo-list', photosContainer).on('click', '.photo-container a[data-action="delete"]', function (e) {
+        // Delete photo
+        $('.photo-list', photosContainer).on('click', '.photo-container [data-action="delete-photo"]', function (e) {
           var parent = $(this).closest('.photo-container'),
-              id = parent.data('id');
+              id     = parent.data('id');
           $.ajax({
             type: 'POST',
             url: '/api/photo/delete',
@@ -336,10 +338,33 @@
             .done(function (data) {
               if (data.status == 'success') {
                 parent.remove();
-              } else {
-                alert('Error while delete photo');
               }
-            });
+            })
+            .fail(function (jqXHR, textStatus, errorThrown) {
+              alert('Error');
+            })
+            ;
+        });
+
+        // Set photo as main
+        $('.photo-list', photosContainer).on('click', '.photo-container [data-action="set-main-photo"]', function (e) {
+          var parent = $(this).closest('.photo-container'),
+              id     = parent.data('id');
+          $.ajax({
+            type: 'POST',
+            url: '/api/photo/update',
+            data: {id: id, is_main: true},
+          })
+            .done(function (data, textStatus, jqXHR) {
+              if (data.status == 'success') {
+                $('.photo-container [data-action="set-main-photo"] > span.text-danger').removeClass('text-danger');
+                $('.photo-container[data-id="' + id + '"] [data-action="set-main-photo"] > span', photosContainer).addClass('text-danger');
+              }
+            })
+            .fail(function (jqXHR, textStatus, errorThrown) {
+              alert('Error');
+            })
+          ;
         });
 
         listPhotos();
@@ -888,13 +913,13 @@
               <p>
                 <span class="btn btn-success btn-sm fileinput-button">
                   <i class="glyphicon glyphicon-plus"></i>
-                  <span>Add files...</span>
+                  <span><%= ucfloc 'add files...' %></span>
                   <!-- The file input field used as target for the file upload widget -->
                   <input id="fileupload-{guid}" type="file" name="files[]" multiple>
                 </span>
                 <button class="btn btn-primary btn-sm start">
                     <i class="glyphicon glyphicon-upload"></i>
-                    <span>Start upload</span>
+                    <span><%= ucfloc 'start upload' %></span>
                 </button>
               </p>
             </div>

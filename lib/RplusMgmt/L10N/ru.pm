@@ -28,6 +28,7 @@ our %Lexicon = (
     q{advanced options} => 'дополнительные параметры',
     q{additional description} => 'дополнительное описание',
     q{additional information} => 'дополнительная информация',
+    q{add files...} => 'добавить файлы...',
 
     q{action completed successfully} => 'действие успешно завершено',
     q{an error occurred while subscribing client} => 'ошибка при оформлении подписки для клиента',
@@ -178,6 +179,7 @@ our %Lexicon = (
     },
     q{square} => 'площадь',
     q{source} => 'источник',
+    q{start upload} => 'начать загрузку',
 
     # T
     q{type} => 'тип',
