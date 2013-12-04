@@ -67,6 +67,10 @@
     padding: 5px;
   }
 
+  .obj-modified-12h {
+    color: #26B412;
+  }
+
   /* Typeahead.js input-sm fix */
   .tt-hint {
     height: 30px;
@@ -101,7 +105,7 @@
         {id: "state", name: "", menuName: "<%= ucfloc 'state' %>", sortName: "state.name", visible: true, val: function (r) {
           var classes = [Rplus.Table['realty_states'][r.state_code].metadata['icon-class']];
           // Mark changed objects of last 12 hours
-          if (r.change_date && moment(r.change_date) >= moment().subtract('hours', 12)) classes.push('text-success');
+          if (r.change_date && moment(r.change_date) >= moment().subtract('hours', 12)) classes.push('obj-modified-12h');
           return '<span class="glyphicon ' + classes.join(' ') + '"></span>';
         }},
         {id: "type", name: "<%= ucfloc 'type' %>", sortName: "type.name", visible: true, val: function (r) {
