@@ -622,36 +622,48 @@
         $('[data-action="realty-geo"]').click(function (e) { $('.modal').modal('show'); });
       })();
 
-      // Photos show
-      $('#photosModal')
-        .modal({show: false})
-        .on('show.bs.modal', function (e) {
-          $('#photosModal .modal-dialog').css('max-width', $(window).width()*0.8);
-          $('#photosModal .carousel-inner > .item > img').css('max-height', $(window).height()*0.8);
-        })
-      ;
-      $('#realtyTable > tbody').on('click', 'td:has([data-action="photos-show"])', function (e) {
-        var realtyId = $(this).closest('tr').data('id');
-        $.ajax({
-          type: 'POST',
-          url: '/api/photo/list',
-          data: {realty_id: realtyId}
-        })
-          .done(function (data, textStatus, jqXHR) {
-            $('#photosCarousel > .carousel-indicators').html('');
-            $('#photosCarousel > .carousel-inner').html('');
-            for (var i = 0; i < data.list.length; i++) {
-              var x = data.list[i];
-              $('#photosCarousel > .carousel-indicators').append('<li data-target="#photosCarousel" data-slide-to="' + i + '" class="' + (i == 0 ? 'active' : '') + '"></li>');
-              $('#photosCarousel > .carousel-inner').append('<div class="item' + (i == 0 ? ' active' : '') + '"><img src="' + x.photo_url + '"></div>');
-            }
-            if (data.list.length) {
-              $('#photosModal').modal('show');
-            }
+      // Photos slideshow
+      (function () {
+        var guid;
+        var template = $('#photosCarouselTemplate').remove().html();
+
+        $('#photosModal')
+          .modal({show: false})
+          .on('show.bs.modal', function (e) {
+            $('#photosModal .modal-dialog').css('max-width', $(window).width()*0.7);
+            $('#photosModal .carousel-inner > .item > img').css('max-height', $(window).height()*0.8);
+
+            // Init carousel
+            $('#photosCarousel-' + guid).carousel({
+              interval: false,
+            });
           })
         ;
-        return false;
-      });
+
+        // Load photos
+        $('#realtyTable > tbody').on('click', 'td:has([data-action="photos-show"])', function (e) {
+          var realtyId = $(this).closest('tr').data('id');
+          $.ajax({
+            type: 'POST',
+            url: '/api/photo/list',
+            data: {realty_id: realtyId}
+          })
+            .done(function (data, textStatus, jqXHR) {
+              guid = Rplus.Util.guid();
+              $('#photosModal .modal-body').html(template.replace(/{guid}/g, guid));
+
+              for (var i = 0; i < data.list.length; i++) {
+                var x = data.list[i];
+                $('#photosCarousel-' + guid + ' > .carousel-indicators').append('<li data-target="#photosCarousel-' + guid + '" data-slide-to="' + i + '" class="' + (i == 0 ? 'active' : '') + '"></li>');
+                $('#photosCarousel-' + guid + ' > .carousel-inner').append('<div class="item' + (i == 0 ? ' active' : '') + '"><img src="' + x.photo_url + '"></div>');
+              }
+
+              if (data.list.length) { $('#photosModal').modal('show'); };
+            })
+          ;
+          return false;
+        });
+      })();
 
       // Notifications
       $.pnotify.defaults.history = false;
@@ -680,20 +692,22 @@
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-body">
-        <div id="photosCarousel" class="carousel slide" data-ride="carousel">
-          <!-- Indicators -->
-          <ol class="carousel-indicators"></ol>
+        <div id="photosCarouselTemplate">
+          <div id="photosCarousel-{guid}" class="carousel slide">
+            <!-- Indicators -->
+            <ol class="carousel-indicators"></ol>
 
-          <!-- Wrapper for slides -->
-          <div class="carousel-inner"></div>
+            <!-- Wrapper for slides -->
+            <div class="carousel-inner"></div>
 
-          <!-- Controls -->
-          <a class="left carousel-control" href="#photosCarousel" data-slide="prev">
-            <span class="glyphicon glyphicon-chevron-left"></span>
-          </a>
-          <a class="right carousel-control" href="#photosCarousel" data-slide="next">
-            <span class="glyphicon glyphicon-chevron-right"></span>
-          </a>
+            <!-- Controls -->
+            <a class="left carousel-control" href="#photosCarousel-{guid}" data-slide="prev">
+              <span class="glyphicon glyphicon-chevron-left"></span>
+            </a>
+            <a class="right carousel-control" href="#photosCarousel-{guid}" data-slide="next">
+              <span class="glyphicon glyphicon-chevron-right"></span>
+            </a>
+          </div>
         </div>
       </div>
     </div><!-- /.modal-content -->
