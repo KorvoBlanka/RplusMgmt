@@ -14,8 +14,8 @@ sub list {
 
     # Input validation
     $self->validation->required('type');
-    $self->validation->optional('lat')->like(/^\d+\.\d+$/);
-    $self->validation->optional('lng')->like(/^\d+\.\d+$/);
+    $self->validation->optional('lat')->like(qr/^\d+\.\d+$/);
+    $self->validation->optional('lng')->like(qr/^\d+\.\d+$/);
 
     if ($self->validation->has_error) {
         my @errors;
@@ -27,7 +27,10 @@ sub list {
 
     # Input params
     my $type = $self->param('type');
-    my ($lat, $lng) = $self->param(qw(lat lng));
+    my $lat = $self->param('lat');
+    my $lng = $self->param('lng');
+
+    say $self->dumper($lat);
 
     my $res = {
         total => 0,
