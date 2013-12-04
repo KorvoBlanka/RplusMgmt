@@ -81,7 +81,7 @@
   }
 
   .obj-modified-12h {
-    color: #26B412;
+    color: #269E15;
   }
 
   /* Typeahead.js input-sm fix */
