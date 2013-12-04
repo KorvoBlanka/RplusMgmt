@@ -68,7 +68,7 @@
   }
 
   #photosModal .modal-dialog {
-    width: 70%;
+    width: auto;
   }
 
   #photosModal .modal-body {
@@ -623,9 +623,14 @@
       })();
 
       // Photos show
-      $('#photosModal').modal({show: false});
+      $('#photosModal')
+        .modal({show: false})
+        .on('show.bs.modal', function (e) {
+          $('#photosModal .modal-dialog').css('max-width', $(window).width()*0.8);
+          $('#photosModal .carousel-inner > .item > img').css('max-height', $(window).height()*0.8);
+        })
+      ;
       $('#realtyTable > tbody').on('click', 'td:has([data-action="photos-show"])', function (e) {
-        e.stopPropagation();
         var realtyId = $(this).closest('tr').data('id');
         $.ajax({
           type: 'POST',
@@ -645,7 +650,7 @@
             }
           })
         ;
-        //$('#photosModal').modal('show');
+        return false;
       });
 
       // Notifications
