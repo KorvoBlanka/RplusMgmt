@@ -250,7 +250,7 @@
                 var x = data.list[i];
                 xhtml += '<div class="col-md-3 col-lg-3 photo-container" data-id="' + x.id + '">';
                 xhtml += '<div class="pull-right">';
-                xhtml += '<a href="#" data-action="set-main-photo"><span class="glyphicon glyphicon-ok-circle text-muted' + (x.is_main ? ' text-danger' : '') + '" title="Set as main photo"></span></a>';
+                xhtml += '<a href="#" data-action="set-main-photo"><span class="glyphicon glyphicon-ok-circle' + (x.is_main ? '' : ' text-muted') + '" title="Set as main photo"></span></a>';
                 xhtml += '<a href="#" data-action="delete-photo" style="margin-left: 6px;"><span class="glyphicon glyphicon-remove" title="Delete photo"></span></a>';
                 xhtml += '</div>';
                 xhtml += '<div class="clearfix"></div>';
@@ -357,8 +357,8 @@
           })
             .done(function (data, textStatus, jqXHR) {
               if (data.status == 'success') {
-                $('.photo-container [data-action="set-main-photo"] > span.text-danger').removeClass('text-danger');
-                $('.photo-container[data-id="' + id + '"] [data-action="set-main-photo"] > span', photosContainer).addClass('text-danger');
+                $('.photo-container [data-action="set-main-photo"] > span:not(.text-muted)').addClass('text-muted');
+                $('.photo-container[data-id="' + id + '"] [data-action="set-main-photo"] > span.text-muted', photosContainer).removeClass('text-muted');
               }
             })
             .fail(function (jqXHR, textStatus, errorThrown) {
