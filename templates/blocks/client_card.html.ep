@@ -119,8 +119,8 @@
       subscription.offer_type_code = $('[name="offer_type_code"]:input', $form).val();
       if (!subscription.add_date) subscription.add_date = moment().format('YYYY-MM-DDTHH:mm:ssZZ');
       subscription.end_date = moment($('[name="end_date"]:input', $form).datepicker('getDate')).format('YYYY-MM-DD') + 'T' + moment(subscription.add_date).format('HH:mm:ssZZ');
-      subscription.realty_limit = $('[name="realty_limit"]:input', $form).val() || null;
-      subscription.send_owner_phone = $('[name="send_owner_phone"]').prop('checked');
+      subscription.realty_limit = parseInt($('[name="realty_limit"]:input', $form).val());
+      subscription.send_owner_phone = $('[name="send_owner_phone"]', $form).prop('checked');
 
       subscription.queries = [];
       $('#clientCard_queryList', $modal).children().each(function (i) {
@@ -249,7 +249,7 @@
       $('#clientCard_subscriptionForm [name="offer_type_code"]:input', $modal).val(subscription.offer_type_code);
       $('#clientCard_subscriptionForm [name="end_date"]:input', $modal).val(subscription.end_date ? moment(subscription.end_date).format('DD.MM.YYYY') : null).datepicker('update');
       $('#clientCard_subscriptionForm [name="realty_limit"]:input', $modal).val(subscription.realty_limit);
-      $('#clientCard_subscriptionForm [name="send_onwer_phone"]', $modal).prop('checked', subscription.send_owner_phone);
+      $('#clientCard_subscriptionForm [name="send_owner_phone"]', $modal).prop('checked', subscription.send_owner_phone);
 
       // Add queries of subscription
       $('#clientCard_queryList', $modal).empty();
