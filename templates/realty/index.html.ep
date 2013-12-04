@@ -122,7 +122,12 @@
           return '<span class="glyphicon ' + classes.join(' ') + '"></span>';
         }},
         {id: "type", name: "<%= ucfloc 'type' %>", sortName: "type.name", visible: true, val: function (r) {
-          return Rplus.Table['realty_types'][r.type_code].name;
+          var text1 = '', text2 = '';
+          if (r.source_media_text) {
+            text1 = '<span title="' + Rplus.Util.escape(r.source_media_text.replace(/"/g, "")) + '">';
+            text2 = '</span>';
+          }
+          return text1 + Rplus.Table['realty_types'][r.type_code].name + text2;
         }},
         {id: "photo", name: "<%= ucfloc 'photo' %>", visible: false, val: function (r) {
           return r.main_photo_thumbnail ? '<a href="#" data-action="photos-show"><span class="glyphicon glyphicon-picture"></span></a>' : '';
@@ -161,7 +166,7 @@
           return sq.length ? sq.join(' / ') : '';
         }},
         {id: "source", name: "<%= ucfloc 'source' %>", sortName: "source_media.name", visible: false, val: function (r) {
-          return r.source_media_id && r.source_media_text ? '<span title="' + Rplus.Util.escape(r.source_media_text.replace(/"/g, "") || '?') + '">' + Rplus.Table['media'][r.source_media_id].name + '</span>' : '';
+          return r.source_media_id ? Rplus.Table['media'][r.source_media_id].name : '';
         }},
         {id: "owner", name: "<%= ucfloc 'owner' %>", visible: true, style: "white-space: nowrap;", val: function (r) {
           return r.owner_phones ? r.owner_phones.map(function (x) { return Rplus.Util.formatPhoneNum(x) }).join('<br>') : '';
