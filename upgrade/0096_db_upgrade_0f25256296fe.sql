@@ -7,7 +7,7 @@ ALTER TABLE public.landmarks ADD COLUMN zoom INTEGER;
 ALTER TABLE public.landmarks ADD COLUMN grp VARCHAR(64);
 ALTER TABLE public.landmarks ADD COLUMN grp_pos INTEGER;
 
-UPDATE public.landmarks SET geojson = metadata->'geojson', center = metadata->'center', zoom = (metadata->>'zoom')::integer, grp = metadata->>'group', grp_pos = (metadata->>'pos')::integer;
+UPDATE public.landmarks SET geojson = metadata->'geojson', center = metadata->'center', zoom = (metadata->>'zoom')::integer, grp = metadata->>'group', grp_pos = NULLIF(metadata->>'pos', '')::integer;
 
 COMMENT ON COLUMN public.landmarks.center IS 'Leaflet LatLng объект';
 COMMENT ON COLUMN public.landmarks.grp IS 'Группа, к которой принадлежит ориентир';
@@ -80,7 +80,7 @@ DECLARE
   x_phone_num VARCHAR;
 BEGIN
   FOREACH x_phone_num IN ARRAY NEW.owner_phones LOOP
-    IF NOT (x_phone_num ~ ''^\\d{10}$'') THEN
+    IF NOT (x_phone_num ~ ''^\d{10}$'') THEN
       RAISE EXCEPTION ''Invalid phone number: %'', phone_num;
       RETURN NULL;
     END IF;
