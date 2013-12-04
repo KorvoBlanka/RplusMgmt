@@ -250,8 +250,8 @@
                 var x = data.list[i];
                 xhtml += '<div class="col-md-3 col-lg-3 photo-container" data-id="' + x.id + '">';
                 xhtml += '<div class="pull-right">';
-                xhtml += '<a href="#" data-action="set-main-photo"><span class="glyphicon glyphicon-ok-circle' + (x.is_main ? '' : ' text-muted') + '" title="Set as main photo"></span></a>';
-                xhtml += '<a href="#" data-action="delete-photo" style="margin-left: 6px;"><span class="glyphicon glyphicon-remove" title="Delete photo"></span></a>';
+                xhtml += '<a href="#" data-action="photo-set-main"><span class="glyphicon glyphicon-ok-circle' + (x.is_main ? '' : ' text-muted') + '" title="Set as main photo"></span></a>';
+                xhtml += '<a href="#" data-action="photo-delete" style="margin-left: 6px;"><span class="glyphicon glyphicon-remove" title="Delete photo"></span></a>';
                 xhtml += '</div>';
                 xhtml += '<div class="clearfix"></div>';
                 xhtml += '<a href="#" class="thumbnail">';
@@ -284,7 +284,7 @@
             data.context = $('<div class="col-md-3 col-lg-3 photo-container"></div>').appendTo($('.photo-queue', photosContainer));
             var node = $(
               '<div class="pull-right">' +
-              '<a href="#" data-action="delete-photo"><span class="glyphicon glyphicon-remove" title="Delete photo"></span></a>' +
+              '<a href="#" data-action="photo-delete"><span class="glyphicon glyphicon-remove" title="Delete photo"></span></a>' +
               '</div>' +
               '<div class="clearfix"></div>' +
               '<div class="thumbnail"></div>'
@@ -322,12 +322,12 @@
         });
 
         // Delete pre-uploaded photo
-        $('.photo-queue', photosContainer).on('click', '.photo-container [data-action="delete-photo"]', function (e) {
+        $('.photo-queue', photosContainer).on('click', '.photo-container [data-action="photo-delete"]', function (e) {
           $(this).closest('.photo-container').remove();
         });
 
         // Delete photo
-        $('.photo-list', photosContainer).on('click', '.photo-container [data-action="delete-photo"]', function (e) {
+        $('.photo-list', photosContainer).on('click', '.photo-container [data-action="photo-delete"]', function (e) {
           var parent = $(this).closest('.photo-container'),
               id     = parent.data('id');
           $.ajax({
@@ -347,7 +347,7 @@
         });
 
         // Set photo as main
-        $('.photo-list', photosContainer).on('click', '.photo-container [data-action="set-main-photo"]', function (e) {
+        $('.photo-list', photosContainer).on('click', '.photo-container [data-action="photo-set-main"]', function (e) {
           var parent = $(this).closest('.photo-container'),
               id     = parent.data('id');
           $.ajax({
@@ -357,8 +357,8 @@
           })
             .done(function (data, textStatus, jqXHR) {
               if (data.status == 'success') {
-                $('.photo-container [data-action="set-main-photo"] > span:not(.text-muted)').addClass('text-muted');
-                $('.photo-container[data-id="' + id + '"] [data-action="set-main-photo"] > span.text-muted', photosContainer).removeClass('text-muted');
+                $('.photo-container [data-action="photo-set-main"] > span:not(.text-muted)').addClass('text-muted');
+                $('.photo-container[data-id="' + id + '"] [data-action="photo-set-main"] > span.text-muted', photosContainer).removeClass('text-muted');
               }
             })
             .fail(function (jqXHR, textStatus, errorThrown) {
