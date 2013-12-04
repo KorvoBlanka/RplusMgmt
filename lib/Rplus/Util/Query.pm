@@ -262,6 +262,7 @@ sub parse {
         if (my $tsv_raw = $dbh->selectrow_arrayref("SELECT to_tsvector('russian', '".($q =~ s/'/''/gr)."')")->[0]) {
             my @tsv = $_tsv2array->($tsv_raw);
             my $tsv = join(' ', @tsv);
+            my @tsv_keep;
 
             my %found = (address_object => [], landmark => []);
 
@@ -281,6 +282,7 @@ sub parse {
                 for my $x (sort { $b->{len} <=> $a->{len} } @xfound) {
                     my $t = $x->{txt};
                     if ($tsv =~ s/(?:^|\s+)\Q$t\E(?:\s+|$)/ /) {
+                        push @tsv_keep, (split / /, $t) if $x->{ftype} eq 'landmark';
                         $found{$x->{ftype}} = [] unless exists $found{$x->{ftype}};
                         for my $y (@xfound) {
                             if ($y->{txt} eq $t) {
@@ -299,9 +301,9 @@ sub parse {
             {
                 my @xfound;
                 my $sql = "
-                    SELECT AO.id, AO.name, AO.full_type, AO.fts2, ts_rank(AO.fts2, '".join('|', @tsv)."'::tsquery) rank
+                    SELECT AO.id, AO.name, AO.full_type, AO.fts2, ts_rank(AO.fts2, '".join('|', @tsv, @tsv_keep)."'::tsquery) rank
                     FROM address_objects AO
-                    WHERE AO.fts @@ '".join('|', @tsv)."'::tsquery AND AO.level = 7 AND AO.curr_status = 0".($c && $c->config->{default_city_guid} ? " AND AO.parent_guid = '".$c->config->{default_city_guid}."'" : '')."
+                    WHERE AO.fts @@ '".join('|', @tsv, @tsv_keep)."'::tsquery AND AO.level = 7 AND AO.curr_status = 0".($c && $c->config->{default_city_guid} ? " AND AO.parent_guid = '".$c->config->{default_city_guid}."'" : '')."
                     ORDER BY rank DESC
                     LIMIT 30
                 ";
