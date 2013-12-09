@@ -374,8 +374,8 @@
 <nav class="navbar navbar-default navbar-fixed-bottom">
   <div class="container">
     <button type="button" class="btn btn-primary btn-sm navbar-btn" data-action="mediator-create"><span class="glyphicon glyphicon-plus"></span> <%= ucfloc 'add' %></button>
-    <button type="button" class="btn btn-warning btn-sm navbar-btn" data-action="mediator-edit" disabled="disabled"><span class="glyphicon glyphicon-pencil"></span></button>
-    <button type="button" class="btn btn-danger btn-sm navbar-btn"  data-action="mediator-delete" disabled="disabled"><span class="glyphicon glyphicon-trash"></span></button>
+    <button type="button" class="btn btn-warning btn-sm navbar-btn" data-action="mediator-edit" disabled="disabled"><span class="glyphicon glyphicon-pencil"></span> <%= ucfloc 'edit' %></button>
+    <button type="button" class="btn btn-danger btn-sm navbar-btn"  data-action="mediator-delete" disabled="disabled"><span class="glyphicon glyphicon-trash"></span> <%= ucfloc 'delete' %></button>
     <p class="navbar-text navbar-right"><span class="glyphicon glyphicon-refresh animation-rotate invisible indicator-ajax"></span></p>
   </div>
 </nav>

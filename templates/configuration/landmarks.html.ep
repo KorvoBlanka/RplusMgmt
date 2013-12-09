@@ -280,13 +280,15 @@
       <div class="form-group" style="width: 25%;">
         <input type="text" class="form-control input-sm" name="name" placeholder="<%= ucfloc q{name}, 2 %>" autocomplete="off" required>
       </div>
-      <div class="form-group" style="width: 65%">
+      <div class="form-group" style="width: 74%">
         <input type="text" class="form-control input-sm" name="keywords" placeholder="<%= ucfloc q{keywords} %>" autocomplete="off">
       </div>
+      <!--
       <div class="form-group pull-right">
         <button type="submit" class="btn btn-success btn-sm" data-action="landmark-save"><span class="glyphicon glyphicon-ok"></span></button>
         <button type="button" class="btn btn-danger btn-sm" data-action="landmark-delete" disabled="disabled"><span class="glyphicon glyphicon-trash"></span></button>
       </div>
+      -->
     </form>
   </div>
 </div>
@@ -319,6 +321,8 @@
 <nav class="navbar navbar-default navbar-fixed-bottom">
   <div class="container">
     <button type="button" class="btn btn-primary btn-sm navbar-btn" data-action="landmark-create"><span class="glyphicon glyphicon-plus"></span> <%= ucfloc q{add} %></button>
+    <button type="submit" class="btn btn-success btn-sm" form="landmarkForm" data-action="landmark-save"><span class="glyphicon glyphicon-ok"></span> <%= ucfloc q{save} %></button>
+    <button type="button" class="btn btn-danger btn-sm" form="landmarkForm" data-action="landmark-delete" disabled="disabled"><span class="glyphicon glyphicon-trash"></span> <%= ucfloc q{delete} %></button>
     <p class="navbar-text navbar-right"><span class="glyphicon glyphicon-refresh animation-rotate invisible indicator-ajax"></span></p>
   </div>
 </nav>
