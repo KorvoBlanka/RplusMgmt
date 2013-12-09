@@ -22,7 +22,6 @@ __PACKAGE__->register_db(
     pg_enable_utf8 => 1,
     post_connect_sql  => [
         "SET client_encoding TO 'UTF8'",
-        "SET enable_seqscan TO OFF",
         "SET search_path TO public,postgis",
     ]
 );
