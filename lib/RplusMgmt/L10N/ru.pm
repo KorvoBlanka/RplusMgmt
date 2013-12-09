@@ -57,12 +57,14 @@ our %Lexicon = (
     q{description} => 'описание',
     q{date range} => 'диапазон дат',
     q{date} => 'дата',
+    q{delete} => 'удалить',
 
     # E
     q{export media} => 'выгрузка прессы',
     q{empty} => 'пусто',
     q{end date} => 'дата окончания',
     q{export} => 'экспорт',
+    q{edit} => 'редактировать',
 
     # F
     q{found} => 'найдено',
