@@ -624,7 +624,7 @@
             }
           })
         ;
-        $('[data-action="realty-geo"]').click(function (e) { $('.modal').modal('show'); });
+        $('[data-action="realty-geo"]').click(function (e) { $('#geoModal').modal('show'); });
       })();
 
       // Photos slideshow
