@@ -230,6 +230,8 @@ BEGIN
     ) t1, regexp_split_to_table(t1.keywords, ',') t2;
     UPDATE query_keywords SET fts = to_tsvector('russian', fval);
 
+    DELETE FROM _query_cache;
+    ALTER SEQUENCE _query_cache_id_seq RESTART 1;
 END;
 $_$;
 
