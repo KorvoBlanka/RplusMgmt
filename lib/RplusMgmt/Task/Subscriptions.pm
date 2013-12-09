@@ -1,4 +1,4 @@
-package RplusMgmt::Task::Subscription;
+package RplusMgmt::Task::Subscriptions;
 
 use Rplus::Modern;
 

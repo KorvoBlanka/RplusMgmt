@@ -230,7 +230,7 @@ sub startup {
         $r2->get('/signout')->to('authentication#signout');
 
         # Tasks
-        $r2->get('/task/:action')->to(controller => 'task');
+        $r2->get('/tasks/:action')->to(controller => 'tasks');
 
         my $r2b = $r2->bridge->to(controller => 'authentication', action => 'auth');
 
