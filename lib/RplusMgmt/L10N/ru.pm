@@ -194,7 +194,7 @@ our %Lexicon = (
 
     # W
     q{weight (in group)} => 'вес',
-    q{work info} => 'рабочая инф.',
+    q{work info} => 'служебная информ.',
 
     _AUTO => 1
 );
