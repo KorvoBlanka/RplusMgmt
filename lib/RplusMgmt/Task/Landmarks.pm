@@ -14,6 +14,8 @@ sub run {
         change_date => {ge => \"(SELECT RP.ts FROM _runtime_params RP WHERE RP.key = 'tasks_run_mutex') + INTERVAL '15 min'"},
     ]);
     if ($landmarks_count) {
+        # TODO: Improve this (temporary solution)
+        $c->db->dbh->do(q{SELECT _query_keywords_refresh()});
         $c->db->dbh->do(q{
             UPDATE realty R
             SET landmarks = COALESCE((
