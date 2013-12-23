@@ -71,6 +71,7 @@
       % my $iter = Rplus::Model::Media::Manager->get_objects_iterator(query => [delete_date => undef]);
       % while (my $x = $iter->next) {
         "<%= $x->id %>": {id: <%= $x->id %>, name: "<%= $x->name %>", code: "<%= $x->code %>", type: "<%= $x->type %>"},
+        "<%= $x->type.'|'.$x->code %>": {id: <%= $x->id %>, name: "<%= $x->name %>", code: "<%= $x->code %>", type: "<%= $x->type %>"},
       % }
     <% } %> },
 

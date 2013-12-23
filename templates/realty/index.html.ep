@@ -165,8 +165,11 @@
           if (r.square_land) sq.push(r.square_land);
           return sq.length ? sq.join(' / ') : '';
         }},
-        {id: "source", name: "<%= ucfloc 'source' %>", sortName: "source_media.name", visible: false, val: function (r) {
+        {id: "source", name: "<%= ucfloc 'import' %>", sortName: "source_media.name", visible: false, val: function (r) {
           return r.source_media_id ? Rplus.Table['media'][r.source_media_id].name : '';
+        }},
+        {id: "export", name: "<%= ucfloc 'export' %>", visible: false, val: function (r) {
+          return r.export_media ? r.export_media.map(function (x) { return Rplus.Table['media']['export|' + x] ? Rplus.Table['media']['export|' + x].name : x }).join('<br>') : '';
         }},
         {id: "owner", name: "<%= ucfloc 'owner' %>", visible: true, style: "white-space: nowrap;", val: function (r) {
           return r.owner_phones ? r.owner_phones.map(function (x) { return Rplus.Util.formatPhoneNum(x) }).join('<br>') : '';

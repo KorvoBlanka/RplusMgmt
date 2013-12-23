@@ -82,6 +82,7 @@ our %Lexicon = (
 
     # I
     q{inactive} => 'неактивно',
+    q{import} => 'импорт',
 
     q{invalid login or password} => 'неверный логин или пароль',
 
