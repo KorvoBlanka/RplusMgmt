@@ -44,9 +44,12 @@ sub _json2params {
 # Parse the user's query and return Rose::DB::Object params
 sub parse {
     my ($class, $q, $c) = @_; # Class, Query string, Mojolicious::Controller (for config)
-    my $q_orig = $q = trim($q);
 
     return unless $q;
+    my $q_orig = $q = trim($q);
+
+    # Disabled params
+    my $disabled_query_items = {map { $_ => 1 } @{($c && $c->config->{disabled_query_items}) || []}};
 
     # Rose::DB::Object query format
     my @params;
@@ -267,6 +270,7 @@ sub parse {
                 # Delete found keywords for future processing
                 for my $x (sort { $b->{len} <=> $a->{len} } @xfound) {
                     my $t = $x->{txt};
+                    next if $disabled_query_items->{$x->{ftype}};
                     if ($tsv =~ s/(?:^|\s+)\Q$t\E(?:\s+|$)/ /) {
                         $found{$x->{ftype}} = [] unless exists $found{$x->{ftype}};
                         for my $y (@xfound) {
@@ -313,6 +317,7 @@ sub parse {
             }
 
             for my $x (keys %found) {
+                next if $disabled_query_items->{$x};
                 if ($x eq 'ap_scheme' || $x eq 'balcony' || $x eq 'bathroom' || $x eq 'condition' || $x eq 'house_type' || $x eq 'room_scheme') {
                     push @params, $x.'_id' => (@{$found{$x}} == 1 ? $found{$x}->[0] : $found{$x});
                 } elsif ($x eq 'realty_type') {

@@ -163,28 +163,6 @@ sub list {
         push @query, \("t1.owner_phones && '{".join(',', map { '"'.$_.'"' } @owner_phones)."}'") if @owner_phones;
     }
 
-    # Import search
-    # TODO: Localize
-    if ($q && $q =~ /импорт/i) {
-        my @source_media_ids;
-        for my $m (@{Rplus::Model::Media::Manager->get_objects(select => 'id, name', where => [type => 'import', delete_date => undef])}) {
-            my $name = lc $m->name;
-            push @source_media_ids, $m->id if $q =~ s/импорт\s+\Q$name\E//gi
-        }
-        push @query, source_media_id => \@source_media_ids if @source_media_ids;
-    }
-
-    # Export search
-    # TODO: Localize
-    if ($q && $q =~ /экспорт/i) {
-        my @export_media_codes;
-        for my $m (@{Rplus::Model::Media::Manager->get_objects(select => 'id, name, code', where => [type => 'export', delete_date => undef])}) {
-            my $name = lc $m->name;
-            push @export_media_codes, $m->code if $q =~ s/экспорт\s+\Q$name\E//gi;
-        }
-        push @query, export_media => {'&&' => \@export_media_codes} if @export_media_codes;
-    }
-
     # Parse query
     push @query, Rplus::Util::Query->parse($q, $self);
 

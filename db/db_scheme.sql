@@ -226,7 +226,9 @@ BEGIN
         SELECT 'room_scheme' AS ftype, DRS.id, DRS.keywords FROM dict_room_schemes DRS WHERE DRS.delete_date IS NULL UNION
         SELECT 'landmark' AS ftype, L.id, coalesce(L.keywords,L.name) AS keywords FROM landmarks L WHERE L.type IN ('landmark', 'sublandmark') AND L.delete_date IS NULL UNION
         SELECT 'realty_type' AS ftype, RT.id, coalesce(RT.keywords,RT.name) AS keywords FROM realty_types RT UNION
-        SELECT 'tag' AS ftype, T.id, coalesce(T.keywords,T.name) AS keywords FROM tags T WHERE T.delete_date IS NULL
+        SELECT 'tag' AS ftype, T.id, coalesce(T.keywords,T.name) AS keywords FROM tags T WHERE T.delete_date IS NULL UNION
+        SELECT 'media_import' AS ftype, MI.id, MI.keywords FROM media MI WHERE MI.type = 'import' AND MI.keywords IS NOT NULL AND MI.delete_date IS NULL UNION
+        SELECT 'media_export' AS ftype, ME.id, ME.keywords FROM media ME WHERE ME.type = 'export' AND ME.keywords IS NOT NULL AND ME.delete_date IS NULL
     ) t1, regexp_split_to_table(t1.keywords, ',') t2;
     UPDATE query_keywords SET fts = to_tsvector('russian', fval);
 
@@ -1418,6 +1420,7 @@ CREATE TABLE media (
     metadata json DEFAULT '{}'::json NOT NULL,
     add_date timestamp with time zone DEFAULT now() NOT NULL,
     delete_date timestamp with time zone,
+    keywords character varying(128),
     CONSTRAINT media_type_chk CHECK (((type)::text = ANY (ARRAY[('import'::character varying)::text, ('export'::character varying)::text])))
 );
 
@@ -1469,6 +1472,13 @@ COMMENT ON COLUMN media.add_date IS 'Дата/время добавления';
 --
 
 COMMENT ON COLUMN media.delete_date IS 'Дата/время удаления';
+
+
+--
+-- Name: COLUMN media.keywords; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN media.keywords IS 'Ключевые слова для поиска';
 
 
 --
@@ -1876,7 +1886,7 @@ CREATE TABLE realty (
     sublandmark_id integer,
     landmarks integer[] DEFAULT '{}'::integer[] NOT NULL,
     tags integer[] DEFAULT '{}'::integer[] NOT NULL,
-    export_media character varying(16)[] DEFAULT '{}'::integer[] NOT NULL,
+    export_media integer[] DEFAULT '{}'::integer[] NOT NULL,
     metadata json DEFAULT '{}'::json NOT NULL,
     fts tsvector,
     CONSTRAINT realty_agency_price_chk CHECK ((agency_price > (0)::double precision)),
