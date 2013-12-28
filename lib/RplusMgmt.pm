@@ -26,7 +26,7 @@ sub startup {
     my $config = $self->plugin('Config' => {file => 'app.conf'});
 
     # Secret
-    $self->secrets($config->{secrets} || ['no secret defined']);
+    $self->secrets($config->{secrets} || ($config->{secret} && [$config->{secret}]) || ['no secret defined']);
 
     # Default stash values
     $self->defaults(
