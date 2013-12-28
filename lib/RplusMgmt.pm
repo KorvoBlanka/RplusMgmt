@@ -26,12 +26,12 @@ sub startup {
     my $config = $self->plugin('Config' => {file => 'app.conf'});
 
     # Secret
-    $self->secret($config->{secret} || 'no secret defined');
+    $self->secrets($config->{secrets} || ['no secret defined']);
 
     # Default stash values
     $self->defaults(
         jquery_ver => '2.0.3',
-        bootstrap_ver => '3.0.2',
+        bootstrap_ver => '3.0.3',
         momentjs_ver => '2.2.1',
         holderjs_ver => '2.2.0',
         leafletjs_ver => '0.7',
