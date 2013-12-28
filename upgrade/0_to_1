@@ -81,3 +81,5 @@ if (1) {
 
     $dbh->do(q{ALTER TABLE public.realty ALTER COLUMN export_media TYPE INTEGER[] USING export_media::INTEGER[];});
 }
+
+system("$FindBin::Bin/../script/make_models");
