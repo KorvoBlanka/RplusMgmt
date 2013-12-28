@@ -7,6 +7,7 @@
 % use Rplus::Model::DictCondition::Manager;
 % use Rplus::Model::DictHouseType::Manager;
 % use Rplus::Model::DictRoomScheme::Manager;
+% use Rplus::Model::Media::Manager;
 % use Rplus::Model::User::Manager;
 
 % content_for header => begin
@@ -545,16 +546,11 @@
           <div class="panel panel-default panel-sm">
             <div class="panel-body">
               <strong><small><%= ucfloc 'export' %></small></strong>
-              % {
-              % my $export_codes = db->dbh->selectall_arrayref(
-              %   q{SELECT J.* FROM media M, json_each_text(M.metadata->'export_codes') J WHERE M.type='export' AND M.delete_date IS NULL ORDER BY J.value},
-              %   {Slice => {}}
-              % );
-              % for my $x (@$export_codes) {
+              % for my $x (@{Rplus::Model::Media::Manager->get_objects(query => [type => 'export', delete_date => undef])}) {
                 <div class="checkbox">
-                  <label><input type="checkbox" name="export_media" value="<%= $x->{'key'} %>" form="form-{guid}"> <small><%= $x->{'value'} %></small></label>
+                  <label><input type="checkbox" name="export_media" value="<%= $x->id %>" form="form-{guid}"> <small><%= $x->name %></small></label>
                 </div>
-              % }}
+              % }
             </div>
           </div>
         </div>
