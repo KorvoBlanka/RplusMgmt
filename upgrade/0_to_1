@@ -21,8 +21,8 @@ my $MEDIA_CODE_2_ID = {};
 
 # Database scruct changes
 if (1) {
-    #$dbh->do(q{ALTER TABLE public.media ADD COLUMN keywords VARCHAR(128);});
-    #$dbh->do(q{COMMENT ON COLUMN public.media.keywords IS 'Ключевые слова для поиска';});
+    $dbh->do(q{ALTER TABLE public.media ADD COLUMN keywords VARCHAR(128);});
+    $dbh->do(q{COMMENT ON COLUMN public.media.keywords IS 'Ключевые слова для поиска';});
     $dbh->do(q{
 CREATE OR REPLACE FUNCTION public._query_keywords_refresh (
 )
@@ -59,6 +59,7 @@ CALLED ON NULL INPUT
 SECURITY INVOKER
 COST 100;
     });
+    $dbh->do(q{SELECT _query_keywords_refresh()});
 }
 
 # Change realty->export_media codes to ids
@@ -82,4 +83,7 @@ if (1) {
     $dbh->do(q{ALTER TABLE public.realty ALTER COLUMN export_media TYPE INTEGER[] USING export_media::INTEGER[];});
 }
 
+# Update models
 system("$FindBin::Bin/../script/make_models");
+
+exit 0;
