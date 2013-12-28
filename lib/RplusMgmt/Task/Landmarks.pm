@@ -22,7 +22,7 @@ sub run {
                 SELECT array_agg(L.id) FROM landmarks L WHERE L.delete_date IS NULL AND ST_Covers(L.geodata::geography, R.geocoords)
             ), '{}')
             WHERE R.geocoords IS NOT NULL AND R.delete_date IS NULL AND NOT(R.state_code = 'delete')
-        });
+        }) if 0;
     }
 
     return;
