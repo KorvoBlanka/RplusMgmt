@@ -336,6 +336,12 @@ sub parse {
                 elsif ($x eq 'tag') {
                     push @params, tags => {ltree_ancestor => $found{$x}}; # @>
                 }
+                elsif ($x eq 'media_import') {
+                    push @params, source_media_id => (@{$found{$x}} == 1 ? $found{$x}->[0] : $found{$x});
+                }
+                elsif ($x eq 'media_export') {
+                    push @params, export_media => {'&&' => $found{$x}};
+                }
             }
 
             if (@{$found{address_object}} && @{$found{landmark}}) {
