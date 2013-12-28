@@ -20,8 +20,7 @@ sub _params2json {
     for (@_) {
         if (ref($_) eq 'SCALAR') {
             push @$storable_params, {ref => $$_};
-        }
-        else {
+        } else {
             push @$storable_params, $_;
         }
     }
@@ -35,8 +34,7 @@ sub _json2params {
     for (@$storable_params) {
         if (ref($_) eq 'HASH' && $_->{ref}) {
             push @params, \($_->{ref});
-        }
-        else {
+        } else {
             push @params, $_;
         }
     }
@@ -87,11 +85,9 @@ sub parse {
                 ($price1, $price2) = map { s/,/./r } ($1, $2);
                 if ($ss =~ /^${rub_re}$/) {
                     ($price1, $price2) = (map { int($_ / 1000) } ($price1, $price2));
-                }
-                elsif ($ss =~ /^$mln_re\s*(?:$rub_re)?$/) {
+                } elsif ($ss =~ /^$mln_re\s*(?:$rub_re)?$/) {
                     ($price1, $price2) = (map { int($_ * 1000) } ($price1, $price2));
-                }
-                else {
+                } else {
                     ($price1, $price2) = (map { int($_) } ($price1, $price2));
                 }
             }
@@ -102,11 +98,9 @@ sub parse {
                 my $price = ($2 =~ s/,/./r);
                 if ($ss =~ /^${rub_re}$/) {
                     $price = int($price / 1000);
-                }
-                elsif ($ss =~ /^$mln_re\s*(?:$rub_re)?$/) {
+                } elsif ($ss =~ /^$mln_re\s*(?:$rub_re)?$/) {
                     $price = int($price * 1000);
-                }
-                else {
+                } else {
                     $price = int($price);
                 }
                 if ($prefix eq 'от' || $prefix eq 'с') { $price1 = $price; } else { $price2 = $price; }
@@ -118,11 +112,9 @@ sub parse {
 
         if ($price1 && $price2) {
             push @params, price => {ge_le => [$price1, $price2]};
-        }
-        elsif ($price1) {
+        } elsif ($price1) {
             push @params, price => {ge => $price1};
-        }
-        elsif ($price2) {
+        } elsif ($price2) {
             push @params, price => {le => $price2};
         }
     }
@@ -161,8 +153,7 @@ sub parse {
 
         if ($rooms_count1 && $rooms_count2) {
             push @params, rooms_count => {ge_le => [$rooms_count1, $rooms_count2]};
-        }
-        elsif ($rooms_count) {
+        } elsif ($rooms_count) {
             push @params, rooms_count => $rooms_count;
         }
     }
@@ -191,11 +182,9 @@ sub parse {
 
         if ($floor1 && $floor2) {
             push @params, floor => {ge_le => [$floor1, $floor2]};
-        }
-        elsif ($floor1) {
+        } elsif ($floor1) {
             push @params, floor => {ge => $floor1};
-        }
-        elsif ($floor2) {
+        } elsif ($floor2) {
             push @params, floor => {le => $floor2};
         }
     }
@@ -224,11 +213,9 @@ sub parse {
 
         if ($square1 && $square2) {
             push @params, square_total => {ge_le => [$square1, $square2]};
-        }
-        elsif ($square1) {
+        } elsif ($square1) {
             push @params, square_total => {ge => $square1};
-        }
-        elsif ($square2) {
+        } elsif ($square2) {
             push @params, square_total => {le => $square2};
         }
     }
@@ -328,18 +315,14 @@ sub parse {
             for my $x (keys %found) {
                 if ($x eq 'ap_scheme' || $x eq 'balcony' || $x eq 'bathroom' || $x eq 'condition' || $x eq 'house_type' || $x eq 'room_scheme') {
                     push @params, $x.'_id' => (@{$found{$x}} == 1 ? $found{$x}->[0] : $found{$x});
-                }
-                elsif ($x eq 'realty_type') {
+                } elsif ($x eq 'realty_type') {
                     # TODO: Fixme
                     push @params, \("t1.type_code IN (SELECT RT.code FROM realty_types RT WHERE RT.id IN (".join(',', @{$found{$x}})."))");
-                }
-                elsif ($x eq 'tag') {
+                } elsif ($x eq 'tag') {
                     push @params, tags => {ltree_ancestor => $found{$x}}; # @>
-                }
-                elsif ($x eq 'media_import') {
+                } elsif ($x eq 'media_import') {
                     push @params, source_media_id => (@{$found{$x}} == 1 ? $found{$x}->[0] : $found{$x});
-                }
-                elsif ($x eq 'media_export') {
+                } elsif ($x eq 'media_export') {
                     push @params, export_media => {'&&' => $found{$x}};
                 }
             }
@@ -349,11 +332,9 @@ sub parse {
                     address_object_id => $found{address_object},
                     landmarks => {'&&' => $found{landmark}},
                 ];
-            }
-            elsif (@{$found{address_object}}) {
+            } elsif (@{$found{address_object}}) {
                 push @params, address_object_id => $found{address_object};
-            }
-            elsif (@{$found{landmark}}) {
+            } elsif (@{$found{landmark}}) {
                 push @params, landmarks => {'&&' => $found{landmark}};
             }
 
