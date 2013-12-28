@@ -11,7 +11,7 @@ sub run {
 
     # Select landmarks changed in 15 min of last run time
     my $landmarks_count = Rplus::Model::Landmark::Manager->get_objects_count(query => [
-        change_date => {ge => \"(SELECT RP.ts FROM _runtime_params RP WHERE RP.key = 'tasks_run_mutex') + INTERVAL '15 min'"},
+        change_date => {ge => \"(SELECT RP.ts FROM _runtime_params RP WHERE RP.key = 'tasks_run_mutex')"},
     ]);
     if ($landmarks_count) {
         # TODO: Improve this (temporary solution)
