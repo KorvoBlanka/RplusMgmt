@@ -43,14 +43,6 @@
     background-color: #faf2cc !important;
   }
 
-  #realtyTable > tbody > tr.wasshown > td {
-    background-color: #DBE2F0; 
-  }
-
-  #realtyTable > tbody > tr.wasshown:hover > td {
-    background-color: #D7DCE9;
-  }
-  
   #realtyTable > tbody > tr.opened > td {
     background-color: #f2dede; /* red = danger */
   }
@@ -102,7 +94,6 @@
     color: #c0c0c0;
   }
 </style>
-
 % end
 
 % content_for after_bootstrap => begin
@@ -119,7 +110,7 @@
   "use strict";
 
   registerGlobalAjaxEvents();
-  
+
   (function () {
     // Configuration of the realty table
     var realtyTableConf = {
@@ -190,7 +181,7 @@
           return r.agent_id ? Rplus.Table['users'][r.agent_id].name : '';
         }},
         {id: "added", name: "<%= ucfloc 'added' %>", sortName: "add_date", visible: true, val: function (r) {
-          return moment(r.add_date).format("DD.MM.YYYY HH:mm");
+          return moment(r.add_date).format("DD.MM.YYYY");
         }},
         {id: "changed", name: "<%= ucfloc 'changed' %>", sortName: "change_date", visible: false, val: function (r) {
           return moment(r.change_date).format("DD.MM.YYYY HH:mm");
@@ -199,13 +190,7 @@
     };
     var confVer = '1.0';
     var stackBottomRight = {"dir1": "up", "dir2": "left", "firstpos1": 75, "firstpos2": 25};
-	
-	var history = {
-	  timestamp: "",
-	};
-	
-	loadHistory();
-	
+
     // Load realty table conf from localStorage
     function loadRealtyTableConf() {
       var localConf = localStorage["realtyTableConf"];
@@ -227,46 +212,16 @@
       }
       localStorage["realtyTableConf"] = JSON.stringify(localConf);
     }
-	
-	function loadHistory() {
-		var h_string = localStorage["history"];
-		var t;
-		if(h_string) {
-			t = JSON.parse(h_string);
-		}
-		if(moment().startOf("day") - moment(t.timestamp).startOf("day") == 0) {
-			history = t;
-		}
-		history.timestamp = moment();
-		localStorage["history"] = JSON.stringify(history);
-	}
-	
-	function getHistory(id) {
-		return history[id];
-	}
-	
-	function putToHistory(id, htype, val) {
-		if(!history[id]) {
-			history[id] = {};
-		}
-		history[id][htype] = val;
-		localStorage["history"] = JSON.stringify(history);
-	}
-	
+
     var _listRealty_started = false, _listRealty_finished = false;
-    var _tid = 0;
-    
     function listRealty(page) {
       var q = $('#searchQuery').val();
       var stateCode = $('[data-filter="state_code"]').data('val');
       var offerTypeCode = $('[data-filter="offer_type_code"]').data('val');
       var agentId = $('[data-filter="agent_id"]').data('val');
       var sortBy = $('#realtyTable').data('sort');
+
       _listRealty_started = true;
-      
-      clearTimeout(_tid);
-      _tid = setTimeout(function(){updateRealty()},10000);
-      
       $.ajax({
         type: "POST",
         url: "/api/realty/list",
@@ -277,23 +232,7 @@
           var xhtml = '';
           for (var i = 0; i < data.list.length; i++) {
             var r = data.list[i];
-
-            xhtml += '<tr data-page="' + data.page + '" data-id="' + r.id + '" data-lat="' + r.latitude + '" data-lng="' + r.longitude +  '"';            
-            xhtml += ' class="';			
-			var h = getHistory(r.id);
-			if(h) {
-				if (h.selected > 0) {
-				  xhtml += 'selected ';
-				}            
-				if (h.modified > 0) {
-				  xhtml += 'modified ';
-				} 
-				if (h.wasshown > 0) {
-				  xhtml += 'wasshown ';
-				}
-			}
-            xhtml += '">';
-            
+            xhtml += '<tr data-page="' + data.page + '" data-id="' + r.id + '" data-lat="' + r.latitude + '" data-lng="' + r.longitude + '">';
             for (var j = 0; j < realtyTableConf.fields.length; j++) {
               var f = realtyTableConf.fields[j];
               xhtml += '<td class="' + (!f.visible ? 'hidden' : '') + '"' + (f.style ? ' style="' + f.style + '"' : '') + '>' + f.val(r) + '</td>';
@@ -315,7 +254,7 @@
             var r = data.list[i];
             $('#realtyTable > tbody > tr[data-id="' + r.id + '"]').data('obj', r);
           }
-          
+
           // Mark opened items
           $('#navTab > li > a[data-id]').each(function () {
             var id = $(this).data('id');
@@ -341,66 +280,7 @@
         })
       ;
     }
-    
-    function updateRealty() {
-      var q = $('#searchQuery').val();
-      var stateCode = $('[data-filter="state_code"]').data('val');
-      var offerTypeCode = $('[data-filter="offer_type_code"]').data('val');
-      var agentId = $('[data-filter="agent_id"]').data('val');
-      var sortBy = $('#realtyTable').data('sort');
-      _listRealty_started = true;
-      $.ajax({
-        type: "POST",
-        url: "/api/realty/list",
-        data: {q: q, state_code: stateCode, offer_type_code: offerTypeCode, agent_id: agentId, sort_by: sortBy, page: 1, per_page: 30},
-        complete: function () { _listRealty_started = false; }
-      })
-        .done(function (data, textStatus, jqXHR) {
-          
-          _tid = setTimeout(function(){updateRealty()},10000);
-          var xhtml = '';
-          var inserted = 0;
-          for (var i = 0; i < data.list.length; i++) {
-            var r = data.list[i];
-            // check if id in table
-            if($('#realtyTable > tbody > tr[data-id="' + r.id + '"]').length > 0) {continue;};
-            inserted ++;
-            xhtml += '<tr data-page="' + data.page + '" data-id="' + r.id + '" data-lat="' + r.latitude + '" data-lng="' + r.longitude +  '"';
 
-            xhtml += ' class="';
-            var h = getHistory(r.id);
-			if(h) {
-				if (h.selected > 0) {
-				  xhtml += 'selected ';
-				}            
-				if (h.modified > 0) {
-				  xhtml += 'modified ';
-				} 
-				if (h.wasshown > 0) {
-				  xhtml += 'wasshown ';
-				}
-			}
-            xhtml += '">';
-            
-            for (var j = 0; j < realtyTableConf.fields.length; j++) {
-              var f = realtyTableConf.fields[j];
-              xhtml += '<td class="' + (!f.visible ? 'hidden' : '') + '"' + (f.style ? ' style="' + f.style + '"' : '') + '>' + f.val(r) + '</td>';
-            }
-            xhtml += '</tr>';
-          }
-
-          _listRealty_finished = false;
-          
-          if (inserted > 0) {
-            $('#realtyTable > tbody').prepend(xhtml);          
-            for (var i = 0; i < data.list.length; i++) {
-              var r = data.list[i];
-              $('#realtyTable > tbody > tr[data-id="' + r.id + '"]').data('obj', r);
-            }
-          }
-        });
-    }
-    
     // Open realty object card
     function openRealtyCard(id, backgroung) {
       if (!id) return;
@@ -443,8 +323,6 @@
               $('td:nth-child(' + (j + 1) + ')', $tr).html(f.val(r));
             }
             $tr.addClass('modified');
-			putToHistory(id, "modified", 1);
-			putToHistory(id, "selected", 0);
           }
         },
         close: function (r) {
@@ -477,9 +355,7 @@
 
         // Remove the highlighting in the table
         if (id) {
-          $('#realtyTable > tbody > tr[data-id="' + id + '"]').removeClass('opened').addClass('wasshown');
-		  putToHistory(id, "wasshown", 1);
-		  putToHistory(id, "selected", 0);
+          $('#realtyTable > tbody > tr[data-id="' + id + '"]').removeClass('opened');
         }
       }
     }
@@ -559,7 +435,7 @@
 
       // Set realty table wrapper height
       // Fixme: $('.navbar-fixed-bottom').height() - doesn't work
-      $('#realtyTableWrapper').height($(window).height() - $('#realtyTable').get(0).getBoundingClientRect().top - 50/*$('.navbar-fixed-bottom').height()*/);
+      $('#realtyTableWrapper').height($(window).height() - $('#realtyTable').get(0).getBoundingClientRect().top - 51/*$('.navbar-fixed-bottom').height()*/);
 
       // Show/hide realty table columns
       $('#realtyTableMenu > li > a').click(function (e) {
@@ -580,10 +456,7 @@
 
       // Infinite scroll
       $('#realtyTableWrapper').scroll(function (e) {
-        clearTimeout(_tid);
-        _tid = setTimeout(function(){updateRealty()},10000);
-        //if ($(this).scrollTop() + $(this).innerHeight() >= $(this)[0].scrollHeight) {
-        if ($(this).scrollTop() + $(this).innerHeight() >= $(this)[0].scrollHeight - 1) {   // clutch for iMac
+        if ($(this).scrollTop() + $(this).innerHeight() >= $(this)[0].scrollHeight) {
           var lastPage = $('#realtyTable > tbody > tr:last').data('page');
           if (!_listRealty_started && !_listRealty_finished) listRealty(lastPage + 1);
         }
@@ -595,26 +468,17 @@
         $('#realtyTable > tbody').on('click', 'tr', function (e) {
           var $this = $(this);
           var id = $this.data('id');
-        
+
           if (e.shiftKey) {
             // Select all elements from first selected to clicked
             var $prev = $this.prevUntil('.selected', ':not(.opened)');
             if ($prev.length) {
-              $prev.addClass('selected');    
-
+              $prev.addClass('selected');
             }
           }
 
           if (!_dblclick_timer || _dblclick_timer[0] != id) {
-            if (!$this.hasClass('opened')) {
-              $this.toggleClass('selected');
-              if (!$this.hasClass('selected')) {
-                putToHistory(id, "selected", 0);
-              }
-              else {
-				putToHistory(id, "selected", 1);
-              }
-            }
+            if (!$this.hasClass('opened')) $this.toggleClass('selected');
             _dblclick_timer = [
               id, setTimeout(function () {
                 if (_dblclick_timer[0] == id) _dblclick_timer = null;
@@ -695,7 +559,7 @@
           ;
         });
       });
-	  
+
       // Change state
       $('[data-action="realty-set-state"]').click(function (e) {
         var stateCode = $(this).data('val');
@@ -820,7 +684,6 @@
 % end
 
 % content_for modals => begin
-
 <!-- Modal:Geo -->
 <div class="modal fade" id="geoModal" tabindex="-1" role="dialog" aria-hidden="true">
   <div class="modal-dialog">
