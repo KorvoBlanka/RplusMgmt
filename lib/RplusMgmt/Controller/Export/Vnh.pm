@@ -94,7 +94,7 @@ sub index {
                     state_code => 'work',
                     offer_type_code => $P->{'offer_type_code'},
                     'type.category_code' => ['room', 'apartment'],
-                    \("t1.export_media && '{vnh,vnh_online}'"),
+                    export_media => {'&&' => $media->id},
                 ],
                 sort_by => 'address_object.expanded_name',
                 with_objects => ['address_object', 'sublandmark', 'type', 'agent'],
@@ -141,7 +141,7 @@ sub index {
                     $realty->price,
                     $phones,
                     $P->{'company'} || '',
-                    scalar(grep { $_ eq 'vnh' } @{$realty->export_media}) ? '+' : '',
+                    '+',
                 ];
                 for my $col_num (0..(scalar(@$row)-1)) {
                     if ($col_num == 5) {
@@ -195,7 +195,7 @@ sub index {
                     state_code => 'work',
                     offer_type_code => $P->{'offer_type_code'},
                     'type.category_code' => 'house',
-                    \("t1.export_media && '{vnh,vnh_online}'"),
+                    export_media => {'&&' => $media->id},
                 ],
                 sort_by => 'address_object.expanded_name',
                 with_objects => ['address_object', 'sublandmark', 'type', 'agent'],
@@ -235,7 +235,7 @@ sub index {
                     $realty->price,
                     $phones,
                     $P->{'company'} || '',
-                    scalar(grep { $_ eq 'vnh' } @{$realty->export_media}) ? '+' : '',
+                    '+',
                 ];
                 for my $col_num (0..(scalar(@$row)-1)) {
                     $worksheet->write($row_num, $col_num, $row->[$col_num]);

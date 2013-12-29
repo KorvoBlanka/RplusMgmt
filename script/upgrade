@@ -1,0 +1,36 @@
+#!/usr/bin/env perl
+
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+
+use Rplus::Modern;
+
+my ($version_old, $version_new);
+
+sub get_version {
+    my $version;
+    if (open my $fh, "<$FindBin::Bin/../upgrade/version") {
+        $version = int scalar <$fh>;
+        close $fh;
+    }
+    return $version || 0;
+}
+
+$version_old = get_version();
+
+say "Running hg pull && hg update";
+
+chdir "$FindBin::Bin/..";
+system(qw/hg pull/) == 0 or die "hg pull failed";
+system(qw/hg update/) == 0 or die "hg update failed";
+
+$version_new = get_version();
+
+for ($version_old..($version_new - 1)) {
+    my ($version1, $version2) = ($_, $_ + 1);
+    my $upgrade_script = "$FindBin::Bin/../upgrade/${version1}_to_${version2}";
+    if (-f $upgrade_script) {
+        say "Running $upgrade_script";
+        system($upgrade_script) or die "upgrade from $version1 to $version2 failed";
+    }
+}

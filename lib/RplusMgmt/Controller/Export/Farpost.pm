@@ -88,7 +88,7 @@ sub index {
             my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
                 query => [
                     state_code => 'work',
-                    \("t1.export_media && '{farpost}'"),
+                    export_media => {'&&' => $media->id},
                 ],
                 sort_by => 'address_object.expanded_name',
                 require_objects => ['type', 'offer_type'],

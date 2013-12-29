@@ -69,7 +69,7 @@ sub index {
                         state_code => 'work',
                         offer_type_code => $P->{'offer_type_code'},
                         'type.category_code' => 'room',
-                        \("t1.export_media && '{present}'"),
+                        export_media => {'&&' => $media->id},
                         ($l ? \("t1.landmarks && '{".$l->id."}'") : \("NOT (t1.landmarks && ARRAY(SELECT L.id FROM landmarks L WHERE L.type = 'present' AND L.delete_date IS NULL))")),
                     ],
                     sort_by => 'address_object.expanded_name',
