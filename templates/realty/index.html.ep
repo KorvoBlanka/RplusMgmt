@@ -43,11 +43,11 @@
     background-color: #faf2cc !important;
   }
 
-  #realtyTable > tbody > tr.wasshown > td {
+  #realtyTable > tbody > tr.shown > td {
     background-color: #DBE2F0; 
   }
 
-  #realtyTable > tbody > tr.wasshown:hover > td {
+  #realtyTable > tbody > tr.shown:hover > td {
     background-color: #D7DCE9;
   }
   
@@ -102,7 +102,6 @@
     color: #c0c0c0;
   }
 </style>
-
 % end
 
 % content_for after_bootstrap => begin
@@ -199,13 +198,7 @@
     };
     var confVer = '1.0';
     var stackBottomRight = {"dir1": "up", "dir2": "left", "firstpos1": 75, "firstpos2": 25};
-	
-	var history = {
-	  timestamp: "",
-	};
-	
-	loadHistory();
-	
+
     // Load realty table conf from localStorage
     function loadRealtyTableConf() {
       var localConf = localStorage["realtyTableConf"];
@@ -227,35 +220,39 @@
       }
       localStorage["realtyTableConf"] = JSON.stringify(localConf);
     }
-	
-	function loadHistory() {
-		var h_string = localStorage["history"];
-		var t;
-		if(h_string) {
-			t = JSON.parse(h_string);
-		}
-		if(moment().startOf("day") - moment(t.timestamp).startOf("day") == 0) {
-			history = t;
-		}
-		history.timestamp = moment();
-		localStorage["history"] = JSON.stringify(history);
-	}
-	
-	function getHistory(id) {
-		return history[id];
-	}
-	
-	function putToHistory(id, htype, val) {
-		if(!history[id]) {
-			history[id] = {};
-		}
-		history[id][htype] = val;
-		localStorage["history"] = JSON.stringify(history);
-	}
-	
+
+    var history = {
+      timestamp: "",
+    };
+
+    function loadHistory() {
+      var h_string = localStorage["history"];
+      var t;
+      if (h_string) {
+        t = JSON.parse(h_string);
+        if(moment().startOf("day") - moment(t.timestamp).startOf("day") == 0) {
+          history = t;
+        }
+      }
+      history.timestamp = moment();
+      localStorage["history"] = JSON.stringify(history);
+    }
+
+    function getHistory(id) {
+      return history[id];
+    }
+
+    function putToHistory(id, htype, val) {
+      if(!history[id]) {
+        history[id] = {};
+      }
+      history[id][htype] = val;
+      localStorage["history"] = JSON.stringify(history);
+    }
+
     var _listRealty_started = false, _listRealty_finished = false;
     var _tid = 0;
-    
+
     function listRealty(page) {
       var q = $('#searchQuery').val();
       var stateCode = $('[data-filter="state_code"]').data('val');
@@ -263,10 +260,10 @@
       var agentId = $('[data-filter="agent_id"]').data('val');
       var sortBy = $('#realtyTable').data('sort');
       _listRealty_started = true;
-      
+
       clearTimeout(_tid);
       _tid = setTimeout(function(){updateRealty()},10000);
-      
+
       $.ajax({
         type: "POST",
         url: "/api/realty/list",
@@ -279,21 +276,21 @@
             var r = data.list[i];
 
             xhtml += '<tr data-page="' + data.page + '" data-id="' + r.id + '" data-lat="' + r.latitude + '" data-lng="' + r.longitude +  '"';            
-            xhtml += ' class="';			
-			var h = getHistory(r.id);
-			if(h) {
-				if (h.selected > 0) {
-				  xhtml += 'selected ';
-				}            
-				if (h.modified > 0) {
-				  xhtml += 'modified ';
-				} 
-				if (h.wasshown > 0) {
-				  xhtml += 'wasshown ';
-				}
-			}
+            xhtml += ' class="';
+            var h = getHistory(r.id);
+            if (h) {
+              if (h.selected > 0) {
+                xhtml += 'selected ';
+              }
+              if (h.modified > 0) {
+                xhtml += 'modified ';
+              }
+              if (h.shown > 0) {
+                xhtml += 'shown ';
+              }
+            }
             xhtml += '">';
-            
+
             for (var j = 0; j < realtyTableConf.fields.length; j++) {
               var f = realtyTableConf.fields[j];
               xhtml += '<td class="' + (!f.visible ? 'hidden' : '') + '"' + (f.style ? ' style="' + f.style + '"' : '') + '>' + f.val(r) + '</td>';
@@ -315,7 +312,7 @@
             var r = data.list[i];
             $('#realtyTable > tbody > tr[data-id="' + r.id + '"]').data('obj', r);
           }
-          
+
           // Mark opened items
           $('#navTab > li > a[data-id]').each(function () {
             var id = $(this).data('id');
@@ -341,7 +338,9 @@
         })
       ;
     }
-    
+
+    // загружает вновь появившиеся записи в таблицу, получает "первую страницу" из БД и ищет по id отсутствующие в таблице записи
+    // TODO: реализация "интерактивности", например: если объект помечается как удаленный, он исчезает из таблиц у всех клиентов без перезагрузки страницы
     function updateRealty() {
       var q = $('#searchQuery').val();
       var stateCode = $('[data-filter="state_code"]').data('val');
@@ -356,7 +355,6 @@
         complete: function () { _listRealty_started = false; }
       })
         .done(function (data, textStatus, jqXHR) {
-          
           _tid = setTimeout(function(){updateRealty()},10000);
           var xhtml = '';
           var inserted = 0;
@@ -369,19 +367,19 @@
 
             xhtml += ' class="';
             var h = getHistory(r.id);
-			if(h) {
-				if (h.selected > 0) {
-				  xhtml += 'selected ';
-				}            
-				if (h.modified > 0) {
-				  xhtml += 'modified ';
-				} 
-				if (h.wasshown > 0) {
-				  xhtml += 'wasshown ';
-				}
-			}
+            if (h) {
+              if (h.selected > 0) {
+                xhtml += 'selected ';
+              }
+              if (h.modified > 0) {
+                xhtml += 'modified ';
+              }
+              if (h.shown > 0) {
+                xhtml += 'shown ';
+              }
+            }
             xhtml += '">';
-            
+
             for (var j = 0; j < realtyTableConf.fields.length; j++) {
               var f = realtyTableConf.fields[j];
               xhtml += '<td class="' + (!f.visible ? 'hidden' : '') + '"' + (f.style ? ' style="' + f.style + '"' : '') + '>' + f.val(r) + '</td>';
@@ -400,7 +398,7 @@
           }
         });
     }
-    
+
     // Open realty object card
     function openRealtyCard(id, backgroung) {
       if (!id) return;
@@ -443,8 +441,8 @@
               $('td:nth-child(' + (j + 1) + ')', $tr).html(f.val(r));
             }
             $tr.addClass('modified');
-			putToHistory(id, "modified", 1);
-			putToHistory(id, "selected", 0);
+            putToHistory(id, "modified", 1);
+            putToHistory(id, "selected", 0);
           }
         },
         close: function (r) {
@@ -477,9 +475,9 @@
 
         // Remove the highlighting in the table
         if (id) {
-          $('#realtyTable > tbody > tr[data-id="' + id + '"]').removeClass('opened').addClass('wasshown');
-		  putToHistory(id, "wasshown", 1);
-		  putToHistory(id, "selected", 0);
+          $('#realtyTable > tbody > tr[data-id="' + id + '"]').removeClass('opened').addClass('shown');
+            putToHistory(id, "shown", 1);
+            putToHistory(id, "selected", 0);
         }
       }
     }
@@ -521,6 +519,7 @@
       // Init realty table and menu
       (function () {
         loadRealtyTableConf();
+        loadHistory();
         var xhtml = '<tr>',
             xhtml2 = '';
         for (var i = 0; i < realtyTableConf.fields.length; i++) {
@@ -612,7 +611,7 @@
                 putToHistory(id, "selected", 0);
               }
               else {
-				putToHistory(id, "selected", 1);
+                putToHistory(id, "selected", 1);
               }
             }
             _dblclick_timer = [
@@ -695,7 +694,7 @@
           ;
         });
       });
-	  
+
       // Change state
       $('[data-action="realty-set-state"]').click(function (e) {
         var stateCode = $(this).data('val');

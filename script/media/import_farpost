@@ -1,0 +1,324 @@
+#!/usr/bin/env perl
+
+use FindBin;
+use lib "$FindBin::Bin/../../lib";
+
+use Rplus::Modern;
+
+use Rplus::Model::AddressObject;
+use Rplus::Model::AddressObject::Manager;
+use Rplus::Model::Media;
+use Rplus::Model::Media::Manager;
+use Rplus::Model::Mediator;
+use Rplus::Model::Mediator::Manager;
+use Rplus::Model::MediaImportHistory;
+use Rplus::Model::MediaImportHistory::Manager;
+use Rplus::Model::Realty;
+use Rplus::Model::Realty::Manager;
+
+use Rplus::Util::PhoneNum;
+use Rplus::Util::Realty;
+use Rplus::Util::Image;
+use Rplus::Util::Geo;
+
+use Text::Trim;
+use JSON;
+use Mojo::UserAgent;
+
+my $sell_flats_url = 'http://khabarovsk.farpost.ru/realty/sell_flats/?agentType=privatePerson';
+my $rent_flats_url = 'http://khabarovsk.farpost.ru/realty/rent_flats/?agentType=privatePerson';
+my $sell_houses_url = 'http://khabarovsk.farpost.ru/realty/sell_houses/?agentType=privatePerson';
+my $rent_houses_url = 'http://khabarovsk.farpost.ru/realty/rent_houses/?agentType=privatePerson';
+my $sell_land_url = 'http://khabarovsk.farpost.ru/realty/land/?agentType=privatePerson';
+
+my $MEDIA = Rplus::Model::Media::Manager->get_objects(query => [type => 'import', code => 'farpost', delete_date => undef])->[0];	# code => 'avito'
+exit unless $MEDIA;
+my $META = decode_json($MEDIA->metadata);
+
+my $ua = Mojo::UserAgent->new;
+$ua->max_redirects(3);
+
+# список посредников
+my %MEDIATOR_PHONES; {
+    my $mediator_iter = Rplus::Model::Mediator::Manager->get_objects_iterator(query => [delete_date => undef], require_objects => ['company']);
+    while (my $x = $mediator_iter->next) {
+        $MEDIATOR_PHONES{$x->phone_num} = {
+            id => $x->id,
+            name => $x->name,
+            company => $x->company->name,
+        };
+    }
+}
+
+import_farpost ();
+
+sub import_farpost {
+    my @url_list;
+
+    # sale flats
+    @url_list = get_url_list($sell_flats_url, 2, sub {return 1});
+    process_url_list(\@url_list, 'apartment', 'sale');
+
+    # rent flats
+    @url_list = get_url_list($rent_flats_url, 2, sub {return 1});
+    process_url_list(\@url_list, 'apartment', 'rent');
+
+    # sell houses
+    @url_list = get_url_list($sell_houses_url, 2, sub {return 1});
+    process_url_list(\@url_list, 'house', 'sale');
+
+    # rent houses
+    @url_list = get_url_list($rent_houses_url, 2, sub {
+        my $title = shift;
+        return 1 if $title =~ /сдам|сда[её]м|сда[её]тся|зда[её]тся/i;
+        return 0;
+    });
+    process_url_list(\@url_list, 'house', 'sale');
+
+    # sell land
+    @url_list = get_url_list($sell_land_url, 2, sub {return 1});
+    process_url_list(\@url_list, 'land', 'sale');
+}
+
+sub get_url_list {
+    my ($main_page, $page_count, $check) = @_;
+    my @url_list;
+
+    for(my $i = 0; $i < $page_count; $i ++) {
+        sleep 2;
+        my $res = $ua->get($main_page . '?page='.$i)->res;
+        my $dom = $res->dom;
+
+        $dom->find('a[class="bulletinLink "]')->each (sub {
+            if ($check->( $_->text )) {
+                push(@url_list, $_->{href});
+            }
+        });
+    }
+    return @url_list;
+}
+
+sub process_url_list {
+    my ($url_list_ref, $category_code, $offer_type) = @_;
+    for my $item_url (@$url_list_ref){
+        say 'processing ' . $item_url;
+        my $data = {
+            source_media_id => $MEDIA->id,
+        };
+        $data->{'category_code'} = $category_code;
+        $data->{'type_code'} = $category_code;
+        $data->{'offer_type_code'} = $offer_type;
+
+        sleep 2;
+        eval {
+            my $dom = $ua->get($item_url)->res->dom;
+            next unless defined $dom;
+            # найдем телефон
+            if ($dom->find('span[class="phone"]')->size > 0) {
+                my $phone_str = $dom->find('span[class="phone"]')->first->text;
+                $phone_str =~ s/\D//g;
+                if (length $phone_str > 5) {
+                    if (my $phone_num = Rplus::Util::PhoneNum->parse($phone_str, $META->{'params'}->{'default_phone_prefix'})) {
+                        $data->{'owner_phones'} = ($phone_num, );
+                    }
+                }
+            }
+            # Пропустим объявления без номеров телефонов
+            # Пропустим объявления посредников
+            if (not defined  $data->{'owner_phones'}) {
+                say "no phone was found";
+                next;
+            }
+            if (exists $MEDIATOR_PHONES{$data->{'owner_phones'}}) {
+                say "Found mediator, phone: $data->{'owner_phones'}";
+                next;
+            }
+            # описание
+            my $dsk = $dom->find('p[data-field="text"]')->first->text;
+            # Пропустим уже обработанные объявления
+            my $media_num = $dom->find('b[id="bulletinId"]')->first->{'value'} . '_farpost';
+            if (Rplus::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $media_num, media_text => $dsk])) {
+                say 'was processed already';
+                next;
+            }
+            $data->{'source_media_text'} = $dsk;
+
+            my $addr;
+            # адрес, улица + номер дома или только улица
+            if ($dom->find('span[data-field="street-buildingId"]')->size > 0) {
+                $addr = $dom->find('span[data-field="street-buildingId"]')->first->all_text;
+            } elsif ($dom->find('span[data-field="street"]')->size > 0) {
+                $addr = $dom->find('span[data-field="street"]')->first->all_text;
+            }
+
+            my $t;
+            given($data->{'type_code'}) {
+                when ('apartment') {
+                    # квартира или комната
+                    # количество комнат
+                    $t = $dom->find('span[data-field="flatType"]')->first->text;
+                    # d-к квратира.
+                    if ($t eq 'Комната') {
+                        $data->{'category_code'} = 'room';
+                        $data->{'type_code'} = 'room';
+                    } elsif ($t =~ /^(\d{1,}).*?$/) {
+                        $data->{'rooms_count'} = $1;
+                    }
+                    # площадь
+                    if ($dom->find('span[data-field="areaTotal"]')->size > 0) {
+                        $t = $dom->find('span[data-field="areaTotal"]')->first->text; 
+                        # d м2.
+                        if ($t =~ /^(\d{1,}).*?$/) {
+                            $data->{'square_total'} = $1;
+                        }
+                    }
+                }
+                when ('house') {
+                    # дом или коттедж
+                    $t = $dom->find('span[data-field="subject"]')->first->text;
+                    if ($t =~ /коттедж/i) {
+                        $data->{'type_code'} = 'cottage';
+                    }
+                    # жилая площадь
+                    if ($dom->find('span[data-field="areaLiving"]')->size > 0) {
+                        $t = $dom->find('span[data-field="areaLiving"]')->first->text; 
+                        # d м2.
+                        if ($t =~ /^(\d{1,}).*?$/) {
+                            $data->{'square_total'} = $1;
+                        }
+                    }
+                    # площадь участка
+                    if ($dom->find('span[data-field="areaTotal"]')->size > 0) {
+                        $t = $dom->find('span[data-field="areaTotal"]')->first->text; 
+                        if ($t =~ /(\d+(?:,\d+)?)\s+кв\.\s*м/) {
+                            $t =~ s/\s//;
+                            if ($t =~ /^(\d{1,}).*?$/) {
+                                $data->{'square_land'} = $1;
+                            }
+                        } elsif ($t =~ s/(\d+)\s+сот\.?//) {
+                            $data->{'square_land'} = $1;
+                            $data->{'square_land_type'} = 'ar';
+                        } elsif ($t =~ s/(\d(?:,\d+)?)\s+га//) {
+                            $data->{'square_land'} = $1 =~ s/,/./r;
+                            $data->{'square_land_type'} = 'hectare';
+                        }
+                    }
+                }
+                when ('land') {
+                    # земельный участок
+                    # площадь участка
+                    if ($dom->find('span[data-field="areaTotal"]')->size > 0) {
+                        $t = $dom->find('span[data-field="areaTotal"]')->first->text; 
+                        if ($t =~ /(\d+(?:,\d+)?)\s+кв\.\s*м/) {
+                            $t =~ s/\s//;
+                            if ($t =~ /^(\d{1,}).*?$/) {
+                                $data->{'square_land'} = $1;
+                            }
+                        } elsif ($t =~ s/(\d+)\s+сот\.?//) {
+                            $data->{'square_land'} = $1;
+                            $data->{'square_land_type'} = 'ar';
+                        } elsif ($t =~ s/(\d(?:,\d+)?)\s+га//) {
+                            $data->{'square_land'} = $1 =~ s/,/./r;
+                            $data->{'square_land_type'} = 'hectare';
+                        }
+                    }
+                }
+                default {}
+            }
+
+            # цена в рублях, переведем в тыс.
+            if ($dom->find('span[data-field="price"]')->size > 0) {
+                $t = $dom->find('span[data-field="price"]')->first->all_text;
+                $t =~s/\s//g;
+                if ($t =~ /^(\d{1,}).*?$/) {
+                    $data->{'owner_price'} = $1 / 1000;
+                }
+            }
+
+            # Распознавание адреса
+            if (defined $addr) {
+                my $ts_query = join(' | ', grep { $_ && length($_) > 1 } split(/\W/, $addr));
+                if ($ts_query) {
+                    $ts_query =~ s/'/''/g;
+                    my $addrobj = Rplus::Model::AddressObject::Manager->get_objects(
+                        query => [
+                            # english - чтобы не отбрасывались окончания
+                            \("t1.fts @@ to_tsquery('russian', '$ts_query')"),
+                            parent_guid => $META->{'params'}->{'ao_parent_guid'},
+                            curr_status => 0,
+                            level => 7,
+                        ],
+                        sort_by => "ts_rank(t1.fts2, to_tsquery('russian', '$ts_query')) desc, case when short_type = 'ул' then 0 else 1 end",
+                        limit => 1,
+                    )->[0];
+                    if ($addrobj) {
+                        if ($addr =~ /,\s+(\d+(?:\w)?)/) {
+                            $data->{'house_num'} = uc($1);
+                            # Запросим координаты объекта
+                            my %coords = Rplus::Util::Geo::get_coords_by_addr($addrobj, uc($1));
+                            if (%coords) {
+                                @{$data}{keys %coords} = values %coords;
+                            }
+                        }
+                        $data->{'address_object_id'} = $addrobj->id;
+                    }
+                }
+            }
+
+            # Разделим остальную часть обявления на части и попытаемся вычленить полезную информацию
+            my @bp = grep { $_ && length($_) > 1 } trim(split /[,()]/, $dsk);
+            for my $el (@bp) {
+                # Этаж/этажность
+                if ($el =~ /^(\d{1,2})\/(\d{1,2})$/) {
+                    if ($2 > $1) {
+                        $data->{'floor'} = $1;
+                        $data->{'floors_count'} = $2;
+                    }
+                    next;
+                }
+                for my $k (keys %{$META->{'params'}->{'dict'}}) {
+                    my %dict = %{$META->{'params'}->{'dict'}->{$k}};
+                    my $field = delete $dict{'__field__'};
+                    for my $re (keys %dict) {
+                        if ($el =~ /$re/i) {
+                            $data->{$field} = $dict{$re};
+                            last;
+                        }
+                    }
+                }
+            }
+            # Этаж#2
+            if (!$data->{'floor'} && $dsk =~ /(\d{1,2})\s+эт\.?/) {
+                $data->{'floor'} = $1;
+            }
+
+            my $id;
+            if ($id = Rplus::Util::Realty->find_similar(%$data, state_code => ['raw', 'work', 'suspended'])) {
+                say "Found similar realty: $id";
+            } else {
+                eval {
+                    my $realty = Rplus::Model::Realty->new((map { $_ => $data->{$_} } grep { $_ ne 'category_code' } keys %$data), state_code => 'raw');
+                    $realty->save;
+                    my $id = $realty->id;
+                    say "Saved new realty: $id";
+                    # вытащим фото
+                    $dom->find('div[class="zoomLink"]')->each ( sub {
+                        my $img_url = $_->img->{'data-zoom-image'};
+                        say 'loading image '.$img_url;
+                        my $image = $ua->get($img_url)->res->content->asset;
+                        Rplus::Util::Image::load_image($id, $image);
+                    });
+                } or do {
+                    say $@;
+                }
+            }
+
+            # Сохраним историю
+            if ($id && !Rplus::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $media_num, realty_id => $id])) {
+                Rplus::Model::MediaImportHistory->new(media_id => $MEDIA->id, media_num => $media_num, media_text => $data->{'source_media_text'}, realty_id => $id)->save;
+            }
+        } or do {
+            say $@;
+        }
+    }
+}

@@ -151,7 +151,7 @@
         top: auto;
       }
     </style>
-    
+
     <%= content_for 'header' %>
   </head>
   <body>
@@ -229,7 +229,7 @@
       <!-- Modal Definitions -->
       <%= content_for 'modals' %>
     </div>
-    
+
     <!-- JavaScript -->
     <script type="application/javascript" src="<%= $assets_url %>/jquery/<%= $jquery_ver %>/jquery-<%= $jquery_ver %>.min.js"></script>
     <%= content_for 'before_bootstrap' %>
