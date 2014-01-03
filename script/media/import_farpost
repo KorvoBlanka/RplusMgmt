@@ -31,6 +31,9 @@ my $sell_houses_url = 'http://khabarovsk.farpost.ru/realty/sell_houses/?agentTyp
 my $rent_houses_url = 'http://khabarovsk.farpost.ru/realty/rent_houses/?agentType=privatePerson';
 my $sell_land_url = 'http://khabarovsk.farpost.ru/realty/land/?agentType=privatePerson';
 
+my $config_path = "$FindBin::Bin/../../app.conf";
+my $config = Rplus::Util::Config::get_config($config_path);
+
 my $MEDIA = Rplus::Model::Media::Manager->get_objects(query => [type => 'import', code => 'farpost', delete_date => undef])->[0];	# code => 'avito'
 exit unless $MEDIA;
 my $META = decode_json($MEDIA->metadata);
@@ -306,7 +309,7 @@ sub process_url_list {
                         my $img_url = $_->img->{'data-zoom-image'};
                         say 'loading image '.$img_url;
                         my $image = $ua->get($img_url)->res->content->asset;
-                        Rplus::Util::Image::load_image($id, $image);
+                        Rplus::Util::Image::load_image($id, $image, $config->{storage}->{path});
                     });
                 } or do {
                     say $@;

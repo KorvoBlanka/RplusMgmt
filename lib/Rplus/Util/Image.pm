@@ -12,10 +12,7 @@ use File::Path qw(make_path);
 use Image::Magick;
 
 sub load_image {
-    my $config = Rplus::Util::Config::get_config();
-    my $storage_path = $config->{storage}->{path};
-    
-    my ($realty_id, $file) = @_;
+    my ($realty_id, $file, $storage_path) = @_;
 
     my $path = $storage_path.'/photos/'.$realty_id;
     my $name = Time::HiRes::time =~ s/\.//r; # Unique name

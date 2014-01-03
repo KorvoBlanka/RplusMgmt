@@ -34,6 +34,9 @@ my $sell_houses_url = $avito_url.'/habarovsk/doma_dachi_kottedzhi/prodam';
 my $rent_houses_url = $avito_url.'/habarovsk/doma_dachi_kottedzhi/sdam';
 my $sell_land_url = $avito_url.'/habarovsk/zemelnye_uchastki/prodam';
 
+my $config_path = "$FindBin::Bin/../../app.conf";
+my $config = Rplus::Util::Config::get_config($config_path);
+
 # avito блочит ip после определенного кол-ва запросов, пуза между "категориями" для избежания блокировки
 my $pause = 20 * 60;
 
@@ -344,7 +347,7 @@ sub process_url_list {
                         my $img_url = 'http:' . $_->a->{href};	
                         say 'loading image '.$img_url;
                         my $image = $ua->get($img_url)->res->content->asset;
-                        Rplus::Util::Image::load_image($id, $image);
+                        Rplus::Util::Image::load_image($id, $image, , $config->{storage}->{path});
                     });
                 } or do {
                     say $@;
