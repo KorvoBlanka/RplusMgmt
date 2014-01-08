@@ -12,6 +12,7 @@
 %= css_once "$assets_url/leaflet/$leafletjs_ver/leaflet.css";
 %= css_once "$assets_url/leaflet.fullscreen/$leafletjs_fullscreen_ver/Control.FullScreen.css";
 %= css_once "$assets_url/typeahead.js/$typeaheadjs_ver/css/typeahead.js-bootstrap.css";
+%= css_once "/css/context.css";
 <style tyle="text/css">
   #navTab button.close {
     margin-left: -3px;
@@ -36,19 +37,25 @@
   }
 
   #realtyTable > tbody > tr.selected > td {
-    background-color: #fcf8e3 !important; /* yellow = warning */
+    background-color: #0088cc !important;
+    color: #ffffff;
   }
 
   #realtyTable > tbody > tr.selected:hover > td {
-    background-color: #faf2cc !important;
+    background-color: #0082c7 !important;
+    color: #ffffff;
   }
 
+  #realtyTable > tbody > tr.selected > td > a {
+    color: #ffffff;
+  }
+  
   #realtyTable > tbody > tr.shown > td {
-    background-color: #DBE2F0; 
+    background-color: #dbe2f0; 
   }
 
   #realtyTable > tbody > tr.shown:hover > td {
-    background-color: #D7DCE9;
+    background-color: #d7dce9;
   }
   
   #realtyTable > tbody > tr.opened > td {
@@ -88,10 +95,6 @@
     margin-right: auto;
   }
 
-  .obj-modified-12h {
-    color: #248A16;
-  }
-
   /* Typeahead.js input-sm fix */
   .tt-hint {
     height: 30px;
@@ -109,6 +112,7 @@
 %= js_once "$assets_url/leaflet.fullscreen/$leafletjs_fullscreen_ver/Control.FullScreen.js";
 %= js_once "/js/leaflet/layer-2gis.js";
 %= js_once "$assets_url/typeahead.js/$typeaheadjs_ver/js/typeahead.js";
+%= js_once "/js/contextmenu/context.js";
 % end
 
 % content_for javascript => begin
@@ -125,8 +129,6 @@
       fields: [
         {id: "state", name: "", menuName: "<%= ucfloc 'state' %>", sortName: "state.name", visible: true, val: function (r) {
           var classes = [Rplus.Table['realty_states'][r.state_code].metadata['icon-class']];
-          // Mark changed objects of last 12 hours
-          if (r.change_date && moment(r.change_date) >= moment().subtract('hours', 12)) classes.push('obj-modified-12h');
           return '<span class="glyphicon ' + classes.join(' ') + '"></span>';
         }},
         {id: "type", name: "<%= ucfloc 'type' %>", sortName: "type.name", visible: true, val: function (r) {
@@ -138,7 +140,7 @@
           return text1 + Rplus.Table['realty_types'][r.type_code].name + text2;
         }},
         {id: "photo", name: "<%= ucfloc 'photo' %>", visible: false, val: function (r) {
-          return r.main_photo_thumbnail ? '<a href="#" data-action="photos-show"><span class="glyphicon glyphicon-picture"></span></a>' : '';
+          return r.main_photo_thumbnail ? '<a href="#" data-action="photos-show"><span class="glyphicon glyphicon-camera"></span></a>' : '';
         }},
         {id: "city", name: "<%= ucfloc 'city' %>", sortName: "address_object.parent_guid", visible: false, val: function (r) {
           var city = '';
@@ -250,6 +252,34 @@
       localStorage["history"] = JSON.stringify(history);
     }
 
+    function createContextMenu() {
+      context.init({preventDoubleContext: false, compress: true});
+      context.attach('#realtyTable', [
+        {text: '<span class="glyphicon glyphicon-folder-open"></span>&nbspОткрыть', data_action: 'realty-open', },
+        {divider: true},
+        {text: '<span class="glyphicon glyphicon-th-large"></span>&nbspСтатус', subMenu: [
+          % if (has_permission(realty => 'read')->{nobody} && has_permission(realty => 'read')->{others}) {
+          % my $iter = Rplus::Model::RealtyState::Manager->get_objects_iterator(sort_by => 'id');
+          % while (my $x = $iter->next) {
+          % my $metadata = decode_json($x->metadata);
+          {text: '<span class="glyphicon <%= $metadata->{'icon-class'} %>"></span>&nbsp<%= $x->name %>', data_action: 'realty-set-state', data_val: '<%= $x->code %>', },
+          % }} else {
+            {text: '...'},
+          % }
+        ]},
+        {text: '<span class="glyphicon glyphicon-user"></span>&nbspАгент', subMenu: [
+          % if (has_permission(realty => 'read')->{nobody} && has_permission(realty => 'read')->{others}) {
+            {text: '<strong><%= ucfloc 'nobody' %></strong>', data_action: 'realty-set-agent', data_val: '', },
+          % my $iter = Rplus::Model::User::Manager->get_objects_iterator(select => 'id, name', query => [role => ['agent', 'manager'], delete_date => undef], sort_by => 'name');
+          % while (my $x = $iter->next) {
+            {text: '<%= $x->name %>', data_action: 'realty-set-agent', data_val: '<%= $x->id %>', },
+          % }} else {
+            {text: '...'},
+          % }  
+        ]},
+      ]);
+    }
+
     var _listRealty_started = false, _listRealty_finished = false;
     var _tid = 0;
 
@@ -262,7 +292,7 @@
       _listRealty_started = true;
 
       clearTimeout(_tid);
-      _tid = setTimeout(function(){updateRealty()},10000);
+      _tid = setTimeout(function(){updateRealty()}, 10000);
 
       $.ajax({
         type: "POST",
@@ -317,6 +347,7 @@
           $('#navTab > li > a[data-id]').each(function () {
             var id = $(this).data('id');
             $('#realtyTable > tbody > tr[data-id="' + id + '"]:not(.opened)').removeClass('selected').addClass('opened');
+            putToHistory(id, "selected", 0);
           });
 
           // Notify about mediators in search query
@@ -429,6 +460,7 @@
           }
           // Mark opened realty object in the table
           $('tr[data-id="' + r.id + '"]', '#realtyTable').removeClass('selected').addClass('opened');
+          putToHistory(id, "selected", 0);
         },
         saved: function (r) {
           // Update title
@@ -520,6 +552,7 @@
       (function () {
         loadRealtyTableConf();
         loadHistory();
+        createContextMenu();
         var xhtml = '<tr>',
             xhtml2 = '';
         for (var i = 0; i < realtyTableConf.fields.length; i++) {
@@ -591,20 +624,18 @@
       // Rows selection in realty table
       (function () {
         var _dblclick_timer, _dblclick_timeout = 350;
-        $('#realtyTable > tbody').on('click', 'tr', function (e) {
+        var mouse_down = false, last_sel_idx = 0;
+
+        $('#realtyTable > tbody').on('mouseout', 'tr', function (e) {
+          if (e.toElement == null || e.toElement.localName != 'td') {
+            mouse_down = false;
+          }
+        });
+
+        $('#realtyTable > tbody').on('mouseenter', 'tr', function (e) {
           var $this = $(this);
           var id = $this.data('id');
-        
-          if (e.shiftKey) {
-            // Select all elements from first selected to clicked
-            var $prev = $this.prevUntil('.selected', ':not(.opened)');
-            if ($prev.length) {
-              $prev.addClass('selected');    
-
-            }
-          }
-
-          if (!_dblclick_timer || _dblclick_timer[0] != id) {
+          if(mouse_down) {
             if (!$this.hasClass('opened')) {
               $this.toggleClass('selected');
               if (!$this.hasClass('selected')) {
@@ -614,15 +645,67 @@
                 putToHistory(id, "selected", 1);
               }
             }
-            _dblclick_timer = [
-              id, setTimeout(function () {
-                if (_dblclick_timer[0] == id) _dblclick_timer = null;
-              }, _dblclick_timeout)
-            ];
-          } else {
-            clearTimeout(_dblclick_timer[1]);
-            openRealtyCard(_dblclick_timer[0], false);
-            _dblclick_timer = null;
+          }
+        });
+
+        $('#realtyTable > tbody').on('mouseup', 'tr', function (e) {
+          mouse_down = false;
+        });
+
+        $('#realtyTable > tbody').on('mousedown', 'tr', function (e) {
+          var $this = $(this);
+          var id = $this.data('id');
+          switch (event.which) {
+              case 1:   // lmb
+                mouse_down = true;
+                var sel_idx = Math.floor($this.context.offsetTop / $this.context.clientHeight) - 1;
+                if (e.shiftKey) {
+                  // Select all elements from first selected to clicked
+                  var $rows;
+                  if(last_sel_idx < sel_idx) {
+                    $rows = $('#realtyTable > tbody > tr').slice(last_sel_idx, sel_idx + 1);
+                  } else {
+                    $rows = $('#realtyTable > tbody > tr').slice(sel_idx, last_sel_idx + 1);
+                  }
+                  $rows.each(function () {
+                    var $this = $(this);
+                    var id = $this.data('id');
+                    if (!$this.hasClass('opened')) {
+                      $this.addClass('selected');
+                      putToHistory(id, "selected", 1);
+                    }
+                  });
+                } else {
+                  if (!_dblclick_timer || _dblclick_timer[0] != id) {
+                    if (!$this.hasClass('opened')) {
+                      $this.toggleClass('selected');
+                      if (!$this.hasClass('selected')) {
+                        putToHistory(id, "selected", 0);
+                      }
+                      else {
+                        putToHistory(id, "selected", 1);
+                      }
+                    }
+                    _dblclick_timer = [
+                      id, setTimeout(function () {
+                        if (_dblclick_timer[0] == id) _dblclick_timer = null;
+                      }, _dblclick_timeout)
+                    ];
+                  } else {
+                    clearTimeout(_dblclick_timer[1]);
+                    mouse_down = false;
+                    openRealtyCard(_dblclick_timer[0], false);
+                    _dblclick_timer = null;
+                  }
+                }
+                last_sel_idx = sel_idx;
+                break;
+              case 2:    // mmb
+                break;
+              case 3:    // rmb
+                $this.addClass('selected');
+                break;
+              default:
           }
         });
       })();
@@ -689,6 +772,8 @@
                   $('td:nth-child(' + (j + 1) + ')', $this).html(f.val(r));
                 }
                 $this.removeClass('selected').addClass('modified');
+                putToHistory(id, "selected", 0);
+                putToHistory(id, "modified", 1);
               }
             })
           ;
@@ -716,6 +801,8 @@
                   $('td:nth-child(' + (j + 1) + ')', $this).html(f.val(r));
                 }
                 $this.removeClass('selected').addClass('modified');
+                putToHistory(id, "selected", 0);
+                putToHistory(id, "modified", 1);
               }
             })
           ;
@@ -882,7 +969,7 @@
     <div class="row">
       <div class="col-lg-12">
         <div class="table-responsive" id="realtyTableWrapper">
-          <table class="table table-bordered table-condensed table-striped table-hover" id="realtyTable">
+          <table class="table table-bordered table-condensed table-striped table-hover" id="realtyTable" data-toggle="context">
             <thead></thead>
             <tbody></tbody>
           </table>
