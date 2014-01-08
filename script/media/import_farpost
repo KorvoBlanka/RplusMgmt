@@ -31,8 +31,7 @@ my $sell_houses_url = 'http://khabarovsk.farpost.ru/realty/sell_houses/?agentTyp
 my $rent_houses_url = 'http://khabarovsk.farpost.ru/realty/rent_houses/?agentType=privatePerson';
 my $sell_land_url = 'http://khabarovsk.farpost.ru/realty/land/?agentType=privatePerson';
 
-my $config_path = "$FindBin::Bin/../../app.conf";
-my $config = Rplus::Util::Config::get_config($config_path);
+my $config = Rplus::Util::Config::get_config();
 
 my $MEDIA = Rplus::Model::Media::Manager->get_objects(query => [type => 'import', code => 'farpost', delete_date => undef])->[0];	# code => 'avito'
 exit unless $MEDIA;
