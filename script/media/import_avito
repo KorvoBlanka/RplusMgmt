@@ -25,19 +25,19 @@ use Text::Trim;
 use JSON;
 use Mojo::UserAgent;
 
-my $avito_url = 'http://www.avito.ru';
-my $sell_flats_url = $avito_url.'/habarovsk/kvartiry/prodam';
-my $rent_flats_url = $avito_url.'/habarovsk/kvartiry/sdam';
-my $sell_rooms_url = $avito_url.'/habarovsk/komnaty/prodam';
-my $rent_rooms_url = $avito_url.'/habarovsk/komnaty/sdam';
-my $sell_houses_url = $avito_url.'/habarovsk/doma_dachi_kottedzhi/prodam';
-my $rent_houses_url = $avito_url.'/habarovsk/doma_dachi_kottedzhi/sdam';
-my $sell_land_url = $avito_url.'/habarovsk/zemelnye_uchastki/prodam';
-
 my $config = Rplus::Util::Config::get_config();
+my $avito_config = $config->{import}->{avito};
+my $avito_url = $avito_config->{avito_url};
+my $sell_flats_url = $avito_url . $avito_config->{sell_flats_url};
+my $rent_flats_url = $avito_url . $avito_config->{rent_flats_url};
+my $sell_rooms_url = $avito_url . $avito_config->{sell_rooms_url};
+my $rent_rooms_url = $avito_url . $avito_config->{rent_rooms_url};
+my $sell_houses_url = $avito_url . $avito_config->{sell_houses_url};
+my $rent_houses_url = $avito_url . $avito_config->{rent_houses_url};
+my $sell_land_url = $avito_url . $avito_config->{sell_land_url};
 
 # avito блочит ip после определенного кол-ва запросов, пуза между "категориями" для избежания блокировки
-my $pause = 20 * 60;
+my $pause = $avito_config->{pause} * 60;
 
 my $MEDIA = Rplus::Model::Media::Manager->get_objects(query => [type => 'import', code => 'avito', delete_date => undef])->[0];	# code => 'avito'
 exit unless $MEDIA;
@@ -47,7 +47,7 @@ my $ua = Mojo::UserAgent->new;
 $ua->max_redirects(3);
 
 my $proxy_ua = Mojo::UserAgent->new;
-$proxy_ua->proxy->http("http://212.19.22.218:8080");
+$proxy_ua->proxy->http($avito_config->{proxy});
 $proxy_ua->connect_timeout(15);
 $proxy_ua->inactivity_timeout(30);
 $proxy_ua->max_redirects(8);
@@ -129,7 +129,7 @@ sub process_url_list {
     my ($url_list_ref, $category_code, $offer_type) = @_;
 
     for my $item_url (@$url_list_ref) {
-        say 'processing ' . $item_url;
+        say 'processing ' . $avito_url . $item_url;
         my $data = {
             source_media_id => $MEDIA->id,
         };
@@ -359,6 +359,8 @@ sub process_url_list {
                     Rplus::Model::MediaImportHistory->new(media_id => $MEDIA->id, media_num => $media_num, media_text => $data->{'source_media_text'}, realty_id => $id)->save;
                 } or do {};
             }
+        }  or do {
+            say $@;
         }
     }
 }

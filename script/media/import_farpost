@@ -25,13 +25,14 @@ use Text::Trim;
 use JSON;
 use Mojo::UserAgent;
 
-my $sell_flats_url = 'http://khabarovsk.farpost.ru/realty/sell_flats/?agentType=privatePerson';
-my $rent_flats_url = 'http://khabarovsk.farpost.ru/realty/rent_flats/?agentType=privatePerson';
-my $sell_houses_url = 'http://khabarovsk.farpost.ru/realty/sell_houses/?agentType=privatePerson';
-my $rent_houses_url = 'http://khabarovsk.farpost.ru/realty/rent_houses/?agentType=privatePerson';
-my $sell_land_url = 'http://khabarovsk.farpost.ru/realty/land/?agentType=privatePerson';
-
 my $config = Rplus::Util::Config::get_config();
+my $farpost_config = $config->{import}->{farpost};
+my $farpost_url = $farpost_config->{farpost_url};
+my $sell_flats_url = $farpost_url . $farpost_config->{sell_flats_url};
+my $rent_flats_url = $farpost_url . $farpost_config->{rent_flats_url};
+my $sell_houses_url = $farpost_url . $farpost_config->{sell_houses_url};
+my $rent_houses_url = $farpost_url . $farpost_config->{rent_houses_url};
+my $sell_land_url = $farpost_url . $farpost_config->{sell_land_url};
 
 my $MEDIA = Rplus::Model::Media::Manager->get_objects(query => [type => 'import', code => 'farpost', delete_date => undef])->[0];	# code => 'avito'
 exit unless $MEDIA;
