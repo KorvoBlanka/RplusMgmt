@@ -528,10 +528,10 @@
   </nav>
 
   <div class="row">
-    <div class="col-lg-2">
+    <div class="col-md-2 col-lg-2">
       <!-- Menu block -->
       <div class="row margin-bottom-15">
-        <div class="col-lg-12">
+        <div class="col-md-12 col-lg-12">
           <ul class="nav nav-pills nav-stacked" role="menu">
             <li class="active"><a href="#mainTab-{guid}" data-toggle="pill"><span class="glyphicon glyphicon-home"></span> <%= ucfloc 'main' %></a></li>
             <li><a href="#geoTab-{guid}" data-toggle="pill"><span class="glyphicon glyphicon-globe"></span> <%= ucfloc 'geo' %></a></li>
@@ -542,7 +542,7 @@
 
       <!-- Export block -->
       <div class="row">
-        <div class="col-lg-12">
+        <div class="col-md-12 col-lg-12">
           <div class="panel panel-default panel-sm">
             <div class="panel-body">
               <strong><small><%= ucfloc 'export' %></small></strong>
@@ -558,7 +558,7 @@
 
       <!-- Source block -->
       <div class="row" id="sourceBlock-{guid}" style="display: none;">
-        <div class="col-lg-12">
+        <div class="col-md-12 col-lg-12">
           <div class="panel panel-default panel-sm">
             <div class="panel-body">
               <small>
@@ -571,7 +571,7 @@
       </div>
     </div>
 
-    <div class="col-lg-10">
+    <div class="col-md-10 col-lg-10">
       <div class="tab-content">
         <!-- Main tab -->
         <div class="tab-pane active" id="mainTab-{guid}">
@@ -579,10 +579,10 @@
 
             <div class="well well-md"> <!-- well -->
                 <div class="row">
-                  <div class="col-lg-4">
+                  <div class="col-md-4 col-lg-4">
                     <div class="form-group">
-                      <label class="col-lg-4 control-label" for="typeInput-{guid}"><%= ucfloc 'type' %></label>
-                      <div class="col-lg-8">
+                      <label class="col-md-4 col-lg-4 control-label" for="typeInput-{guid}"><%= ucfloc 'type' %></label>
+                      <div class="col-md-8 col-lg-8">
                         %#<select class="form-control input-sm" name="type_code" id="typeInput-{guid}">
                         %# for my $x (@{Rplus::Model::RealtyType::Manager->get_objects(sort_by => 'name')}) {
                         %#  <option value="<%= $x->code %>"><%= $x->name %></option>
@@ -608,10 +608,10 @@
                     </div>
                   </div>
 
-                  <div class="col-lg-4">
+                  <div class="col-md-4 col-lg-4">
                     <div class="form-group">
-                      <label class="col-lg-4 control-label" for="offerTypeInput-{guid}"><%= ucfloc 'offer', 2 %></label>
-                      <div class="col-lg-8">
+                      <label class="col-md-4 col-lg-4 control-label" for="offerTypeInput-{guid}"><%= ucfloc 'offer', 2 %></label>
+                      <div class="col-md-8 col-lg-8">
                         <select class="form-control input-sm" name="offer_type_code" id="offerTypeInput-{guid}">
                         % for my $x (@{Rplus::Model::RealtyOfferType::Manager->get_objects(sort_by => 'name')}) {
                           <option value="<%= $x->code %>"><%= $x->name %></option>
@@ -621,10 +621,10 @@
                     </div>
                   </div>
 
-                  <div class="col-lg-4">
+                  <div class="col-md-4 col-lg-4">
                     <div class="form-group">
-                      <label class="col-lg-4 control-label" for="agentInput-{guid}"><%= ucfloc 'agent' %></label>
-                      <div class="col-lg-8">
+                      <label class="col-md-4 col-lg-4 control-label" for="agentInput-{guid}"><%= ucfloc 'agent' %></label>
+                      <div class="col-md-8 col-lg-8">
                         <select class="form-control input-sm" name="agent_id" id="agentInput-{guid}">
                         %# check read (!) permission to prevent empty list
                         % if (has_permission(realty => read => undef)) {
@@ -643,15 +643,15 @@
             </div> <!-- /well -->
 
             <div class="row"> <!-- row -->
-              <div class="col-lg-8">
+              <div class="col-md-8 col-lg-8">
                 <div class="panel panel-default panel-md">
                   <div class="panel-body">
                     <div class="row">
                       <input type="hidden" name="address_object_id">
-                      <div class="col-lg-12">
+                      <div class="col-md-12 col-lg-12">
                         <div class="form-group">
-                          <label class="col-lg-2 control-label" for="addrObjInput-{guid}"><%= ucfloc 'addr' %></label>
-                          <div class="col-lg-10">
+                          <label class="col-md-2 col-lg-2 control-label" for="addrObjInput-{guid}"><%= ucfloc 'addr' %></label>
+                          <div class="col-md-10 col-lg-10">
                             <input type="text" class="form-control input-sm" name="address_object_name" id="addrObjInput-{guid}" placeholder="<%= ucfloc 'street' %>, <%= ucfloc 'city' %>">
                           </div>
                         </div>
@@ -659,19 +659,19 @@
                     </div>
 
                     <div class="row">
-                      <div class="col-lg-6">
+                      <div class="col-md-6 col-lg-6">
                         <div class="form-group">
-                          <label class="col-lg-4 control-label" for="houseNumInput-{guid}"><%= ucfloc 'num' %></label>
-                          <div class="col-lg-8">
+                          <label class="col-md-4 col-lg-4 control-label" for="houseNumInput-{guid}"><%= ucfloc 'num' %></label>
+                          <div class="col-md-8 col-lg-8">
                             <input type="text" class="form-control input-sm" name="house_num" id="houseNumInput-{guid}" placeholder="<%= ucfloc 'house' %>" style="width: 55%; display: inline-block;">&nbsp;/&nbsp;<input type="text" class="form-control input-sm" name="ap_num" placeholder="<%= ucfloc 'ap' %>" style="width: 35%; display: inline-block;">
                           </div>
                         </div>
                       </div>
 
-                      <div class="col-lg-6">
+                      <div class="col-md-6 col-lg-6">
                         <div class="form-group">
-                          <label class="col-lg-4 control-label" for="sublandmarkInput-{guid}"><%= ucfloc 'landmark' %></label>
-                          <div class="col-lg-8">
+                          <label class="col-md-4 col-lg-4 control-label" for="sublandmarkInput-{guid}"><%= ucfloc 'landmark' %></label>
+                          <div class="col-md-8 col-lg-8">
                             <select class="form-control input-sm" name="sublandmark_id" id="sublandmarkInput-{guid}">
                               <option class="text-muted" value="">-</option>
                             </select>
@@ -683,24 +683,24 @@
                 </div>
               </div>
 
-              <div class="col-lg-4">
+              <div class="col-md-4 col-lg-4">
                 <div class="panel panel-default panel-md">
                   <div class="panel-body">
                     <div class="row">
-                      <div class="col-lg-12">
+                      <div class="col-md-12 col-lg-12">
                         <div class="form-group">
-                          <label class="col-lg-4 control-label"><%= ucfloc 'date' %></label>
-                          <div class="col-lg-8">
+                          <label class="col-md-4 col-lg-4 control-label"><%= ucfloc 'date' %></label>
+                          <div class="col-md-8 col-lg-8">
                             <p class="form-control-static text-left"><small><span class="text-primary" data-name="add_date">dd.mm.yyyy</span>&nbsp;/&nbsp;<span class="text-success" data-name="change_date">dd.mm.yyyy</span></small></p>
                           </div>
                         </div>
                       </div>
                     </div>
                     <div class="row">
-                      <div class="col-lg-12">
+                      <div class="col-md-12 col-lg-12">
                         <div class="form-group">
-                          <label class="col-lg-4 control-label" for="stateInput-{guid}"><%= ucfloc 'state' %></label>
-                          <div class="col-lg-8">
+                          <label class="col-md-4 col-lg-4 control-label" for="stateInput-{guid}"><%= ucfloc 'state' %></label>
+                          <div class="col-md-8 col-lg-8">
                             <select class="form-control input-sm" name="state_code" id="stateInput-{guid}">
                             % for my $x (@{Rplus::Model::RealtyState::Manager->get_objects(sort_by => 'id')}) {
                               <option value="<%= $x->code %>"><%= $x->name %></option>
@@ -717,10 +717,10 @@
 
             <div class="well well-md"> <!-- well -->
                 <div class="row">
-                  <div class="col-lg-4">
+                  <div class="col-md-4 col-lg-4">
                     <div class="form-group">
-                      <label class="col-lg-4 control-label" for="apSchemeInput-{guid}"><%= ucfloc 'scheme', 2 %></label>
-                      <div class="col-lg-8">
+                      <label class="col-md-4 col-lg-4 control-label" for="apSchemeInput-{guid}"><%= ucfloc 'scheme', 2 %></label>
+                      <div class="col-md-8 col-lg-8">
                         <select class="form-control input-sm" name="ap_scheme_id" id="apSchemeInput-{guid}">
                           <option class="text-muted" value="">-</option>
                           % for my $x (@{Rplus::Model::DictApScheme::Manager->get_objects(sort_by => 'name')}) {
@@ -731,10 +731,10 @@
                     </div>
                   </div>
 
-                  <div class="col-lg-4">
+                  <div class="col-md-4 col-lg-4">
                     <div class="form-group">
-                      <label class="col-lg-4 control-label" for="houseTypeInput-{guid}"><%= ucfloc 'house' %></label>
-                      <div class="col-lg-8">
+                      <label class="col-md-4 col-lg-4 control-label" for="houseTypeInput-{guid}"><%= ucfloc 'house' %></label>
+                      <div class="col-md-8 col-lg-8">
                         <select class="form-control input-sm" name="house_type_id" id="houseTypeInput-{guid}">
                           <option class="text-muted" value="">-</option>
                           % for my $x (@{Rplus::Model::DictHouseType::Manager->get_objects(sort_by => 'name')}) {
@@ -745,10 +745,10 @@
                     </div>
                   </div>
 
-                  <div class="col-lg-4">
+                  <div class="col-md-4 col-lg-4">
                     <div class="form-group">
-                      <label class="col-lg-4 control-label" for="roomSchemeInput-{guid}"><%= ucfloc 'rooms' %></label>
-                      <div class="col-lg-8">
+                      <label class="col-md-4 col-lg-4 control-label" for="roomSchemeInput-{guid}"><%= ucfloc 'rooms' %></label>
+                      <div class="col-md-8 col-lg-8">
                         <select class="form-control input-sm" name="room_scheme_id" id="roomSchemeInput-{guid}">
                           <option class="text-muted" value="">-</option>
                           % for my $x (@{Rplus::Model::DictRoomScheme::Manager->get_objects(sort_by => 'name')}) {
@@ -761,19 +761,19 @@
                 </div>
 
                 <div class="row">
-                  <div class="col-lg-4">
+                  <div class="col-md-4 col-lg-4">
                     <div class="form-group">
-                      <label class="col-lg-4 control-label" for="roomsCountInput-{guid}"><%= ucfloc 'rooms' %></label>
-                      <div class="col-lg-8">
+                      <label class="col-md-4 col-lg-4 control-label" for="roomsCountInput-{guid}"><%= ucfloc 'rooms' %></label>
+                      <div class="col-md-8 col-lg-8">
                         <input type="text" class="form-control input-sm" name="rooms_offer_count" placeholder="<%= ucfloc 'sale' %>" style="width: 45%; display: inline-block;">&nbsp;/&nbsp;<input type="text" class="form-control input-sm" id="roomsCountInput-{guid}" name="rooms_count" placeholder="<%= ucfloc 'total' %>" style="width: 45%; display: inline-block;">
                       </div>
                     </div>
                   </div>
 
-                  <div class="col-lg-8">
+                  <div class="col-md-8 col-lg-8">
                     <div class="form-group">
-                      <label class="col-lg-2 control-label" for="floorInput-{guid}"><%= ucfloc 'floors' %></label>
-                      <div class="col-lg-6">
+                      <label class="col-md-2 col-lg-2 control-label" for="floorInput-{guid}"><%= ucfloc 'floors' %></label>
+                      <div class="col-md-6 col-lg-6">
                         <input type="text" class="form-control input-sm" name="floor" id="floorInput-{guid}" placeholder="<%= ucfloc 'floor' %>" style="width: 28%; display: inline-block;">&nbsp;/&nbsp;<input type="text" class="form-control input-sm" name="floors_count" placeholder="<%= ucfloc 'total' %>" style="width: 28%; display: inline-block;">&nbsp;/&nbsp;<input type="text" class="form-control input-sm" name="levels_count" placeholder="<%= ucfloc 'levels' %>" style="width: 28%; display: inline-block;">
                       </div>
                     </div>
@@ -781,10 +781,10 @@
                 </div>
 
                 <div class="row">
-                  <div class="col-lg-4">
+                  <div class="col-md-4 col-lg-4">
                     <div class="form-group">
-                      <label class="col-lg-4 control-label" for="squareLandInput-{guid}"><%= ucfloc 'land' %></label>
-                      <div class="col-lg-8">
+                      <label class="col-md-4 col-lg-4 control-label" for="squareLandInput-{guid}"><%= ucfloc 'land' %></label>
+                      <div class="col-md-8 col-lg-8">
                         <input type="text" class="form-control input-sm" name="square_land" id="squareLandInput-{guid}" placeholder="<%= ucfloc 'total' %>" style="width: 46%; display: inline-block;">&nbsp;
                         <select class="form-control input-sm" name="square_land_type" style="width:46%; display: inline-block;">
                           <option class="text-muted" value="">-</option>
@@ -795,10 +795,10 @@
                     </div>
                   </div>
 
-                  <div class="col-lg-8">
+                  <div class="col-md-8 col-lg-8">
                     <div class="form-group">
-                      <label class="col-lg-2 control-label" for="squareTotalInput-{guid}"><%= ucfloc 'square' %></label>
-                      <div class="col-lg-6">
+                      <label class="col-md-2 col-lg-2 control-label" for="squareTotalInput-{guid}"><%= ucfloc 'square' %></label>
+                      <div class="col-md-6 col-lg-6">
                         <input type="text" class="form-control input-sm" name="square_total" id="squareTotalInput-{guid}" placeholder="<%= ucfloc 'total' %>" style="width: 28%; display: inline-block;">&nbsp;/&nbsp;<input type="text" class="form-control input-sm" name="square_living" placeholder="<%= ucfloc 'living' %>" style="width: 28%; display: inline-block;">&nbsp;/&nbsp;<input type="text" class="form-control input-sm" name="square_kitchen" placeholder="<%= ucfloc 'kitchen' %>" style="width: 28%; display: inline-block;">
                       </div>
                     </div>
@@ -806,10 +806,10 @@
                 </div>
 
                 <div class="row">
-                  <div class="col-lg-4">
+                  <div class="col-md-4 col-lg-4">
                     <div class="form-group">
-                      <label class="col-lg-4 control-label" for="conditionInput-{guid}"><%= ucfloc 'condition' %></label>
-                      <div class="col-lg-8">
+                      <label class="col-md-4 col-lg-4 control-label" for="conditionInput-{guid}"><%= ucfloc 'condition' %></label>
+                      <div class="col-md-8 col-lg-8">
                         <select class="form-control input-sm" name="condition_id" id="conditionInput-{guid}">
                           <option class="text-muted" value="">-</option>
                           % for my $x (@{Rplus::Model::DictCondition::Manager->get_objects(sort_by => 'name')}) {
@@ -820,10 +820,10 @@
                     </div>
                   </div>
 
-                  <div class="col-lg-4">
+                  <div class="col-md-4 col-lg-4">
                     <div class="form-group">
-                      <label class="col-lg-4 control-label" for="balconyInput-{guid}"><%= ucfloc 'balcony' %></label>
-                      <div class="col-lg-8">
+                      <label class="col-md-4 col-lg-4 control-label" for="balconyInput-{guid}"><%= ucfloc 'balcony' %></label>
+                      <div class="col-md-8 col-lg-8">
                         <select class="form-control input-sm" name="balcony_id" id="balconyInput-{guid}">
                           <option class="text-muted" value="">-</option>
                           % for my $x (@{Rplus::Model::DictBalcony::Manager->get_objects(sort_by => 'name')}) {
@@ -834,10 +834,10 @@
                     </div>
                   </div>
 
-                  <div class="col-lg-4">
+                  <div class="col-md-4 col-lg-4">
                     <div class="form-group">
-                      <label class="col-lg-4 control-label" for="bathroomInput-{guid}"><%= ucfloc 'bathroom' %></label>
-                      <div class="col-lg-8">
+                      <label class="col-md-4 col-lg-4 control-label" for="bathroomInput-{guid}"><%= ucfloc 'bathroom' %></label>
+                      <div class="col-md-8 col-lg-8">
                         <select class="form-control input-sm" name="bathroom_id" id="bathroomInput-{guid}">
                           <option class="text-muted" value="">-</option>
                           % for my $x (@{Rplus::Model::DictBathroom::Manager->get_objects(sort_by => 'name')}) {
@@ -853,19 +853,19 @@
             <div class="panel panel-default panel-md"> <!-- panel -->
               <div class="panel-body">
                 <div class="row">
-                  <div class="col-lg-4">
+                  <div class="col-md-4 col-lg-4">
                     <div class="form-group">
-                      <label class="col-lg-4 control-label" for="ownerPriceInput-{guid}"><%= ucfloc 'price' %></label>
-                      <div class="col-lg-8">
+                      <label class="col-md-4 col-lg-4 control-label" for="ownerPriceInput-{guid}"><%= ucfloc 'price' %></label>
+                      <div class="col-md-8 col-lg-8">
                         <input type="text" class="form-control input-sm" name="owner_price" id="ownerPriceInput-{guid}" placeholder="<%= ucfloc 'owner' %>" style="width: 45%; display: inline-block;">&nbsp;/&nbsp;<input type="text" class="form-control input-sm" name="agency_price" placeholder="<%= ucfloc 'agency' %>" style="width: 45%; display: inline-block;">
                       </div>
                     </div>
                   </div>
 
-                  <div class="col-lg-8">
+                  <div class="col-md-8 col-lg-8">
                     <div class="form-group">
-                      <label class="col-lg-2 control-label" for="ownerPhoneInput-{guid}"><%= ucfloc 'phones' %></label>
-                      <div class="col-lg-10">
+                      <label class="col-md-2 col-lg-2 control-label" for="ownerPhoneInput-{guid}"><%= ucfloc 'phones' %></label>
+                      <div class="col-md-10 col-lg-10">
                         <input type="text" class="form-control input-sm" style="display: inline-block; width: 30%;" name="owner_phones" id="ownerPhoneInput-{guid}" placeholder="<%= ucfloc 'phone' %> 1">&nbsp;&nbsp;<input type="text" class="form-control input-sm" style="display: inline-block; width: 30%;" name="owner_phones" placeholder="<%= ucfloc 'phone' %> 2">&nbsp;&nbsp;<input type="text" class="form-control input-sm" style="display: inline-block; width: 30%;" name="owner_phones" placeholder="<%= ucfloc 'phone' %> 3">
                       </div>
                     </div>
@@ -876,19 +876,19 @@
 
             <div class="well well-md"> <!-- well -->
                 <div class="row">
-                  <div class="col-lg-6">
+                  <div class="col-md-6 col-lg-6">
                     <div class="form-group">
-                      <label class="col-lg-3 control-label" for="descriptionInput-{guid}"><%= ucfloc 'description' %></label>
-                      <div class="col-lg-9">
+                      <label class="col-md-3 col-lg-3 control-label" for="descriptionInput-{guid}"><%= ucfloc 'description' %></label>
+                      <div class="col-md-9 col-lg-9">
                         <textarea class="form-control input-sm" name="description" id="descriptionInput-{guid}" rows="3" placeholder="<%= ucfloc 'additional description' %>"></textarea>
                       </div>
                     </div>
                   </div>
 
-                  <div class="col-lg-6">
+                  <div class="col-md-6 col-lg-6">
                     <div class="form-group">
-                      <label class="col-lg-3 control-label" for="workInfoInput-{guid}"><%= ucfloc 'work info' %></label>
-                      <div class="col-lg-9">
+                      <label class="col-md-3 col-lg-3 control-label" for="workInfoInput-{guid}"><%= ucfloc 'work info' %></label>
+                      <div class="col-md-9 col-lg-9">
                         <textarea class="form-control input-sm" name="work_info" id="workInfoInput-{guid}" rows="3" placeholder="<%= ucfloc 'work info' %>"></textarea>
                       </div>
                     </div>
@@ -905,7 +905,7 @@
 
         <div class="tab-pane" id="photosTab-{guid}">
           <div class="row">
-            <div class="col-lg-7">
+            <div class="col-md-7 col-lg-7">
               <p>
                 <span class="btn btn-success btn-sm fileinput-button">
                   <i class="glyphicon glyphicon-plus"></i>
@@ -919,7 +919,7 @@
                 </button>
               </p>
             </div>
-            <div class="col-lg-5">
+            <div class="col-md-5 col-lg-5">
               <div class="progress progress-striped">
                   <div class="progress-bar progress-bar-success" role="progressbar" aria-valuemin="0" aria-valuemax="100"></div>
               </div>

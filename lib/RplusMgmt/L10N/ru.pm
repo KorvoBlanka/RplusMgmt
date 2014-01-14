@@ -142,7 +142,7 @@ our %Lexicon = (
     q{public visible phone num} => 'телефон агента (для клиентов)',
     q{Please Sign In} => 'Вход в систему',
     q{photo} => 'фото',
-    q{photos} => 'фотографии',
+    q{photos} => 'фото',
     q{price} => 'цена',
 
     q{phone num cannot be empty} => 'номер телефона не указан',
