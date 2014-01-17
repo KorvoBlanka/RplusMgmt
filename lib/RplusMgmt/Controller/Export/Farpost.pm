@@ -66,10 +66,9 @@ sub index {
                 'N1' => { text => "Дополнительное описание", width => 25 },
                 'O1' => { text => "Особые требования к съемщикам", width => 20 },
                 'P1' => { text => "Цена (руб)" },
-                'Q1' => { text => 'Телефон агента', width => 20 },
-                'R1' => { text => "Коммисия агенства", width => 15 },
-                'S1' => { text => "Стоимость просмотра", width => 15 },
-                'T1' => { text => "Ссылки на фотографии", width => 70 },
+                'Q1' => { text => "Коммисия агенства", width => 15 },
+                'R1' => { text => "Стоимость просмотра", width => 15 },
+                'S1' => { text => "Ссылки на фотографии", width => 70 },
             };
             for my $x (keys %$header) {
                 if ($x =~ /^(\S)\d$/) {
@@ -121,7 +120,6 @@ sub index {
                     $realty->description,
                     '',
                     $realty->price * 1000,
-                    $phones,
                     '',
                     '',
                     @photos ? {type => 'photo_list', body => join("\n", map { $self->config->{'storage'}->{'url'}.'/photos/'.$_->realty_id.'/'.$_->filename } @photos)} : '',
