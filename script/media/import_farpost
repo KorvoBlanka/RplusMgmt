@@ -309,7 +309,7 @@ sub process_url_list {
                         my $img_url = $_->img->{'data-zoom-image'};
                         say 'loading image '.$img_url;
                         my $image = $ua->get($img_url)->res->content->asset;
-                        Rplus::Util::Image::load_image($id, $image, $config->{storage}->{path});
+                        Rplus::Util::Image::load_image($id, $image, $config->{storage}->{path}, $farpost_config->{crop_image_y});
                     });
                 } or do {
                     say $@;

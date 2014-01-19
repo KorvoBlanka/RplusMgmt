@@ -75,4 +75,20 @@
         proxy => 1,
         pid_file => 'hypnotoad.pid',
     }
+    
+    import => {
+        media_name => {
+            proxy => 'http://127.0.0.1:8080',
+            pause => 20,
+            crop_image_y => -40,
+            avito_url => 'http://www.site.ru',
+            sell_flats_url => '/habarovsk/kvartiry/prodam',
+            rent_flats_url => '/habarovsk/kvartiry/sdam',
+            sell_rooms_url => '/habarovsk/komnaty/prodam',
+            rent_rooms_url => '/habarovsk/komnaty/sdam',
+            sell_houses_url => '/habarovsk/doma_dachi_kottedzhi/prodam',
+            rent_houses_url => '/habarovsk/doma_dachi_kottedzhi/sdam',
+            sell_land_url => '/habarovsk/zemelnye_uchastki/prodam',
+        },
+    }
 }

@@ -12,7 +12,7 @@ use File::Path qw(make_path);
 use Image::Magick;
 
 sub load_image {
-    my ($realty_id, $file, $storage_path) = @_;
+    my ($realty_id, $file, $storage_path, $crop) = @_;
 
     my $path = $storage_path.'/photos/'.$realty_id;
     my $name = Time::HiRes::time =~ s/\.//r; # Unique name
@@ -25,6 +25,9 @@ sub load_image {
     # Convert image to jpeg
     my $image = Image::Magick->new;
     $image->Read($path.'/'.$name.'.jpg');
+    if ($crop != 0 && $crop < $image->Get('height')) {
+        $image->Crop(geometry => '-0'.$crop);
+    }
     if ($image->Get('width') > 1920 || $image->Get('height') > 1080 || $image->Get('mime') ne 'image/jpeg') {
         $image->Resize(geometry => '1920x1080');
         $image->Write($path.'/'.$name.'.jpg');

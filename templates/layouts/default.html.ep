@@ -223,7 +223,7 @@
       </div>
     </nav>
 
-    <div class="container disable-on-ajax">
+    <div class="container disable-on-ajax disable-on-context">
       <%= content %>
 
       <!-- Modal Definitions -->

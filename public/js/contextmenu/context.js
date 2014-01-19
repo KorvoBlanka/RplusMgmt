@@ -22,6 +22,7 @@ var context = context || (function () {
 		
 		$(document).on('click', 'html', function () {
 			$('.dropdown-context').fadeOut(options.fadeSpeed, function(){
+				$('.disable-on-context').removeClass('disabled');
 				$('.dropdown-context').css({display:''}).find('.drop-left').removeClass('drop-left');
 			});
 		});
@@ -30,13 +31,18 @@ var context = context || (function () {
 				e.preventDefault();
 			});
 		}
-		$(document).on('mouseenter', '.dropdown-submenu', function(){
+		$(document).on('mouseenter', '.dropdown-submenu', function(e){
 			var $sub = $(this).find('.dropdown-context-sub:first'),
 				subWidth = $sub.width(),
 				subLeft = $sub.offset().left,
 				collision = (subWidth+subLeft) > window.innerWidth;
 			if(collision){
 				$sub.addClass('drop-left');
+			}
+			// make submenu pop upward if we have no space below
+			$sub.css('top', '0px');
+			if ((($sub.offset()).top + $sub.height()) > $('html').height()) {
+				$sub.css('top', '-' + ($sub.height() - e.target.clientHeight) + 'px');
 			}
 		});
 		
@@ -106,6 +112,7 @@ var context = context || (function () {
 		
 		
 		$(document).on('contextmenu', selector, function (e) {
+			$('.disable-on-context').addClass('disabled');
 			e.preventDefault();
 			e.stopPropagation();
 			

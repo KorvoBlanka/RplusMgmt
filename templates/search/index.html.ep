@@ -12,7 +12,8 @@
 <style type="text/css">
   #searchTableWrapper {
     height: 600px;
-    overflow-y: auto;
+    overflow-y: scroll; 
+    -webkit-overflow-scrolling: touch;  /* iOS Native style momentum scrolling */
   }
 
   #searchTable {

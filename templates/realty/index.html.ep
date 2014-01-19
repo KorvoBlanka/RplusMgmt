@@ -3,6 +3,7 @@
 % use Rplus::Model::RealtyState::Manager;
 % use Rplus::Model::RealtyOfferType::Manager;
 % use Rplus::Model::User::Manager;
+% use Rplus::Model::ColorTag::Manager;
 
 % use JSON;
 
@@ -14,6 +15,31 @@
 %= css_once "$assets_url/typeahead.js/$typeaheadjs_ver/css/typeahead.js-bootstrap.css";
 %= css_once "/css/context.css";
 <style tyle="text/css">
+  .tag-button {
+    height: 10px;
+    width: 10px;
+    border-radius: 5px;
+    margin-top: 5px;
+  }
+  
+  .round-button {
+    height: 14px;
+    width: 14px;
+    border-radius: 14px;
+    margin-right: 5px;
+  }
+
+  .round-button:hover {
+    box-shadow: 0px 0px 5px #888888;
+  }
+
+  % for my $x (@{Rplus::Model::ColorTag::Manager->get_objects(query => [delete_date => undef], sort_by => 'id')}) {
+  .color-tag-<%= $x->id %> {
+    background: #<%= $x->color %>;
+    border: 1px solid #<%= $x->border_color %>;
+  }
+  % }
+
   #navTab button.close {
     margin-left: -3px;
     position: absolute;
@@ -24,6 +50,8 @@
 
   #realtyTableWrapper {
     overflow: auto;
+    overflow-y: scroll; 
+    -webkit-overflow-scrolling: touch;  /* iOS native style momentum scrolling */
   }
 
   #realtyTable {
@@ -113,6 +141,7 @@
 %= js_once "/js/leaflet/layer-2gis.js";
 %= js_once "$assets_url/typeahead.js/$typeaheadjs_ver/js/typeahead.js";
 %= js_once "/js/contextmenu/context.js";
+%= js_once "/js/modernizr/modernizr.js";
 % end
 
 % content_for javascript => begin
@@ -154,6 +183,9 @@
           if (r.address_object) {
             if (r.address_object.addr_parts[0]) addr += r.address_object.addr_parts[0].name + ' ' + r.address_object.addr_parts[0].short_type;
             if (r.house_num) addr += (addr ? ', ' : '-') + r.house_num;
+          }
+          if (r.color_tag_id != null) {
+            addr += '<span class="tag-button color-tag-' + r.color_tag_id + ' pull-right"></span>';
           }
           return addr;
         }},
@@ -223,6 +255,10 @@
       localStorage["realtyTableConf"] = JSON.stringify(localConf);
     }
 
+    function hasTouch() {
+      return Modernizr.touch;
+    }
+    
     var history = {
       timestamp: "",
     };
@@ -253,21 +289,22 @@
     }
 
     function createContextMenu() {
-      context.init({preventDoubleContext: false, compress: true});
+      context.init({preventDoubleContext: true, compress: true, above: 'auto',});
       context.attach('#realtyTable', [
-        {text: '<span class="glyphicon glyphicon-folder-open"></span>&nbspОткрыть', data_action: 'realty-open', },
+        {text: '<span class="glyphicon glyphicon-folder-open"></span>&nbsp&nbsp<%= ucfloc 'open' %>', data_action: 'realty-open',},
+        {text: '<span class="glyphicon glyphicon-trash"></span>&nbsp&nbsp<%= ucfloc 'delete' %>', data_action: 'realty-set-state', data_val: "deleted",},
         {divider: true},
-        {text: '<span class="glyphicon glyphicon-th-large"></span>&nbspСтатус', subMenu: [
+        {text: '<span class="glyphicon glyphicon-th-large"></span> <%= ucfloc 'state' %>', subMenu: [
           % if (has_permission(realty => 'read')->{nobody} && has_permission(realty => 'read')->{others}) {
           % my $iter = Rplus::Model::RealtyState::Manager->get_objects_iterator(sort_by => 'id');
           % while (my $x = $iter->next) {
           % my $metadata = decode_json($x->metadata);
-          {text: '<span class="glyphicon <%= $metadata->{'icon-class'} %>"></span>&nbsp<%= $x->name %>', data_action: 'realty-set-state', data_val: '<%= $x->code %>', },
+            {text: '<span class="glyphicon <%= $metadata->{'icon-class'} %>"></span>&nbsp<%= $x->name %>', data_action: 'realty-set-state', data_val: '<%= $x->code %>', },
           % }} else {
             {text: '...'},
           % }
         ]},
-        {text: '<span class="glyphicon glyphicon-user"></span>&nbspАгент', subMenu: [
+        {text: '<span class="glyphicon glyphicon-user"></span> <%= ucfloc 'agent' %>', subMenu: [
           % if (has_permission(realty => 'read')->{nobody} && has_permission(realty => 'read')->{others}) {
             {text: '<strong><%= ucfloc 'nobody' %></strong>', data_action: 'realty-set-agent', data_val: '', },
           % my $iter = Rplus::Model::User::Manager->get_objects_iterator(select => 'id, name', query => [role => ['agent', 'manager'], delete_date => undef], sort_by => 'name');
@@ -277,6 +314,18 @@
             {text: '...'},
           % }  
         ]},
+        {text: '<span class="glyphicon glyphicon-cog"></span> Задача', subMenu: [
+        ]},
+        {text: '<span class="glyphicon glyphicon-comment"></span>  <%= ucfloc 'export' %>'},
+        {divider: true},
+        {header: '&nbspТеги...'},
+        {header:  // '+' to concat strings, '' - to match last +
+          % for my $x (@{Rplus::Model::ColorTag::Manager->get_objects(query => [delete_date => undef], sort_by => 'id')}) {
+            '<button type="button" class="round-button color-tag-<%= $x->id %>" data-action="realty-set-color_tag_id" data-val="<%= $x->id %>"></button>' + 
+          % }
+          ''},
+        {divider: true},
+        {text: '<span class="glyphicon glyphicon-print"></span>  Печать'},
       ]);
     }
 
@@ -289,15 +338,16 @@
       var offerTypeCode = $('[data-filter="offer_type_code"]').data('val');
       var agentId = $('[data-filter="agent_id"]').data('val');
       var sortBy = $('#realtyTable').data('sort');
+      var colorTagId = $('[data-filter="color_tag_id"]').data('val');
       _listRealty_started = true;
 
       clearTimeout(_tid);
-      _tid = setTimeout(function(){updateRealty()}, 10000);
+      _tid = setTimeout(function(){updateRealty()}, 30000);
 
       $.ajax({
         type: "POST",
         url: "/api/realty/list",
-        data: {q: q, state_code: stateCode, offer_type_code: offerTypeCode, agent_id: agentId, sort_by: sortBy, page: page, per_page: 30},
+        data: {q: q, state_code: stateCode, offer_type_code: offerTypeCode, agent_id: agentId, color_tag_id: colorTagId, sort_by: sortBy, page: page, per_page: 30},
         complete: function () { _listRealty_started = false; }
       })
         .done(function (data, textStatus, jqXHR) {
@@ -305,7 +355,7 @@
           for (var i = 0; i < data.list.length; i++) {
             var r = data.list[i];
 
-            xhtml += '<tr data-page="' + data.page + '" data-id="' + r.id + '" data-lat="' + r.latitude + '" data-lng="' + r.longitude +  '"';            
+            xhtml += '<tr data-color_tag_id="' + r.color_tag_id + '" data-page="' + data.page + '" data-id="' + r.id + '" data-lat="' + r.latitude + '" data-lng="' + r.longitude +  '"';
             xhtml += ' class="';
             var h = getHistory(r.id);
             if (h) {
@@ -378,6 +428,7 @@
       var offerTypeCode = $('[data-filter="offer_type_code"]').data('val');
       var agentId = $('[data-filter="agent_id"]').data('val');
       var sortBy = $('#realtyTable').data('sort');
+      var vtag = $('[data-filter="color_tag_id"]').data('val');
       _listRealty_started = true;
       $.ajax({
         type: "POST",
@@ -386,7 +437,7 @@
         complete: function () { _listRealty_started = false; }
       })
         .done(function (data, textStatus, jqXHR) {
-          _tid = setTimeout(function(){updateRealty()},10000);
+          _tid = setTimeout(function(){updateRealty()},30000);
           var xhtml = '';
           var inserted = 0;
           for (var i = 0; i < data.list.length; i++) {
@@ -394,7 +445,7 @@
             // check if id in table
             if($('#realtyTable > tbody > tr[data-id="' + r.id + '"]').length > 0) {continue;};
             inserted ++;
-            xhtml += '<tr data-page="' + data.page + '" data-id="' + r.id + '" data-lat="' + r.latitude + '" data-lng="' + r.longitude +  '"';
+            xhtml += '<tr data-color_tag_id="' + r.color_tag_id + '" data-page="' + data.page + '" data-id="' + r.id + '" data-lat="' + r.latitude + '" data-lng="' + r.longitude +  '"';
 
             xhtml += ' class="';
             var h = getHistory(r.id);
@@ -421,7 +472,7 @@
           _listRealty_finished = false;
           
           if (inserted > 0) {
-            $('#realtyTable > tbody').prepend(xhtml);          
+            $('#realtyTable > tbody').prepend(xhtml);
             for (var i = 0; i < data.list.length; i++) {
               var r = data.list[i];
               $('#realtyTable > tbody > tr[data-id="' + r.id + '"]').data('obj', r);
@@ -613,7 +664,7 @@
       // Infinite scroll
       $('#realtyTableWrapper').scroll(function (e) {
         clearTimeout(_tid);
-        _tid = setTimeout(function(){updateRealty()},10000);
+        _tid = setTimeout(function(){updateRealty()},30000);
         //if ($(this).scrollTop() + $(this).innerHeight() >= $(this)[0].scrollHeight) {
         if ($(this).scrollTop() + $(this).innerHeight() >= $(this)[0].scrollHeight - 1) {   // clutch for iMac
           var lastPage = $('#realtyTable > tbody > tr:last').data('page');
@@ -624,43 +675,71 @@
       // Rows selection in realty table
       (function () {
         var _dblclick_timer, _dblclick_timeout = 350;
-        var mouse_down = false, last_sel_idx = 0;
+        var last_sel_idx = 0, cmd_down = 0;
+        var open_timer, select_timer, open_delay = 400, select_delay = 250 , cancel_click = false;
 
-        $('#realtyTable > tbody').on('mouseout', 'tr', function (e) {
-          if (e.toElement == null || e.toElement.localName != 'td') {
-            mouse_down = false;
+        $(document).keydown(function(e){
+          if (e.keyCode == 91 || e.keyCode == 93) {
+            cmd_down = true;
           }
         });
 
-        $('#realtyTable > tbody').on('mouseenter', 'tr', function (e) {
+        $(document).keyup(function(e){
+          if (e.keyCode == 91 || e.keyCode == 93) {
+            cmd_down = false;
+          }
+        });
+
+        $('body').click(function(e){
+          if (hasTouch()) return;
+          if($(e.target).is('body')) {
+            var $selected = $('#realtyTable > tbody > tr.selected');
+            $selected.each(function () {
+              var $this = $(this);
+              var id = $this.data('id');
+              $this.removeClass('selected');
+              putToHistory(id, "selected", 0);
+            });
+          }
+        });
+
+        $('#realtyTable > tbody').on('click', 'tr', function (e) {
+          if (hasTouch()) return;
           var $this = $(this);
           var id = $this.data('id');
-          if(mouse_down) {
-            if (!$this.hasClass('opened')) {
-              $this.toggleClass('selected');
-              if (!$this.hasClass('selected')) {
-                putToHistory(id, "selected", 0);
-              }
-              else {
-                putToHistory(id, "selected", 1);
-              }
+          if (!e.altKey && !e.ctrlKey && !e.shiftKey && !cmd_down) {
+            if (!_dblclick_timer || _dblclick_timer[0] != id) {
+              _dblclick_timer = [
+                id, setTimeout(function () {
+                  if (_dblclick_timer[0] == id) _dblclick_timer = null;
+                }, _dblclick_timeout)
+              ];
+            } else {
+              clearTimeout(_dblclick_timer[1]);
+              //mouse_down = false;
+              openRealtyCard(_dblclick_timer[0], false);
+              _dblclick_timer = null;
             }
           }
         });
 
-        $('#realtyTable > tbody').on('mouseup', 'tr', function (e) {
-          mouse_down = false;
-        });
-
         $('#realtyTable > tbody').on('mousedown', 'tr', function (e) {
+          if (hasTouch()) return;
           var $this = $(this);
           var id = $this.data('id');
           switch (event.which) {
               case 1:   // lmb
-                mouse_down = true;
-                var sel_idx = Math.floor($this.context.offsetTop / $this.context.clientHeight) - 1;
-                if (e.shiftKey) {
-                  // Select all elements from first selected to clicked
+                var sel_idx = $this.index();
+                if (cmd_down || e.ctrlKey) { // Add/remove clicked element to/from selection
+                  if (!$this.hasClass('opened')) {
+                    $this.toggleClass('selected');
+                    if ($this.hasClass('selected')) {
+                      putToHistory(id, "selected", 1);
+                    } else {
+                      putToHistory(id, "selected", 0);
+                    }
+                  }
+                } else if (e.shiftKey) {  // Select all elements from first selected to clicked
                   var $rows;
                   if(last_sel_idx < sel_idx) {
                     $rows = $('#realtyTable > tbody > tr').slice(last_sel_idx, sel_idx + 1);
@@ -675,27 +754,17 @@
                       putToHistory(id, "selected", 1);
                     }
                   });
-                } else {
-                  if (!_dblclick_timer || _dblclick_timer[0] != id) {
-                    if (!$this.hasClass('opened')) {
-                      $this.toggleClass('selected');
-                      if (!$this.hasClass('selected')) {
-                        putToHistory(id, "selected", 0);
-                      }
-                      else {
-                        putToHistory(id, "selected", 1);
-                      }
-                    }
-                    _dblclick_timer = [
-                      id, setTimeout(function () {
-                        if (_dblclick_timer[0] == id) _dblclick_timer = null;
-                      }, _dblclick_timeout)
-                    ];
-                  } else {
-                    clearTimeout(_dblclick_timer[1]);
-                    mouse_down = false;
-                    openRealtyCard(_dblclick_timer[0], false);
-                    _dblclick_timer = null;
+                } else {  // select/deselect cliked
+                  if (!$this.hasClass('opened')) {
+                    var $selected = $('#realtyTable > tbody > tr.selected');
+                    $selected.each(function () {
+                      var $this = $(this);
+                      var id = $this.data('id');
+                      $this.removeClass('selected');
+                      putToHistory(id, "selected", 0);
+                    });
+                    $this.addClass('selected');
+                    putToHistory(id, "selected", 1);
                   }
                 }
                 last_sel_idx = sel_idx;
@@ -703,11 +772,97 @@
               case 2:    // mmb
                 break;
               case 3:    // rmb
+                if (!$this.hasClass('selected')) {
+                   var $selected = $('#realtyTable > tbody > tr.selected');
+                  $selected.each(function () {
+                    var $this = $(this);
+                    var id = $this.data('id');
+                    $this.removeClass('selected');
+                    putToHistory(id, "selected", 0);
+                  });
+                }
                 $this.addClass('selected');
+                putToHistory(id, "selected", 1);
                 break;
               default:
           }
         });
+
+        // mouse drag selection
+        $('#realtyTable > tbody').on('mouseenter', 'tr', function (e) {
+          if (hasTouch()) return;  // 
+          var $this = $(this);
+          var id = $this.data('id');
+          if(e.which == 1) {  // lmb pressed
+                  var sel_idx = $this.index();
+                  var $selected = $('#realtyTable > tbody > tr.selected');
+                  $selected.each(function () {
+                    var $this = $(this);
+                    var id = $this.data('id');
+                    $this.removeClass('selected');
+                    putToHistory(id, "selected", 0);
+                  });
+                  
+                  var $rows;
+                  if(last_sel_idx < sel_idx) {
+                    $rows = $('#realtyTable > tbody > tr').slice(last_sel_idx, sel_idx + 1);
+                  } else {
+                    $rows = $('#realtyTable > tbody > tr').slice(sel_idx, last_sel_idx + 1);
+                  }
+                  $rows.each(function () {
+                    var $this = $(this);
+                    var id = $this.data('id');
+                    if (!$this.hasClass('opened')) {
+                      $this.addClass('selected');
+                      putToHistory(id, "selected", 1);
+                    }
+                  });
+          }
+        });
+
+        // 'mobile' stuff: tap to select/deselect, long tap to open
+        $('#realtyTable > tbody').on('touchstart', 'tr', function (e) {
+          var $this = $(this);
+          var id = $this.data('id');
+          cancel_click = true;
+          if (!$this.hasClass('opened')) {
+            cancel_click = false;
+            select_timer = window.setTimeout(function() {
+              cancel_click = true;
+              $this.addClass('selected')
+            }, select_delay);
+            open_timer = window.setTimeout(function() {
+                openRealtyCard(id, false);
+            }, open_delay);
+          }
+        });
+
+        $('#realtyTable > tbody').on('touchend', 'tr', function (e) {
+          clearTimeout(select_timer);
+          clearTimeout(open_timer);
+          var $this = $(this);
+          var id = $this.data('id');
+          if (!cancel_click) {
+            $this.toggleClass('selected');
+            if ($this.hasClass('selected')) {
+              putToHistory(id, "selected", 1);
+            } else {
+              putToHistory(id, "selected", 0);
+            }
+          }
+        });
+        
+        $('#realtyTable > tbody').on('touchcancel', 'tr', function (e) {
+          cancel_click = true;
+          clearTimeout(select_timer);
+          clearTimeout(open_timer);
+        });
+        
+        $('#realtyTable > tbody').on('touchmove', 'tr', function (e) {
+          cancel_click = true;
+          clearTimeout(select_timer);
+          clearTimeout(open_timer);
+        });        
       })();
 
       // Create realty object card
@@ -734,6 +889,38 @@
         card.create({
           type_code: 'apartment',
           offer_type_code: $('[data-filter="offer_type_code"]').data('val'),
+        });
+      });
+
+      // Set color tag for realty object
+      $('[data-action="realty-set-color_tag_id"]').click(function (e) {
+        var new_tag_id = $(this).data('val');
+        var $selected = $('#realtyTable > tbody > tr.selected');
+        $selected.each(function () {
+          var $this = $(this);
+          var id = $this.data('id');
+          var obj_tag_id = $this.data('color_tag_id');
+          var new_obj_tag_id = new_tag_id;
+          if (new_tag_id == obj_tag_id) {
+            new_obj_tag_id = '';
+          }
+          $.ajax({
+            type: "POST",
+            url: "/api/realty/update",
+            data: {id: id, color_tag_id: new_obj_tag_id}
+          })
+            .done(function (data, textStatus, jqXHR) {
+              if (data.status == 'success') {
+                var r = data.realty;
+                // Update row data in realty table
+                for (var j = 0; j < realtyTableConf.fields.length; j++) {
+                  var f = realtyTableConf.fields[j];
+                  $('td:nth-child(' + (j + 1) + ')', $this).html(f.val(r));
+                }
+                $this.data('color_tag_id', new_obj_tag_id);
+                $this.addClass('selected');
+              }
+            });
         });
       });
 
@@ -977,31 +1164,6 @@
       </div>
     </div>
 
-    % if (has_permission(realty => 'read')->{nobody} && has_permission(realty => 'read')->{others}) {
-    <div class="btn-group dropup" style="position: fixed; bottom: 60px; right: 10px; display: block;">
-      <button type="button" class="btn btn-primary btn-sm dropdown-toggle" data-toggle="dropdown">
-        <span class="glyphicon glyphicon-ok"></span> <%= ucfloc 'set'%> <span class="caret"></span>
-      </button>
-      <ul class="dropdown-menu pull-right" role="menu" >
-        <li class="dropdown-header"><span class="glyphicon glyphicon-user"></span> <%= ucfloc 'agent' %></li>
-        <li><a href="#" data-action="realty-set-agent" data-val=""><strong><%= ucfloc 'nobody' %></strong></a></li>
-        % {
-        % my $iter = Rplus::Model::User::Manager->get_objects_iterator(select => 'id, name', query => [role => ['agent', 'manager'], delete_date => undef], sort_by => 'name');
-        % while (my $x = $iter->next) {
-          <li><a href="#" data-action="realty-set-agent" data-val="<%= $x->id %>"><%= $x->name %></a></li>
-        % }}
-        <li class="divider"></li>
-        <li class="dropdown-header"><span class="glyphicon glyphicon-th-large"></span> <%= ucfloc 'state' %></li>
-        % {
-        % my $iter = Rplus::Model::RealtyState::Manager->get_objects_iterator(sort_by => 'id');
-        % while (my $x = $iter->next) {
-        % my $metadata = decode_json($x->metadata);
-          <li><a href="#" data-action="realty-set-state" data-val="<%= $x->code %>"><span class="glyphicon <%= $metadata->{'icon-class'} %>"></span> <%= $x->name %></a></li>
-        % }}
-      </ul>
-    </div>
-    % }
-
     <nav class="navbar navbar-default navbar-fixed-bottom">
       <div class="container">
         <ul class="nav navbar-nav">
@@ -1013,9 +1175,20 @@
         <div class="navbar-right">
           <ul class="nav navbar-nav">
 
+            <!-- Color tag filter -->
+            <li class="dropdown" data-filter="color_tag_id" data-val="">
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span role="display"><span class="glyphicon glyphicon-tags"></span>&nbsp&nbspВсе</span> <b class="caret"></b></a>
+              <ul class="dropdown-menu">
+                <li><a href="#" data-val=""><span class="glyphicon glyphicon-tags"></span>&nbsp&nbspВсе</a></li>
+                % for my $x (@{Rplus::Model::ColorTag::Manager->get_objects(query => [delete_date => undef], sort_by => 'id')}) {
+                  <li><a href="#" data-val="<%= $x->id %>"><span class="tag-button color-tag-<%= $x->id %> pull-left"></span>&nbsp<%= $x->name %></a></li>
+                % }
+              </ul>
+            </li>
+
             <!-- Agent filter -->
             <li class="dropdown" data-filter="agent_id" data-val="">
-              <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-user"></span> <span role="display"><%= ucfloc 'any' %></span> <b class="caret"></b></a>
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-user"></span> <span role="display"><%= ucfloc 'any' %> <b class="caret"></b></span></a>
               <ul class="dropdown-menu">
                 % if (has_permission(realty => 'read')->{nobody} || has_permission(realty => 'read')->{others}) {
                 <li><a href="#" data-val="" data-type="text"><strong><%= ucfloc 'any' %></strong></a></li>

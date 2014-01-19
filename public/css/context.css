@@ -16,7 +16,7 @@
 	position: absolute;
 	top: 100%;
 	left: 0;
-	z-index: 1000;
+	z-index: 9000;
 	display: none;
 	float: left;
 	min-width: 160px;
@@ -209,15 +209,19 @@
 	display: block;
 }
 
-.compressed-context a{
+.compressed-context a {
 	padding-left: 14px;
 	padding-top: 0;
 	padding-bottom: 0;
 	font-size: 13px;
-	}
-.compressed-context .divider{
+}
+.compressed-context .divider {
 	margin: 5px 1px;
-	}
-.compressed-context .nav-header{
+}
+.compressed-context .nav-header {
 	padding:1px 13px;
-	}
+}
+	
+.disable-on-context.disabled {
+	pointer-events: none;
+}

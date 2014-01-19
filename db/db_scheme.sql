@@ -824,6 +824,60 @@ ALTER SEQUENCE clients_id_seq OWNED BY clients.id;
 
 
 --
+-- Name: color_tags; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE TABLE color_tags (
+    id integer NOT NULL,
+    name character varying(12) NOT NULL,
+    color character varying(6) NOT NULL,
+    add_date timestamp with time zone DEFAULT now() NOT NULL,
+    delete_date timestamp with time zone,
+    border_color character varying(6) DEFAULT 'c8c8c8'::character varying NOT NULL
+);
+
+
+--
+-- Name: TABLE color_tags; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE color_tags IS 'Цветовые теги для объектов недвижимости';
+
+
+--
+-- Name: COLUMN color_tags.add_date; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN color_tags.add_date IS 'Дата/время добавления';
+
+
+--
+-- Name: COLUMN color_tags.delete_date; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN color_tags.delete_date IS 'Дата/время удаления';
+
+
+--
+-- Name: color_tags_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE color_tags_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: color_tags_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE color_tags_id_seq OWNED BY color_tags.id;
+
+
+--
 -- Name: dict_ap_schemes; Type: TABLE; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -1889,6 +1943,7 @@ CREATE TABLE realty (
     export_media integer[] DEFAULT '{}'::integer[] NOT NULL,
     metadata json DEFAULT '{}'::json NOT NULL,
     fts tsvector,
+    color_tag_id integer,
     CONSTRAINT realty_agency_price_chk CHECK ((agency_price > (0)::double precision)),
     CONSTRAINT realty_floor_chk CHECK ((((floors_count > 0) AND (floors_count <= 100)) AND (floor <= floors_count))),
     CONSTRAINT realty_levels_count_chk CHECK ((levels_count > 0)),
@@ -2262,6 +2317,13 @@ COMMENT ON COLUMN realty.metadata IS 'Метаданные';
 --
 
 COMMENT ON COLUMN realty.fts IS 'tsvector описания';
+
+
+--
+-- Name: COLUMN realty.color_tag_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN realty.color_tag_id IS 'color tag for realty object';
 
 
 --
@@ -3197,6 +3259,13 @@ ALTER TABLE ONLY clients ALTER COLUMN id SET DEFAULT nextval('clients_id_seq'::r
 -- Name: id; Type: DEFAULT; Schema: public; Owner: -
 --
 
+ALTER TABLE ONLY color_tags ALTER COLUMN id SET DEFAULT nextval('color_tags_id_seq'::regclass);
+
+
+--
+-- Name: id; Type: DEFAULT; Schema: public; Owner: -
+--
+
 ALTER TABLE ONLY dict_ap_schemes ALTER COLUMN id SET DEFAULT nextval('dict_ap_schemes_id_seq'::regclass);
 
 
@@ -3356,6 +3425,14 @@ ALTER TABLE ONLY address_objects
 
 ALTER TABLE ONLY clients
     ADD CONSTRAINT clients_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: color_tags_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+--
+
+ALTER TABLE ONLY color_tags
+    ADD CONSTRAINT color_tags_pkey PRIMARY KEY (id);
 
 
 --
@@ -4518,6 +4595,14 @@ ALTER TABLE ONLY realty
 
 ALTER TABLE ONLY realty
     ADD CONSTRAINT realty_buyer_fk FOREIGN KEY (buyer_id) REFERENCES clients(id);
+
+
+--
+-- Name: realty_color_tag_fc; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY realty
+    ADD CONSTRAINT realty_color_tag_fc FOREIGN KEY (color_tag_id) REFERENCES color_tags(id);
 
 
 --
