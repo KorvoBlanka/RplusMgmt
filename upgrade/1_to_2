@@ -1,0 +1,52 @@
+#!/usr/bin/env perl
+
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+
+use Rplus::Modern;
+
+use Rplus::DB;
+
+my $dbh = Rplus::DB->new_or_cached->dbh;
+
+# Database scruct changes
+if (1) {
+    $dbh->do(q{DROP TABLE IF EXISTS public.color_tags;});
+    $dbh->do(q{
+CREATE TABLE public.color_tags (
+    id SERIAL,
+    name VARCHAR(12) NOT NULL,
+    color VARCHAR(6)  NOT NULL,
+    border_color VARCHAR(6) DEFAULT 'c8c8c8'::character varying NOT NULL,
+    add_date TIMESTAMPTZ(6) DEFAULT now() NOT NULL,
+    delete_date TIMESTAMPTZ(6));
+    });
+
+    $dbh->do(q{ALTER TABLE public.color_tags ADD PRIMARY KEY (id);});
+
+    $dbh->do(q{COMMENT ON TABLE public.color_tags IS 'цветовые теги для объектов недвижимости';});
+    $dbh->do(q{COMMENT ON COLUMN public.color_tags.name IS 'имя тега для отображения пользователю';});
+    $dbh->do(q{COMMENT ON COLUMN public.color_tags.color IS 'цвет тега';});
+    $dbh->do(q{COMMENT ON COLUMN public.color_tags.border_color IS 'цвет окантовки тега';});
+    $dbh->do(q{COMMENT ON COLUMN public.color_tags.add_date IS 'Дата/время добавления';});
+    $dbh->do(q{COMMENT ON COLUMN public.color_tags.delete_date IS 'Дата/время удаления';});
+
+    # Records of color_tags
+    $dbh->do(q{INSERT INTO public.color_tags (name, color, border_color) VALUES ('красный', 'fd7b7e', 'd9585c');});
+    $dbh->do(q{INSERT INTO public.color_tags (name, color, border_color) VALUES ('оранжевый', 'febc46', 'e99532');});
+    $dbh->do(q{INSERT INTO public.color_tags (name, color, border_color) VALUES ('желтый', 'f4e54d', 'd3c53b');});
+    $dbh->do(q{INSERT INTO public.color_tags (name, color, border_color) VALUES ('зеленый', 'b4e042', 'a5bd59');});
+    $dbh->do(q{INSERT INTO public.color_tags (name, color, border_color) VALUES ('голубой', '83c9fc', '6ea1bc');});
+    $dbh->do(q{INSERT INTO public.color_tags (name, color, border_color) VALUES ('лиловый', 'e4a6fc', 'd770f9');});
+    $dbh->do(q{INSERT INTO public.color_tags (name, color, border_color) VALUES ('серый', 'c8c8c8', 'a5a5a5');});
+
+    # Realty table changes
+    $dbh->do(q{ALTER TABLE public.realty ADD COLUMN color_tag_id INTEGER;});
+    $dbh->do(q{COMMENT ON COLUMN realty.color_tag_id IS 'id цветового тега';});
+    $dbh->do(q{ALTER TABLE ONLY realty ADD CONSTRAINT realty_color_tag_fc FOREIGN KEY (color_tag_id) REFERENCES color_tags(id);});
+}
+
+# Update models
+system("$FindBin::Bin/../script/make_models");
+
+exit 0;

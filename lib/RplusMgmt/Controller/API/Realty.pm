@@ -109,12 +109,14 @@ sub list {
     my $sort_by = $self->param('sort_by');
     my $page = $self->param("page") || 1;
     my $per_page = $self->param("per_page") || 30;
+    my $color_tag_id = $self->param("color_tag_id") || 'any';
 
     # "where" query
     my @query;
     {
         if ($state_code ne 'any') { push @query, state_code => $state_code } else { push @query, '!state_code' => 'deleted' };
         if ($offer_type_code ne 'any') { push @query, offer_type_code => $offer_type_code };
+        if ($color_tag_id ne 'any') { push @query, color_tag_id => $color_tag_id; }
 
         my $agent_ok;
         if ($agent_id eq 'nobody' && $self->has_permission(realty => 'read')->{nobody}) {
@@ -346,9 +348,19 @@ sub update {
     # Available fields to set: agent_id, state_code
     for ($self->param) {
         if ($_ eq 'agent_id') {
-            $realty->agent_id(scalar $self->param('agent_id'));
+            if ($self->param('agent_id') eq '') {
+                $realty->agent_id(undef);
+            } else {
+                $realty->agent_id(scalar $self->param('agent_id'));
+            }
         } elsif ($_ eq 'state_code') {
             $realty->state_code(scalar $self->param('state_code'));
+        } elsif ($_ eq 'color_tag_id') {
+            if ($self->param('color_tag_id') eq '') {
+                $realty->color_tag_id(undef);
+            } else {
+                $realty->color_tag_id(scalar $self->param('color_tag_id'));
+            }
         }
     }
 
