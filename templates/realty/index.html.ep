@@ -3,6 +3,7 @@
 % use Rplus::Model::RealtyState::Manager;
 % use Rplus::Model::RealtyOfferType::Manager;
 % use Rplus::Model::User::Manager;
+% use Rplus::Model::Media::Manager;
 % use Rplus::Model::ColorTag::Manager;
 
 % use JSON;
@@ -15,6 +16,18 @@
 %= css_once "$assets_url/typeahead.js/$typeaheadjs_ver/css/typeahead.js-bootstrap.css";
 %= css_once "/css/context.css";
 <style tyle="text/css">
+  .export-check-hidden {
+    visibility: hidden;
+  }
+
+  .export-check-visible {
+    color: #000000;
+  }
+  
+  .export-check-grayed {
+    color: #888888;
+  }
+  
   .tag-button {
     height: 10px;
     width: 10px;
@@ -288,8 +301,43 @@
       localStorage["history"] = JSON.stringify(history);
     }
 
+    
+    
     function createContextMenu() {
-      context.init({preventDoubleContext: true, compress: true, above: 'auto',});
+      var context_cb = function(e){
+        
+        var $menu_el = $(".export-check");
+        $menu_el.each(function () {
+          var $this = $(this);
+          $this.removeClass("export-check-visible").removeClass("export-check-grayed").addClass("export-check-hidden");
+        });
+        var $selected = $('#realtyTable > tbody > tr.selected');
+        var ids = new Array();
+        $selected.each(function () {
+          var $this = $(this);
+          var id = $this.data('id');
+          var export_media = $this.data('export_media');
+          
+          for (var id_key in export_media) {
+            var val = export_media[id_key];
+            if (ids[val] === undefined) {
+              ids[val] = 1;
+            } else {
+              ids[val] += 1;
+            }
+          }
+          for (var id_key in ids) {
+            if (ids[id_key] == $selected.length) {
+              $(".export-check" + id_key).removeClass("export-check-hidden").removeClass("export-check-grayed").addClass("export-check-visible");
+            } else {
+              $(".export-check" + id_key).removeClass("export-check-hidden").removeClass("export-check-visible").addClass("export-check-grayed");
+            }
+          }
+          
+        });
+      };
+      
+      context.init({preventDoubleContext: true, compress: true, above: 'auto',}, context_cb);
       context.attach('#realtyTable', [
         {text: '<span class="glyphicon glyphicon-folder-open"></span>&nbsp&nbsp<%= ucfloc 'open' %>', data_action: 'realty-open',},
         {text: '<span class="glyphicon glyphicon-trash"></span>&nbsp&nbsp<%= ucfloc 'delete' %>', data_action: 'realty-set-state', data_val: "deleted",},
@@ -314,9 +362,12 @@
             {text: '...'},
           % }  
         ]},
-        {text: '<span class="glyphicon glyphicon-cog"></span> Задача', subMenu: [
+        {text: '<span class="glyphicon glyphicon-cog"></span> Задача'},
+        {text: '<span class="glyphicon glyphicon-comment"></span>  <%= ucfloc 'export' %>', subMenu: [
+          % for my $x (@{Rplus::Model::Media::Manager->get_objects(query => [type => 'export', delete_date => undef])}) {
+            {text: '<span class="export-check export-check<%= $x->id %> glyphicon glyphicon-ok"></span>&nbsp&nbsp<%= $x->name %>', data_action: 'realty-set-export', data_val: '<%= $x->id %>', },
+          % }
         ]},
-        {text: '<span class="glyphicon glyphicon-comment"></span>  <%= ucfloc 'export' %>'},
         {divider: true},
         {header: '&nbspТеги...'},
         {header:  // '+' to concat strings, '' - to match last +
@@ -355,7 +406,7 @@
           for (var i = 0; i < data.list.length; i++) {
             var r = data.list[i];
 
-            xhtml += '<tr data-color_tag_id="' + r.color_tag_id + '" data-page="' + data.page + '" data-id="' + r.id + '" data-lat="' + r.latitude + '" data-lng="' + r.longitude +  '"';
+            xhtml += '<tr data-export_media="' + JSON.stringify(r.export_media) + '" data-color_tag_id="' + r.color_tag_id + '" data-page="' + data.page + '" data-id="' + r.id + '" data-lat="' + r.latitude + '" data-lng="' + r.longitude +  '"';
             xhtml += ' class="';
             var h = getHistory(r.id);
             if (h) {
@@ -524,6 +575,7 @@
               $('td:nth-child(' + (j + 1) + ')', $tr).html(f.val(r));
             }
             $tr.addClass('modified');
+            $tr.data('export_media', r.export_media);
             putToHistory(id, "modified", 1);
             putToHistory(id, "selected", 0);
           }
@@ -892,38 +944,6 @@
         });
       });
 
-      // Set color tag for realty object
-      $('[data-action="realty-set-color_tag_id"]').click(function (e) {
-        var new_tag_id = $(this).data('val');
-        var $selected = $('#realtyTable > tbody > tr.selected');
-        $selected.each(function () {
-          var $this = $(this);
-          var id = $this.data('id');
-          var obj_tag_id = $this.data('color_tag_id');
-          var new_obj_tag_id = new_tag_id;
-          if (new_tag_id == obj_tag_id) {
-            new_obj_tag_id = '';
-          }
-          $.ajax({
-            type: "POST",
-            url: "/api/realty/update",
-            data: {id: id, color_tag_id: new_obj_tag_id}
-          })
-            .done(function (data, textStatus, jqXHR) {
-              if (data.status == 'success') {
-                var r = data.realty;
-                // Update row data in realty table
-                for (var j = 0; j < realtyTableConf.fields.length; j++) {
-                  var f = realtyTableConf.fields[j];
-                  $('td:nth-child(' + (j + 1) + ')', $this).html(f.val(r));
-                }
-                $this.data('color_tag_id', new_obj_tag_id);
-                $this.addClass('selected');
-              }
-            });
-        });
-      });
-
       // Open realty object card
       $('[data-action="realty-open"]').click(function (e) {
         var $selected = $('#realtyTable > tbody > tr.selected');
@@ -987,6 +1007,79 @@
                   var f = realtyTableConf.fields[j];
                   $('td:nth-child(' + (j + 1) + ')', $this).html(f.val(r));
                 }
+                $this.removeClass('selected').addClass('modified');
+                putToHistory(id, "selected", 0);
+                putToHistory(id, "modified", 1);
+              }
+            })
+          ;
+        });
+      });
+
+      // Set color tag for realty object
+      $('[data-action="realty-set-color_tag_id"]').click(function (e) {
+        var new_tag_id = $(this).data('val');
+        var $selected = $('#realtyTable > tbody > tr.selected');
+        $selected.each(function () {
+          var $this = $(this);
+          var id = $this.data('id');
+          var obj_tag_id = $this.data('color_tag_id');
+          var new_obj_tag_id = new_tag_id;
+          if (new_tag_id == obj_tag_id) {
+            new_obj_tag_id = '';
+          }
+          $.ajax({
+            type: "POST",
+            url: "/api/realty/update",
+            data: {id: id, color_tag_id: new_obj_tag_id}
+          })
+            .done(function (data, textStatus, jqXHR) {
+              if (data.status == 'success') {
+                var r = data.realty;
+                // Update row data in realty table
+                for (var j = 0; j < realtyTableConf.fields.length; j++) {
+                  var f = realtyTableConf.fields[j];
+                  $('td:nth-child(' + (j + 1) + ')', $this).html(f.val(r));
+                }
+                $this.data('color_tag_id', new_obj_tag_id);
+                $this.addClass('selected');
+              }
+            });
+        });
+      });
+
+      // Set export
+      $('[data-action="realty-set-export"]').click(function (e) {
+        var exportCode = $(this).data('val');
+        var $selected = $('#realtyTable > tbody > tr.selected');
+        $selected.each(function () {
+          var $this = $(this);
+          var id = $this.data('id');
+          var exportArray = $this.data('export_media');
+          var index = $.inArray(exportCode, exportArray);
+          if(index > -1) {
+            exportArray.splice(index, 1);
+          } else {
+            exportArray.push(exportCode);
+          }
+          var ajaxArray = exportArray;
+          if (ajaxArray.length == 0) {
+            ajaxArray = null;
+          }
+          $.ajax({
+            type: "POST",
+            url: "/api/realty/update",
+            data: {id: id, export_media: ajaxArray},
+          })
+            .done(function (data, textStatus, jqXHR) {
+              if (data.status == 'success') {
+                var r = data.realty;
+                // Update row data in realty table
+                for (var j = 0; j < realtyTableConf.fields.length; j++) {
+                  var f = realtyTableConf.fields[j];
+                  $('td:nth-child(' + (j + 1) + ')', $this).html(f.val(r));
+                }
+                $this.data('export_media', exportArray);
                 $this.removeClass('selected').addClass('modified');
                 putToHistory(id, "selected", 0);
                 putToHistory(id, "modified", 1);

@@ -3,6 +3,7 @@
  * Copyright Jacob Kelley
  * MIT License
  */
+var context_callback = null;
 
 var context = context || (function () {
     
@@ -16,8 +17,8 @@ var context = context || (function () {
 		compress: false
 	};
 
-	function initialize(opts) {
-		
+	function initialize(opts, callback) {
+		context_callback = callback;
 		options = $.extend({}, options, opts);
 		
 		$(document).on('click', 'html', function () {
@@ -115,9 +116,10 @@ var context = context || (function () {
 			$('.disable-on-context').addClass('disabled');
 			e.preventDefault();
 			e.stopPropagation();
-			
 			$('.dropdown-context:not(.dropdown-context-sub)').hide();
-			
+			if (context_callback != null) {
+				context_callback(e);
+			}
 			$dd = $('#dropdown-' + id);
 			if (typeof options.above == 'boolean' && options.above) {
 				$dd.addClass('dropdown-context-up').css({

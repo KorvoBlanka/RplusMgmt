@@ -61,6 +61,7 @@ my %MEDIATOR_PHONES; {
     }
 }
 
+say 'importing...';
 import_present_site ();
 
 sub import_present_site {
@@ -79,7 +80,7 @@ sub import_present_site {
     process_url_list(\@url_list, 'house', 'house', 'sale');
 
     @url_list = get_url_list($sell_land_url, 4);
-    process_url_list(\@url_list, 'land', 'land', 'sale');
+    #process_url_list(\@url_list, 'land', 'land', 'sale');
 
     @url_list = get_url_list($rent_apartments_url, 4);
     process_url_list(\@url_list, 'apartment', 'apartment', 'rent');
@@ -101,10 +102,11 @@ sub get_url_list {
         my $res = $ua->get($main_page . '/page/'.$i)->res;
         my $dom = $res->dom;
 
-        $do = $dom->find('div[class="items"]');
+	my $itms = $dom->find('div[class="notices"]')->first;
+        $do = $itms->find('div[class="items"]');
         if($do->size > 0) {
             $do->first->find('div[class="actions"]')->each (sub {
-                push(@url_list, $_->a->{href})
+                push(@url_list, $_->a->{href});
             });
         }
     }
@@ -126,8 +128,8 @@ sub process_url_list {
         eval {
             my $dom = $ua->get($main_url . $item_url)->res->dom;
             next unless defined $dom;
-            
-            my $text = $dom->find('div[class="text"]')->first->text;
+            my $itm = $dom->find('div[class="notice-card"]')->first;
+            my $text = $itm->find('div[class="text"]')->first->text;
             if(recognize_adv($text, $data)) {    
                 # Пропустим уже обработанные объявления
                 my $item_id = $item_url;

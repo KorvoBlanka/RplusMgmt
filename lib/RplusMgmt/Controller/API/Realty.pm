@@ -361,6 +361,11 @@ sub update {
             } else {
                 $realty->color_tag_id(scalar $self->param('color_tag_id'));
             }
+        } elsif ($_ eq 'export_media[]') {
+            my $export_media_ok = Rplus::DB->new_or_cached->dbh->selectall_hashref(q{SELECT M.id, M.name FROM media M WHERE M.type = 'export' AND M.delete_date IS NULL}, 'id');
+            $realty->export_media(Mojo::Collection->new($self->param('export_media[]'))->grep(sub { exists $export_media_ok->{$_} })->uniq);
+        } elsif ($_ eq 'export_media') {
+            $realty->export_media(Mojo::Collection->new());
         }
     }
 
