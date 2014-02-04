@@ -305,7 +305,6 @@
     
     function createContextMenu() {
       var context_cb = function(e){
-        
         var $menu_el = $(".export-check");
         $menu_el.each(function () {
           var $this = $(this);

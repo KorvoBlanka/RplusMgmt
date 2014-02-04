@@ -57,8 +57,9 @@ var context = context || (function () {
 		var subClass = (subMenu) ? ' dropdown-context-sub' : '',
 			compressed = options.compress ? ' compressed-context' : '',
 			$menu = $('<ul class="dropdown-menu dropdown-context' + subClass + compressed+'" id="dropdown-' + id + '"></ul>');
-        var i = 0, linkTarget = '', data_action = '', data_val = '';
+        var i = 0;
         for(i; i<data.length; i++) {
+		var linkTarget = '', data_action = '', data_val = '';
         	if (typeof data[i].divider !== 'undefined') {
 				$menu.append('<li class="divider"></li>');
 			} else if (typeof data[i].header !== 'undefined') {
