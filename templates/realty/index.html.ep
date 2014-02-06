@@ -477,13 +477,14 @@
       var stateCode = $('[data-filter="state_code"]').data('val');
       var offerTypeCode = $('[data-filter="offer_type_code"]').data('val');
       var agentId = $('[data-filter="agent_id"]').data('val');
+      var colorTagId = $('[data-filter="color_tag_id"]').data('val');
       var sortBy = $('#realtyTable').data('sort');
       var vtag = $('[data-filter="color_tag_id"]').data('val');
       _listRealty_started = true;
       $.ajax({
         type: "POST",
         url: "/api/realty/list",
-        data: {q: q, state_code: stateCode, offer_type_code: offerTypeCode, agent_id: agentId, sort_by: sortBy, page: 1, per_page: 30},
+        data: {q: q, state_code: stateCode, offer_type_code: offerTypeCode, agent_id: agentId, color_tag_id: colorTagId, sort_by: sortBy, page: 1, per_page: 30},
         complete: function () { _listRealty_started = false; }
       })
         .done(function (data, textStatus, jqXHR) {
@@ -495,8 +496,7 @@
             // check if id in table
             if($('#realtyTable > tbody > tr[data-id="' + r.id + '"]').length > 0) {continue;};
             inserted ++;
-            xhtml += '<tr data-color_tag_id="' + r.color_tag_id + '" data-page="' + data.page + '" data-id="' + r.id + '" data-lat="' + r.latitude + '" data-lng="' + r.longitude +  '"';
-
+            xhtml += '<tr data-export_media="' + JSON.stringify(r.export_media) + '" data-color_tag_id="' + r.color_tag_id + '" data-page="' + data.page + '" data-id="' + r.id + '" data-lat="' + r.latitude + '" data-lng="' + r.longitude +  '"';
             xhtml += ' class="';
             var h = getHistory(r.id);
             if (h) {
