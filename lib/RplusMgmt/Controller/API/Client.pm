@@ -18,9 +18,55 @@ sub list {
 
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(clients => 'read');
 
-    # Not Implemented
+    # Input validation
+    $self->validation->optional('page')->like(qr/^\d+$/);
+    $self->validation->optional('per_page')->like(qr/^\d+$/);
 
-    return $self->render(json => {error => 'Not Implemented'}, status => 501);
+    if ($self->validation->has_error) {
+        my @errors;
+        push @errors, {page => 'Invalid value'} if $self->validation->has_error('page');
+        push @errors, {per_page => 'Invalid value'} if $self->validation->has_error('per_page');
+        return $self->render(json => {errors => \@errors}, status => 400);
+    }
+
+    # Input params
+    my $page = $self->param("page") || 1;
+    my $per_page = $self->param("per_page") || 30;
+
+    my $res = {
+        count => Rplus::Model::Client::Manager->get_objects_count(query => [delete_date => undef]),
+        list => [],
+        page => $page,
+    };
+
+    my $clients_iter = Rplus::Model::Client::Manager->get_objects_iterator(query => [delete_date => undef], sort_by => 'id asc');
+    while (my $client = $clients_iter->next) {
+        my $x = {
+            id => $client->id,
+            add_date => $self->format_datetime($client->add_date),
+            name => $client->name,
+            phone_num => $client->phone_num,
+            description => $client->description,
+            queries => [],
+            realty => []
+        };
+        
+        my $subscription_iter = Rplus::Model::Subscription::Manager->get_objects_iterator(query => [client_id => $client->id, delete_date => undef]);
+        while (my $subscription = $subscription_iter->next) {
+            push @{$x->{queries}}, $subscription->queries;
+            
+            my $realty_iter = Rplus::Model::SubscriptionRealty::Manager->get_objects_iterator(query => [id => $x->{id}, delete_date => undef]);
+            while (my $realty = $realty_iter->next) {
+                push @{$x->{realty}}, $realty->id;
+            }
+        }
+        
+        push @{$res->{list}}, $x;
+    }
+
+    $res->{count} = scalar @{$res->{list}};
+
+    return $self->render(json => $res);
 }
 
 sub get {

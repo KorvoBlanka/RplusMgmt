@@ -178,6 +178,17 @@
           % if (has_permission(realty => 'read') && !is_hidden_nav('realty')) {
             <li class="<%= $controller eq 'realty' && 'active' %>"><a href="/realty"><span class="glyphicon glyphicon-home"></span> <%= ucfloc q{realty} %></a></li>
           % }
+          % if (has_permission(clients => 'read')) {
+            <li class="dropdown">
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-user"></span> <%= ucfloc q{sales} %> <b class="caret"></b></a>
+              <ul class="dropdown-menu">
+                <li><a href="/clients/clients"><span class="glyphicon glyphicon-list-alt"></span> <%= ucfloc q{clients} %></a></li>
+              % if (has_permission(subscriptions => 'read')) {
+                <li><a href="/clients/subscriptions"><span class="glyphicon glyphicon-list-alt"></span> <%= ucfloc q{subscriptions} %></a></li>
+              % }
+              </ul>
+            </li>
+          % }          
           % if (has_permission(realty => 'export')) {
             <li class="dropdown">
               <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-star"></span> <%= ucfloc q{services} %> <b class="caret"></b></a>
@@ -193,11 +204,11 @@
               <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-stats"></span> <%= ucfloc q{analytics} %> <b class="caret"></b></a>
               <ul class="dropdown-menu">
               % if (has_permission(subscriptions => 'read')) {
-                <li><a href="/analytics/subscriptions"><span class="glyphicon glyphicon-list-alt"></span> <%= ucfloc q{subscriptions} %></a></li>
+                <li><a href="/analytics/subscriptions"><span class="glyphicon glyphicon-list-alt"></span> <%= ucfloc q{plots} %></a></li>
               % }
               </ul>
             </li>
-          % }
+          % }          
           % if (
           %  has_permission(mediators => 'read') || has_permission(landmarks => 'read') || has_permission(users => 'manage')
           % ) {

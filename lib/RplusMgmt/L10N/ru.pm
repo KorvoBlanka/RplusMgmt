@@ -47,6 +47,7 @@ our %Lexicon = (
     q{change photo} => 'изменить фото',
     q{changed} => 'изменено',
     q{client} => 'клиент',
+    q{clients} => 'клиенты',
     q{city} => 'город',
     q{condition} => 'состояние',
 
@@ -144,7 +145,8 @@ our %Lexicon = (
     q{photo} => 'фото',
     q{photos} => 'фото',
     q{price} => 'цена',
-
+    q{plots} => 'графики',
+    
     q{phone num cannot be empty} => 'номер телефона не указан',
 
     # Q
@@ -170,6 +172,7 @@ our %Lexicon = (
     q{save} => 'сохранить',
     q{saving...} => 'сохранение...',
     q{sale} => 'продажа',
+    q{sales} => 'спрос',
     q{sign in} => 'вход',
     q{save subscription} => 'сохранить подписку',
     q{set} => 'установить',

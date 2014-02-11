@@ -77,10 +77,6 @@ sub import_farpost {
         return 0;
     });
     process_url_list(\@url_list, 'house', 'sale');
-
-    # sell land
-    @url_list = get_url_list($sell_land_url, 2, sub {return 1});
-    process_url_list(\@url_list, 'land', 'sale');
 }
 
 sub get_url_list {
@@ -117,8 +113,11 @@ sub process_url_list {
             my $dom = $ua->get($item_url)->res->dom;
             next unless defined $dom;
             # найдем телефон
-            if ($dom->find('span[class="phone"]')->size > 0) {
-                my $phone_str = $dom->find('span[class="phone"]')->first->text;
+            if ($dom->find('div[class="contacts"]')->size > 0) {
+                my $contacts = $dom->find('div[class="contacts"]')->first;
+                my $c_ref = $contacts->find('a[class="bigbutton viewAjaxContacts"]')->first->{href};
+                my $c_res = $ua->get($farpost_url . $c_ref . '?ajax=1')->res->dom;
+                my $phone_str = $c_res->find('span[class="phone"]')->first->text;
                 $phone_str =~ s/\D//g;
                 if (length $phone_str > 5) {
                     if (my $phone_num = Rplus::Util::PhoneNum->parse($phone_str, $META->{'params'}->{'default_phone_prefix'})) {
