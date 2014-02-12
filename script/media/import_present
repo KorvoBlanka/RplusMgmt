@@ -44,7 +44,7 @@ sub import_present {
 
         # Выясним, какой архив актуален
         my $ua = LWP::UserAgent->new;
-        my $response = $ua->get('http://www.present-dv.ru/present/archives');
+        my $response = $ua->get('http://old.present-dv.ru/present/archives');
         die $response->status_line unless $response->is_success;
         if ($response->decoded_content =~ /<a href="(\/archive\/\?y=(\d{4}).+?n=(\d+))"[^>]*>Скачать номер<\/a>/) {
             $arch_url = $1;
@@ -52,7 +52,7 @@ sub import_present {
             $arch_file = "$tempdir/${media_num}.zip";
 
             # Скачаем актуальный архив во временную директорию
-            $response = $ua->get("http://www.present-dv.ru$arch_url" =~ s/&amp;/&/r, ':content_file' => $arch_file, 'Referer' => 'http://www.present-dv.ru/');
+            $response = $ua->get("http://old.present-dv.ru$arch_url" =~ s/&amp;/&/r, ':content_file' => $arch_file, 'Referer' => 'http://www.present-dv.ru/');
             die $response->status_line unless $response->is_success;
         } else {
             die "Can't parse page (no archive URL)\n";
