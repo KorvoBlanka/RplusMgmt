@@ -1,0 +1,30 @@
+package RplusMgmt::Task::Landmarks;
+
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+
+use Rplus::Modern;
+
+use Rplus::DB;
+
+use Rplus::Model::Landmark;
+use Rplus::Model::Landmark::Manager;
+
+my $dbh = Rplus::DB->new_or_cached->dbh;
+
+# Select landmarks changed in 15 min of last run time
+my $landmarks_count = Rplus::Model::Landmark::Manager->get_objects_count();
+say $landmarks_count;
+if ($landmarks_count) {
+    # TODO: Improve this (temporary solution)
+    $dbh->do(q{SELECT _query_keywords_refresh()});
+    $dbh->do(q{
+        UPDATE realty R
+        SET landmarks = COALESCE((
+            SELECT array_agg(L.id) FROM landmarks L WHERE L.delete_date IS NULL AND ST_Covers(L.geodata::geography, R.geocoords)
+        ), '{}')
+        WHERE R.geocoords IS NOT NULL AND R.delete_date IS NULL AND NOT(R.state_code = 'delete')
+    }) if 0;
+}
+
+1;
