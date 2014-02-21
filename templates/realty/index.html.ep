@@ -342,13 +342,10 @@
         {text: '<span class="glyphicon glyphicon-trash"></span>&nbsp&nbsp<%= ucfloc 'delete' %>', data_action: 'realty-set-state', data_val: "deleted",},
         {divider: true},
         {text: '<span class="glyphicon glyphicon-th-large"></span> <%= ucfloc 'state' %>', subMenu: [
-          % if (1) {
           % my $iter = Rplus::Model::RealtyState::Manager->get_objects_iterator(sort_by => 'id');
           % while (my $x = $iter->next) {
           % my $metadata = decode_json($x->metadata);
             {text: '<span class="glyphicon <%= $metadata->{'icon-class'} %>"></span>&nbsp<%= $x->name %>', data_action: 'realty-set-state', data_val: '<%= $x->code %>', },
-          % }} else {
-            {text: '...'},
           % }
         ]},
         % if (has_permission(realty => 'read')->{nobody} && has_permission(realty => 'read')->{others}) {
@@ -357,8 +354,9 @@
           % my $iter = Rplus::Model::User::Manager->get_objects_iterator(select => 'id, name', query => [role => ['agent', 'manager'], delete_date => undef], sort_by => 'name');
           % while (my $x = $iter->next) {
             {text: '<%= $x->name %>', data_action: 'realty-set-agent', data_val: '<%= $x->id %>', },
-          ]},
-        % }}  
+          % }
+        ]},
+        % }
         {text: '<span class="glyphicon glyphicon-cog"></span> Задача'},
         {text: '<span class="glyphicon glyphicon-comment"></span>  <%= ucfloc 'export' %>', subMenu: [
           % for my $x (@{Rplus::Model::Media::Manager->get_objects(query => [type => 'export', delete_date => undef])}) {
