@@ -4,6 +4,8 @@ use Mojo::Base 'Mojolicious::Controller';
 
 use Rplus::Model::User;
 use Rplus::Model::User::Manager;
+use Rplus::Model::Realty;
+use Rplus::Model::Realty::Manager;
 
 sub list {
     my $self = shift;
@@ -60,6 +62,20 @@ sub get {
 
     return $self->render(json => $res);
 }
+
+sub get_realty_count {
+    my $self = shift;
+
+    my $user_id = $self->param('id');
+
+    my $user = Rplus::Model::User::Manager->get_objects(query => [id => $user_id, delete_date => undef])->[0];
+    return $self->render(json => {error => 'Not Found'}, status => 404) unless $user;
+    
+    my $realty_count = Rplus::Model::Realty::Manager->get_objects_count(query => [agent_id => $user_id, delete_date => undef], with_objects => ['address_object']);
+    
+    return $self->render(json => {count => $realty_count});
+}
+
 
 sub save {
     my $self = shift;
