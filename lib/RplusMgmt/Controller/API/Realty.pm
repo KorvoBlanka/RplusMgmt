@@ -30,6 +30,7 @@ my $_serialize = sub {
     my %params = @_;
 
     my @exclude_fields = qw(ap_num source_media_id source_media_text owner_phones work_info);
+    my @exclude_fields_agent_plus = qw(ap_num source_media_text work_info);
 
     my (@serialized, %realty_h);
     for my $realty (@realty_objs) {
@@ -63,6 +64,11 @@ my $_serialize = sub {
         # Exclude fields for read permission "2"
         if ($self->has_permission(realty => read => $realty->agent_id) == 2) {
             $x->{$_} = undef for @exclude_fields;
+        }
+
+        # Exclude fields for read permission "3"
+        if ($self->has_permission(realty => read => $realty->agent_id) == 3) {
+            $x->{$_} = undef for @exclude_fields_agent_plus;
         }
 
         if ($params{with_sublandmarks}) {

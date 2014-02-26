@@ -24,8 +24,8 @@
     .change(function() {
       var role = this.value;
       if (role == 'dispatcher') {
-        var uid = $("#userCard_userForm_userId").val()
-        var uname = $("#userCard_userForm_inputName").val()
+        var uid = $("#userCard_userForm_userId").val();
+        var uname = $("#userCard_userForm_inputName").val();
         $.ajax({
           type: "POST",
           url: "/api/user/get_realty_count",
@@ -163,6 +163,45 @@
       initUserSave();
       listUsers();
     });
+    
+    $('[data-action="user-delete"]').click(function (e) {
+      
+      var uid = $("#userCard_userForm_userId").val();
+      var uname = $("#userCard_userForm_inputName").val();
+      
+      $.ajax({
+        type: "POST",
+        url: "/api/user/get_realty_count",
+        data: {id :uid},
+      })
+        .done(function (data, textStatus, jqXHR) {
+          if (data.count > 0) {
+            $("#userCard_userForm_inputRole").val(previous_role);
+            alert("Пользователю " + uname + " присвоено " + data.count + " объектов недвижимости, перед удалением необходимо снять объекты с пользователя");
+          } else {
+            $.ajax({
+              type: "POST",
+              url: "/api/user/delete",
+              data: {id :uid},
+            })
+              .done(function (data, textStatus, jqXHR) {
+                  if (data.status == 'success') {
+                    alert("Пользователь " + uname + " удален");
+                    $modal.modal('hide');
+                    listUsers();
+                  }
+              })
+              .fail(function (jqXHR, textStatus, errorThrown) {
+                alert('Unexpected error, cannot delete user');
+              });        
+          }
+          
+        })
+        .fail(function (jqXHR, textStatus, errorThrown) {
+          $("#userCard_userForm_inputRole").val(previous_role);
+          alert('Cannot check user');
+        });
+    });
   })();
 </script>
 % end
@@ -271,6 +310,7 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-link btn-sm pull-left" disabled><span class="glyphicon glyphicon-open"></span> <%= ucfloc 'change photo' %></button>
         <!--button type="button" class="btn btn-danger btn-sm" data-action="delete" disabled><span class="glyphicon glyphicon-trash"></span> Delete</button-->
+        <button type="button" class="btn btn-warning btn-sm" data-action="user-delete"><span class="glyphicon glyphicon-trash"></span> <%= ucfloc 'delete' %></button>
         <button type="submit" class="btn btn-primary btn-sm" form="userCard_userForm" data-action="save"><span class="glyphicon glyphicon-ok"></span> <%= ucfloc 'save' %></button>
       </div>
     </div><!-- /.modal-content -->
