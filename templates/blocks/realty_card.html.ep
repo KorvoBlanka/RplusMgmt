@@ -475,6 +475,12 @@
             data: {id: id},
           })
             .done(function (data, textStatus, jqXHR) {
+              % if ($self->has_permission(realty => 'read')->{no_pdata}) {
+                if(data.agent_id != <%= $self->stash('user')->{id} %> ) {
+                  data.owner_phones = "";
+                  data.source_media_text = "Текст скрыт";
+                }
+              % }
               realty = data;
               guid = realty.guid = Rplus.Util.guid();
               realty.title = getTitle();

@@ -221,6 +221,7 @@
                     <div class="col-md-9">
                       <select class="form-control input-sm" name="role" id="userCard_userForm_inputRole">
                         <option value="agent"><%= ucfloc 'agent' %></option>
+                        <option value="agent_ext"><%= ucfloc 'agent_ext' %></option>                        
                         <option value="dispatcher"><%= ucfloc 'dispatcher' %></option>
                         <option value="manager"><%= ucfloc 'manager' %></option>
                       </select>

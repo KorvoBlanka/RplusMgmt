@@ -5,6 +5,7 @@
 % use Rplus::Model::User::Manager;
 % use Rplus::Model::Media::Manager;
 % use Rplus::Model::ColorTag::Manager;
+% use Rplus::Model::DictColorTag::Manager;
 
 % use JSON;
 
@@ -46,7 +47,7 @@
     box-shadow: 0px 0px 5px #888888;
   }
 
-  % for my $x (@{Rplus::Model::ColorTag::Manager->get_objects(query => [delete_date => undef], sort_by => 'id')}) {
+  % for my $x (@{Rplus::Model::DictColorTag::Manager->get_objects(query => [delete_date => undef], sort_by => 'id')}) {
   .color-tag-<%= $x->id %> {
     background: #<%= $x->color %>;
     border: 1px solid #<%= $x->border_color %>;
@@ -197,8 +198,8 @@
             if (r.address_object.addr_parts[0]) addr += r.address_object.addr_parts[0].name + ' ' + r.address_object.addr_parts[0].short_type;
             if (r.house_num) addr += (addr ? ', ' : '-') + r.house_num;
           }
-          if (r.color_tag_id != null) {
-            addr += '<span class="tag-button color-tag-' + r.color_tag_id + ' pull-right"></span>';
+          if (r.color_tag != null) {
+            addr += '<span class="tag-button color-tag-' + r.color_tag + ' pull-right"></span>';
           }
           return addr;
         }},
@@ -276,6 +277,9 @@
       timestamp: "",
     };
 
+    var media_export = {};
+    var agents_ids = {};
+    
     function loadHistory() {
       var h_string = localStorage["history"];
       var t;
@@ -301,24 +305,29 @@
       localStorage["history"] = JSON.stringify(history);
     }
 
-    
-    
     function createContextMenu() {
       var context_cb = function(e){
+        var $menu_export = $("#el_export");
+        $menu_export.removeClass('disabled');
+        var $menu_states = $("#el_states");
+        $menu_states.removeClass('disabled');
+        $("#el_assign").removeClass('disabled');
+        $("#el_delete").removeClass('disabled');
+        
         var $menu_el = $(".export-check");
         $menu_el.each(function () {
           var $this = $(this);
           $this.removeClass("export-check-visible").removeClass("export-check-grayed").addClass("export-check-hidden");
         });
+        
         var $selected = $('#realtyTable > tbody > tr.selected');
         var ids = new Array();
         $selected.each(function () {
           var $this = $(this);
           var id = $this.data('id');
-          var export_media = $this.data('export_media');
-          
-          for (var id_key in export_media) {
-            var val = export_media[id_key];
+          var media_export_row = media_export[id];
+          for (var id_key in media_export_row) {
+            var val = media_export_row[id_key];
             if (ids[val] === undefined) {
               ids[val] = 1;
             } else {
@@ -332,33 +341,53 @@
               $(".export-check" + id_key).removeClass("export-check-hidden").removeClass("export-check-visible").addClass("export-check-grayed");
             }
           }
-          
+          var agent_id = agents_ids[id];
+          % if (!has_permission(realty => 'write')->{nobody} || !has_permission(realty => 'write')->{others}) {
+          if (agent_id == null) {
+            $("#el_assign").removeClass('disabled');
+            
+            $menu_export.addClass('disabled');
+            $menu_states.addClass('disabled');
+            $("#el_delete").addClass('disabled');
+              
+          } else {
+            $("#el_assign").addClass('disabled');
+            if (agent_id != <%= $self->stash('user')->{id} %>) {
+              $menu_export.addClass('disabled');
+              $menu_states.addClass('disabled');
+              $("#el_delete").addClass('disabled');
+            }
+          }
+          % }
         });
       };
       
       context.init({preventDoubleContext: true, compress: true, above: 'auto',}, context_cb);
       context.attach('#realtyTable', [
         {text: '<span class="glyphicon glyphicon-folder-open"></span>&nbsp&nbsp<%= ucfloc 'open' %>', data_action: 'realty-open',},
-        {text: '<span class="glyphicon glyphicon-trash"></span>&nbsp&nbsp<%= ucfloc 'delete' %>', data_action: 'realty-set-state', data_val: "deleted",},
+        % if (has_permission(realty => 'write')->{can_assign}) {
+          {text: '<span class="glyphicon glyphicon-user"></span>&nbsp&nbspНазначить', element_id: 'el_assign', data_action: 'realty-set-agent', data_val: "<%= $self->stash('user')->{id} %>",},
+        % }
+        {text: '<span class="glyphicon glyphicon-trash"></span>&nbsp&nbsp<%= ucfloc 'delete' %>', element_id: 'el_delete', data_action: 'realty-set-state', data_val: "deleted",},
         {divider: true},
-        {text: '<span class="glyphicon glyphicon-th-large"></span> <%= ucfloc 'state' %>', subMenu: [
+        {text: '<span class="glyphicon glyphicon-th-large"></span> <%= ucfloc 'state' %>', element_id: 'el_states', subMenu: [
           % my $iter = Rplus::Model::RealtyState::Manager->get_objects_iterator(sort_by => 'id');
           % while (my $x = $iter->next) {
           % my $metadata = decode_json($x->metadata);
             {text: '<span class="glyphicon <%= $metadata->{'icon-class'} %>"></span>&nbsp<%= $x->name %>', data_action: 'realty-set-state', data_val: '<%= $x->code %>', },
           % }
         ]},
-        % if (has_permission(realty => 'read')->{nobody} && has_permission(realty => 'read')->{others}) {
-        {text: '<span class="glyphicon glyphicon-user"></span> <%= ucfloc 'agent' %>', subMenu: [
+        % if (has_permission(realty => 'write')->{nobody} || has_permission(realty => 'write')->{others}) {
+        {text: '<span class="glyphicon glyphicon-user"></span> <%= ucfloc 'agent' %>', element_id: 'el_agents', subMenu: [
             {text: '<strong><%= ucfloc 'nobody' %></strong>', data_action: 'realty-set-agent', data_val: '', },
-          % my $iter = Rplus::Model::User::Manager->get_objects_iterator(select => 'id, name', query => [role => ['agent', 'manager'], delete_date => undef], sort_by => 'name');
+          % my $iter = Rplus::Model::User::Manager->get_objects_iterator(select => 'id, name', query => [role => ['agent', 'agent_ext', 'manager'], delete_date => undef], sort_by => 'name');
           % while (my $x = $iter->next) {
             {text: '<%= $x->name %>', data_action: 'realty-set-agent', data_val: '<%= $x->id %>', },
           % }
         ]},
         % }
         {text: '<span class="glyphicon glyphicon-cog"></span> Задача'},
-        {text: '<span class="glyphicon glyphicon-comment"></span>  <%= ucfloc 'export' %>', subMenu: [
+        {text: '<span class="glyphicon glyphicon-comment"></span>  <%= ucfloc 'export' %>', element_id: 'el_export', subMenu: [
           % for my $x (@{Rplus::Model::Media::Manager->get_objects(query => [type => 'export', delete_date => undef])}) {
             {text: '<span class="export-check export-check<%= $x->id %> glyphicon glyphicon-ok"></span>&nbsp&nbsp<%= $x->name %>', data_action: 'realty-set-export', data_val: '<%= $x->id %>', },
           % }
@@ -366,7 +395,7 @@
         {divider: true},
         {header: '&nbspТеги...'},
         {header:  // '+' to concat strings, '' - to match last +
-          % for my $x (@{Rplus::Model::ColorTag::Manager->get_objects(query => [delete_date => undef], sort_by => 'id')}) {
+          % for my $x (@{Rplus::Model::DictColorTag::Manager->get_objects(query => [delete_date => undef], sort_by => 'id')}) {
             '<button type="button" class="round-button color-tag-<%= $x->id %>" data-action="realty-set-color_tag_id" data-val="<%= $x->id %>"></button>' + 
           % }
           ''},
@@ -386,10 +415,7 @@
       var sortBy = $('#realtyTable').data('sort');
       var colorTagId = $('[data-filter="color_tag_id"]').data('val');
       _listRealty_started = true;
-
-      clearTimeout(_tid);
-      _tid = setTimeout(function(){updateRealty()}, 30000);
-
+ 
       $.ajax({
         type: "POST",
         url: "/api/realty/list",
@@ -397,11 +423,14 @@
         complete: function () { _listRealty_started = false; }
       })
         .done(function (data, textStatus, jqXHR) {
+          media_export = {};
           var xhtml = '';
           for (var i = 0; i < data.list.length; i++) {
             var r = data.list[i];
 
-            xhtml += '<tr data-export_media="' + JSON.stringify(r.export_media) + '" data-color_tag_id="' + r.color_tag_id + '" data-page="' + data.page + '" data-id="' + r.id + '" data-lat="' + r.latitude + '" data-lng="' + r.longitude +  '"';
+            media_export[r.id] = r.export_media;
+            agents_ids[r.id] = r.agent_id;
+            xhtml += '<tr data-page="' + data.page + '" data-id="' + r.id + '" data-lat="' + r.latitude + '" data-lng="' + r.longitude +  '"';
             xhtml += ' class="';
             var h = getHistory(r.id);
             if (h) {
@@ -466,67 +495,6 @@
       ;
     }
 
-    // загружает вновь появившиеся записи в таблицу, получает "первую страницу" из БД и ищет по id отсутствующие в таблице записи
-    // TODO: реализация "интерактивности", например: если объект помечается как удаленный, он исчезает из таблиц у всех клиентов без перезагрузки страницы
-    function updateRealty() {
-      var q = $('#searchQuery').val();
-      var stateCode = $('[data-filter="state_code"]').data('val');
-      var offerTypeCode = $('[data-filter="offer_type_code"]').data('val');
-      var agentId = $('[data-filter="agent_id"]').data('val');
-      var colorTagId = $('[data-filter="color_tag_id"]').data('val');
-      var sortBy = $('#realtyTable').data('sort');
-      var vtag = $('[data-filter="color_tag_id"]').data('val');
-      _listRealty_started = true;
-      $.ajax({
-        type: "POST",
-        url: "/api/realty/list",
-        data: {q: q, state_code: stateCode, offer_type_code: offerTypeCode, agent_id: agentId, color_tag_id: colorTagId, sort_by: sortBy, page: 1, per_page: 30},
-        complete: function () { _listRealty_started = false; }
-      })
-        .done(function (data, textStatus, jqXHR) {
-          _tid = setTimeout(function(){updateRealty()},30000);
-          var xhtml = '';
-          var inserted = 0;
-          for (var i = 0; i < data.list.length; i++) {
-            var r = data.list[i];
-            // check if id in table
-            if($('#realtyTable > tbody > tr[data-id="' + r.id + '"]').length > 0) {continue;};
-            inserted ++;
-            xhtml += '<tr data-export_media="' + JSON.stringify(r.export_media) + '" data-color_tag_id="' + r.color_tag_id + '" data-page="' + data.page + '" data-id="' + r.id + '" data-lat="' + r.latitude + '" data-lng="' + r.longitude +  '"';
-            xhtml += ' class="';
-            var h = getHistory(r.id);
-            if (h) {
-              if (h.selected > 0) {
-                xhtml += 'selected ';
-              }
-              if (h.modified > 0) {
-                xhtml += 'modified ';
-              }
-              if (h.shown > 0) {
-                xhtml += 'shown ';
-              }
-            }
-            xhtml += '">';
-
-            for (var j = 0; j < realtyTableConf.fields.length; j++) {
-              var f = realtyTableConf.fields[j];
-              xhtml += '<td class="' + (!f.visible ? 'hidden' : '') + '"' + (f.style ? ' style="' + f.style + '"' : '') + '>' + f.val(r) + '</td>';
-            }
-            xhtml += '</tr>';
-          }
-
-          _listRealty_finished = false;
-          
-          if (inserted > 0) {
-            $('#realtyTable > tbody').prepend(xhtml);
-            for (var i = 0; i < data.list.length; i++) {
-              var r = data.list[i];
-              $('#realtyTable > tbody > tr[data-id="' + r.id + '"]').data('obj', r);
-            }
-          }
-        });
-    }
-
     // Open realty object card
     function openRealtyCard(id, backgroung) {
       if (!id) return;
@@ -570,7 +538,7 @@
               $('td:nth-child(' + (j + 1) + ')', $tr).html(f.val(r));
             }
             $tr.addClass('modified');
-            $tr.data('export_media', r.export_media);
+            media_export[r.id] = r.export_media;
             putToHistory(id, "modified", 1);
             putToHistory(id, "selected", 0);
           }
@@ -710,8 +678,6 @@
 
       // Infinite scroll
       $('#realtyTableWrapper').scroll(function (e) {
-        clearTimeout(_tid);
-        _tid = setTimeout(function(){updateRealty()},30000);
         //if ($(this).scrollTop() + $(this).innerHeight() >= $(this)[0].scrollHeight) {
         if ($(this).scrollTop() + $(this).innerHeight() >= $(this)[0].scrollHeight - 1) {   // clutch for iMac
           var lastPage = $('#realtyTable > tbody > tr:last').data('page');
@@ -763,7 +729,6 @@
               ];
             } else {
               clearTimeout(_dblclick_timer[1]);
-              //mouse_down = false;
               openRealtyCard(_dblclick_timer[0], false);
               _dblclick_timer = null;
             }
@@ -973,6 +938,7 @@
                   var f = realtyTableConf.fields[j];
                   $('td:nth-child(' + (j + 1) + ')', $this).html(f.val(r));
                 }
+                agents_ids[r.id] = agentId;
                 $this.removeClass('selected').addClass('modified');
                 putToHistory(id, "selected", 0);
                 putToHistory(id, "modified", 1);
@@ -1018,15 +984,10 @@
         $selected.each(function () {
           var $this = $(this);
           var id = $this.data('id');
-          var obj_tag_id = $this.data('color_tag_id');
-          var new_obj_tag_id = new_tag_id;
-          if (new_tag_id == obj_tag_id) {
-            new_obj_tag_id = '';
-          }
           $.ajax({
             type: "POST",
-            url: "/api/realty/update",
-            data: {id: id, color_tag_id: new_obj_tag_id}
+            url: "/api/realty/update_color_tag",
+            data: {realty_id: id, color_tag_id: new_tag_id}
           })
             .done(function (data, textStatus, jqXHR) {
               if (data.status == 'success') {
@@ -1036,7 +997,6 @@
                   var f = realtyTableConf.fields[j];
                   $('td:nth-child(' + (j + 1) + ')', $this).html(f.val(r));
                 }
-                $this.data('color_tag_id', new_obj_tag_id);
                 $this.addClass('selected');
               }
             });
@@ -1045,26 +1005,26 @@
 
       // Set export
       $('[data-action="realty-set-export"]').click(function (e) {
-        var exportCode = $(this).data('val');
+        var export_code = $(this).data('val');
         var $selected = $('#realtyTable > tbody > tr.selected');
         $selected.each(function () {
           var $this = $(this);
           var id = $this.data('id');
-          var exportArray = $this.data('export_media');
-          var index = $.inArray(exportCode, exportArray);
+          var export_array = media_export[id].slice(0);
+          var index = $.inArray(export_code, export_array);
           if(index > -1) {
-            exportArray.splice(index, 1);
+            export_array.splice(index, 1);
           } else {
-            exportArray.push(exportCode);
+            export_array.push(export_code);
           }
-          var ajaxArray = exportArray;
-          if (ajaxArray.length == 0) {
-            ajaxArray = null;
+          var ajax_array = export_array;
+          if (ajax_array.length == 0) {
+            ajax_array = null;
           }
           $.ajax({
             type: "POST",
             url: "/api/realty/update",
-            data: {id: id, export_media: ajaxArray},
+            data: {id: id, export_media: ajax_array},
           })
             .done(function (data, textStatus, jqXHR) {
               if (data.status == 'success') {
@@ -1074,12 +1034,14 @@
                   var f = realtyTableConf.fields[j];
                   $('td:nth-child(' + (j + 1) + ')', $this).html(f.val(r));
                 }
-                $this.data('export_media', exportArray);
+                media_export[id] = export_array;
                 $this.removeClass('selected').addClass('modified');
                 putToHistory(id, "selected", 0);
                 putToHistory(id, "modified", 1);
               }
-            })
+            }).fail(function (jqXHR, textStatus, errorThrown) {
+               
+            });
           ;
         });
       });
@@ -1268,7 +1230,7 @@
               <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span role="display"><span class="glyphicon glyphicon-tags"></span>&nbsp&nbspВсе</span> <b class="caret"></b></a>
               <ul class="dropdown-menu">
                 <li><a href="#" data-val=""><span class="glyphicon glyphicon-tags"></span>&nbsp&nbspВсе</a></li>
-                % for my $x (@{Rplus::Model::ColorTag::Manager->get_objects(query => [delete_date => undef], sort_by => 'id')}) {
+                % for my $x (@{Rplus::Model::DictColorTag::Manager->get_objects(query => [delete_date => undef], sort_by => 'id')}) {
                   <li><a href="#" data-val="<%= $x->id %>"><span class="tag-button color-tag-<%= $x->id %> pull-left"></span>&nbsp<%= $x->name %></a></li>
                 % }
               </ul>
@@ -1287,7 +1249,7 @@
                 % if (has_permission(realty => 'read')->{others}) {
                 <li><a href="#" data-val="all" data-type="text"><strong><%= ucfloc 'all agents' %></strong></a></li>
                 % }
-                % for my $x (@{Rplus::Model::User::Manager->get_objects(query => [role => ['agent', 'manager'], delete_date => undef], sort_by => 'name')}) {
+                % for my $x (@{Rplus::Model::User::Manager->get_objects(query => [role => ['agent', 'agent_ext', 'manager'], delete_date => undef], sort_by => 'name')}) {
                   % if (has_permission(realty => read => $x->id)) {
                   <li><a href="#" data-val="<%= $x->id %>" data-type="text"><%= $x->name %></a></li>
                   % }

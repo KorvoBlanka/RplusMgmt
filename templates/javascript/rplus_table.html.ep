@@ -96,7 +96,7 @@
     <% } %> },
 
     users: { <% { %>
-      % my $iter = Rplus::Model::User::Manager->get_objects_iterator(query => [role => ['agent', 'manager'], delete_date => undef]);
+      % my $iter = Rplus::Model::User::Manager->get_objects_iterator(query => [role => ['agent', 'agent_ext', 'manager'], delete_date => undef]);
       % while (my $x = $iter->next) {
         % my $meta = decode_json($x->metadata);
         "<%= $x->id %>": {id: <%= $x->id %>, name: "<%= $x->name %>", phone_num: "<%= $x->phone_num %>", public_name: "<%= $meta->{'public_name'} %>", public_phone_num: "<%= $meta->{'public_phone_num'} %>"},

@@ -23,7 +23,7 @@
       .panel-body {
         padding: 19px 29px 29px;
       }
-
+  
       .alert-sm {
         padding: 9px;
       }
@@ -63,10 +63,11 @@
     <script type="application/javascript">
       $(function () {
         $('.form-signin').submit(function (e) {
-          e.preventDefault();
+          e.preventDefault();          
           var login = $('input[name="login"]').val();
           var password = $('input[name="password"]').val();
           var rememberMe = $('input[name="remember_me"]').prop('checked');
+          
           $.ajax({
             type: "POST",
             url: "/signin",
@@ -85,8 +86,7 @@
             .fail(function (jqXHR, textStatus, errorThrown) {
               $('.form-signin button[type="submit"]').button('reset');
               alert('Error while processing request. Please, try again later.');
-            })
-          ;
+            });
         });
       });
     </script>

@@ -9,6 +9,7 @@ our %Lexicon = (
     q{analytics} => 'аналитика',
     q{add} => 'добавить',
     q{agent} => 'агент',
+    q{agent_ext} => 'агент+',
     q{additional} => 'дополнительно',
     q{added} => 'добавлено',
     q{add date} => 'дата добавления',

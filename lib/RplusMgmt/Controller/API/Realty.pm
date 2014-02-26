@@ -10,9 +10,13 @@ use Rplus::Model::Mediator;
 use Rplus::Model::Mediator::Manager;
 use Rplus::Model::Photo;
 use Rplus::Model::Photo::Manager;
+use Rplus::Model::ColorTag;
+use Rplus::Model::ColorTag::Manager;
 
 use Rplus::Util::Query;
 use Rplus::Util::Realty;
+
+use Data::Dumper;
 
 use JSON;
 use Mojo::Collection;
@@ -40,11 +44,22 @@ my $_serialize = sub {
                 addr_parts => decode_json($realty->address_object->metadata)->{'addr_parts'},
             } : undef,
 
+            color_tag => undef,
+            
             sublandmark => $realty->sublandmark ? {id => $realty->sublandmark->id, name => $realty->sublandmark->name} : undef,
 
             main_photo_thumbnail => undef,
         };
 
+        if($realty->color_tags) {
+            foreach ($realty->color_tags) {
+                if ($_->user_id == $self->stash('user')->{id}) {
+                    $x->{color_tag} = $_->{color_tag_id};
+                    last;
+                }
+            }
+        }
+        
         # Exclude fields for read permission "2"
         if ($self->has_permission(realty => read => $realty->agent_id) == 2) {
             $x->{$_} = undef for @exclude_fields;
@@ -114,9 +129,20 @@ sub list {
     # "where" query
     my @query;
     {
+        if ($color_tag_id ne 'any') {
+            push @query, 'color_tags.color_tag_id' => $color_tag_id;
+            push @query, 'color_tags.user_id' => $self->stash('user')->{id};
+        }
+          
         if ($state_code ne 'any') { push @query, state_code => $state_code } else { push @query, '!state_code' => 'deleted' };
         if ($offer_type_code ne 'any') { push @query, offer_type_code => $offer_type_code };
-        if ($color_tag_id ne 'any') { push @query, color_tag_id => $color_tag_id; }
+
+        if ($self->has_permission(realty => 'read')->{only_work}) {
+          push @query, or => [
+              agent_id => $self->stash('user')->{id},
+              state_code => 'work',
+          ];
+        }
 
         my $agent_ok;
         if ($agent_id eq 'nobody' && $self->has_permission(realty => 'read')->{nobody}) {
@@ -137,7 +163,7 @@ sub list {
                     agent_id => $self->stash('user')->{id},
                     agent_id => undef,
                 ];
-            } elsif ($self->has_permission(realty => 'read')->{others}) {
+            } elsif ($self->has_permission(realty => 'read')->{others}) {              
                 push @query, '!agent_id' => undef;
             } else {
                 push @query, agent_id => $self->stash('user')->{id};
@@ -169,7 +195,7 @@ sub list {
     push @query, Rplus::Util::Query->parse($q, $self);
 
     my $res = {
-        count => Rplus::Model::Realty::Manager->get_objects_count(query => [@query, delete_date => undef], with_objects => \@with_objects),
+        count => Rplus::Model::Realty::Manager->get_objects_count(query => [@query, delete_date => undef], with_objects => ['color_tags', @with_objects]),
         list => [],
         page => $page,
     };
@@ -177,7 +203,7 @@ sub list {
     # Delete FTS data if no objects found
     if (!$res->{count}) {
         @query = map { ref($_) eq 'SCALAR' && $$_ =~ /^t1\.fts/ ? () : $_ } @query;
-        $res->{count} = Rplus::Model::Realty::Manager->get_objects_count(query => [@query, delete_date => undef], with_objects => \@with_objects);
+        $res->{count} = Rplus::Model::Realty::Manager->get_objects_count(query => [@query, delete_date => undef], with_objects => ['color_tags', @with_objects]);
     }
 
     # Additionaly check found phones for mediators
@@ -187,16 +213,17 @@ sub list {
             push @{$res->{'mediators'}}, {id => $mediator->id, company => $mediator->company->name, phone_num => $mediator->phone_num};
         }
     }
-
+    
     # Fetch realty objects
     my $realty_objs = Rplus::Model::Realty::Manager->get_objects(
         select => ['realty.*', (map { 'address_object.'.$_ } qw(id name short_type expanded_name metadata))],
-        query => [@query, delete_date => undef],
+        query => [@query, , delete_date => undef],
         sort_by => [@sort_by, 'realty.id desc'],
         page => $page,
         per_page => $per_page,
-        with_objects => ['address_object', 'sublandmark', @with_objects],
+        with_objects => ['address_object', 'sublandmark', 'color_tags', @with_objects],
     );
+    
     $res->{list} = [$_serialize->($self, $realty_objs)];
 
     return $self->render(json => $res);
@@ -334,6 +361,58 @@ sub save {
     $self->render(json => $res);
 }
 
+sub update_color_tag {
+    my $self = shift;
+
+    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => 'write');
+
+    my $realty_id = $self->param('realty_id');
+    my $user_id = $self->stash('user')->{id};
+    my $ct_id = $self->param('color_tag_id');
+    
+    my $realty = Rplus::Model::Realty::Manager->get_objects(query => [id => $realty_id, delete_date => undef])->[0];
+    return $self->render(json => {error => 'Not Found'}, status => 404) unless $realty;
+    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => write => $realty->agent_id);
+
+    my $color_tag;
+    
+    $color_tag = Rplus::Model::ColorTag::Manager->get_objects(query => [realty_id => $realty_id, user_id => $user_id,])->[0];
+    if ($color_tag) {
+        if ($ct_id != $color_tag->color_tag_id) {
+          $color_tag->color_tag_id($ct_id);
+        } else {
+          $color_tag->color_tag_id(undef);
+        }
+        $color_tag->save(changes_only => 1);
+    } else {
+        $color_tag = Rplus::Model::ColorTag->new(
+            realty_id => $realty_id,
+            user_id => $user_id,
+            color_tag_id => $ct_id,
+        );
+        $color_tag->save(insert => 1);
+    }
+
+    # Save data
+    $realty->change_date('now()');
+    eval {
+        $realty->save(changes_only => 1);
+        1;
+    } or do {
+        return $self->render(json => {error => $@}, status => 500) unless $realty;
+    };
+
+    $realty->load;
+
+    my $res = {
+        status => 'success',
+        id => $realty->id,
+        realty => $_serialize->($self, $realty),
+    };
+
+    return $self->render(json => $res);
+}
+
 sub update {
     my $self = shift;
 
@@ -343,7 +422,7 @@ sub update {
 
     my $realty = Rplus::Model::Realty::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $realty;
-    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => write => $realty->agent_id);
+    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => write => $realty->agent_id) || $self->has_permission(realty => 'write')->{can_assign} && $realty->agent_id == undef;
 
     # Available fields to set: agent_id, state_code
     for ($self->param) {

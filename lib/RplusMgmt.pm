@@ -27,7 +27,7 @@ sub startup {
 
     # Secret
     $self->secrets($config->{secrets} || ($config->{secret} && [$config->{secret}]) || ['no secret defined']);
-
+    
     # Default stash values
     $self->defaults(
         jquery_ver => '2.0.3',

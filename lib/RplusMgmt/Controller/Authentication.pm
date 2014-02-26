@@ -5,9 +5,18 @@ use Mojo::Base 'Mojolicious::Controller';
 use Rplus::Model::User;
 use Rplus::Model::User::Manager;
 
+my $ua = Mojo::UserAgent->new;
+
 sub auth {
     my $self = shift;
 
+    #my $tx = $ua->get('http://test.dvnic.com/api/account/get_by_domain?subdomain=account92');
+    #my $acc_data;
+    #if (my $res = $tx->success) {
+    #  $acc_data = $res->json;
+    #}
+
+    #return 1 if $acc_data->{blocked} == 0 && $acc_data->{balance} > 0 && $self->stash('user') && $self->stash('user')->{'id'};
     return 1 if $self->stash('user') && $self->stash('user')->{'id'};
 
     $self->render(template => 'authentication/signin');

@@ -88,17 +88,19 @@
 	filter: progid
 	: dximagetransform.microsoft.gradient(startColorstr='#ff0088cc', endColorstr='#ff0077b3', GradientType=0);
 }
+
 .dropdown-menu .disabled > a, .dropdown-menu .disabled > a:hover {
-	color: #999999;
+  color: #999999;
 }
+
 .dropdown-menu .disabled > a:hover {
-	text-decoration: none;
-	cursor: default;
-	background-color: transparent;
+  cursor: default;
 }
+
 .open {
-	z-index: 1000;
+  z-index: 1000;
 }
+
 .open > .dropdown-menu {
 	display: block;
 }
@@ -207,6 +209,9 @@
 }
 .dropdown-context .dropdown-submenu:hover > .dropdown-menu {
 	display: block;
+}
+.dropdown-context .dropdown-submenu.disabled:hover > .dropdown-menu {
+  display: none;
 }
 
 .compressed-context a {
