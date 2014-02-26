@@ -104,6 +104,68 @@ my $_serialize = sub {
     return @realty_objs == 1 ? $serialized[0] : @serialized;
 };
 
+sub list_for_plot {
+    my $self = shift;
+    
+    my $q = $self->param_n('q');
+    my $offer_type = $self->param_n('offer_type');
+    my $from_date = $self->param('from_date');
+    my $to_date = $self->param('to_date');
+    my $object_count = $self->param('object_count');
+    
+    # "where" query
+    my @query;
+    # Recognize phone numbers from query
+    my @owner_phones;
+    if ($q) {
+        for my $x (split /[ .,]/, $q) {
+            if ($x =~ /^\s*[0-9-]{6,}\s*$/) {
+                if (my $phone_num = $self->parse_phone_num($x)) {
+                    push @owner_phones, $phone_num;
+                    $q =~ s/$x//;
+                }
+            }
+        }
+        push @query, \("t1.owner_phones && '{".join(',', map { '"'.$_.'"' } @owner_phones)."}'") if @owner_phones;
+    }
+
+    # Parse query
+    push @query, Rplus::Util::Query->parse($q, $self);
+
+    my @date_range;
+    unless ($from_date eq '') {
+        push @date_range, add_date => {gt => $from_date};
+    }
+
+    unless ($to_date eq '') {
+        push @date_range, add_date => {lt => $to_date};
+    }
+    
+    my $res = {
+        count => Rplus::Model::Realty::Manager->get_objects_count(query => [@query, @date_range, offer_type_code => $offer_type, '!price' => undef, delete_date => undef]),
+        list => [],
+    };
+    
+    # Fetch realty objects
+    my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
+        select => ['realty.add_date', 'realty.price'],
+        query => [@query, @date_range, offer_type_code => $offer_type, '!price' => undef, '!price' => 0, delete_date => undef],
+        sort_by => ['realty.add_date desc'],
+        page => 1,
+        per_page => $object_count,
+    );
+    
+    while (my $realty = $realty_iter->next) {
+        my $x = {
+            add_date => $realty->add_date,
+            cost => $realty->price,
+        };
+        push @{$res->{list}}, $x;
+    }
+    
+    return $self->render(json => $res);
+}
+
 sub list {
     my $self = shift;
 

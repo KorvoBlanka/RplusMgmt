@@ -204,7 +204,7 @@
               <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-stats"></span> <%= ucfloc q{analytics} %> <b class="caret"></b></a>
               <ul class="dropdown-menu">
               % if (has_permission(subscriptions => 'read')) {
-                <li><a href="/analytics/subscriptions"><span class="glyphicon glyphicon-list-alt"></span> <%= ucfloc q{plots} %></a></li>
+                <li><a href="/analytics"><span class="glyphicon glyphicon-list-alt"></span> <%= ucfloc q{plots} %></a></li>
               % }
               </ul>
             </li>

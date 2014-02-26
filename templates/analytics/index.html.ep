@@ -1,0 +1,191 @@
+% layout 'default';
+
+% use Rplus::Model::RealtyOfferType::Manager;
+
+% content_for header => begin
+%= css_once "$assets_url/typeahead.js/$typeaheadjs_ver/css/typeahead.js-bootstrap.css";
+%= css_once "/css/datepicker.css";
+<style type="text/css">
+.demo-container {
+	box-sizing: border-box;
+	width: 1140;
+	height: 650px;
+	padding: 20px 15px 15px 15px;
+	margin: 15px auto 30px auto;
+	border: 1px solid #ddd;
+	background: #fff;
+	background: linear-gradient(#f6f6f6 0, #fff 50px);
+	background: -o-linear-gradient(#f6f6f6 0, #fff 50px);
+	background: -ms-linear-gradient(#f6f6f6 0, #fff 50px);
+	background: -moz-linear-gradient(#f6f6f6 0, #fff 50px);
+	background: -webkit-linear-gradient(#f6f6f6 0, #fff 50px);
+	box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+	-o-box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+	-ms-box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+	-moz-box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+	-webkit-box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+}
+
+.demo-placeholder {
+	width: 100%;
+	height: 100%;
+	font-size: 14px;
+	line-height: 1.2em;
+}
+</style>
+% end
+
+% content_for after_bootstrap => begin
+%= js_once "$assets_url/typeahead.js/$typeaheadjs_ver/js/typeahead.js";
+%= js_once "/js/bootstrap-datepicker.js";
+%= js_once "/js/flot/jquery.flot.js";
+%= js_once "/js/flot/jquery.flot.time.js";
+%= js_once "/js/flot/jquery.flot.resize.js";
+%= js_once "/js/flot/jquery.flot.navigate.js";
+% end
+
+% content_for javascript => begin
+<script type="text/javascript">
+	$(function() {
+
+        var plot_start = false;
+        $('.date-picker').datepicker();
+        
+        $(function () {
+        // Query completion
+        $('#searchQuery')
+        .typeahead({
+          name: 'searchQuery',
+          valueKey: "value",
+          limit: 10,
+          remote: "/api/query/complete?q=%QUERY&limit=10",
+        })
+        .bind('typeahead:selected', function (e, obj) {
+          listRealty(1);
+        })
+        .bind('input', function (e) {
+          if ($(this).val() == '') {
+            listRealty(1);
+          }
+        })
+        .bind('keydown', function (e) {
+          if (e.which == 13) {
+            $('#searchQuery').typeahead('close');
+            listRealty(1);
+          }
+        });
+
+        $('form[role="search"]').submit(function (e) { e.preventDefault(); });
+
+            function listRealty(page) {
+              var q = $('#searchQuery').val();
+              var offer_type = $('[data-filter="offer_type_code"]').data('val');
+
+              plot_start = true;
+              
+              var from_date = $('.date-from').val() + " 00:00";
+              var to_date = $('.date-to').val()  + " 23:59";
+
+              $.ajax({
+                type: "POST",
+                url: "/api/realty/list_for_plot",
+                data: {q: q, offer_type: offer_type, from_date: from_date, to_date: to_date, object_count: 5000},
+                complete: function () { plot_start = true; }
+              })
+                .done(function (data, textStatus, jqXHR) {
+                  var d1 = [];
+                  for (var i = 0; i < data.list.length; i++) {
+                    var r = data.list[i];
+                    d1.push([(new Date(r.add_date)).getTime(), r.cost]);
+                  }
+
+                  var p = $.plot("#placeholder", [ d1 ], {
+                	series: {
+                      lines: {
+                    	show: true
+                      },
+                      shadowSize: 0
+                    },
+                    xaxis: {
+                      mode: "time",
+                      timeformat: "%Y/%m/%d",
+                      zoomRange: [0.01, 100],
+                      panRange: [0, 10000000000000]
+                    }, 
+                    yaxis: {
+                        zoomRange: [0.01, 100],
+                        panRange: [-10000, 100000]
+                    },
+                    zoom: {
+                        interactive: true
+                    },
+                    pan: {
+                        interactive: true
+                    }
+                  });
+                  
+                  p.zoomOut();
+                  
+                  $('#objectsCount').text(data.count);
+                });
+            }
+            
+            
+        });
+	});
+</script>
+% end
+
+<div class="row">
+  <div class="col-md-12 col-lg-12">
+    <form role="search">
+      <div class="form-group">
+        <input type="text" class="form-control input-sm" id="searchQuery" name="q" placeholder="<%= ucfloc 'search' %>" autocomplete="off" x-webkit-speech>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-4">
+    <div class="input-group input-large date-picker input-daterange" data-date="10-10-2010" data-date-format="mm-dd-yyyy">
+      <input type="text" class="form-control date-from" name="from">
+        <span class="input-group-addon">
+            -
+        </span>
+        <input type="text" class="form-control date-to" name="to">
+    </div>
+  </div>    
+</div>
+    
+<div class="row">
+  <div class="col-lg-12 col-md-12">
+
+		<div class="demo-container">
+			<div id="placeholder" class="demo-placeholder"></div>
+		</div>
+
+  </div>
+</div>
+
+<nav class="navbar navbar-default navbar-fixed-bottom">
+  <div class="container">
+    <div class="navbar-right">
+      <ul class="nav navbar-nav">
+            <!-- Offer type filter -->
+            <li class="dropdown" data-filter="offer_type_code" data-val="sale">
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span role="display"><%= ucfloc 'sale' %></span> <b class="caret"></b></a>
+              <ul class="dropdown-menu">
+                % for my $x (@{Rplus::Model::RealtyOfferType::Manager->get_objects(sort_by => 'id')}) {
+                  <li><a href="#" data-val="<%= $x->code %>"><%= $x->name %></a></li>
+                % }
+              </ul>
+            </li>
+      </ul>
+      <p class="navbar-text">
+        <span class="text-primary"><%= ucfloc 'found' %></span> <span class="text-primary" id="objectsCount">0</span>
+        <span class="glyphicon glyphicon-refresh animation-rotate invisible indicator-ajax"></span>
+      </p>
+    </div>
+  </div>
+</nav>
