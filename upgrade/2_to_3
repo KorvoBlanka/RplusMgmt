@@ -12,8 +12,8 @@ my $dbh = Rplus::DB->new_or_cached->dbh;
 # Database scruct changes
 if (1) {
     # Realty table changes
-    $dbh->do(q{ALTER TABLE ONLY realty DROP CONSTRAINT realty_color_tag_fc;});
-    $dbh->do(q{ALTER TABLE public.realty DROP COLUMN color_tag_id;});
+    $dbh->do(q{ALTER TABLE ONLY realty DROP CONSTRAINT IF EXISTS realty_color_tag_fc;});
+    $dbh->do(q{ALTER TABLE public.realty DROP COLUMN IF EXISTS color_tag_id;});
     
     $dbh->do(q{DROP TABLE IF EXISTS public.color_tags});
     $dbh->do(q{DROP TABLE IF EXISTS public.dict_color_tags;});
@@ -50,16 +50,12 @@ CREATE TABLE public.dict_color_tags (
     $dbh->do(q{
 CREATE TABLE public.color_tags (
     id SERIAL,
-    realty_id" int4 NOT NULL,
-    user_id" int4 NOT NULL,
-    color_tag_id" int4);
+    realty_id int4 NOT NULL,
+    user_id int4 NOT NULL,
+    color_tag_id int4);
     });
 
     $dbh->do(q{ALTER TABLE public.color_tags ADD PRIMARY KEY (id);});
-
-
-    $dbh->do(q{CREATE CONSTRAINT TRIGGER "RI_ConstraintTrigger_c_19656" AFTER UPDATE ON "public"."color_tags" NOT DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW EXECUTE PROCEDURE "RI_FKey_check_upd"();});
-    $dbh->do(q{CREATE CONSTRAINT TRIGGER "RI_ConstraintTrigger_c_19655" AFTER INSERT ON "public"."color_tags" NOT DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW EXECUTE PROCEDURE "RI_FKey_check_ins"();});
 
     $dbh->do(q{ALTER TABLE public.color_tags ADD CONSTRAINT color_tag_fk FOREIGN KEY (realty_id) REFERENCES public.realty (id) ON UPDATE NO ACTION ON DELETE NO ACTION NOT DEFERRABLE INITIALLY IMMEDIATE;});
 }
