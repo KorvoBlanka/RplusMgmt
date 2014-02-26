@@ -636,7 +636,7 @@
                         % if (has_permission(realty => read => undef)) {
                           <option class="text-muted" value="">-</option>
                         % }
-                        % for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [role => ['agent', 'manager'], delete_date => undef], sort_by => 'name')}) {
+                        % for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [role => ['agent', 'agent_ext', 'manager'], delete_date => undef], sort_by => 'name')}) {
                           % if (has_permission(realty => read => $x->id)) {
                             <option value="<%= $x->id %>"><%= $x->name %></option>
                           % }
