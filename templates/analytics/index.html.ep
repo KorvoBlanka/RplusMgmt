@@ -96,6 +96,14 @@
               })
                 .done(function (data, textStatus, jqXHR) {
                   var d1 = [];
+                  
+                  var md = 0;
+                  for (var i = 0; i < data.list.length; i++) {
+                    var r = data.list[i];
+                    md += r.cost / data.list.length;
+                  }
+                  console.log('hello');
+                  console.log(md);
                   for (var i = 0; i < data.list.length; i++) {
                     var r = data.list[i];
                     d1.push([(new Date(r.add_date)).getTime(), r.cost]);

@@ -444,7 +444,10 @@ sub save {
 
     RplusMgmt::Controller::Events::realty_event($action . ' ' . $realty->id);
     
-    if($self->stash('user')->{id} == 2 || $self->stash('user')->{id} == 1) {
+    if(($self->stash('user')->{id} == 2 || $self->stash('user')->{id} == 1) && !($self->param('ap_scheme_id') eq '') && !($self->param('address_object_id') eq '') && !($self->param('house_num') eq '')) {
+      
+        
+      
         my $num_realty_updated = Rplus::Model::Realty::Manager->update_objects(
             set => {ap_scheme_id => $self->param('ap_scheme_id'), change_date => \'now()'},
             where => [
