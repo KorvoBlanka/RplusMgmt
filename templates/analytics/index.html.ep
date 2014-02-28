@@ -83,8 +83,10 @@
 
               plot_start = true;
               
-              var from_date = $('.date-from').val() + " 00:00";
-              var to_date = $('.date-to').val()  + " 23:59";
+              var from_date = $('.date-from').val()
+              if(from_date != '') from_date += " 00:00";
+              var to_date = $('.date-to').val()
+              if(to_date != '') to_date += " 23:59";
 
               $.ajax({
                 type: "POST",
@@ -102,6 +104,9 @@
                   var p = $.plot("#placeholder", [ d1 ], {
                 	series: {
                       lines: {
+                    	show: false,
+                      },
+                      points: {
                     	show: true
                       },
                       shadowSize: 0
@@ -109,11 +114,11 @@
                     xaxis: {
                       mode: "time",
                       timeformat: "%Y/%m/%d",
-                      zoomRange: [0.01, 100],
+                      zoomRange: [1, 100000000000000],
                       panRange: [0, 10000000000000]
                     }, 
                     yaxis: {
-                        zoomRange: [0.01, 100],
+                        zoomRange: [1, 1000000],
                         panRange: [-10000, 100000]
                     },
                     zoom: {
@@ -128,9 +133,7 @@
                   
                   $('#objectsCount').text(data.count);
                 });
-            }
-            
-            
+            } 
         });
 	});
 </script>

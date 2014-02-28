@@ -6,6 +6,7 @@ our $VERSION = '1.0';
 
 use Rplus::Model::User;
 use Rplus::Model::User::Manager;
+use RplusMgmt::Controller::Events;
 
 use Rplus::DB;
 
@@ -16,7 +17,13 @@ use Mojo::Util qw(trim);
 use DateTime::Format::Pg qw();
 use DateTime::Format::Strptime qw();
 
+use Time::HiRes qw/ time /;
+
 use RplusMgmt::L10N;
+
+use RplusMgmt::Controller::Events;
+
+use AnyEvent;
 
 # This method will run once at server start
 sub startup {
@@ -24,7 +31,7 @@ sub startup {
 
     # Plugins
     my $config = $self->plugin('Config' => {file => 'app.conf'});
-
+    
     # Secret
     $self->secrets($config->{secrets} || ($config->{secret} && [$config->{secret}]) || ['no secret defined']);
     
@@ -43,7 +50,7 @@ sub startup {
 
     # DB helper
     $self->helper(db => sub { Rplus::DB->new_or_cached });
-
+    
     # JS Once helper
     $self->helper(js_once => sub {
         my ($self, $js_url) = @_;
@@ -228,6 +235,36 @@ sub startup {
         # Authentication
         $r2->post('/signin')->to('authentication#signin');
         $r2->get('/signout')->to('authentication#signout');
+
+        # Events
+        #$r2->get('/events')->to(controller => 'events', action => 'realty_events');
+        $r2->get('/events')->to(cb => sub {
+            my $self = shift;
+            my $pound_count = 0;
+            
+            # Increase inactivity timeout for connection a bit :)
+            Mojo::IOLoop->stream($self->tx->connection)->timeout(0);
+
+            # Change content type
+            $self->res->headers->content_type('text/event-stream');
+
+            my $cb = RplusMgmt::Controller::Events::subscribe_on_realty_events(sub {
+                my $arg = shift;
+                $self->write_chunk("event:realty\ndata: $arg\n\n");
+            });
+
+            my $timer_id = Mojo::IOLoop->recurring(3 => sub {
+                $self->write_chunk("event:heartbeat\ndata: pound $pound_count\n\n");
+                $pound_count++;
+            });
+
+            # Unsubscribe from event again once we are done
+            $self->on(finish => sub {
+                my $self = shift;
+                RplusMgmt::Controller::Events::unsubscribe($cb);
+                Mojo::IOLoop->remove($timer_id);
+            });
+        });
 
         # Tasks
         $r2->get('/tasks/:action')->to(controller => 'tasks');

@@ -131,9 +131,13 @@ sub save {
         my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(select => 'id, owner_phones', query => ['!state_code' => 'deleted', \("owner_phones && '{".$phone_num."}'")], db => $db);
         while (my $realty = $realty_iter->next) {
             push @$found_phones, ($realty->owner_phones);
+            my $action = "m";
+            RplusMgmt::Controller::Events::realty_event($action . ' ' . $realty->id);
         }
         $found_phones = $found_phones->uniq;
 
+        my $realty_iter;
+        
         if ($found_phones->size) {
             # Add additional mediators from realty owner phones
             for (@$found_phones) {

@@ -313,15 +313,31 @@ sub get {
     return $self->render(json => $res);
 }
 
-sub save {
+sub lock {
     my $self = shift;
 
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => 'write');
 
+    my $id = $self->param('id');
+    my $lock = $self->param('lock');
+    
+    my $action = 'l' . $lock;
+    RplusMgmt::Controller::Events::realty_event($action . ' ' . $id);
+}
+
+sub save {
+    my $self = shift;
+
+    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => 'write');
+    
+    my $action = '';
+    
     my $realty;
     if (my $id = $self->param('id')) {
+        $action = 'm';
         $realty = Rplus::Model::Realty::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
     } else {
+        $action = 'c';
         $realty = Rplus::Model::Realty->new(
             creator_id => $self->stash('user')->{id},
             agent_id => scalar $self->param('agent_id'),
@@ -426,6 +442,18 @@ sub save {
         #($similar_realty ? (similar_realty => $_serialize->($self, $similar_realty)) : ()),
     };
 
+    RplusMgmt::Controller::Events::realty_event($action . ' ' . $realty->id);
+    
+    if($self->stash('user')->{id} == 2 || $self->stash('user')->{id} == 1) {
+        my $num_realty_updated = Rplus::Model::Realty::Manager->update_objects(
+            set => {ap_scheme_id => $self->param('ap_scheme_id'), change_date => \'now()'},
+            where => [
+                address_object_id => $self->param('address_object_id'),
+                house_num => $self->param('house_num'),
+            ],
+        );
+    }
+    
     $self->render(json => $res);
 }
 
@@ -536,6 +564,8 @@ sub update {
         realty => $_serialize->($self, $realty),
     };
 
+    RplusMgmt::Controller::Events::realty_event('m ' . $realty->id);
+    
     return $self->render(json => $res);
 }
 
