@@ -344,7 +344,7 @@ sub save {
         );
     }
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $realty;
-    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => write => $realty->agent_id);
+    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => write => $realty->agent_id) || $self->has_permission(realty => 'write')->{can_assign} && $realty->agent_id == undef;
 
     # Input validation
     $self->validation->required('type_code'); # TODO: check value
@@ -444,17 +444,30 @@ sub save {
 
     RplusMgmt::Controller::Events::realty_event($action . ' ' . $realty->id);
     
-    if(($self->stash('user')->{id} == 2 || $self->stash('user')->{id} == 1) && !($self->param('ap_scheme_id') eq '') && !($self->param('address_object_id') eq '') && !($self->param('house_num') eq '')) {
-      
-        
-      
-        my $num_realty_updated = Rplus::Model::Realty::Manager->update_objects(
-            set => {ap_scheme_id => $self->param('ap_scheme_id'), change_date => \'now()'},
-            where => [
-                address_object_id => $self->param('address_object_id'),
-                house_num => $self->param('house_num'),
-            ],
-        );
+    if(($self->stash('user')->{id} == 2 || $self->stash('user')->{id} == 1) && !($self->param('address_object_id') eq '') && !($self->param('house_num') eq '')) {
+        if(!($self->param('ap_scheme_id') eq '')) {
+          my $num_realty_updated = Rplus::Model::Realty::Manager->update_objects(
+              set => {ap_scheme_id => $self->param('ap_scheme_id'), change_date => \'now()'},
+              where => [
+                  address_object_id => $self->param('address_object_id'),
+                  house_num => $self->param('house_num'),
+              ],
+          );
+          
+          $realty->metadata('{"hack": "1"}');
+          $realty->save(changes_only => 1);
+        } else {
+            my $r = Rplus::Model::Realty::Manager->get_objects(query => [address_object_id => $self->param('address_object_id'), house_num => $self->param('house_num'), \"metadata->>'hack' = '1'", delete_date => undef])->[0];
+            if ($r) {           
+              my $num_realty_updated = Rplus::Model::Realty::Manager->update_objects(
+                set => {ap_scheme_id => $r->ap_scheme_id, change_date => \'now()'},
+                where => [
+                    address_object_id => $self->param('address_object_id'),
+                    house_num => $self->param('house_num'),
+                ],
+              );
+            }
+        }
     }
     
     $self->render(json => $res);

@@ -85,7 +85,9 @@ sub get_url_list {
 
     for(my $i = 0; $i < $page_count; $i ++) {
         sleep 2;
-        my $res = $ua->get($main_page . '?page='.$i)->res;
+        my $postfx = ($i == 0) ? '' : "&page=$i";
+        my $res = $ua->get($main_page . $postfx)->res;
+        say $main_page . $postfx;
         my $dom = $res->dom;
 
         $dom->find('a[class="bulletinLink "]')->each (sub {
@@ -108,7 +110,7 @@ sub process_url_list {
         $data->{'type_code'} = $category_code;
         $data->{'offer_type_code'} = $offer_type;
 
-        sleep 2;
+        sleep 25;
         eval {
             my $dom = $ua->get($item_url)->res->dom;
             next unless defined $dom;
@@ -118,9 +120,11 @@ sub process_url_list {
                 my $c_ref = $contacts->find('a[class="bigbutton viewAjaxContacts"]')->first->{href};
                 my $c_res = $ua->get($farpost_url . $c_ref . '?ajax=1')->res->dom;
                 my $phone_str = $c_res->find('span[class="phone"]')->first->text;
+                say $phone_str;
                 $phone_str =~ s/\D//g;
                 if (length $phone_str > 5) {
                     if (my $phone_num = Rplus::Util::PhoneNum->parse($phone_str, $META->{'params'}->{'default_phone_prefix'})) {
+                        say $phone_num;
                         $data->{'owner_phones'} = ($phone_num, );
                     }
                 }

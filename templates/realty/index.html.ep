@@ -93,12 +93,12 @@
   }
 
   #realtyTable > tbody > tr.deleted > td {
-    background-color: #F08F7D;
+    background-color: #F08F7D !important;
     color: #fff;
   }
 
   #realtyTable > tbody > tr.deleted:hover > td {
-    background-color: #E08A73;
+    background-color: #E08A73 !important;
     color: #fff;
   }
 
@@ -572,7 +572,12 @@
               var f = realtyTableConf.fields[j];
               $('td:nth-child(' + (j + 1) + ')', $tr).html(f.val(r));
             }
-            $tr.addClass('modified');
+            if(r.state_code == 'deleted') {
+              $tr.removeClass('selected').removeClass('modified').removeClass('opened').removeClass('shown').addClass('deleted');
+            } else {
+              $tr.removeClass('selected').removeClass('deleted').addClass('modified');
+            }
+            agents_ids[r.id] = r.agent_id;
             media_export[r.id] = r.export_media;
             putToHistory(id, "modified", 1);
             putToHistory(id, "selected", 0);

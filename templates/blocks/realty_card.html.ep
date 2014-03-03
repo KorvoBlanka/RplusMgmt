@@ -88,6 +88,25 @@
       }
 
       function fillForm() {
+        
+        console.log(realty);
+        
+        if (realty.agent_id != '<%= $self->stash('user')->{id} %>' && realty.title != 'Новый' && '<%= $self->stash('user')->{role} %>' != 'manager' && '<%= $self->stash('user')->{role} %>' != 'agent_plus' && realty.agent_id != null) {
+          $('#form-' + guid + ' input[type=text]').each(function () {
+              $(this).attr("readonly", "");
+          });
+          $('#form-' + guid + ' textarea').each(function () {
+              $(this).attr("readonly", "");
+          });        
+          $('#form-' + guid + ' select').each(function () {
+              $(this).attr("disabled", "");
+          });
+          $('input[type=checkbox]').each(function () {
+              $(this).attr("disabled", "");
+          });
+        }
+        
+        
         for (var f in realty) {
           var v = realty[f];
           var el = $('[name="' + f + '"]:input', container);
@@ -475,12 +494,6 @@
             data: {id: id},
           })
             .done(function (data, textStatus, jqXHR) {
-              % if ($self->has_permission(realty => 'read')->{no_pdata}) {
-                if(data.agent_id != <%= $self->stash('user')->{id} %> ) {
-                  data.owner_phones = "";
-                  data.source_media_text = "Текст скрыт";
-                }
-              % }
               realty = data;
               guid = realty.guid = Rplus.Util.guid();
               realty.title = getTitle();
@@ -637,10 +650,13 @@
                           <option class="text-muted" value="">-</option>
                         % }
                         % for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [role => ['agent', 'agent_ext', 'manager'], delete_date => undef], sort_by => 'name')}) {
-                          % if (has_permission(realty => read => $x->id)) {
+                          % if ($self->stash('user')->{role} eq 'manager' || $x->id == $self->stash('user')->{id}) {
                             <option value="<%= $x->id %>"><%= $x->name %></option>
+                          % } else {
+                            <option disabled value="<%= $x->id %>"><%= $x->name %></option>
                           % }
                         % }
+
                         </select>
                       </div>
                     </div>
