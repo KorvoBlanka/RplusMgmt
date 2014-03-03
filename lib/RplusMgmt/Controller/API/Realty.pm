@@ -323,6 +323,13 @@ sub lock {
     
     my $action = 'l' . $lock;
     RplusMgmt::Controller::Events::realty_event($action . ' ' . $id);
+    
+    my $res = {
+        status => 'success',
+        id => $id,
+    };
+
+    return $self->render(json => $res);
 }
 
 sub save {

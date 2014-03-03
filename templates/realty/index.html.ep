@@ -1194,14 +1194,26 @@
 
       listRealty(1);
       
-      var events = new EventSource('/events');
+      
+      var con_timer = setInterval(function() { setupEvents() }, 5000);
+      var events;
+      
+      function setupEvents() {
+
+      console.log('connecting to events...');
+      
+      events = new EventSource('/events');
       
       events.addEventListener('open', function(e) {
-          console.log(e);
+          console.log(e.type);
+          clearInterval(con_timer);
       }, false);
       
       events.addEventListener('error', function(e) {
-          console.log(e);
+          console.log(e.type);
+          events.close();
+          clearInterval(con_timer);
+          con_timer = setInterval(function() { setupEvents() }, 5000);
       }, false);
       
       events.addEventListener('heartbeat', function(event) {
@@ -1278,6 +1290,7 @@
           
           
       }, false);
+      }
         
     });
   })();
