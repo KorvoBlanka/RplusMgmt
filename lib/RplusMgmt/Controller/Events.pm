@@ -6,9 +6,7 @@ my @subscribers;
 
 sub subscribe_on_realty_events {
     my $cb = shift;
-    
     push @subscribers, $cb;
-    
     return $cb;
 }
 

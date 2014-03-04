@@ -31,6 +31,7 @@ sub startup {
 
     # Plugins
     my $config = $self->plugin('Config' => {file => 'app.conf'});
+    my @revents = ();
     
     # Secret
     $self->secrets($config->{secrets} || ($config->{secret} && [$config->{secret}]) || ['no secret defined']);
@@ -75,6 +76,12 @@ sub startup {
         return;
     });
 
+    # DateTime formatter helper
+    $self->helper(realty_event => sub {
+        my ($self, $arg) = @_;
+        push @revents, $arg;
+    });
+    
     # DateTime formatter helper
     $self->helper(format_datetime => sub {
         my ($self, $dt) = @_;
@@ -241,19 +248,28 @@ sub startup {
         $r2->get('/events')->to(cb => sub {
             my $self = shift;
             my $pound_count = 0;
-            
+            my $event_count = 0;
+
             # Increase inactivity timeout for connection a bit :)
-            Mojo::IOLoop->stream($self->tx->connection)->timeout(0);
+            Mojo::IOLoop->stream($self->tx->connection)->timeout(3000);
 
             # Change content type
             $self->res->headers->content_type('text/event-stream');
 
-            my $cb = RplusMgmt::Controller::Events::subscribe_on_realty_events(sub {
-                my $arg = shift;
-                $self->write_chunk("event:realty\ndata: $arg\n\n");
+            #my $cb = RplusMgmt::Controller::Events::subscribe_on_realty_events(sub {
+            #    my $arg = shift;
+            #    $self->write_chunk("event:realty\ndata: $arg\n\n");
+            #});
+
+            my $timer_id_0 = Mojo::IOLoop->recurring(1 => sub {
+                while (scalar @revents > $event_count) {
+                    my $arg = $revents[$event_count];
+                    $self->write_chunk("event:realty\ndata: $arg\n\n");
+                    $event_count ++;
+                }
             });
 
-            my $timer_id = Mojo::IOLoop->recurring(3 => sub {
+            my $timer_id_1 = Mojo::IOLoop->recurring(10 => sub {
                 $self->write_chunk("event:heartbeat\ndata: pound $pound_count\n\n");
                 $pound_count++;
             });
@@ -261,8 +277,9 @@ sub startup {
             # Unsubscribe from event again once we are done
             $self->on(finish => sub {
                 my $self = shift;
-                RplusMgmt::Controller::Events::unsubscribe($cb);
-                Mojo::IOLoop->remove($timer_id);
+                #RplusMgmt::Controller::Events::unsubscribe($cb);
+                Mojo::IOLoop->remove($timer_id_0);
+                Mojo::IOLoop->remove($timer_id_1);
             });
         });
 

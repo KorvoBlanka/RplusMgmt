@@ -16,8 +16,6 @@ use Rplus::Model::ColorTag::Manager;
 use Rplus::Util::Query;
 use Rplus::Util::Realty;
 
-use Data::Dumper;
-
 use JSON;
 use Mojo::Collection;
 
@@ -322,7 +320,8 @@ sub lock {
     my $lock = $self->param('lock');
     
     my $action = 'l' . $lock;
-    RplusMgmt::Controller::Events::realty_event($action . ' ' . $id);
+    #RplusMgmt::Controller::Events::realty_event($action . ' ' . $id);
+    $self->realty_event($action . ' ' . $id);
     
     my $res = {
         status => 'success',
@@ -449,7 +448,8 @@ sub save {
         #($similar_realty ? (similar_realty => $_serialize->($self, $similar_realty)) : ()),
     };
 
-    RplusMgmt::Controller::Events::realty_event($action . ' ' . $realty->id);
+    #RplusMgmt::Controller::Events::realty_event($action . ' ' . $realty->id);
+    $self->realty_event($action . ' ' . $realty->id);
     
     if(($self->stash('user')->{id} == 2 || $self->stash('user')->{id} == 1) && !($self->param('address_object_id') eq '') && !($self->param('house_num') eq '')) {
         if(!($self->param('ap_scheme_id') eq '')) {
@@ -587,7 +587,8 @@ sub update {
         realty => $_serialize->($self, $realty),
     };
 
-    RplusMgmt::Controller::Events::realty_event('m ' . $realty->id);
+    #RplusMgmt::Controller::Events::realty_event('m ' . $realty->id);
+    $self->realty_event('m ' . $realty->id);
     
     return $self->render(json => $res);
 }

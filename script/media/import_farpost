@@ -110,7 +110,7 @@ sub process_url_list {
         $data->{'type_code'} = $category_code;
         $data->{'offer_type_code'} = $offer_type;
 
-        sleep 25;
+        sleep 30;
         eval {
             my $dom = $ua->get($item_url)->res->dom;
             next unless defined $dom;
