@@ -1194,35 +1194,33 @@
 
       listRealty(1);
       
-      
-      setupEvents();
-      var con_timer = setInterval(function() { setupEvents(); }, 10000);
       var events = null;
-      
+      setupEvents();
+      var con_timer = setInterval(function() {
+        events.close();
+        setupEvents();
+      }, 10000);
+
       function setupEvents() {
         console.log('connecting to events...');
-        
-        if (events) {
-            events.close();
-        }
         events = new EventSource('/events');
-        
+
         events.addEventListener('open', function(e) {
             console.log(e.type);
             clearInterval(con_timer);
         }, false);
-        
+
         events.addEventListener('error', function(e) {
             console.log(e.type);
             clearInterval(con_timer);
             con_timer = setInterval(function() { setupEvents() }, 10000);
         }, false);
-        
+
         events.addEventListener('heartbeat', function(event) {
           var edata = event.data;
           console.log(edata);
         }, false);
-        
+
         // Subscribe to "realty" event
         events.addEventListener('realty', function(event) {
   

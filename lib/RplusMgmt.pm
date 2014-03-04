@@ -269,7 +269,7 @@ sub startup {
                 }
             });
 
-            my $timer_id_1 = Mojo::IOLoop->recurring(10 => sub {
+            my $timer_id_1 = Mojo::IOLoop->recurring(5 => sub {
                 $self->write_chunk("event:heartbeat\ndata: pound $pound_count\n\n");
                 $pound_count++;
             });
