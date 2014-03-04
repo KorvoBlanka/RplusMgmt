@@ -28,7 +28,7 @@ sub startup {
 
     # Plugins
     my $config = $self->plugin('Config' => {file => 'app.conf'});
-    my @revents = ();
+    my $revents = "";
     
     # Secret
     $self->secrets($config->{secrets} || ($config->{secret} && [$config->{secret}]) || ['no secret defined']);
@@ -76,7 +76,7 @@ sub startup {
     # DateTime formatter helper
     $self->helper(realty_event => sub {
         my ($self, $arg) = @_;
-        push @revents, $arg;
+        $revents = $arg;
     });
     
     # DateTime formatter helper
@@ -259,11 +259,11 @@ sub startup {
             #});
 
             my $timer_id_0 = Mojo::IOLoop->recurring(1 => sub {
-                while (scalar @revents > $event_count) {
-                    my $arg = $revents[$event_count];
+                
+                    my $arg = $revents;
                     $self->write_chunk("event:realty\ndata: $arg\n\n");
-                    $event_count ++;
-                }
+
+
             });
 
             my $timer_id_1 = Mojo::IOLoop->recurring(5 => sub {
