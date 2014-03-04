@@ -21,6 +21,9 @@ use Time::HiRes qw/ time /;
 
 use RplusMgmt::L10N;
 
+use Cache::FastMmap;
+
+use POSIX;
 
 # This method will run once at server start
 sub startup {
@@ -28,7 +31,7 @@ sub startup {
 
     # Plugins
     my $config = $self->plugin('Config' => {file => 'app.conf'});
-    my $revents = "";
+    my $cache = Cache::FastMmap->new(raw_values => 1);
     
     # Secret
     $self->secrets($config->{secrets} || ($config->{secret} && [$config->{secret}]) || ['no secret defined']);
@@ -73,10 +76,26 @@ sub startup {
         return;
     });
 
-    # DateTime formatter helper
     $self->helper(realty_event => sub {
         my ($self, $arg) = @_;
-        $revents = $arg;
+        my $ep = $cache->get('event_pointer');
+        my $eid = $cache->get('event_id');
+        
+        if (!$eid) {
+          $eid = 0;
+        }
+
+        if (!$ep || $ep > 10) {
+            $ep = 0;
+        }
+        
+        $eid ++;
+        $cache->set('event_'.$ep, $eid . ' ' . $arg);
+        $ep ++;
+        $cache->set('event_pointer', $ep);
+        $cache->set('event_id', $eid);
+
+        return $eid;
     });
     
     # DateTime formatter helper
@@ -245,8 +264,8 @@ sub startup {
         $r2->get('/events')->to(cb => sub {
             my $self = shift;
             my $pound_count = 0;
-            my $event_count = 0;
-
+            my $cp = 0;
+            
             # Increase inactivity timeout for connection a bit :)
             Mojo::IOLoop->stream($self->tx->connection)->timeout(3000);
 
@@ -259,15 +278,26 @@ sub startup {
             #});
 
             my $timer_id_0 = Mojo::IOLoop->recurring(1 => sub {
-                
-                    my $arg = $revents;
-                    $self->write_chunk("event:realty\ndata: $arg\n\n");
-
-
+                my $ep = $cache->get('event_pointer');
+                if ($ep) {
+                    if ($ep < $cp) {
+                        while ($cp < 10) {
+                          my $arg = $cache->get('event_'.$cp);
+                          $self->write_chunk("event:realty\ndata: $arg\n\n");
+                          $cp ++;
+                        }
+                        $cp = 0;
+                    }
+                    while ($ep > $cp) {
+                        my $arg = $cache->get('event_'.$cp);
+                        $self->write_chunk("event:realty\ndata: $arg\n\n");
+                        $cp ++;
+                    }
+                }
             });
 
-            my $timer_id_1 = Mojo::IOLoop->recurring(5 => sub {
-                $self->write_chunk("event:heartbeat\ndata: pound $pound_count\n\n");
+            my $timer_id_1 = Mojo::IOLoop->recurring(10 => sub {
+                $self->write_chunk("event:heartbeat\ndata: p$pound_count\n\n");
                 $pound_count++;
             });
 

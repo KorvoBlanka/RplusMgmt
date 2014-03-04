@@ -318,16 +318,14 @@ sub lock {
 
     my $id = $self->param('id');
     my $lock = $self->param('lock');
-    
     my $action = 'l' . $lock;
-    #RplusMgmt::Controller::Events::realty_event($action . ' ' . $id);
-    $self->realty_event($action . ' ' . $id);
     
     my $res = {
         status => 'success',
         id => $id,
+        event_id => $self->realty_event($action . ' ' . $id),
     };
-
+    
     return $self->render(json => $res);
 }
 
@@ -446,11 +444,9 @@ sub save {
         realty => $_serialize->($self, $realty),
         similar_realty_id => $similar_realty_id,
         #($similar_realty ? (similar_realty => $_serialize->($self, $similar_realty)) : ()),
+        event_id => $self->realty_event($action . ' ' . $realty->id),
     };
 
-    #RplusMgmt::Controller::Events::realty_event($action . ' ' . $realty->id);
-    $self->realty_event($action . ' ' . $realty->id);
-    
     if(($self->stash('user')->{id} == 2 || $self->stash('user')->{id} == 1) && !($self->param('address_object_id') eq '') && !($self->param('house_num') eq '')) {
         if(!($self->param('ap_scheme_id') eq '')) {
           my $num_realty_updated = Rplus::Model::Realty::Manager->update_objects(
@@ -585,10 +581,8 @@ sub update {
         status => 'success',
         id => $realty->id,
         realty => $_serialize->($self, $realty),
+        event_id => $self->realty_event('m ' . $realty->id),
     };
-
-    #RplusMgmt::Controller::Events::realty_event('m ' . $realty->id);
-    $self->realty_event('m ' . $realty->id);
     
     return $self->render(json => $res);
 }

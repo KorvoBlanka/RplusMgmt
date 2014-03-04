@@ -132,7 +132,6 @@ sub save {
         while (my $realty = $realty_iter->next) {
             push @$found_phones, ($realty->owner_phones);
             my $action = "m";
-            #RplusMgmt::Controller::Events::realty_event($action . ' ' . $realty->id);
             $self->realty_event($action . ' ' . $realty->id);
         }
         $found_phones = $found_phones->uniq;

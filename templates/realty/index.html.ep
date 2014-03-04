@@ -93,12 +93,12 @@
   }
 
   #realtyTable > tbody > tr.deleted > td {
-    background-color: #F08F7D !important;
+    background-color: #F08F7D;
     color: #fff;
   }
 
   #realtyTable > tbody > tr.deleted:hover > td {
-    background-color: #E08A73 !important;
+    background-color: #E08A73;
     color: #fff;
   }
 
@@ -113,15 +113,7 @@
   #realtyTable > tbody > tr.shown:hover > td {
     background-color: #d7dce9;
   }
-  
-  #realtyTable > tbody > tr.opened > td {
-    background-color: #f2dede !important;
-  }
-
-  #realtyTable > tbody > tr.opened:hover > td {
-    background-color: #ebcccc !important;
-  }
-  
+    
   #realtyTable > tbody > tr.modified > td {
     background-color: #dff0d8; /* green = success */
   }
@@ -130,6 +122,14 @@
     background-color: #d0e9c6;
   }
 
+  #realtyTable > tbody > tr.opened > td {
+    background-color: #f2dede;
+  }
+
+  #realtyTable > tbody > tr.opened:hover > td {
+    background-color: #ebcccc;
+  }
+  
   #geoModal .modal-dialog {
     width: 80%;
   }
@@ -539,7 +539,7 @@
         complete: function () {}
       })
         .done(function (data, textStatus, jqXHR) {
-          console.log('locked ' + id);
+          last_event_id = data.event_id;
         });
       
       var card = RealtyCard({
@@ -595,16 +595,6 @@
       if ($this.length) {
         var id = $this.data('id'),
             card = $this.data('card');
-
-      $.ajax({
-        type: "POST",
-        url: "/api/realty/lock",
-        data: {id: id, lock: 0},
-        complete: function () {}
-      })
-        .done(function (data, textStatus, jqXHR) {
-          console.log('unlocked ' + id);
-        });
             
         // Open next tab
         if ($this.closest('li').hasClass('active')) {
@@ -627,6 +617,16 @@
             putToHistory(id, "shown", 1);
             putToHistory(id, "selected", 0);
         }
+        
+        $.ajax({
+          type: "POST",
+          url: "/api/realty/lock",
+          data: {id: id, lock: 0},
+          complete: function () {}
+        })
+          .done(function (data, textStatus, jqXHR) {
+            last_event_id = data.event_id;
+          });
       }
     }
 
@@ -984,6 +984,8 @@
             .done(function (data, textStatus, jqXHR) {
               if (data.status == 'success') {
                 var r = data.realty;
+                last_event_id = data.event_id;
+                console.log(last_event_id);
                 // Update row data in realty table
                 for (var j = 0; j < realtyTableConf.fields.length; j++) {
                   var f = realtyTableConf.fields[j];
@@ -1015,6 +1017,8 @@
               .done(function (data, textStatus, jqXHR) {
                 if (data.status == 'success') {
                   var r = data.realty;
+                  last_event_id = data.event_id;
+                  console.log(last_event_id);
                   // Update row data in realty table
                   for (var j = 0; j < realtyTableConf.fields.length; j++) {
                     var f = realtyTableConf.fields[j];
@@ -1085,6 +1089,8 @@
             .done(function (data, textStatus, jqXHR) {
               if (data.status == 'success') {
                 var r = data.realty;
+                last_event_id = data.event_id;
+                console.log(last_event_id);
                 // Update row data in realty table
                 for (var j = 0; j < realtyTableConf.fields.length; j++) {
                   var f = realtyTableConf.fields[j];
@@ -1223,12 +1229,16 @@
 
         // Subscribe to "realty" event
         events.addEventListener('realty', function(event) {
-  
             console.log(event.data);
-  
             var edata = event.data.split(" ");
-            var event = edata[0];
-            var id = edata[1];          
+            var eid = edata[0];
+            var event = edata[1];
+            var id = edata[2];
+            
+            if(last_event_id == eid) {
+              console.log('skip');
+              return;
+            }
             $.ajax({
               type: "POST",
               url: "/api/realty/get",
