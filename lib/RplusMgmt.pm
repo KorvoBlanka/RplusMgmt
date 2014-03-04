@@ -21,9 +21,6 @@ use Time::HiRes qw/ time /;
 
 use RplusMgmt::L10N;
 
-use RplusMgmt::Controller::Events;
-
-use AnyEvent;
 
 # This method will run once at server start
 sub startup {
