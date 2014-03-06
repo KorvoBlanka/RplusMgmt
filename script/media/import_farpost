@@ -39,6 +39,12 @@ exit unless $MEDIA;
 my $META = decode_json($MEDIA->metadata);
 
 my $ua = Mojo::UserAgent->new;
+
+$ua->proxy->http('http://212.19.22.218:8080');
+$ua->connect_timeout(15);
+$ua->inactivity_timeout(30);
+$ua->max_redirects(8);
+
 $ua->max_redirects(3);
 
 # список посредников
@@ -110,7 +116,7 @@ sub process_url_list {
         $data->{'type_code'} = $category_code;
         $data->{'offer_type_code'} = $offer_type;
 
-        sleep 30;
+        sleep 2;
         eval {
             my $dom = $ua->get($item_url)->res->dom;
             next unless defined $dom;

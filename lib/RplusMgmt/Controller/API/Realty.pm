@@ -320,52 +320,56 @@ sub get {
 sub lock {
     my $self = shift;
 
-    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => 'write');
-
     my $id = $self->param('id');
     my $lock = $self->param('lock');
     my $user_id = $self->stash('user')->{id};
     
     my $realty = Rplus::Model::Realty::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $realty;
-    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => write => $realty->agent_id) || $self->has_permission(realty => 'write')->{can_assign} && $realty->agent_id == undef;
-
-    
+    my $res;
     my $meta = decode_json($realty->metadata);
-    my $cur_lock = $meta->{lock};
-    my $cur_lock_count = $meta->{lock_count};
-    if (!$cur_lock) {
-        $cur_lock = -1;
-    }
-    if (!$cur_lock_count || $cur_lock == -1) {
-        $cur_lock_count = 0;
-    }
+    if($self->has_permission(realty => write => $realty->agent_id) || $self->has_permission(realty => 'write')->{can_assign} && $realty->agent_id == undef) {
+        
+        my $cur_lock = $meta->{lock};
+        my $cur_lock_count = $meta->{lock_count};
+        if (!$cur_lock) {
+            $cur_lock = -1;
+        }
+        if (!$cur_lock_count || $cur_lock == -1) {
+            $cur_lock_count = 0;
+        }
+        
+        if ($cur_lock == $user_id) {
+            if ($lock == 1) {
+                $cur_lock_count ++;
+            } else {
+                $cur_lock_count --;
+            }
+            $meta->{lock_count} = $cur_lock_count;
+            if ($cur_lock_count == 0) {
+                $meta->{lock} = -1;
+            }
+        } elsif ($cur_lock == -1) {
+            if ($lock == 1) {
+                $meta->{lock} = $user_id;
+                $meta->{lock_count} = 1;
+            }
+        }
+        $realty->metadata(encode_json($meta));
+        $realty->save(changes_only => 1);
     
-    if ($cur_lock == $user_id) {
-        if ($lock == 1) {
-            $cur_lock_count ++;
-        } else {
-            $cur_lock_count --;
-        }
-        $meta->{lock_count} = $cur_lock_count;
-        if ($cur_lock_count == 0) {
-            $meta->{lock} = -1;
-        }
-    } elsif ($cur_lock == -1) {
-        if ($lock == 1) {
-            $meta->{lock} = $user_id;
-            $meta->{lock_count} = 1;
-        }
+        $res = {
+            status => 'success',
+            id => $id,
+            lock => $meta->{lock},
+            event_id => $self->realty_event('m', $id),
+        };
+    } else {
+        $res = {
+            status => 'failed',
+            lock => $meta->{lock},
+        };      
     }
-    $realty->metadata(encode_json($meta));
-    $realty->save(changes_only => 1);
-
-    my $res = {
-        status => 'success',
-        id => $id,
-        lock => $meta->{lock},
-        event_id => $self->realty_event('m', $id),
-    };
     
     return $self->render(json => $res);
 }

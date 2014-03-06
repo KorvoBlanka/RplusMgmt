@@ -58,7 +58,7 @@
 <script type="application/javascript">
   "use strict";
 
-  var last_event_id = 0;
+  var last_event_id = [];
   
   var RealtyCard = (function () {
     // Global variables
@@ -97,8 +97,8 @@
             complete: function () {}
           })
           .done(function (data, textStatus, jqXHR) {
-            last_event_id = data.event_id;
-                if (data.lock != '<%= $self->stash('user')->{id} %>' || realty.agent_id != '<%= $self->stash('user')->{id} %>' && realty.title != 'Новый' && '<%= $self->stash('user')->{role} %>' != 'manager' && '<%= $self->stash('user')->{role} %>' != 'agent_plus' && realty.agent_id != null) {
+            last_event_id.push(data.event_id);
+            if (data.lock != '<%= $self->stash('user')->{id} %>' || realty.agent_id != '<%= $self->stash('user')->{id} %>' && realty.title != 'Новый' && '<%= $self->stash('user')->{role} %>' != 'manager' && '<%= $self->stash('user')->{role} %>' != 'agent_plus' && realty.agent_id != null) {
                 $('#form-' + guid + ' input[type=text]').each(function () {
                     $(this).attr("readonly", "");
                 });
@@ -111,7 +111,7 @@
                 $('input[type=checkbox]').each(function () {
                     $(this).attr("disabled", "");
                 });
-              }
+            }
           });
         
 
@@ -433,8 +433,7 @@
               realty.guid = guid;
               realty.title = getTitle();
               
-              last_event_id = data.event_id;
-              console.log(last_event_id);
+              last_event_id.push(data.event_id);
                 
               if (data.status == 'success') {
                 if (!realty.similar_realty_id) {

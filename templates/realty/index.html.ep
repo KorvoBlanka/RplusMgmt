@@ -616,7 +616,7 @@
           complete: function () {}
         })
         .done(function (data, textStatus, jqXHR) {
-          last_event_id = data.event_id;
+          last_event_id.push(data.event_id);
           if (data.lock < 1) {
               $('#realtyTable > tbody > tr[data-id="' + id + '"]').removeClass('opened');
           }
@@ -987,7 +987,7 @@
                 $this.removeClass('selected').addClass('modified');
                 putToHistory(id, "selected", 0);
                 putToHistory(id, "modified", 1);
-                last_event_id = data.event_id;
+                last_event_id.push(data.event_id);
               }
             })
           ;
@@ -1022,7 +1022,7 @@
                   }
                   putToHistory(id, "selected", 0);
                   putToHistory(id, "modified", 1);
-                  last_event_id = data.event_id;
+                  last_event_id.push(data.event_id);
                 }
               });
           }
@@ -1049,8 +1049,7 @@
                   var f = realtyTableConf.fields[j];
                   $('td:nth-child(' + (j + 1) + ')', $this).html(f.val(r));
                 }
-                $this.addClass('selected');
-                last_event_id = data.event_id;
+                last_event_id.push(data.event_id);
               }
             });
         });
@@ -1091,7 +1090,7 @@
                 $this.removeClass('selected').addClass('modified');
                 putToHistory(id, "selected", 0);
                 putToHistory(id, "modified", 1);
-                last_event_id = data.event_id;
+                last_event_id.push(data.event_id);
               }
             }).fail(function (jqXHR, textStatus, errorThrown) {
                
@@ -1240,7 +1239,10 @@
             var event = edata.etype;
             var realty_id = edata.rid;
 
-            if(last_event_id == event_id) {
+            var idx = last_event_id.indexOf(event_id);
+            if(idx != -1) {
+              last_event_id.splice(idx, 1);
+              console.log('skip');
               return;
             }
             $.ajax({

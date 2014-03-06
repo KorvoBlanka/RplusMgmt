@@ -44,6 +44,10 @@ sub import_present {
 
         # Выясним, какой архив актуален
         my $ua = LWP::UserAgent->new;
+        
+        $ua->proxy(['http'], 'http://212.19.22.218:8080');
+
+        
         my $response = $ua->get('http://old.present-dv.ru/present/archives');
         die $response->status_line unless $response->is_success;
         if ($response->decoded_content =~ /<a href="(\/archive\/\?y=(\d{4}).+?n=(\d+))"[^>]*>Скачать номер<\/a>/) {
@@ -52,6 +56,7 @@ sub import_present {
             $arch_file = "$tempdir/${media_num}.zip";
 
             # Скачаем актуальный архив во временную директорию
+            say "http://old.present-dv.ru$arch_url";
             $response = $ua->get("http://old.present-dv.ru$arch_url" =~ s/&amp;/&/r, ':content_file' => $arch_file, 'Referer' => 'http://www.present-dv.ru/');
             die $response->status_line unless $response->is_success;
         } else {
