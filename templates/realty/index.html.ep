@@ -319,6 +319,14 @@
       localStorage["history"] = JSON.stringify(history);
     }
 
+    function clearHistorySelected() {
+      var htype = "selected";
+      for (var rid in history) {
+          history[rid][htype] = 0;
+      }
+      localStorage["history"] = JSON.stringify(history);
+    }
+    
     function createContextMenu() {
       var context_cb = function(e){
         var $menu_export = $("#el_export");
@@ -750,12 +758,12 @@
         $('body').click(function(e){
           if (hasTouch()) return;
           if($(e.target).is('body')) {
+            clearHistorySelected();
             var $selected = $('#realtyTable > tbody > tr.selected');
             $selected.each(function () {
               var $this = $(this);
               var id = $this.data('id');
               $this.removeClass('selected');
-              putToHistory(id, "selected", 0);
             });
           }
         });
