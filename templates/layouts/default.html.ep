@@ -196,19 +196,10 @@
               % if (has_permission(realty => 'export')) {
                 <li><a href="/service/export"><span class="glyphicon glyphicon-export"></span> <%= ucfloc q{export media} %></a></li>
               % }
+              <li><a href="/analytics"><span class="glyphicon glyphicon-list-alt"></span> <%= ucfloc q{analytics} %></a></li>
               </ul>
             </li>
           % }
-          % if (has_permission(subscriptions => 'read')) {
-            <li class="dropdown">
-              <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-stats"></span> <%= ucfloc q{analytics} %> <b class="caret"></b></a>
-              <ul class="dropdown-menu">
-              % if (has_permission(subscriptions => 'read')) {
-                <li><a href="/analytics"><span class="glyphicon glyphicon-list-alt"></span> <%= ucfloc q{plots} %></a></li>
-              % }
-              </ul>
-            </li>
-          % }          
           % if (
           %  has_permission(mediators => 'read') || has_permission(landmarks => 'read') || has_permission(users => 'manage')
           % ) {
@@ -228,8 +219,8 @@
             </li>
           % }
           </ul>
-          <p class="navbar-text navbar-right visible-lg">
-            <%= ucfloc q{signed in as} %> [<a href="/signout" class="navbar-link"><%= $user->{'name'} %></a>]
+          <p class="navbar-text navbar-right">
+            [<a href="/signout" class="navbar-link"><%= $user->{'name'} %></a>]
           </p>
         </div>
       </div>
