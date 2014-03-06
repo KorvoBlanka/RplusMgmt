@@ -280,12 +280,12 @@ sub list {
     }
 
     # Additionaly check found phones for mediators
-    #if (@owner_phones) {
-    #    my $mediator_iter = Rplus::Model::Mediator::Manager->get_objects_iterator(query => [phone_num => \@owner_phones, delete_date => undef], require_objects => ['company']);
-    #    while (my $mediator = $mediator_iter->next) {
-    #        push @{$res->{'mediators'}}, {id => $mediator->id, company => $mediator->company->name, phone_num => $mediator->phone_num};
-    #    }
-    #}
+    if (@owner_phones) {
+        my $mediator_iter = Rplus::Model::Mediator::Manager->get_objects_iterator(query => [phone_num => \@owner_phones, delete_date => undef], require_objects => ['company']);
+        while (my $mediator = $mediator_iter->next) {
+            push @{$res->{'mediators'}}, {id => $mediator->id, company => $mediator->company->name, phone_num => $mediator->phone_num};
+        }
+    }
     
     # Fetch realty objects
     my $realty_objs = Rplus::Model::Realty::Manager->get_objects(
