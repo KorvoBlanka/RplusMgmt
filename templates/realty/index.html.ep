@@ -24,7 +24,7 @@
   .export-check-visible {
     color: #000000;
   }
-  
+
   .export-check-grayed {
     color: #888888;
   }
@@ -35,7 +35,7 @@
     border-radius: 5px;
     margin-top: 5px;
   }
-  
+
   .round-button {
     height: 14px;
     width: 14px;
@@ -92,20 +92,6 @@
     color: #fff;
   }
 
-  #realtyTable > tbody > tr.deleted > td {
-    background-color: #F08F7D;
-    color: #fff;
-  }
-
-  #realtyTable > tbody > tr.deleted:hover > td {
-    background-color: #E08A73;
-    color: #fff;
-  }
-
-  #realtyTable > tbody > tr.deleted > td > a {
-    color: #fff;
-  }
-  
   #realtyTable > tbody > tr.shown > td {
     background-color: #dbe2f0;
   }
@@ -113,7 +99,7 @@
   #realtyTable > tbody > tr.shown:hover > td {
     background-color: #d7dce9;
   }
-    
+
   #realtyTable > tbody > tr.modified > td {
     background-color: #dff0d8; /* green = success */
   }
@@ -129,7 +115,21 @@
   #realtyTable > tbody > tr.opened:hover > td {
     background-color: #ebcccc;
   }
-  
+
+    #realtyTable > tbody > tr.deleted > td {
+    background-color: #F08F7D;
+    color: #fff;
+  }
+
+  #realtyTable > tbody > tr.deleted:hover > td {
+    background-color: #E08A73;
+    color: #fff;
+  }
+
+  #realtyTable > tbody > tr.deleted > td > a {
+    color: #fff;
+  }
+
   #geoModal .modal-dialog {
     width: 80%;
   }
@@ -179,7 +179,7 @@
   "use strict";
 
   registerGlobalAjaxEvents();
-  
+
   (function () {
     // Configuration of the realty table
     var realtyTableConf = {
@@ -329,13 +329,13 @@
         $("#el_delete").removeClass('disabled');
         $("#el_open").removeClass('disabled');
         $("#el_agents").removeClass('disabled');
-        
+
         var $menu_el = $(".export-check");
         $menu_el.each(function () {
           var $this = $(this);
           $this.removeClass("export-check-visible").removeClass("export-check-grayed").addClass("export-check-hidden");
         });
-        
+
         var $selected = $('#realtyTable > tbody > tr.selected');
         var ids = new Array();
         $selected.each(function () {
@@ -358,14 +358,14 @@
             }
           }
           var agent_id = agents_ids[id];
-          if ('<%= $self->stash('user')->{role} %>' != 'manager') {
+          if ('<%= $self->stash('user')->{role} %>' != 'manager') {   // fixme
             if (agent_id == null) {
               $("#el_assign").removeClass('disabled');
-              
+
               $menu_export.addClass('disabled');
               $menu_states.addClass('disabled');
               $("#el_delete").addClass('disabled');
-                
+
             } else {
               $("#el_assign").addClass('disabled');
               if (agent_id != <%= $self->stash('user')->{id} %>) {
@@ -376,11 +376,11 @@
             }
           } 
           if($this.hasClass('opened')) {
-              $menu_export.addClass('disabled');
-              $menu_states.addClass('disabled');
-              $("#el_delete").addClass('disabled');
-              $("#el_open").addClass('disabled');
-              $("#el_agents").addClass('disabled');
+            $menu_export.addClass('disabled');
+            $menu_states.addClass('disabled');
+            $("#el_delete").addClass('disabled');
+            $("#el_open").addClass('disabled');
+            $("#el_agents").addClass('disabled');
           }
         });
       };
@@ -450,7 +450,7 @@
           var xhtml = '';
           for (var i = 0; i < data.list.length; i++) {
             var r = data.list[i];
-
+            
             media_export[r.id] = r.export_media;
             agents_ids[r.id] = r.agent_id;
             xhtml += '<tr data-page="' + data.page + '" data-id="' + r.id + '" data-lat="' + r.latitude + '" data-lng="' + r.longitude +  '"';
@@ -466,6 +466,9 @@
               if (h.shown > 0) {
                 xhtml += 'shown ';
               }
+            }
+            if (r.lock != -1) {
+              xhtml += 'opened ';
             }
             xhtml += '">';
 
@@ -521,9 +524,7 @@
     // Open realty object card
     function openRealtyCard(id, backgroung) {
       if (!id) return;
-      
-      if($('#realtyTable > tbody > tr[data-id="' + id + '"]').hasClass('opened')) return;
-      
+
       // Check that the card doesn't  opened
       if ($('#navTab > li > a[data-id="' + id + '"]').length) {
         if (!backgroung) {
@@ -532,16 +533,6 @@
         return;
       }
 
-      $.ajax({
-        type: "POST",
-        url: "/api/realty/lock",
-        data: {id: id, lock: 1},
-        complete: function () {}
-      })
-        .done(function (data, textStatus, jqXHR) {
-          last_event_id = data.event_id;
-        });
-      
       var card = RealtyCard({
         container: function (r) {
           // Additionaly check that container does not exists
@@ -595,7 +586,7 @@
       if ($this.length) {
         var id = $this.data('id'),
             card = $this.data('card');
-            
+
         // Open next tab
         if ($this.closest('li').hasClass('active')) {
           var $next = $this.closest('li').next();
@@ -613,20 +604,23 @@
 
         // Remove the highlighting in the table
         if (id) {
-          $('#realtyTable > tbody > tr[data-id="' + id + '"]').removeClass('opened').addClass('shown');
+          $('#realtyTable > tbody > tr[data-id="' + id + '"]').addClass('shown');
             putToHistory(id, "shown", 1);
             putToHistory(id, "selected", 0);
         }
-        
+
         $.ajax({
           type: "POST",
           url: "/api/realty/lock",
           data: {id: id, lock: 0},
           complete: function () {}
         })
-          .done(function (data, textStatus, jqXHR) {
-            last_event_id = data.event_id;
-          });
+        .done(function (data, textStatus, jqXHR) {
+          last_event_id = data.event_id;
+          if (data.lock < 1) {
+              $('#realtyTable > tbody > tr[data-id="' + id + '"]').removeClass('opened');
+          }
+        });
       }
     }
 
@@ -738,7 +732,7 @@
       // Rows selection in realty table
       (function () {
         var _dblclick_timer, _dblclick_timeout = 350;
-        var last_sel_idx = 0, cmd_down = 0;
+        var last_sel_idx = 0, cmd_down = false;
         var open_timer, select_timer, open_delay = 400, select_delay = 250 , cancel_click = false;
 
         $(document).keydown(function(e){
@@ -913,7 +907,7 @@
             }
           }
         });
-        
+
         $('#realtyTable > tbody').on('touchcancel', 'tr', function (e) {
           cancel_click = true;
           clearTimeout(select_timer);
@@ -924,7 +918,7 @@
           cancel_click = true;
           clearTimeout(select_timer);
           clearTimeout(open_timer);
-        });        
+        });
       })();
 
       // Create realty object card
@@ -984,8 +978,6 @@
             .done(function (data, textStatus, jqXHR) {
               if (data.status == 'success') {
                 var r = data.realty;
-                last_event_id = data.event_id;
-                console.log(last_event_id);
                 // Update row data in realty table
                 for (var j = 0; j < realtyTableConf.fields.length; j++) {
                   var f = realtyTableConf.fields[j];
@@ -995,6 +987,7 @@
                 $this.removeClass('selected').addClass('modified');
                 putToHistory(id, "selected", 0);
                 putToHistory(id, "modified", 1);
+                last_event_id = data.event_id;
               }
             })
           ;
@@ -1017,8 +1010,6 @@
               .done(function (data, textStatus, jqXHR) {
                 if (data.status == 'success') {
                   var r = data.realty;
-                  last_event_id = data.event_id;
-                  console.log(last_event_id);
                   // Update row data in realty table
                   for (var j = 0; j < realtyTableConf.fields.length; j++) {
                     var f = realtyTableConf.fields[j];
@@ -1031,6 +1022,7 @@
                   }
                   putToHistory(id, "selected", 0);
                   putToHistory(id, "modified", 1);
+                  last_event_id = data.event_id;
                 }
               });
           }
@@ -1058,6 +1050,7 @@
                   $('td:nth-child(' + (j + 1) + ')', $this).html(f.val(r));
                 }
                 $this.addClass('selected');
+                last_event_id = data.event_id;
               }
             });
         });
@@ -1089,8 +1082,6 @@
             .done(function (data, textStatus, jqXHR) {
               if (data.status == 'success') {
                 var r = data.realty;
-                last_event_id = data.event_id;
-                console.log(last_event_id);
                 // Update row data in realty table
                 for (var j = 0; j < realtyTableConf.fields.length; j++) {
                   var f = realtyTableConf.fields[j];
@@ -1100,6 +1091,7 @@
                 $this.removeClass('selected').addClass('modified');
                 putToHistory(id, "selected", 0);
                 putToHistory(id, "modified", 1);
+                last_event_id = data.event_id;
               }
             }).fail(function (jqXHR, textStatus, errorThrown) {
                
@@ -1205,7 +1197,7 @@
       var con_timer = setInterval(function() {
         events.close();
         setupEvents();
-      }, 10000);
+      }, 20000);
 
       function setupEvents() {
         console.log('connecting to events...');
@@ -1214,65 +1206,81 @@
         events.addEventListener('open', function(e) {
             console.log(e.type);
             clearInterval(con_timer);
+            con_timer = setInterval(function() {
+              events.close();
+              setupEvents()
+            }, 20000);
         }, false);
 
         events.addEventListener('error', function(e) {
             console.log(e.type);
             clearInterval(con_timer);
-            con_timer = setInterval(function() { setupEvents() }, 10000);
+            con_timer = setInterval(function() {
+              events.close();
+              setupEvents()
+            }, 20000);
         }, false);
 
         events.addEventListener('heartbeat', function(event) {
           var edata = event.data;
           console.log(edata);
+          clearInterval(con_timer);
+          con_timer = setInterval(function() {
+            events.close();
+            setupEvents()
+          }, 20000);
+            
         }, false);
 
         // Subscribe to "realty" event
         events.addEventListener('realty', function(event) {
-            console.log(event.data);
-            var edata = event.data.split(" ");
-            var eid = edata[0];
-            var event = edata[1];
-            var id = edata[2];
-            
-            if(last_event_id == eid) {
-              console.log('skip');
+            console.log('event: ' + event.data);
+            var edata = JSON.parse(event.data);
+            var event_id = edata.eid;
+            var event = edata.etype;
+            var realty_id = edata.rid;
+
+            if(last_event_id == event_id) {
               return;
             }
             $.ajax({
               type: "POST",
               url: "/api/realty/get",
-              data: {id: id},
+              data: {id: realty_id},
             })
               .done(function (data, textStatus, jqXHR) {
                 var r = data;
-                
+
                 if (event == 'c') {
                     media_export[r.id] = r.export_media;
                     agents_ids[r.id] = r.agent_id;
                     var xhtml = '<tr data-page="' + 1 + '" data-id="' + r.id + '" data-lat="' + r.latitude + '" data-lng="' + r.longitude +  '"';
                     xhtml += ' class="';
                     xhtml += '">';
-        
+
                     for (var j = 0; j < realtyTableConf.fields.length; j++) {
                       var f = realtyTableConf.fields[j];
                       xhtml += '<td class="' + (!f.visible ? 'hidden' : '') + '"' + (f.style ? ' style="' + f.style + '"' : '') + '>' + f.val(r) + '</td>';
                     }
                     xhtml += '</tr>';
-  
+
                     $('#realtyTable > tbody').prepend(xhtml);
-                    
-                    var $tr = $('#realtyTable > tbody > tr[data-id="' + id + '"]');
-                    
+
+                    var $tr = $('#realtyTable > tbody > tr[data-id="' + r.id + '"]');
+
                     $('#realtyTableWrapper').scrollTop($('#realtyTableWrapper').scrollTop() + $tr.height() );
-                  
                 } else if (event == 'm') {
                         // Update row data in realty table
-                        var $tr = $('#realtyTable > tbody > tr[data-id="' + id + '"]');
-                        if ($tr) {                 
+                        var $tr = $('#realtyTable > tbody > tr[data-id="' + r.id + '"]');
+                        if ($tr) {
                             for (var j = 0; j < realtyTableConf.fields.length; j++) {
                               var f = realtyTableConf.fields[j];
                               $('td:nth-child(' + (j + 1) + ')', $tr).html(f.val(r));
+                            }
+                            if (r.lock != -1) {
+                              $tr.addClass('opened');
+                            } else {
+                              $tr.removeClass('opened');
                             }
                             if(r.state_code == 'deleted') {
                                 $tr.removeClass('selected').removeClass('modified').removeClass('opened').removeClass('shown').addClass('deleted');
@@ -1282,13 +1290,13 @@
                         }
                     } else {
                         if (event == 'l0') {  // unlock
-                          var $tr = $('#realtyTable > tbody > tr[data-id="' + id + '"]');
+                          var $tr = $('#realtyTable > tbody > tr[data-id="' + r.id + '"]');
                           if ($tr) {
                             $tr.removeClass('opened');
                           }
                         } else {
-                          var $tr = $('#realtyTable > tbody > tr[data-id="' + id + '"]');
-                          if ($tr) {                 
+                          var $tr = $('#realtyTable > tbody > tr[data-id="' + r.id + '"]');
+                          if ($tr) {
                             $tr.addClass('opened');
                           }
                         }
@@ -1297,7 +1305,6 @@
               });
         }, false);
       }
-        
     });
   })();
 </script>

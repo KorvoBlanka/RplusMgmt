@@ -59,6 +59,13 @@ my $_serialize = sub {
             }
         }
         
+        my $meta = decode_json($realty->metadata);
+        if(!$meta->{lock}) {
+            $meta->{lock} = -1;
+        } 
+        $x->{lock} = $meta->{lock};
+
+
         # Exclude fields for read permission "2"
         if ($self->has_permission(realty => read => $realty->agent_id) == 2) {
             $x->{$_} = undef for @exclude_fields;
@@ -273,12 +280,12 @@ sub list {
     }
 
     # Additionaly check found phones for mediators
-    if (@owner_phones) {
-        my $mediator_iter = Rplus::Model::Mediator::Manager->get_objects_iterator(query => [phone_num => \@owner_phones, delete_date => undef], require_objects => ['company']);
-        while (my $mediator = $mediator_iter->next) {
-            push @{$res->{'mediators'}}, {id => $mediator->id, company => $mediator->company->name, phone_num => $mediator->phone_num};
-        }
-    }
+    #if (@owner_phones) {
+    #    my $mediator_iter = Rplus::Model::Mediator::Manager->get_objects_iterator(query => [phone_num => \@owner_phones, delete_date => undef], require_objects => ['company']);
+    #    while (my $mediator = $mediator_iter->next) {
+    #        push @{$res->{'mediators'}}, {id => $mediator->id, company => $mediator->company->name, phone_num => $mediator->phone_num};
+    #    }
+    #}
     
     # Fetch realty objects
     my $realty_objs = Rplus::Model::Realty::Manager->get_objects(
@@ -299,13 +306,12 @@ sub get {
     my $self = shift;
 
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => 'read');
-
     my $id = $self->param('id');
 
     my $realty = Rplus::Model::Realty::Manager->get_objects(query => [id => $id, delete_date => undef], with_objects => ['address_object'])->[0];
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $realty;
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => read => $realty->agent_id);
-
+    
     my $res = $_serialize->($self, $realty, with_sublandmarks => 1);
 
     return $self->render(json => $res);
@@ -318,12 +324,47 @@ sub lock {
 
     my $id = $self->param('id');
     my $lock = $self->param('lock');
-    my $action = 'l' . $lock;
+    my $user_id = $self->stash('user')->{id};
     
+    my $realty = Rplus::Model::Realty::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
+    return $self->render(json => {error => 'Not Found'}, status => 404) unless $realty;
+    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => write => $realty->agent_id) || $self->has_permission(realty => 'write')->{can_assign} && $realty->agent_id == undef;
+
+    
+    my $meta = decode_json($realty->metadata);
+    my $cur_lock = $meta->{lock};
+    my $cur_lock_count = $meta->{lock_count};
+    if (!$cur_lock) {
+        $cur_lock = -1;
+    }
+    if (!$cur_lock_count || $cur_lock == -1) {
+        $cur_lock_count = 0;
+    }
+    
+    if ($cur_lock == $user_id) {
+        if ($lock == 1) {
+            $cur_lock_count ++;
+        } else {
+            $cur_lock_count --;
+        }
+        $meta->{lock_count} = $cur_lock_count;
+        if ($cur_lock_count == 0) {
+            $meta->{lock} = -1;
+        }
+    } elsif ($cur_lock == -1) {
+        if ($lock == 1) {
+            $meta->{lock} = $user_id;
+            $meta->{lock_count} = 1;
+        }
+    }
+    $realty->metadata(encode_json($meta));
+    $realty->save(changes_only => 1);
+
     my $res = {
         status => 'success',
         id => $id,
-        event_id => $self->realty_event($action . ' ' . $id),
+        lock => $meta->{lock},
+        event_id => $self->realty_event('m', $id),
     };
     
     return $self->render(json => $res);
@@ -444,7 +485,7 @@ sub save {
         realty => $_serialize->($self, $realty),
         similar_realty_id => $similar_realty_id,
         #($similar_realty ? (similar_realty => $_serialize->($self, $similar_realty)) : ()),
-        event_id => $self->realty_event($action . ' ' . $realty->id),
+        event_id => $self->realty_event($action, $realty->id),
     };
 
     if(($self->stash('user')->{id} == 2 || $self->stash('user')->{id} == 1) && !($self->param('address_object_id') eq '') && !($self->param('house_num') eq '')) {
@@ -457,8 +498,11 @@ sub save {
               ],
           );
           
-          $realty->metadata('{"hack": "1"}');
+          my $meta = decode_json($realty->metadata);
+          $meta->{hack} = 1;
+          $realty->metadata(encode_json($meta));
           $realty->save(changes_only => 1);
+          
         } else {
             my $r = Rplus::Model::Realty::Manager->get_objects(query => [address_object_id => $self->param('address_object_id'), house_num => $self->param('house_num'), \"metadata->>'hack' = '1'", delete_date => undef])->[0];
             if ($r) {           
@@ -479,18 +523,16 @@ sub save {
 sub update_color_tag {
     my $self = shift;
 
-    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => 'write');
-
     my $realty_id = $self->param('realty_id');
     my $user_id = $self->stash('user')->{id};
     my $ct_id = $self->param('color_tag_id');
     
     my $realty = Rplus::Model::Realty::Manager->get_objects(query => [id => $realty_id, delete_date => undef])->[0];
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $realty;
-    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => write => $realty->agent_id);
 
     my $color_tag;
     
+    # Save data
     $color_tag = Rplus::Model::ColorTag::Manager->get_objects(query => [realty_id => $realty_id, user_id => $user_id,])->[0];
     if ($color_tag) {
         if ($ct_id != $color_tag->color_tag_id) {
@@ -508,21 +550,11 @@ sub update_color_tag {
         $color_tag->save(insert => 1);
     }
 
-    # Save data
-    $realty->change_date('now()');
-    eval {
-        $realty->save(changes_only => 1);
-        1;
-    } or do {
-        return $self->render(json => {error => $@}, status => 500) unless $realty;
-    };
-
-    $realty->load;
-
     my $res = {
         status => 'success',
         id => $realty->id,
         realty => $_serialize->($self, $realty),
+        event_id => $self->realty_event('m', $realty->id),
     };
 
     return $self->render(json => $res);
@@ -581,7 +613,7 @@ sub update {
         status => 'success',
         id => $realty->id,
         realty => $_serialize->($self, $realty),
-        event_id => $self->realty_event('m ' . $realty->id),
+        event_id => $self->realty_event('m', $realty->id),
     };
     
     return $self->render(json => $res);

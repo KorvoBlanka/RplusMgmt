@@ -90,25 +90,32 @@
       }
 
       function fillForm() {
-        
-        console.log(realty);
-        
-        if (realty.agent_id != '<%= $self->stash('user')->{id} %>' && realty.title != 'Новый' && '<%= $self->stash('user')->{role} %>' != 'manager' && '<%= $self->stash('user')->{role} %>' != 'agent_plus' && realty.agent_id != null) {
-          $('#form-' + guid + ' input[type=text]').each(function () {
-              $(this).attr("readonly", "");
+          $.ajax({
+            type: "POST",
+            url: "/api/realty/lock",
+            data: {id: realty.id, lock: 1},
+            complete: function () {}
+          })
+          .done(function (data, textStatus, jqXHR) {
+            last_event_id = data.event_id;
+                if (data.lock != '<%= $self->stash('user')->{id} %>' || realty.agent_id != '<%= $self->stash('user')->{id} %>' && realty.title != 'Новый' && '<%= $self->stash('user')->{role} %>' != 'manager' && '<%= $self->stash('user')->{role} %>' != 'agent_plus' && realty.agent_id != null) {
+                $('#form-' + guid + ' input[type=text]').each(function () {
+                    $(this).attr("readonly", "");
+                });
+                $('#form-' + guid + ' textarea').each(function () {
+                    $(this).attr("readonly", "");
+                });        
+                $('#form-' + guid + ' select').each(function () {
+                    $(this).attr("disabled", "");
+                });
+                $('input[type=checkbox]').each(function () {
+                    $(this).attr("disabled", "");
+                });
+              }
           });
-          $('#form-' + guid + ' textarea').each(function () {
-              $(this).attr("readonly", "");
-          });        
-          $('#form-' + guid + ' select').each(function () {
-              $(this).attr("disabled", "");
-          });
-          $('input[type=checkbox]').each(function () {
-              $(this).attr("disabled", "");
-          });
-        }
         
-        
+
+
         for (var f in realty) {
           var v = realty[f];
           var el = $('[name="' + f + '"]:input', container);

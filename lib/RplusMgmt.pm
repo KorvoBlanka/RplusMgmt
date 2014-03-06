@@ -6,7 +6,8 @@ our $VERSION = '1.0';
 
 use Rplus::Model::User;
 use Rplus::Model::User::Manager;
-use RplusMgmt::Controller::Events;
+use Rplus::Model::Realty;
+use Rplus::Model::Realty::Manager;
 
 use Rplus::DB;
 
@@ -17,7 +18,7 @@ use Mojo::Util qw(trim);
 use DateTime::Format::Pg qw();
 use DateTime::Format::Strptime qw();
 
-use Time::HiRes qw/ time /;
+use Time::HiRes qw( time usleep );
 
 use RplusMgmt::L10N;
 
@@ -25,17 +26,24 @@ use Cache::FastMmap;
 
 use POSIX;
 
+use Data::Dumper;
+
 # This method will run once at server start
 sub startup {
     my $self = shift;
 
+    my $cache = Cache::FastMmap->new();
+    $cache->set('events',  []);
+    $cache->set('elock',  0);
+    $cache->set('cc', 0);
+    my $eid = 0;
+
     # Plugins
     my $config = $self->plugin('Config' => {file => 'app.conf'});
-    my $cache = Cache::FastMmap->new(raw_values => 1);
-    
+
     # Secret
     $self->secrets($config->{secrets} || ($config->{secret} && [$config->{secret}]) || ['no secret defined']);
-    
+
     # Default stash values
     $self->defaults(
         jquery_ver => '2.0.3',
@@ -77,24 +85,17 @@ sub startup {
     });
 
     $self->helper(realty_event => sub {
-        my ($self, $arg) = @_;
-        my $ep = $cache->get('event_pointer');
-        my $eid = $cache->get('event_id');
-        
-        if (!$eid) {
-          $eid = 0;
-        }
-
-        if (!$ep || $ep > 10) {
-            $ep = 0;
-        }
-        
+        my ($self, $etype, $realty_id) = @_;
         $eid ++;
-        $cache->set('event_'.$ep, $eid . ' ' . $arg);
-        $ep ++;
-        $cache->set('event_pointer', $ep);
-        $cache->set('event_id', $eid);
+        
+        while ($cache->get('elock') == 1) {
+            usleep(200);
+            say 'sleep';
+        }
 
+        my $events = $cache->get('events');
+        push $events, {eid => $eid, etype => $etype, rid => $realty_id, st => 0};
+        $cache->set('events',  $events);
         return $eid;
     });
     
@@ -266,47 +267,85 @@ sub startup {
             my $pound_count = 0;
             my $cp = 0;
             
+            my $cc = $cache->get('cc');
+            if (!$cc) {
+              $cc = 0;
+            }
+            $cc ++;
+            $cache->set('cc', $cc);
+            say $cc;
+            
+            my $conn_cnt = $cache->get('user_' . $self->stash('user')->{id});
+            if (!$conn_cnt) {
+                $conn_cnt = 0;
+            }
+            $conn_cnt ++;
+            say $conn_cnt;
+            $cache->set('user_' . $self->stash('user')->{id}, $conn_cnt);
+            
             # Increase inactivity timeout for connection a bit :)
             Mojo::IOLoop->stream($self->tx->connection)->timeout(3000);
 
             # Change content type
             $self->res->headers->content_type('text/event-stream');
 
-            #my $cb = RplusMgmt::Controller::Events::subscribe_on_realty_events(sub {
-            #    my $arg = shift;
-            #    $self->write_chunk("event:realty\ndata: $arg\n\n");
-            #});
-
-            my $timer_id_0 = Mojo::IOLoop->recurring(1 => sub {
-                my $ep = $cache->get('event_pointer');
-                if ($ep) {
-                    if ($ep < $cp) {
-                        while ($cp < 10) {
-                          my $arg = $cache->get('event_'.$cp);
-                          $self->write_chunk("event:realty\ndata: $arg\n\n");
-                          $cp ++;
-                        }
-                        $cp = 0;
+            my $timer_id_0 = Mojo::IOLoop->recurring(2 => sub {
+                my $cc = $cache->get('cc');
+                $cache->set('elock', 1);
+                my $events = $cache->get('events');
+                my $nevents = [];
+                for my $event (@$events) {
+                    $event->{st} ++;
+                    if ($event->{st} < $cc) {
+                        push $nevents, $event;
                     }
-                    while ($ep > $cp) {
-                        my $arg = $cache->get('event_'.$cp);
-                        $self->write_chunk("event:realty\ndata: $arg\n\n");
-                        $cp ++;
-                    }
+                    my $estr = encode_json($event);
+                    $self->write_chunk("event:realty\ndata: $estr\n\n");
                 }
+                $cache->set('events', $nevents);
+                $cache->set('elock', 0);
             });
 
-            my $timer_id_1 = Mojo::IOLoop->recurring(10 => sub {
+            my $timer_id_1 = Mojo::IOLoop->recurring(15 => sub {
                 $self->write_chunk("event:heartbeat\ndata: p$pound_count\n\n");
                 $pound_count++;
             });
-
+            $self->write_chunk("event:heartbeat\nhello\n\n");
             # Unsubscribe from event again once we are done
             $self->on(finish => sub {
                 my $self = shift;
                 #RplusMgmt::Controller::Events::unsubscribe($cb);
                 Mojo::IOLoop->remove($timer_id_0);
                 Mojo::IOLoop->remove($timer_id_1);
+                
+                my $cc = $cache->get('cc');
+                $cc --;
+                $cache->set('cc', $cc);
+                
+                my $conn_cnt = $cache->get('user_' . $self->stash('user')->{id});
+                if (!$conn_cnt) {
+                    $conn_cnt = 1;    # wtf?!
+                }
+                $conn_cnt --;
+                say $conn_cnt;
+                $cache->set('user_' . $self->stash('user')->{id}, $conn_cnt);
+                if ($conn_cnt == 0) {
+                    say 'unlock objects';
+                    my $uid = $self->stash('user')->{id};
+                    my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
+                      query => [
+                          \"metadata->>'lock' = '$uid'",
+                      ],
+                    );
+                    while (my $r = $realty_iter->next) {
+                        say $r->id;
+                        my $meta = decode_json($r->metadata);
+                        $meta->{lock} = -1;
+                        $r->metadata(encode_json($meta));
+                        $r->save(changes_only => 1);
+                        $self->realty_event('m', $r->id)
+                    }
+                }
             });
         });
 
