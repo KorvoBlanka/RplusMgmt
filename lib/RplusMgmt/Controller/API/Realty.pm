@@ -40,7 +40,7 @@ my $_serialize = sub {
                 name => $realty->address_object->name,
                 short_type => $realty->address_object->short_type,
                 expanded_name => $realty->address_object->expanded_name,
-                addr_parts => decode_json($realty->address_object->metadata)->{'addr_parts'},
+                addr_parts => from_json($realty->address_object->metadata)->{'addr_parts'},
             } : undef,
 
             color_tag => undef,

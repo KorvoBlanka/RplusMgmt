@@ -15,14 +15,14 @@
     $(function () {
       % {
         % my $MEDIA = Rplus::Model::Media::Manager->get_objects(query => [code => 'vnh', type => 'export'])->[0];
-        % my $P = decode_json($MEDIA->metadata)->{'params'};
+        % my $P = from_json($MEDIA->metadata)->{'params'};
         $('#formExportVnh [name="offer_type_code"]:input').val("<%= $P->{'offer_type_code'} %>");
         $('#formExportVnh [name="phones"]:input').val("<%= $P->{'phones'} %>");
         $('#formExportVnh [name="company"]:input').val("<%= $P->{'company'} %>");
       % }
       % {
         % my $MEDIA = Rplus::Model::Media::Manager->get_objects(query => [code => 'present', type => 'export'])->[0];
-        % my $P = decode_json($MEDIA->metadata)->{'params'};
+        % my $P = from_json($MEDIA->metadata)->{'params'};
         $('#formExportPresent [name="offer_type_code"]:input').val("<%= $P->{'offer_type_code'} %>");
         $('#formExportPresent [name="add_description_words"]:input').val("<%= $P->{'add_description_words'} %>");
         $('#formExportPresent [name="phones"]:input').val("<%= $P->{'phones'} %>");

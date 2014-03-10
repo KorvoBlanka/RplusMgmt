@@ -28,7 +28,7 @@ sub complete {
         limit => $limit,
     );
     while (my $addrobj = $addrobj_iter->next) {
-        my $metadata = decode_json($addrobj->metadata);
+        my $metadata = from_json($addrobj->metadata);
         push @res, {
             id => $addrobj->id,
             name => $addrobj->name,

@@ -267,7 +267,7 @@
       % {
       % my $iter = Rplus::Model::Media::Manager->get_objects_iterator(query => [type => 'export', delete_date => undef]);
       % while (my $x = $iter->next) {
-      % my $metadata = decode_json($x->metadata);
+      % my $metadata = from_json($x->metadata);
       % if ($metadata->{'landmark_types'}) {
       % for my $k (sort { $metadata->{'landmark_types'}->{$a} cmp $metadata->{'landmark_types'}->{$b} } keys %{$metadata->{'landmark_types'}}) {
         <option value="<%= $k %>"><%= $metadata->{'landmark_types'}->{$k} %></option>
