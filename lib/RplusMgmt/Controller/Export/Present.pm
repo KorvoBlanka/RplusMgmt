@@ -23,7 +23,7 @@ sub index {
     my $media = Rplus::Model::Media::Manager->get_objects(query => [code => 'present', type => 'export', delete_date => undef])->[0];
     return $self->render_not_found unless $media;
 
-    my $meta = decode_json($media->metadata);
+    my $meta = from_json($media->metadata);
 
     my $offer_type_code = $self->param('offer_type_code');
     my $add_description_words = $self->param('add_description_words');
@@ -125,7 +125,7 @@ sub index {
                     my $price = $_format_sum->($realty->price).' руб.' if $realty->price;
                     my $phones = $P->{'phones'} || '';
                     if ($phones =~ /%agent\.phone_num%/ && $realty->agent_id) {
-                        my $x = decode_json($realty->agent->metadata)->{'public_phone_num'} || $realty->agent->phone_num;
+                        my $x = from_json($realty->agent->metadata)->{'public_phone_num'} || $realty->agent->phone_num;
                         $phones =~ s/%agent\.phone_num%/$x/;
                     }
 
@@ -206,7 +206,7 @@ sub index {
                     my $price = $_format_sum->($realty->price).' руб.' if $realty->price;
                     my $phones = $P->{'phones'} || '';
                     if ($phones =~ /%agent\.phone_num%/ && $realty->agent_id) {
-                        my $x = decode_json($realty->agent->metadata)->{'public_phone_num'} || $realty->agent->phone_num;
+                        my $x = from_json($realty->agent->metadata)->{'public_phone_num'} || $realty->agent->phone_num;
                         $phones =~ s/%agent\.phone_num%/$x/;
                     }
 
@@ -289,7 +289,7 @@ sub index {
                     my $price = $_format_sum->($realty->price).' руб.' if $realty->price;
                     my $phones = $P->{'phones'} || '';
                     if ($phones =~ /%agent\.phone_num%/ && $realty->agent_id) {
-                        my $x = decode_json($realty->agent->metadata)->{'public_phone_num'} || $realty->agent->phone_num;
+                        my $x = from_json($realty->agent->metadata)->{'public_phone_num'} || $realty->agent->phone_num;
                         $phones =~ s/%agent\.phone_num%/$x/;
                     }
 
@@ -371,7 +371,7 @@ sub index {
                     my $price = $_format_sum->($realty->price).' руб.' if $realty->price;
                     my $phones = $P->{'phones'} || '';
                     if ($phones =~ /%agent\.phone_num%/ && $realty->agent_id) {
-                        my $x = decode_json($realty->agent->metadata)->{'public_phone_num'} || $realty->agent->phone_num;
+                        my $x = from_json($realty->agent->metadata)->{'public_phone_num'} || $realty->agent->phone_num;
                         $phones =~ s/%agent\.phone_num%/$x/;
                     }
 

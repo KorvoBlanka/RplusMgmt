@@ -25,7 +25,7 @@ sub index {
     my $media = Rplus::Model::Media::Manager->get_objects(query => [code => 'farpost', type => 'export', delete_date => undef])->[0];
     return $self->render_not_found unless $media;
 
-    my $meta = decode_json($media->metadata);
+    my $meta = from_json($media->metadata);
 
     my $phones = trim(scalar $self->param('phones'));
 
@@ -98,7 +98,7 @@ sub index {
                 my $area = Rplus::Model::Landmark::Manager->get_objects(query => [id => scalar($realty->landmarks), type => 'farpost', delete_date => undef], limit => 1)->[0] if @{$realty->landmarks};
                 my $phones = $P->{'phones'} || '';
                 if ($phones =~ /%agent\.phone_num%/ && $realty->agent_id) {
-                    my $x = decode_json($realty->agent->metadata)->{'public_phone_num'} || $realty->agent->phone_num;
+                    my $x = from_json($realty->agent->metadata)->{'public_phone_num'} || $realty->agent->phone_num;
                     $phones =~ s/%agent\.phone_num%/$x/;
                 }
                 my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $realty->id, delete_date => undef])};

@@ -23,7 +23,7 @@ sub index {
     my $media = Rplus::Model::Media::Manager->get_objects(query => [code => 'vnh', type => 'export', delete_date => undef])->[0];
     return $self->render_not_found unless $media;
 
-    my $meta = decode_json($media->metadata);
+    my $meta = from_json($media->metadata);
 
     my $offer_type_code = $self->param('offer_type_code');
     my $phones = trim(scalar $self->param('phones'));
@@ -104,7 +104,7 @@ sub index {
                 my $location = '';
                 if ($realty->address_object_id) {
                     my $addrobj = $realty->address_object;
-                    my $meta = decode_json($addrobj->metadata);
+                    my $meta = from_json($addrobj->metadata);
                     $location = $addrobj->name.($addrobj->short_type ne 'ул' ? ' '.$addrobj->short_type : '');
                     if ($realty->sublandmark_id) {
                         $location .= ' ('.$realty->sublandmark->name.')';
@@ -117,7 +117,7 @@ sub index {
                 }
                 my $phones = $P->{'phones'} || '';
                 if ($phones =~ /%agent\.phone_num%/ && $realty->agent_id) {
-                    my $x = decode_json($realty->agent->metadata)->{'public_phone_num'} || $realty->agent->phone_num;
+                    my $x = from_json($realty->agent->metadata)->{'public_phone_num'} || $realty->agent->phone_num;
                     $phones =~ s/%agent\.phone_num%/$x/;
                 }
 
@@ -205,7 +205,7 @@ sub index {
                 my $location = '';
                 if ($realty->address_object_id) {
                     my $addrobj = $realty->address_object;
-                    my $meta = decode_json($addrobj->metadata);
+                    my $meta = from_json($addrobj->metadata);
                     $location = $addrobj->name.($addrobj->short_type ne 'ул' ? ' '.$addrobj->short_type : '');
                     if ($realty->sublandmark_id) {
                         $location .= ' ('.$realty->sublandmark->name.')';
@@ -218,7 +218,7 @@ sub index {
                 }
                 my $phones = $P->{'phones'} || '';
                 if ($phones =~ /%agent\.phone_num%/ && $realty->agent_id) {
-                    my $x = decode_json($realty->agent->metadata)->{'public_phone_num'} || $realty->agent->phone_num;
+                    my $x = from_json($realty->agent->metadata)->{'public_phone_num'} || $realty->agent->phone_num;
                     $phones =~ s/%agent\.phone_num%/$x/;
                 }
 
