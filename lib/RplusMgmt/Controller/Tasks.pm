@@ -34,6 +34,7 @@ sub run {
     RplusMgmt::Task::Subscriptions->run($self);
     RplusMgmt::Task::SMS->run($self);
     RplusMgmt::Task::Landmarks->run($self);
+    RplusMgmt::Task::Import->run($self);
 
     # Update lock
     $mutex->ts('now()');
