@@ -28,7 +28,7 @@ use POSIX qw(strftime);
 
 my $MEDIA = Rplus::Model::Media::Manager->get_objects(query => [type => 'import', code => 'present', delete_date => undef])->[0];
 exit unless $MEDIA;
-my $META = decode_json($MEDIA->metadata);
+my $META = from_json($MEDIA->metadata);
 
 import_present($ARGV[0]);
 
@@ -401,7 +401,7 @@ sub get_coords_by_addr {
     state $_geocache;
 
     my ($latitude, $longitude);
-    my $q = decode_json($addrobj->metadata)->{'addr_parts'}->[1]->{'name'}.', '.$addrobj->name.', '.$house_num;
+    my $q = from_json($addrobj->metadata)->{'addr_parts'}->[1]->{'name'}.', '.$addrobj->name.', '.$house_num;
 
     # TODO: Прикрутить Redis?
     return @{$_geocache->{$q}} if exists $_geocache->{$q};
@@ -423,7 +423,7 @@ sub get_coords_by_addr {
     );
     if ($response->is_success) {
         eval {
-            my $data = decode_json($response->decoded_content);
+            my $data = from_json($response->decoded_content);
             return unless $data->{'total'};
             if (my $centroid = $data->{'result'}->[0]->{'centroid'}) {
                 if ($centroid =~ /^POINT\((\d+\.\d+) (\d+\.\d+)\)$/) {

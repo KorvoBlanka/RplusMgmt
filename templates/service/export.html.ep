@@ -29,7 +29,7 @@
       % }
       % {
         % my $MEDIA = Rplus::Model::Media::Manager->get_objects(query => [code => 'farpost', type => 'export'])->[0];
-        % my $P = decode_json($MEDIA->metadata)->{'params'};
+        % my $P = from_json($MEDIA->metadata)->{'params'};
         $('#formExportFarpost [name="phones"]:input').val("<%= $P->{'phones'} %>");
       % }
     });

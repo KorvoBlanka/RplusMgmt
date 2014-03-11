@@ -29,7 +29,7 @@ sub _params2json {
 
 # JSON to Rose::DB::Object params
 sub _json2params {
-    my $storable_params = decode_json(shift);
+    my $storable_params = from_json(shift);
     my @params;
     for (@$storable_params) {
         if (ref($_) eq 'HASH' && $_->{ref}) {

@@ -203,7 +203,7 @@ sub startup {
                     role => $user->role,
                     phone_num => $user->phone_num,
                     add_date => $user->add_date,
-                    permissions => Hash::Merge->new('RIGHT_PRECEDENT')->merge($c->config->{roles}->{$user->role} || {}, decode_json($user->permissions)),
+                    permissions => Hash::Merge->new('RIGHT_PRECEDENT')->merge($c->config->{roles}->{$user->role} || {}, from_json($user->permissions)),
                 });
             }
         }
@@ -406,7 +406,7 @@ REALTY:     for my $data (@$realty_data) {
                     );
                     while (my $r = $realty_iter->next) {
                         say $r->id;
-                        my $meta = decode_json($r->metadata);
+                        my $meta = from_json($r->metadata);
                         $meta->{lock} = -1;
                         $r->metadata(encode_json($meta));
                         $r->save(changes_only => 1);

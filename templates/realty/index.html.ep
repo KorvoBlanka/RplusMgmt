@@ -404,7 +404,7 @@
         {text: '<span class="glyphicon glyphicon-th-large"></span> <%= ucfloc 'state' %>', element_id: 'el_states', subMenu: [
           % my $iter = Rplus::Model::RealtyState::Manager->get_objects_iterator(sort_by => 'id');
           % while (my $x = $iter->next) {
-          % my $metadata = decode_json($x->metadata);
+          % my $metadata = from_json($x->metadata);
             {text: '<span class="glyphicon <%= $metadata->{'icon-class'} %>"></span>&nbsp<%= $x->name %>', data_action: 'realty-set-state', data_val: '<%= $x->code %>', },
           % }
         ]},
@@ -1434,7 +1434,7 @@
               <ul class="dropdown-menu">
                 <li><a href="#" data-val=""><span class="glyphicon glyphicon-th-large"></span> <%= ucfloc 'any' %></a></li>
                 % for my $x (@{Rplus::Model::RealtyState::Manager->get_objects(sort_by => 'id')}) {
-                  % my $metadata = decode_json($x->metadata);
+                  % my $metadata = from_json($x->metadata);
                   <li><a href="#" data-val="<%= $x->code %>"><span class="glyphicon <%= $metadata->{'icon-class'} %>"></span> <%= $x->name %></a></li>
                 % }
               </ul>

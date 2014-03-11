@@ -41,7 +41,7 @@ my $pause = $avito_config->{pause} * 60;
 
 my $MEDIA = Rplus::Model::Media::Manager->get_objects(query => [type => 'import', code => 'avito', delete_date => undef])->[0];	# code => 'avito'
 exit unless $MEDIA;
-my $META = decode_json($MEDIA->metadata);
+my $META = from_json($MEDIA->metadata);
 
 my $ua = Mojo::UserAgent->new;
 $ua->max_redirects(3);

@@ -15,7 +15,7 @@ sub get_coords_by_addr {
     state $_geocache;
 
     my ($latitude, $longitude);
-    my $q = decode_json($addrobj->metadata)->{'addr_parts'}->[1]->{'name'}.', '.$addrobj->name.', '.$house_num;
+    my $q = from_json($addrobj->metadata)->{'addr_parts'}->[1]->{'name'}.', '.$addrobj->name.', '.$house_num;
 
     return @{$_geocache->{$q}} if exists $_geocache->{$q};
     if (my $realty = Rplus::Model::Realty::Manager->get_objects(select => ['id', 'latitude', 'longitude'], query => [address_object_id => $addrobj->id, house_num => $house_num, '!latitude' => undef, '!longitude' => undef], limit => 1)->[0]) {
@@ -36,7 +36,7 @@ sub get_coords_by_addr {
     );
     if ($response->is_success) {
         eval {
-            my $data = decode_json($response->decoded_content);
+            my $data = from_json($response->decoded_content);
             return unless $data->{'total'};
             if (my $centroid = $data->{'result'}->[0]->{'centroid'}) {
                 if ($centroid =~ /^POINT\((\d+\.\d+) (\d+\.\d+)\)$/) {

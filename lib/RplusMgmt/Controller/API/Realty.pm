@@ -59,7 +59,7 @@ my $_serialize = sub {
             }
         }
         
-        my $meta = decode_json($realty->metadata);
+        my $meta = from_json($realty->metadata);
         if(!$meta->{lock}) {
             $meta->{lock} = -1;
         } 
@@ -327,7 +327,7 @@ sub lock {
     my $realty = Rplus::Model::Realty::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $realty;
     my $res;
-    my $meta = decode_json($realty->metadata);
+    my $meta = from_json($realty->metadata);
     if($self->has_permission(realty => write => $realty->agent_id) || $self->has_permission(realty => 'write')->{can_assign} && $realty->agent_id == undef) {
         
         my $cur_lock = $meta->{lock};
@@ -502,7 +502,7 @@ sub save {
               ],
           );
           
-          my $meta = decode_json($realty->metadata);
+          my $meta = from_json($realty->metadata);
           $meta->{hack} = 1;
           $realty->metadata(encode_json($meta));
           $realty->save(changes_only => 1);

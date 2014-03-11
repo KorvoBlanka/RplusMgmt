@@ -80,8 +80,8 @@ sub get {
         keywords => $landmark->keywords,
         add_date => $landmark->add_date,
         change_date => $landmark->change_date,
-        geojson => decode_json($landmark->geojson),
-        center => decode_json($landmark->center),
+        geojson => from_json($landmark->geojson),
+        center => from_json($landmark->center),
         zoom => $landmark->zoom,
         grp => $landmark->grp,
         grp_pos => $landmark->grp_pos,
@@ -127,8 +127,8 @@ sub save {
     my $type = $self->param('type');
     my $name = $self->param_n('name');
     my $keywords = $self->param_n('keywords');
-    my $geojson; eval { $geojson = decode_json(scalar $self->param('geojson')); };
-    my $center; eval { $center = decode_json(scalar $self->param('center')); };
+    my $geojson; eval { $geojson = from_json(scalar $self->param('geojson')); };
+    my $center; eval { $center = from_json(scalar $self->param('center')); };
     my $zoom = $self->param('zoom');
     my $grp = $self->param_n('grp');
     my $grp_pos = $self->param_n('grp_pos');
