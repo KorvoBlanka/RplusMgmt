@@ -156,7 +156,6 @@
     <%= content_for 'header' %>
   </head>
   <body>
-
     <!-- Navbar -->
     <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
       <div class="container">

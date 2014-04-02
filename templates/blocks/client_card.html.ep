@@ -1,161 +1,438 @@
+% use Rplus::Model::ColorTag::Manager;
+% use Rplus::Model::DictColorTag::Manager;
+
 % content_for header => begin
 %= css_once "$assets_url/bootstrap-datepicker/2013.11.26/css/datepicker3.css";
+  
 <style type="text/css">
+  
+  textarea {
+    resize: none;
+  } 
+  
+  #clientCard_modal {
+    overflow: hidden;
+  }
+  
   #clientCard_modal .modal-dialog {
-    width: 780px;
+    width: 520px !important;    
+  }
+
+  #clientCard_modal .modal-content {
+    
+    border-radius: 0px;   
+  }
+  
+  .ctrl-button {
+    text-decoration: none !important;
+    font-size: 15px;
+    color: #428bca !important;
+  }
+  
+  .mainheader > div > p {
+    margin-bottom: 0px;
+    margin-top: 8px;
+  }
+  
+  .subscription-container > div > div > p {
+    margin-bottom: 0px;
+    margin-top: 5px;    
+  }
+
+  .modal-header {
+    background-color: #eaeaea;
+  }
+  
+  .modal-body {
+    height: 560px !important;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    
+    padding: 0px;
+    border-radius: 0px;
+    /*
+    overflow-y: scroll;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch; */
+  }
+  
+  hr {
+    margin-top: 0px;
+    margin-bottom: 0px;
+  }
+  
+  .subscription-container > hr {
+    margin-top: 5px;
+  }
+  
+  #subscription-type {
+    width: 90px;
+  }
+  
+  .spacer {
+    height: 34px;
+  }
+  
+  .subscription {
+    margin-bottom: 20px;
+  }
+  
+  .text-input,
+  .text-input[readonly="readonly"]{
+    border: none !important;
+    border-color: transparent !important;
+    background-color: #fff;
+    box-shadow: none !important;
+    border-top: 0px;
+    padding-bottom: 0px;
+    width: 415px !important;
+    padding-right: 0px;
+  }
+
+  .date-input {
+    border: none !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+    background-color: #f5f5f5;
+  }
+  
+  input:focus,
+  select:focus,
+  textarea:focus,
+  button:focus {
+    outline: none;
+  }
+  
+  .input-group-addon {
+    border: none;
+    box-shadow: none;
+    background-color: rgba(255, 255, 255, 0);
+  }
+
+  .tag-group {
+    padding-top: 5px;
+    padding-left: 40px;
+    padding-bottom: 5px;
+  }
+  
+  .input-group {
+    min-height: 34px;
+  }
+  
+  .cardheader {
+    min-height: 20px;
+    padding: 2px;
+    margin-bottom: 0px;
+    background-color: #f5f5f5;
+    border: 0px solid #e3e3e3;
+    border-radius: 0px;
+    -webkit-box-shadow: inset 0 1px 1px rgba(0,0,0,0.05);
+    box-shadow: inset 0 1px 1px rgba(0,0,0,0.05);
+    color: #aaa;
+  }
+  
+  .mainheader {
+    color: #666;
+  }
+
+  .spec-label-red {
+    color: #CA2F2F;
+  }
+  
+  .glyp-big {
+    font-size: 16px;
+  }
+  
+  .spec-label-green {
+    color:#1F861F;
+  }
+  
+  .nodispaly {
+    display: none;
+  }
+  
+  .tag-button {
+    height: 14px;
+    width: 14px;
+    border-radius: 7px;
+    margin-top: 7px;
+  }
+
+  .round-button {
+    height: 14px;
+    width: 14px;
+    border-radius: 7px;
+    margin-right: 5px;
+    
+    margin-top: 5px;
+    
+    float: left!important;
+  }
+
+  .arrow {
+    font-size: 22px;
+  }
+  
+  .round-button:hover {
+    box-shadow: 0px 0px 5px #888888;
+  }
+
+  .color-tag-placeholder {
+    background: #fff;
+    border: 1px solid #aaa;
+  }
+  
+  .tag-selected {
+    box-shadow: 0px 0px 8px #555;
+  }
+  
+  #subscriptionRealtyTable > tbody > tr > td {
+    padding-left: 12px;
+  }
+  
+  % for my $x (@{Rplus::Model::DictColorTag::Manager->get_objects(query => [delete_date => undef], sort_by => 'id')}) {
+  .color-tag-<%= $x->id %> {
+    background: #<%= $x->color %>;
+    border: 1px solid #<%= $x->border_color %>;
+  }
+  % }
+  
+  @-webkit-keyframes shake {
+    0% { -webkit-transform: translateX(4px) }
+    10% { -webkit-transform: translateX(8px) }
+    20% { -webkit-transform: translateX(16px) }
+    30% { -webkit-transform: translateX(8px) }
+    40% { -webkit-transform: translateX(4px) }
+    50% { -webkit-transform: translateX(0px) }
+    60% { -webkit-transform: translateX(-4px) }
+    70% { -webkit-transform: translateX(-8px) }
+    80% { -webkit-transform: translateX(-16px) }
+    90% { -webkit-transform: translateX(-8px) }
+    100% { -webkit-transform: translateX(-4px) }
+  }
+
+  .shaker {
+    -webkit-animation: 0.2s 2;
+    -webkit-animation-name: shake;
+  }
+  
+  .invisible {
+    visibility: hidden!important;
+  }
+  
+  .ddp {
+    pointer-events: none;
   }
 </style>
 % end
 
 % content_for after_bootstrap => begin
-%= js_once "$assets_url/bootstrap-datepicker/2013.11.26/js/bootstrap-datepicker.js";
+%= js_once "$assets_url/flippy/jquery.flippy.js";
+%= js_once "/js/bootstrap-datepicker.js";
 % end
 
 % content_for javascript => begin
+
+
+
 <script type="text/javascript">
   "use strict";
 
   // Singletone dialog
   var ClientCard = (function () {
     // Global variables
-    var $modal, events = {};
+
+    var $modal, cmode = 0, events = {}, subs = {};
+    
+    var $rc = $('#realtyCard_data');
 
     // Init here
     $(function () {
-      $modal = $('#clientCard_modal').modal({show: false, backdrop: 'static'});
+      $modal = $('#clientCard_modal').modal({show: false, backdrop: false});
 
-      $('#clientCard_subscriptionForm [name="end_date"]:input', $modal).datepicker({
-        format: "dd.mm.yyyy",
-        weekStart: 1,
-        autoclose: true
+      $modal.on('click', '[data-action="client-unlock"]', function (e) {
+        setMode(1);
+      });
+      
+      $modal.on('click', '[data-action="client-cancel"]', function (e) {
+        setMode(0);
+        setClientView(cached_client, 0);
+      });
+      
+      $modal.on('click', '[data-action="subscription-type-change"]', function (e) {
+        var sub_type = $( "#subscription-type" ).html();    // fixme
+        if (sub_type == 'Продажа') {
+          $("#subscription-type").html('Аренда');
+        } else {
+          $("#subscription-type").html('Продажа');
+        }
       });
 
-      $modal.on('shown.bs.modal', function (e) {
-        $('a[href="#clientCard_subscriptionTab"]', $modal).parent().hide();
-        $('a[href="#clientCard_mainTab"]', $modal).tab('show');
+      $modal.on('click', '[data-action="show-proposed"]', function(e) {
+        var $this = $(this);
+        var guid = $this.data('guid');
+        var subscription = subs[guid]; //$('.subscription[data-guid="' + guid + '"]', $modal).data('obj');
+        pushRealtyToTable(subscription.proposed_realty, $rc);
+          
+        setTimeout(function () {
+          $(".flipbox").flippy({
+            duration: "1000",
+            verso: $rc,
+            depth: 2,
+            light: 30,
+          });
+        }, 1200);
       });
 
-      // Action: create subscription
-      $('[data-action="subscription-create"]', $modal).click(function (e) {
-        setSubscriptionView({
-          offer_type_code: "sale",
-          guid: Rplus.Util.guid(),
-          end_date: moment().add('days', 14).format(),
+      $modal.on('click', '[data-action="close-proposed"]', function(e) {
+        $(".flipbox").flippyReverse();
+        setTimeout(function () {
+          setClientView(cached_client, cmode);
+        }, 1000);
+      });
+      
+      // Set color tag for realty object
+      $modal.on('click', '[data-action="subscription-set-color_tag_id"]', function (e) {
+        var new_tag_id = $(this).data('val');
+        var $selected = $('.tag-selected');
+        $selected.each(function () {
+          var $this = $(this);
+          var guid = $(this).data('guid');
+          var subscription = subs[guid];
+          //var subscription = $('.subscription[data-guid="' + guid + '"]', $modal).data('obj');
+          subscription.color_tag_id = 0;
+          if(!$this.hasClass("color-tag-" + new_tag_id)) {
+            subscription.color_tag_id = new_tag_id;
+            $this.removeClass (function (index, css) {
+              return (css.match ("color-tag-[\\d]") || []).join(' ');
+            });
+          }
+          //$('.subscription[data-guid="' + guid + '"]', $modal).data('obj', subscription);
+          subs[guid] = subscription;
+          $this.toggleClass("color-tag-" + new_tag_id);
         });
-        $('a[href="#clientCard_subscriptionTab"]', $modal).tab('show').parent().show();
       });
 
-      // Action: edit subscription
-      $modal.on('click', '[data-action="subscription-edit"]', function (e) {
-        var subscription = $(this).closest('tr').data('obj');
-        setSubscriptionView(subscription);
-        $('a[href="#clientCard_subscriptionTab"]', $modal).tab('show').parent().show();
+      $modal.on('click', '[data-action="tag-select"]', function (e) {
+        if(cmode == 0) return;
+        var $selected = $('.tag-selected');
+        if(!$(this).children().first().hasClass('tag-selected')) {
+          $selected.each(function () {
+            $(this).removeClass('tag-selected');
+          });
+        }
+        $(this).children().first().toggleClass('tag-selected');
       });
 
       // Action: delete subscription
       $modal.on('click', '[data-action="subscription-delete"]', function (e) {
-        if (confirm('Are you sure to delete subscription?')) {
-          var guid = $(this).closest('tr').data('guid');
-          $('#clientCard_subscriptionsTable [data-guid="' + guid + '"]', $modal).data('deleted', true).hide(); // just hide the deleted subscription
-          if ($('#clientCard_subscriptionForm [name="guid"]:input', $modal).val() == guid) {
-            // Close opened subscription form
-            $('a[href="#clientCard_subscriptionTab"]', $modal).parent().hide();
-            $('a[href="#clientCard_mainTab"]', $modal).tab('show');
-          }
-        }
+        var guid = $(this).data('guid');
+        $('.subscription[data-guid="' + guid + '"]', $modal).addClass('hidden');
       });
 
-      // Action: save subscription
-      $('[data-action="subscription-save"]', $modal).click(function (e) {
-        var x = saveSubscription();
-        if (x) {
-          x.updated = true;
-          pushSubscriptionToTableView(x);
-          // Close opened subscription form
-          $('a[href="#clientCard_subscriptionTab"]', $modal).parent().hide();
-          $('a[href="#clientCard_mainTab"]', $modal).tab('show');
-        }
-      });
-
-      // Action: add query to subscription
-      $('[data-action="query-add"]', $modal).click(function (e) {
-        var q = $('#clientCard_queriesForm [name="new_query"]:input', $modal).val().trim();
-        if (q) {
-          addQueryToSubscriptionView(q);
-          $('#clientCard_queriesForm [name="new_query"]:input', $modal).val(null);
+      // Action: create subscription
+      $modal. on('click', '[data-action="subscription-create"]', function (e) {
+        console.log('sc');
+        var sub_type = '';
+        var sub_type = $( "#subscription-type" ).html();
+        if (sub_type == 'Продажа') {
+          sub_type = 'sale';
         } else {
-          alert('<%= ucfloc q{query cannot be empty} %>');
+          sub_type = 'rent';
         }
-      });
 
-      // Action: delete query from subscription
-      $modal.on('click', '[data-action="query-delete"]', function (e) {
-        $(this).closest('.form-group').remove();
-      });
-
-      // On mainTab show
-      $('a[href="#clientCard_mainTab"]', $modal).on('show.bs.tab', function (e) {
-        $('button[data-action="subscription-save"]', $modal).hide();
-        $('button[data-action="client-save"]', $modal).show();
-      });
-
-      // On subscriptionTab show
-      $('a[href="#clientCard_subscriptionTab"]', $modal).on('show.bs.tab', function (e) {
-        $('button[data-action="subscription-save"]', $modal).show();
-        $('button[data-action="client-save"]', $modal).hide();
+        var subscription = new Object;
+        subscription.offer_type_code = sub_type;
+        subscription.add_date = moment().format('YYYY-MM-DDTHH:mm:ssZZ');
+        subscription.end_date = moment().add('days', 14).format('YYYY-MM-DDTHH:mm:ssZZ');
+        subscription.realty_limit = 20;
+        subscription.send_owner_phone = 0;
+  
+        subscription.queries = ['',];
+        
+        pushSubscriptionToTableView(subscription);
       });
 
       // Action: save client & his subscriptions
-      $('button[data-action="client-save"]', $modal).click(function (e) {
+      $modal.on('click', '[data-action="client-save"]', function (e) {
         save();
       });
     });
 
-    // Global functions
-    function saveSubscription() {
-      var $form = $('#clientCard_subscriptionForm', $modal);
-
-      var subscription = $form.data('obj');
-      subscription.offer_type_code = $('[name="offer_type_code"]:input', $form).val();
-      if (!subscription.add_date) subscription.add_date = moment().format('YYYY-MM-DDTHH:mm:ssZZ');
-      subscription.end_date = moment($('[name="end_date"]:input', $form).datepicker('getDate')).format('YYYY-MM-DD') + 'T' + moment(subscription.add_date).format('HH:mm:ssZZ');
-      subscription.realty_limit = parseInt($('[name="realty_limit"]:input', $form).val());
-      subscription.send_owner_phone = $('[name="send_owner_phone"]', $form).prop('checked');
-
-      subscription.queries = [];
-      $('#clientCard_queryList', $modal).children().each(function (i) {
-        var q = $('[name="query"]:input', $(this)).val().trim();
-        if (q) subscription.queries.push(q);
-      });
-
-      if (!subscription.queries.length) {
-        alert('<%= ucfloc q{cannot save subscription without queries} %>');
-        return null;
+    function setMode(mode) {
+      cmode = mode;
+      if(mode == 0) {
+        $('.rmode').addClass("hidden");
+        $('.emode').addClass("invisible");
+        $('.smode').removeClass("invisible");
+        $('.emode-btn').addClass("hidden");
+        $('.smode-btn').removeClass("hidden");
+        $('#phonecb', $modal).attr('disabled', true);
+        $('.text-input').attr('readonly', true);
+        $('[name="end_date"]:input', $modal).addClass('ddp');
+      } else if(mode == 1) {
+        $('.rmode').addClass("hidden");
+        $('.emode').removeClass("invisible");
+        $('.smode').addClass("invisible");
+        $('.emode-btn').removeClass("hidden");
+        $('.smode-btn').addClass("hidden");
+        $('#phonecb', $modal).attr('disabled', false);
+        $('.text-input').attr('readonly', false);
+        $('[name="end_date"]:input', $modal).removeClass('ddp');
       }
-
-      return subscription;
     }
 
     function save() {
+      $('#phone-num-alert', $modal).addClass('hidden');
+      console.log('!');
+      $('#clientCard_subscriptionForm > div > div:visible', $modal).each(function (index, elem) {       
+        var empty_query = false;
+        $('[name="query"]', this).each(function (index, elem) {
+          if ($(this).val().length == 0) {
+            empty_query = true;
+          }
+        });
+        if (empty_query) {
+          $('#query-alert', this).removeClass('nodispaly');
+          var $arrow = $('#arrow', this);
+          $arrow.each(function () {
+            var $this = $(this);
+            $this.addClass('nodispaly');
+          });
+        } else {
+          $('#query-alert', this).addClass('nodispaly');
+          var $arrow = $('#arrow', this);
+          $arrow.each(function () {
+            var $this = $(this);
+            $this.removeClass('nodispaly');
+          });
+        }
+      });
+      
       var client = {
         id: $('#clientCard_clientForm [name="id"]:input', $modal).val(),
         name: $('#clientCard_clientForm [name="name"]:input', $modal).val(),
         phone_num: $('#clientCard_clientForm [name="phone_num"]:input', $modal).val(),
-        description: $('#clientCard_clientForm [name="description"]:input', $modal).val()
+        email: $('#clientCard_clientForm [name="email"]:input', $modal).val(),
+        skype: $('#clientCard_clientForm [name="skype"]:input', $modal).val(),
+        description: $('#clientCard_clientForm [name="description"]:input', $modal).val(),
+        send_owner_phone: $('#clientCard_clientForm [name="send_owner_phone"]', $modal).prop('checked'),
       };
       $.ajax({
         type: "POST",
         url: "/api/client/save",
         data: client,
-        beforeSend: function (jqXHR, settings) { $('[data-action="client-save"]', $modal).button('loading'); },
-        complete: function (jqXHR, textStatus) { $('[data-action="client-save"]', $modal).button('reset'); },
+        beforeSend: function (jqXHR, settings) {},
+        complete: function (jqXHR, textStatus) {},
       })
         .done(function (data, textStatus, jqXHR) {
+          var success = true;
           client.id = data.id;
 
           // Delete old queries
-          $('#clientCard_subscriptionsTable > tbody > tr:hidden', $modal).each(function (index, elem) {
-            var subscription = $(this).data('obj');
+          $('#clientCard_subscriptionForm > div > div:hidden', $modal).each(function (index, elem) {
+            var subscription = subs[$(this).data('guid')];
             if (subscription.id) {
               $.ajax({
                 type: "POST",
@@ -164,114 +441,209 @@
                 async: false, // (!)
                 success: function (data2, textStatus2, jqXHR2) {},
                 error: function (jqXHR2, textStatus2, errorThrown2) {
-                  alert('Error while deleting subscription#' + subscription.id + ': ' + textStatus2);
+                  success = false;
                 },
               });
             }
           });
 
           // Save (add/update) queries
-          $('#clientCard_subscriptionsTable > tbody > tr:visible', $modal).each(function (index, elem) {
-            var subscription = $(this).data('obj');
+          $('#clientCard_subscriptionForm > div > div:visible', $modal).each(function (index, elem) {
+            var subscription = subs[$(this).data('guid')];
+            subscription.queries = [];
+            $('[name="query"]', this).each(function (index, elem) {
+              subscription.queries.push($(this).val());
+            });
+
+            subscription.end_date = moment($('[name="end_date"]:input', this).datepicker('getDate')).format('YYYY-MM-DD') + 'T' + moment(subscription.add_date).format('HH:mm:ssZZ');
+
             if (!subscription.client_id) subscription.client_id = client.id;
-            if (subscription.updated) {
-              $.ajax({
-                type: "POST",
-                url: "/api/subscription/save",
-                data: subscription,
-                async: false, // (!)
-                success: function (data2, textStatus2, jqXHR2) {},
-                error: function (jqXHR2, textStatus2, errorThrown2) {
-                  alert('Error while saving subscription#' + subscription.id + ': ' + textStatus2);
-                },
-              })
-            }
+            $.ajax({
+              type: "POST",
+              url: "/api/subscription/save",
+              data: subscription,
+              async: false, // (!)
+              success: function (data2, textStatus2, jqXHR2) {},
+              error: function (jqXHR2, textStatus2, errorThrown2) {
+                success = false;
+              },
+            })
           });
 
-          if ($.isFunction(events.saved)) events.saved(client);
+          if(success) {
+            $.ajax({
+              type: "GET",
+              url: "/api/client/get",
+              data: {id: client.id, with_subscriptions: true},
+            })
+              .done(function (data, textStatus, jqXHR) {
+                setClientView(data, 0);
+                $modal.modal({show: true, backdrop: false});
+              })
+            setMode(0);
+          } else {
+            $modal.addClass('shaker');
+            setTimeout('$("#clientCard_modal").removeClass("shaker");', 1000);
+
+          }
         })
         .fail(function (jqXHR, textStatus, errorThrown) {
-          alert('Error while saving client');
+          $modal.addClass('shaker');
+          setTimeout('$("#clientCard_modal").removeClass("shaker");', 1000);
+            
+          $('#phone-num-alert', $modal).removeClass('hidden');
         })
       ;
     }
 
-    function setClientView(client) {
+    var cached_client = null;
+    
+    function setClientView(client, mode) {
       if (!client) return;
+      cached_client = jQuery.extend(true, {}, client);
       $('#clientCard_clientForm [name="id"]:input', $modal).val(client.id);
       $('#clientCard_clientForm [name="name"]:input', $modal).val(client.name);
-      $('#clientCard_clientForm [name="phone_num"]:input', $modal).val(client.phone_num);
+      $('#clientCard_clientForm [name="phone_num"]:input', $modal).val(Rplus.Util.formatPhoneNum(client.phone_num));
+      $('#clientCard_clientForm [name="email"]:input', $modal).val(client.email);
+      $('#clientCard_clientForm [name="skype"]:input', $modal).val(client.skype);
       $('#clientCard_clientForm [name="description"]:input', $modal).val(client.description);
-      $('#clientCard_addDate', $modal).text(moment(client.add_date).format('DD.MM.YYYY'));
-
+      //$('#clientCard_addDate', $modal).text(moment(client.add_date).format('DD.MM.YYYY'));
+      $('#clientCard_clientForm [name="send_owner_phone"]', $modal).prop('checked', client.send_owner_phone);
+      
       // Clear subscriptions table
-      $('#clientCard_subscriptionsTable > tbody', $modal).empty();
+      $('.subscription-container', $modal).empty();
       if (client.subscriptions) {
         for (var i = 0; i < client.subscriptions.length; i++) {
           pushSubscriptionToTableView(client.subscriptions[i]);
         }
       }
+      setMode(mode);
     }
 
     function pushSubscriptionToTableView(subscription) {
+      var $selected = $('.tag-selected');
+      
+      $selected.each(function () {
+        $(this).removeClass("tag-selected");
+      });
+
       if (!subscription.guid) subscription.guid = Rplus.Util.guid();
 
       var add_date = moment(subscription.add_date),
           end_date = moment(subscription.end_date);
-      var xhtml = '<tr data-guid="' + subscription.guid + '">';
-      xhtml += '<td>' + (subscription.offer_type_code == 'sale' ? 'Продажа' : 'Аренда') + '</td>';
-      xhtml += '<td><ul class="list-unstyled">' + subscription.queries.map(function (x) { return '<li>' + Rplus.Util.escape(x) + '</li>' }).join("\n") + '</ul></td>';
-      xhtml += '<td>' + add_date.format('DD.MM.YYYY') + '</td>';
-      xhtml += '<td><span class="label label-' + (end_date < moment() ? 'danger' : 'success') + '">' + end_date.format('DD.MM.YYYY') + '</span></td>';
-      xhtml += '<td>' + (subscription.realty_count || 0) + (subscription.realty_limit ? ' / ' + subscription.realty_limit : '') + '</td>';
-      xhtml += '<td>';
-      xhtml += '<a href="#" data-action="subscription-edit"><span class="glyphicon glyphicon-pencil text-warning"></span></a>&nbsp;&nbsp;';
-      xhtml += '<a href="#" data-action="subscription-delete"><span class="glyphicon glyphicon-trash text-danger"></span></a>';
-      xhtml += '</td>';
-      xhtml += '</tr>';
-      var $row = $(xhtml).data('obj', subscription);
 
+      var xhtml = '<div class="subscription" data-guid="' + subscription.guid + '">';
+      xhtml += '<div class="cardheader mainheader">';
+      xhtml += '<div class="input-group">'
+      xhtml += '<p>' + (subscription.offer_type_code == 'sale' ? '&nbspПродажа' : '&nbspАренда') + ': ' + add_date.format('DD.MM.YYYY') + ' - <input readonly data-action="end-date-set" name="end_date" class="date-input spec-label-' + (end_date < moment() ? 'red' : 'green') + '"></p>';
+      xhtml += '<a href="#" class="input-group-addon emode" data-action="subscription-delete" data-guid=' + subscription.guid +'><span class="glyphicon glyp-big glyphicon-minus-sign text-danger"></span></a>';
+      xhtml += '</div>';
+      xhtml += '</div>';
+      
+      xhtml += subscription.queries.map(function (x) {
+          var res = '<div class="input-group">';
+          res += '<a href="#" class="input-group-addon" data-action="tag-select"><span data-guid=' + subscription.guid +' class="tag-button color-tag-placeholder color-tag-' + subscription.color_tag_id + ' pull-right"></span></a>';
+          res += '<textarea type="text" class="form-control text-input" name="query" rows="2" placeholder="Текст запроса">' + Rplus.Util.escape(x) + '</textarea>';
+          res += '<span id="query-alert" class="input-group-addon glyphicon glyp-big glyphicon-exclamation-sign spec-label-red nodispaly"></span>';
+          res += '<a href="#" id="arrow" class="input-group-addon" data-action="show-proposed" data-guid=' + subscription.guid +'><span  class="glyphicon glyphicon-arrow-right"></span></a>';
+          res += '</div>';
+          return res;
+        }).join("\n");
+      xhtml += '</div>';
+
+      subs[subscription.guid] = subscription;
+      var $row = $(xhtml);
+
+      console.log($('[name="end_date"]:input', $row));
+      $('[name="end_date"]:input', $row).val(subscription.end_date ? moment(subscription.end_date).format('DD.MM.YYYY') : null).datepicker({
+        format: "dd.mm.yyyy",
+        weekStart: 1,
+        autoclose: true
+      });
+      
       // Add new Or replace subscription
-      var $ext_row = $('#clientCard_subscriptionsTable > tbody > tr[data-guid="' + subscription.guid + '"]', $modal);
+      var $ext_row = $('.subscription-container > div[data-guid="' + subscription.guid + '"]', $modal);
       if ($ext_row.length) {
         $ext_row.replaceWith($row);
       } else {
-        $('#clientCard_subscriptionsTable > tbody', $modal).prepend($row);
+        $('.subscription-container', $modal).prepend($row);
       }
     }
 
-    function setSubscriptionView(subscription) {
-      $('#clientCard_subscriptionForm', $modal).data('obj', subscription);
-
-      // fill left block (params) of subscription
-      $('#clientCard_subscriptionForm [name="id"]:input', $modal).val(subscription.id);
-      $('#clientCard_subscriptionForm [name="guid"]:input', $modal).val(subscription.guid);
-      $('#clientCard_subscriptionForm [name="offer_type_code"]:input', $modal).val(subscription.offer_type_code);
-      $('#clientCard_subscriptionForm [name="end_date"]:input', $modal).val(subscription.end_date ? moment(subscription.end_date).format('DD.MM.YYYY') : null).datepicker('update');
-      $('#clientCard_subscriptionForm [name="realty_limit"]:input', $modal).val(subscription.realty_limit);
-      $('#clientCard_subscriptionForm [name="send_owner_phone"]', $modal).prop('checked', subscription.send_owner_phone);
-
-      // Add queries of subscription
-      $('#clientCard_queryList', $modal).empty();
-      if (subscription.queries) {
-        for (var i = 0; i < subscription.queries.length ; i++) {
-          addQueryToSubscriptionView(subscription.queries[i]);
+    function pushRealtyToTable(realtyId, $rc) {
+      var row_count = 20;
+      $('tbody', $rc).html('');
+      if (realtyId) {
+        var left_count = realtyId.length;
+        row_count -= left_count;
+        for (var i = 0; i < realtyId.length; i++) {
+          var realty_id = realtyId[i];
+            $.ajax({
+              type: "POST",
+              url: "/api/realty/get",
+              data: {id: realty_id},
+            })
+            .done(function (data, textStatus, jqXHR) {
+              left_count --;
+              var xhtml = '<tr data-id="' + realty_id + '">';
+  
+              var classes = [Rplus.Table['realty_states'][data.state_code].metadata['icon-class']];
+              xhtml += '<td><span class="glyphicon ' + classes.join(' ') + '"></span></td>';
+              xhtml += '<td>' + getDigest(data, true) + '</td>';
+              xhtml += '</tr>';
+              $('tbody', $rc).prepend(xhtml);
+              if (left_count == 0) {
+  
+              }
+            }).fail(function (jqXHR, textStatus, errorThrown) {});
         }
       }
+      for (var i = 0; i < row_count; i++) {
+        var dummy = '<tr>';
+        dummy += '<td><span class="glyphicon"></span></td>';
+        dummy += '<td></td>';
+        dummy += '</tr>';
+        $('tbody', $rc).append(dummy);
+      }
     }
 
-    function addQueryToSubscriptionView(q) {
-      var xhtml = '<div class="form-group">';
-      xhtml += '<div class="input-group input-group-sm">';
-      xhtml += '<input type="text" class="form-control" name="query" value="' + Rplus.Util.escape(q) + '">';
-      xhtml += '<span class="input-group-btn">';
-      xhtml += '<button class="btn btn-default" type="button" data-action="query-delete"><span class="glyphicon glyphicon-minus text-danger"></span></button>';
-      xhtml += '</span>';
-      xhtml += '</div>';
-      xhtml += '</div>';
-      $('#clientCard_queryList', $modal).append(xhtml);
-    }
+    function getDigest(r, withDescription) {
+      var digest = [];
 
+      digest.push('<strong>' + Rplus.Util.escape(Rplus.Table.realty_types[r.type_code].name) + '</strong>');
+      if (r.rooms_count) digest.push(r.rooms_count + 'к');
+      if (r.address_object) {
+        digest.push(
+          Rplus.Util.escape(r.address_object.name + ' ' + r.address_object.short_type) +
+          (r.sublandmark ? ' (' + r.sublandmark.name + ')' : '')
+        );
+        digest.push(Rplus.Util.escape(r.address_object.addr_parts[1].name + ' ' + r.address_object.addr_parts[1].short_type));
+      }
+      if (r.ap_scheme_id) digest.push(Rplus.Table.Dict.ap_schemes[r.ap_scheme_id].metadata.description || Rplus.Table.Dict.ap_schemes[r.ap_scheme_id].name);
+      if (r.house_type_id) digest.push(Rplus.Table.Dict.house_types[r.house_type_id].metadata.description || Rplus.Table.Dict.house_types[r.house_type_id].name);
+      if (r.room_scheme_id) digest.push(Rplus.Table.Dict.room_schemes[r.room_scheme_id].metadata.description || Rplus.Table.Dict.room_schemes[r.room_scheme_id].name);
+      if (r.floor && r.floors_count) { digest.push(r.floor + '/' + r.floors_count + ' эт.') } else if (r.floor || r.floors_count) { digest.push((r.floor || r.floors_count) + ' эт.'); }
+      if (r.condition_id) digest.push(Rplus.Table.Dict.conditions[r.condition_id].metadata.description || Rplus.Table.Dict.conditions[r.condition_id].name);
+      if (r.balcony_id) digest.push(Rplus.Table.Dict.balconies[r.balcony_id].metadata.description || Rplus.Table.Dict.balconies[r.balcony_id].name);
+      if (r.bathroom_id) digest.push(Rplus.Table.Dict.bathrooms[r.bathroom_id].metadata.description || Rplus.Table.Dict.bathrooms[r.bathroom_id].name);
+      {
+        var squares = [];
+        if (r.square_total) squares.push(r.square_total);
+        if (r.square_living) squares.push(r.square_living);
+        if (r.square_kitchen) squares.push(r.square_kitchen);
+        if (squares.length) digest.push(squares.join('/') + ' кв. м.');
+      }
+      if (r.square_land && r.square_land_type) digest.push(r.square_land + ' ' + (r.square_land_type == 'ar' ? 'сот.' : 'га'));
+      if (withDescription && r.description) digest.push(Rplus.Util.escape(r.description));
+      if (r.price) digest.push('<span class="text-primary">' + r.price + ' тыс. руб.' + '</span>');
+      if (r.agent_id) {
+        var agent = Rplus.Table.users[r.agent_id];
+        digest.push('<br><span>Агент: ' + (agent.public_name || agent.name) + ', ' + (agent.public_phone_num || Rplus.Util.formatPhoneNum(Rplus.Table.users[r.agent_id].phone_num)) + '</span>');
+      }
+
+      return digest.join(', ');
+    }
+    
     return function (options) {
       if (!options) options = {};
 
@@ -286,8 +658,8 @@
         create: function (skel) {
           if (!skel) skel = {};
           skel.id = null;
-          setClientView(skel);
-          $modal.modal('show');
+          setClientView(skel, 0);
+          $modal.modal({show: true, backdrop: false});
           return $this;
         },
 
@@ -298,8 +670,8 @@
             data: {id: id, with_subscriptions: true},
           })
             .done(function (data, textStatus, jqXHR) {
-              setClientView(data);
-              $modal.modal('show');
+              setClientView(data, 0);
+              $modal.modal({show: true, backdrop: false});
             })
             .fail(function (jqXHR, textStatus, errorThrown) {
               alert('Error while fetching client data');
@@ -314,19 +686,53 @@
             url: "/api/client/get",
             data: {phone_num: phoneNum, with_subscriptions: true},
             success: function (data, textStatus, jqXHR) {
-              setClientView(data);
-              $modal.modal('show');
+              setClientView(data, 0);
+              $modal.modal({show: true, backdrop: false});
             },
             error: function (jqXHR, textStatus, errorThrown) {
-              setClientView({phone_num: phoneNum});
-              $modal.modal('show');
+              setClientView({phone_num: phoneNum}, 0);
+              $modal.modal({show: true, backdrop: false});
             },
           });
           return $this;
         },
+        
+        createWithSubscription: function (query, typeCode, realtyIds) {
+          var skel = {};
+          skel.id = null;
+          
+          //skel.add_date = $self->format_datetime($client->add_date),
+          skel.name = '';
+          skel.phone_num = '';
+          skel.email = '';
+          skel.skype = '';
+          skel.description = '';
+          skel.subscriptions = [];
+          //skel.realty => []
+          
+          var subscription = {};
+          subscription.offer_type_code = typeCode;
+          subscription.queries = [query,];
+          subscription.add_date = moment().format('YYYY-MM-DDTHH:mm:ssZZ');
+          subscription.end_date = moment().add('days', 14).format('YYYY-MM-DDTHH:mm:ssZZ');
+          subscription.realty_count = 0;
+          subscription.realty_limit = 20;
+          subscription.send_owner_phone = 0;
+          subscription.color_tag_id = 0;
+          subscription.realty = [];
+          subscription.proposed_realty = realtyIds;
+          
+          skel.subscriptions.push(subscription);
+          
+          setClientView(skel, 1);
+
+          $modal.modal({show: true, backdrop: false});
+          //$modal.modal('show');
+          return $this;
+        },
 
         close: function () {
-          $modal.modal('hide');
+          $modal.modal({show: false});
           return $this;
         }
       };
@@ -338,124 +744,113 @@
 % end
 
 % content_for modals => begin
-<div class="modal" id="clientCard_modal" tabindex="-1" role="dialog" aria-labelledby="clientCard_modalLabel" aria-hidden="true">
+
+<div class="modal " id="clientCard_modal" role="dialog" tabindex="-1"  style="display: none;" data-focus-on="input:first" aria-labelledby="myModalLabel" aria-hidden="true">
   <div class="modal-dialog">
-    <div class="modal-content">
+    <div class="modal-content flipbox">
       <div class="modal-header">
-        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-        <h4 class="modal-title" id="clientCard_modalLabel"><%= ucfloc 'client' %></h4>
+        <a href="#" class="ctrl-button smode-btn" data-dismiss="modal">Закрыть</a>
+        <a href="#" class="ctrl-button emode-btn hidden" data-action="client-cancel">Отменить</a>
+        <a href="#" class="ctrl-button rmode hidden" data-action="close-proposed"><span class="glyphicon glyphicon-arrow-left"></span>  Назад</a>
+        <a href="#" class="ctrl-button pull-right smode-btn" data-action="client-unlock">Изменить</a>
+        <a href="#" class="ctrl-button pull-right emode-btn hidden" data-action="client-save">Готово</a>
       </div>
-      <div class="modal-body">
-        <h4 class="pull-right"><span class="label label-info" id="clientCard_addDate"><%= ucfloc 'new' %></span></h4>
-        <ul class="nav nav-pills nav-sm margin-bottom-15" id="clientCard_pills">
-          <li class="active"><a href="#clientCard_mainTab" data-toggle="pill"><%= ucfloc 'main' %></a></li>
-          <li style="display: none;"><a href="#clientCard_subscriptionTab" data-toggle="pill"><%= ucfloc 'subscription' %></a></li>
-        </ul>
+      <div class="modal-body" style="">
+        <div class="main col-md-12" style="padding: 0px">
+          <form role="form" id="clientCard_clientForm">
+            <div class="input-group hidden">
+              <span class="input-group-addon glyphicon glyphicon-paperclip"></span>
+              <input type="text" class="form-control text-input" name="id" id="clientCard_clientForm_inputId" placeholder="Id">
+            </div>
+            <div class="input-group">
+              <span class="input-group-addon glyphicon glyphicon-user"></span>
+              <input type="text" class="form-control text-input" name="name" id="clientCard_clientForm_inputName" placeholder="Имя">
+            </div>
+            <hr width="90%" align="right">
+            <div class="input-group">
+              <span class="input-group-addon glyphicon glyphicon-earphone"></span>
+              <input type="text" class="form-control text-input" name="phone_num" id="clientCard_clientForm_inputPhoneNum" placeholder="Телефон"></input>
+              <span id="phone-num-alert" class="input-group-addon glyphicon glyp-big glyphicon-exclamation-sign spec-label-red hidden"></span>
+            </div>
+            <hr width="90%" align="right">
+            <div class="input-group">
+              <span class="input-group-addon glyphicon glyphicon-envelope"></span>
+              <input type="text" class="form-control text-input" name="email" placeholder="email">
+            </div>
+            <hr width="90%" align="right">
+            <div class="input-group">
+              <span class="input-group-addon glyphicon glyphicon-cloud"></span>
+              <input type="text" class="form-control text-input" name="skype" placeholder="skype">
+            </div>
+            <hr width="90%" align="right">
+            <div class="input-group">
+              <span class="input-group-addon glyphicon glyphicon-pencil"></span>
+              <input class="form-control text-input" id="clientCard_clientForm_inputDescription" name="description" rows="1" placeholder="Дополнительная информация"></textarea>
+            </div>
+            <hr width="90%" align="right">
+            <div class="input-group">
+              <span class="input-group-addon glyphicon glyphicon-phone"></span>
+              <span class="input-group-addon">Телефон собственника</span>
+              <input class="" type="checkbox" id="phonecb" name="send_owner_phone" style="margin-top: 10px"></textarea>
+            </div>
+          </form>
 
-        <div class="tab-content">
-
-          <!-- MainTab -->
-          <div class="tab-pane active" id="clientCard_mainTab">
-            <form role="form" id="clientCard_clientForm">
-              <input type="hidden" name="id" value="">
-              <div class="row">
-                <div class="col-md-5">
-                  <div class="form-group form-group-sm">
-                    <label for="clientCard_clientForm_inputName"><%= ucfloc 'name' %></label>
-                    <input type="text" class="form-control input-sm" name="name" id="clientCard_clientForm_inputName" placeholder="<%= ucfloc 'name' %>">
-                  </div>
-                  <div class="form-group form-group-sm">
-                    <label for="clientCard_clientForm_inputPhoneNum"><%= ucfloc 'phone num' %></label>
-                    <input type="text" class="form-control input-sm" name="phone_num" id="clientCard_clientForm_inputPhoneNum" placeholder="<%= ucfloc 'phone num' %>">
-                  </div>
-                </div>
-                <div class="col-md-7">
-                  <div class="form-group form-group-sm">
-                    <label for="clientCard_clientForm_inputDescription"><%= ucfloc 'description' %></label>
-                    <textarea class="form-control input-sm" id="clientCard_clientForm_inputDescription" name="description" rows="4"></textarea>
-                  </div>
-                </div>
-              </div>
-            </form>
-
-            <div class="row">
-              <div class="col-md-12">
-                <h4 style="margin-bottom: 5px;"><%= ucfloc 'subscriptions' %> <small><a href="#" class="pull-right" data-action="subscription-create"><span class="glyphicon glyphicon-plus"></span></a></small></h4>
-                <hr class="hr-sm" style="margin-top: 0px;">
-                <table class="table table-striped table-condensed table-hover" id="clientCard_subscriptionsTable" style="font-size: 85%;">
-                  <thead>
-                    <tr>
-                      <th><%= ucfloc 'type' %></th>
-                      <th><%= ucfloc 'queries' %></th>
-                      <th><%= ucfloc 'add date' %></th>
-                      <th><%= ucfloc 'end date' %></th>
-                      <th><%= ucfloc 'found' %></th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody></tbody>
-                </table>
-              </div>
+          <div class="cardheader mainheader">
+            <div class="input-group">
+              <span class="input-group-addon glyphicon glyphicon-tag"></span>
+              <p>Тэги</p>
             </div>
           </div>
-          <!-- /MainTab -->
-
-          <!-- SubscriptionTab -->
-          <div class="tab-pane" id="clientCard_subscriptionTab">
-            <div class="row">
-              <div class="col-md-4">
-                <div class="well well-sm">
-                  <form role="form" id="clientCard_subscriptionForm">
-                    <input type="hidden" name="id" value="">
-                    <input type="hidden" name="guid" value="">
-                    <div class="form-group">
-                      <select class="form-control input-sm" name="offer_type_code">
-                        %# TODO: Add usage of preloaded table data
-                        <option value="rent"><%= ucfloc 'rent' %></option>
-                        <option value="sale"><%= ucfloc 'sale' %></option>
-                      </select>
-                    </div>
-                    <div class="form-group">
-                      <input type="text" class="form-control input-sm" name="end_date" placeholder="<%= ucfloc 'end date' %>">
-                    </div>
-                    <div class="form-group">
-                      <input type="number" class="form-control input-sm" name="realty_limit" placeholder="<%= ucfloc 'limit' %>" min="0" max="1000">
-                    </div>
-                    <div class="checkbox">
-                      <label><input type="checkbox" name="send_owner_phone"> <small><%= ucfloc 'owner phone' %></small></label>
-                    </div>
-                  </form>
-                </div>
-              </div>
-              <div class="col-md-8">
-                <div class="panel panel-default panel-sm">
-                  <div class="panel-body">
-                    <form role="form" id="clientCard_queriesForm">
-                      <div id="clientCard_queryList"></div>
-                      <div class="form-group">
-                        <div class="input-group input-group-sm">
-                          <input type="text" class="form-control" name="new_query" placeholder="<%= ucfloc 'query' %>">
-                          <span class="input-group-btn">
-                            <button class="btn btn-default" type="button" data-action="query-add"><span class="glyphicon glyphicon-plus text-success"></span></button>
-                          </span>
-                        </div>
-                      </div>
-                    </form>
-                  </div>
-                </div>
-              </div>
+  
+          <div class="tag-group input-group">
+            % for my $x (@{Rplus::Model::DictColorTag::Manager->get_objects(query => [delete_date => undef], sort_by => 'id')}) {
+              <span class="round-button color-tag-<%= $x->id %>" data-action="subscription-set-color_tag_id" data-val="<%= $x->id %>"></span>
+            % }
+          </div>
+  
+          <div class="cardheader mainheader">
+            <div class="input-group">
+              <span class="hidden input-group-addon glyphicon glyphicon-send"></span>
+              <span class="input-group-addon smode-btn glyphicon glyp-big glyphicon-send"></span>
+              <a href="#" class="input-group-addon emode-btn hidden" data-action="subscription-create"><span class="glyphicon glyp-big glyphicon-plus-sign text-success"></span></a>
+              <p>Подписка</p>
+              <a href="#" class="input-group-addon ctrl-button emode invisible" data-action="subscription-type-change"><span id="subscription-type">Аренда</span></a>
             </div>
           </div>
-          <!-- /SubscriptionTab -->
-
+  
+          <form role="form" id="clientCard_subscriptionForm">
+            <div class="subscription-container">
+            </div>
+            <hr width="90%" align="right">
+            <div class="spacer"></div>
+            <hr width="90%" align="right">
+            <div class="spacer"></div>
+            <hr width="90%" align="right">
+            <div class="spacer"></div>
+            <hr width="90%" align="right">
+            <div class="spacer"></div>
+            <hr width="90%" align="right">
+            <div class="spacer"></div>
+          </form>
         </div>
-
-      </div><!-- /.modal-body -->
-      <div class="modal-footer">
-        <button type="button" class="btn btn-default btn-sm" data-action="subscription-save" style="display: none;"><%= ucfloc 'save subscription' %></button>
-        <button type="button" class="btn btn-primary btn-sm" data-loading-text="<%= ucfloc 'saving...' %>" data-action="client-save"><span class="glyphicon glyphicon-ok"></span> <%= ucfloc 'save' %></button>
       </div>
-    </div><!-- /.modal-content -->
-  </div><!-- /.modal-dialog -->
+    </div>
+  </div><!-- /.modal-body -->
 </div><!-- /.modal -->
+
+<div class"hidden">
+<div class="modal-content" id="realtyCard_data">
+  <div class="modal-header">
+    <a href="#" class="ctrl-button" data-action="close-proposed"><span class="glyphicon glyphicon-arrow-left"></span>  Назад</a>
+  </div>
+  <div class="modal-body" style="">
+    <div class="realty col-md-12" style="padding: 0px">
+      <table class="table table-striped table-condensed" id="subscriptionRealtyTable">
+        <thead></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+</div>
 % end

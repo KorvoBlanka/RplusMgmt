@@ -18,7 +18,7 @@ sub run {
     my $c = shift;
 
     # Select active subscriptions
-    my $subscr_iter = Rplus::Model::Subscription::Manager->get_objects_iterator(query => [end_date => {gt => \'now()'}, delete_date => undef], require_objects => ['client'], sort_by => 'id');
+    my $subscr_iter = Rplus::Model::Subscription::Manager->get_objects_iterator(query => [end_date => {gt => \'now()'}, delete_date => undef], with_objects => ['client'], sort_by => 'id');
     while (my $subscr = $subscr_iter->next) {
         $c->app->log->debug("Processing subscription #".$subscr->id);
 
@@ -64,7 +64,7 @@ sub run {
                         push @parts, $realty->address_object->name.' '.$realty->address_object->short_type.($realty->address_object->name !~ /[()]/ && $realty->sublandmark ? ' ('.$realty->sublandmark->name.')' : '') if $realty->address_object;
                         push @parts, ($realty->floor || '?').'/'.($realty->floors_count || '?').' эт.' if $realty->floor || $realty->floors_count;
                         push @parts, $realty->price.' тыс. руб.' if $realty->price;
-                        if ($subscr->send_owner_phone) {
+                        if ($subscr->client->send_owner_phone) {
                             push @parts, "Собственник: ".join(', ', $realty->owner_phones);
                         } elsif ($realty->agent) {
                             push @parts, "Агент: ".($realty->agent->public_name || $realty->agent->name);
@@ -77,7 +77,7 @@ sub run {
                 }
 
                 # Prepare SMS for agent
-                if (!$subscr->send_owner_phone && $realty->agent && ($realty->agent->phone_num || '') =~ /^9\d{9}$/) {
+                if (!$subscr->client->send_owner_phone && $realty->agent && ($realty->agent->phone_num || '') =~ /^9\d{9}$/) {
                     # TODO: Add template settings
                     my @parts;
                     {

@@ -9,10 +9,13 @@ use Rplus::Model::Mediator::Manager;
 use Rplus::Model::RuntimeParam;
 use Rplus::Model::RuntimeParam::Manager;
 
+use Rplus::Util::Image;
+
 use JSON;
 
 sub run {
     my $self = shift;
+    my $c = shift;
     # Загрузим базу телефонов посредников
     my %MEDIATOR_PHONES;
     {
@@ -63,6 +66,8 @@ REALTY:     for my $data (@$realty_data) {
                     my $photo_data = $res->json->{list};
                     for my $photo (@$photo_data) {
                         say $photo->{photo_url};
+                        my $image = $ua->get($photo->{photo_url})->res->content->asset;
+                        Rplus::Util::Image::load_image($id, $image, $c->config->{storage}->{path}, 0);
                     }
                 }
                 #$self->realty_event('c', $id);

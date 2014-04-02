@@ -356,7 +356,7 @@ sub lock {
             }
         }
         $realty->metadata(encode_json($meta));
-        $realty->save(changes_only => 1);
+        #$realty->save(changes_only => 1);
     
         $res = {
             status => 'success',

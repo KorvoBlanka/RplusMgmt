@@ -46,9 +46,11 @@ sub list {
             add_date => $self->format_datetime($client->add_date),
             name => $client->name,
             phone_num => $client->phone_num,
+            email => $client->email,
+            skype => $client->skype,
             description => $client->description,
             queries => [],
-            realty => []
+            realty => [],
         };
         
         my $subscription_iter = Rplus::Model::Subscription::Manager->get_objects_iterator(query => [client_id => $client->id, delete_date => undef]);
@@ -87,36 +89,53 @@ sub get {
         id => $client->id,
         name => $client->name,
         phone_num => $client->phone_num,
+        email => $client->email,
+        skype => $client->skype,
         add_date => $self->format_datetime($client->add_date),
         description => $client->description,
+        send_owner_phone => $client->send_owner_phone,
     };
 
     if ($self->param_b('with_subscriptions')) {
+        # Load subscription data
         $res->{subscriptions} = [];
-
-        # Retrieve client subscriptions including count of found realty
-        my $sth = $self->db->dbh->prepare(qq{
-            SELECT S.*, count(SR.id) realty_count
-            FROM subscriptions S
-            LEFT JOIN subscription_realty SR ON (SR.subscription_id = S.id)
-            WHERE S.client_id = ? AND S.end_date IS NOT NULL AND S.delete_date IS NULL AND SR.delete_date IS NULL
-            GROUP BY S.id
-            ORDER BY S.id
-        });
-        $sth->execute($client->id);
-        while (my $row = $sth->fetchrow_hashref) {
+        my $subscription_iter = Rplus::Model::Subscription::Manager->get_objects_iterator(
+            query => [
+                delete_date => undef,
+                client_id => $client->id,
+                '!end_date' => undef,
+                'subscription_realty.delete_date' => undef,
+            ],
+            require_objects => ['client'],
+            with_objects => ['subscription_realty', 'subscription_color_tags'],
+            sort_by => 'id',
+        );
+        my %realty_h;
+        while (my $subscription = $subscription_iter->next) {
             my $x = {
-                id => $row->{id},
-                client_id => $row->{client_id},
-                user_id => $row->{user_id},
-                offer_type_code => $row->{offer_type_code},
-                queries => $row->{queries},
-                add_date => $self->format_datetime($row->{add_date}),
-                end_date => $self->format_datetime($row->{end_date}),
-                realty_count => $row->{realty_count},
-                realty_limit => $row->{realty_limit},
-                send_owner_phone => $row->{send_owner_phone} ? \1 : \0,
+                id => $subscription->id,
+                client_id => $subscription->client_id,
+                offer_type_code => $subscription->offer_type_code,
+                queries => scalar $subscription->queries,
+                add_date => $self->format_datetime($subscription->add_date),
+                end_date => $self->format_datetime($subscription->end_date),
+                realty_count => scalar @{$subscription->subscription_realty},
+                realty_limit => $subscription->realty_limit,
+                send_owner_phone => $subscription->send_owner_phone ? \1 : \0,
+                color_tag_id => 0,
+                realty => [],
+                proposed_realty => scalar $subscription->proposed_realty,
             };
+            
+            if($subscription->subscription_color_tags) {
+                foreach ($subscription->subscription_color_tags) {
+                    if ($_->user_id == $self->stash('user')->{id}) {
+                        $x->{color_tag_id} = $_->{color_tag_id};
+                        last;
+                    }
+                }
+            }
+            
             push @{$res->{subscriptions}}, $x;
         }
     }
@@ -150,13 +169,19 @@ sub save {
     # Prepare data
     my $name = $self->param_n('name');
     my $phone_num = $self->parse_phone_num(scalar $self->param('phone_num'));
+    my $email = $self->param_n('email');
+    my $skype = $self->param_n('skype');
     my $description = $self->param_n('description');
+    my $send_owner_phone = $self->param_b('send_owner_phone');
 
     # Save
     $client->name($name);
     $client->phone_num($phone_num);
+    $client->email($email);
+    $client->skype($skype);
     $client->description($description);
-
+    $client->send_owner_phone($send_owner_phone);
+    
     eval {
         $client->save($client->id ? (changes_only => 1) : (insert => 1));
     } or do {

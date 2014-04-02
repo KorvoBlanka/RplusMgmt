@@ -4,6 +4,8 @@ use Mojo::Base 'Mojolicious::Controller';
 
 use Rplus::Model::Subscription;
 use Rplus::Model::Subscription::Manager;
+use Rplus::Model::SubscriptionColorTag;
+use Rplus::Model::SubscriptionColorTag::Manager;
 use Rplus::Model::Realty;
 use Rplus::Model::Realty::Manager;
 
@@ -76,7 +78,7 @@ sub list {
             'subscription_realty.delete_date' => undef,
         ],
         require_objects => ['client'],
-        with_objects => ['subscription_realty'],
+        with_objects => ['subscription_realty', 'subscription_color_tags'],
         sort_by => 'id',
     );
     my %realty_h;
@@ -84,6 +86,7 @@ sub list {
         my $x = {
             id => $subscription->id,
             client_id => $subscription->client_id,
+            offer_type_code => $subscription->offer_type_code,
             client => {
                 id => $subscription->client->id,
                 name => $subscription->client->name,
@@ -95,14 +98,26 @@ sub list {
             realty_count => scalar @{$subscription->subscription_realty},
             realty_limit => $subscription->realty_limit,
             send_owner_phone => $subscription->send_owner_phone ? \1 : \0,
+            color_tag => 0,
             realty => [],
+            proposed_realty => scalar $subscription->proposed_realty,
         };
-        push @{$res->{list}}, $x;
+        
+        if($subscription->subscription_color_tags) {
+            foreach ($subscription->subscription_color_tags) {
+                if ($_->user_id == $self->stash('user')->{id}) {
+                    $x->{color_tag} = $_->{color_tag_id};
+                    last;
+                }
+            }
+        }
 
         for (@{$subscription->subscription_realty}) {
             $realty_h{$_->realty_id} = [] unless exists $realty_h{$_->realty_id};
             push @{$realty_h{$_->realty_id}}, $x;
         }
+
+        push @{$res->{list}}, $x;
     }
 
     # Load realty data for subscriptions
@@ -192,6 +207,10 @@ sub save {
     my $realty_limit = $self->param('realty_limit') || 0;
     my $send_owner_phone = $self->param_b('send_owner_phone');
 
+    my $user_id = $self->stash('user')->{id};
+    my $ct_id = $self->param('color_tag_id');
+    my $realty_ids = Mojo::Collection->new($self->param('proposed_realty[]'))->compact->uniq;
+    
     return $self->render(json => {errors => [{queries => 'Empty queries'}]}, status => 400) unless @$queries;
 
     # Save
@@ -201,7 +220,8 @@ sub save {
     $subscription->end_date($end_date);
     $subscription->realty_limit($realty_limit);
     $subscription->send_owner_phone($send_owner_phone);
-
+    $subscription->proposed_realty($realty_ids);
+    
     eval {
         $subscription->save($subscription->id ? (changes_only => 1) : (insert => 1));
         1;
@@ -209,6 +229,23 @@ sub save {
         return $self->render(json => {error => $@}, status => 500);
     };
 
+    my $color_tag = Rplus::Model::SubscriptionColorTag::Manager->get_objects(query => [subscription_id => $subscription->id, user_id => $user_id,])->[0];
+    if ($color_tag) {
+        if ($ct_id != $color_tag->color_tag_id) {
+          $color_tag->color_tag_id($ct_id);
+        } else {
+          #$color_tag->color_tag_id(undef);
+        }
+        $color_tag->save(changes_only => 1);
+    } else {
+        $color_tag = Rplus::Model::SubscriptionColorTag->new(
+            subscription_id => $subscription->id,
+            user_id => $user_id,
+            color_tag_id => $ct_id,
+        );
+        $color_tag->save(insert => 1);
+    }
+    
     return $self->render(json => {status => 'success', id => $subscription->id});
 }
 
