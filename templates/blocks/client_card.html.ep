@@ -838,7 +838,7 @@
   </div><!-- /.modal-body -->
 </div><!-- /.modal -->
 
-<div class"hidden">
+<div class="hidden" style="position: absolute; left: -1000px;">
 <div class="modal-content" id="realtyCard_data">
   <div class="modal-header">
     <a href="#" class="ctrl-button" data-action="close-proposed"><span class="glyphicon glyphicon-arrow-left"></span>  Назад</a>
