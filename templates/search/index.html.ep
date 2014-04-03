@@ -49,6 +49,26 @@
   .leaflet-top {
     z-index: 99;
   }
+  
+  #searchTable > tbody > tr.selected > td {
+    background-color: #0088cc !important;
+    color: #fff;
+  }
+
+  #searchTable > tbody > tr.selected > td > span {
+    /*background-color: #0088cc !important;*/
+    color: #fff;
+  }
+  
+  #searchTable > tbody > tr.selected:hover > td {
+    background-color: #0082c7 !important;
+    color: #fff;
+  }
+
+  #searchTable > tbody > tr.selected:hover > td > span {
+    /*background-color: #0082c7 !important;*/
+    color: #fff;
+  }  
 </style>
 % end
 
@@ -169,7 +189,7 @@
       // Objects selection in realty table
       $('#searchTable > tbody').on('click', 'tr', function (e) {
         var $this = $(this);
-        $this.toggleClass('selected').toggleClass('warning');
+        $this.toggleClass('selected');//.toggleClass('warning');
 
         var marker = $this.data('marker');
         if ($this.hasClass('selected')) {

@@ -243,7 +243,7 @@
   var ClientCard = (function () {
     // Global variables
 
-    var $modal, cmode = 0, events = {}, subs = {};
+    var $modal, cmode = 0, events = {}, subs = {}, client = {};
     
     var $rc = $('#realtyCard_data');
 
@@ -257,7 +257,7 @@
       
       $modal.on('click', '[data-action="client-cancel"]', function (e) {
         setMode(0);
-        setClientView(cached_client, 0);
+        setClientView(cached_client, 0, false);
       });
       
       $modal.on('click', '[data-action="subscription-type-change"]', function (e) {
@@ -274,7 +274,33 @@
         var guid = $this.data('guid');
         var subscription = subs[guid]; //$('.subscription[data-guid="' + guid + '"]', $modal).data('obj');
         pushRealtyToTable(subscription.proposed_realty, $rc);
-          
+        
+        var subs_array = [];
+        // Save (add/update) queries
+        $('#clientCard_subscriptionForm > div > div:visible', $modal).each(function (index, elem) {
+          var subscription = subs[$(this).data('guid')];
+          subscription.queries = [];
+          $('[name="query"]', this).each(function (index, elem) {
+            subscription.queries.push($(this).val());
+          });
+
+          subscription.end_date = moment($('[name="end_date"]:input', this).datepicker('getDate')).format('YYYY-MM-DD') + 'T' + moment(subscription.add_date).format('HH:mm:ssZZ');
+          subs_array.unshift(subscription);
+        });
+
+        client = {
+          id: $('#clientCard_clientForm [name="id"]:input', $modal).val(),
+          name: $('#clientCard_clientForm [name="name"]:input', $modal).val(),
+          phone_num: $('#clientCard_clientForm [name="phone_num"]:input', $modal).val(),
+          email: $('#clientCard_clientForm [name="email"]:input', $modal).val(),
+          skype: $('#clientCard_clientForm [name="skype"]:input', $modal).val(),
+          description: $('#clientCard_clientForm [name="description"]:input', $modal).val(),
+          send_owner_phone: $('#clientCard_clientForm [name="send_owner_phone"]', $modal).prop('checked'),
+          subscriptions: subs_array,
+        };
+        
+        console.log(client);
+        
         setTimeout(function () {
           $(".flipbox").flippy({
             duration: "1000",
@@ -288,8 +314,8 @@
       $modal.on('click', '[data-action="close-proposed"]', function(e) {
         $(".flipbox").flippyReverse();
         setTimeout(function () {
-          setClientView(cached_client, cmode);
-        }, 1000);
+          setClientView(client, cmode, false);
+        }, 600);
       });
       
       // Set color tag for realty object
@@ -477,7 +503,7 @@
               data: {id: client.id, with_subscriptions: true},
             })
               .done(function (data, textStatus, jqXHR) {
-                setClientView(data, 0);
+                setClientView(data, 0, true);
                 $modal.modal({show: true, backdrop: false});
               })
             setMode(0);
@@ -498,9 +524,11 @@
 
     var cached_client = null;
     
-    function setClientView(client, mode) {
+    function setClientView(client, mode, cache_it) {
       if (!client) return;
-      cached_client = jQuery.extend(true, {}, client);
+      if (cache_it) {
+        cached_client = jQuery.extend(true, {}, client);
+      }
       $('#clientCard_clientForm [name="id"]:input', $modal).val(client.id);
       $('#clientCard_clientForm [name="name"]:input', $modal).val(client.name);
       $('#clientCard_clientForm [name="phone_num"]:input', $modal).val(Rplus.Util.formatPhoneNum(client.phone_num));
@@ -554,13 +582,12 @@
       subs[subscription.guid] = subscription;
       var $row = $(xhtml);
 
-      console.log($('[name="end_date"]:input', $row));
       $('[name="end_date"]:input', $row).val(subscription.end_date ? moment(subscription.end_date).format('DD.MM.YYYY') : null).datepicker({
         format: "dd.mm.yyyy",
         weekStart: 1,
         autoclose: true
       });
-      
+
       // Add new Or replace subscription
       var $ext_row = $('.subscription-container > div[data-guid="' + subscription.guid + '"]', $modal);
       if ($ext_row.length) {
@@ -658,7 +685,7 @@
         create: function (skel) {
           if (!skel) skel = {};
           skel.id = null;
-          setClientView(skel, 0);
+          setClientView(skel, 0, true);
           $modal.modal({show: true, backdrop: false});
           return $this;
         },
@@ -670,7 +697,8 @@
             data: {id: id, with_subscriptions: true},
           })
             .done(function (data, textStatus, jqXHR) {
-              setClientView(data, 0);
+              console.log(data);
+              setClientView(data, 0, true);
               $modal.modal({show: true, backdrop: false});
             })
             .fail(function (jqXHR, textStatus, errorThrown) {
@@ -686,11 +714,13 @@
             url: "/api/client/get",
             data: {phone_num: phoneNum, with_subscriptions: true},
             success: function (data, textStatus, jqXHR) {
-              setClientView(data, 0);
+              console.log(data);
+              setClientView(data, 0, true);
               $modal.modal({show: true, backdrop: false});
             },
             error: function (jqXHR, textStatus, errorThrown) {
-              setClientView({phone_num: phoneNum}, 0);
+              console.log('ой: ' + textStatus);
+              setClientView({phone_num: phoneNum}, 0, true);
               $modal.modal({show: true, backdrop: false});
             },
           });
@@ -724,7 +754,7 @@
           
           skel.subscriptions.push(subscription);
           
-          setClientView(skel, 1);
+          setClientView(skel, 1, true);
 
           $modal.modal({show: true, backdrop: false});
           //$modal.modal('show');
