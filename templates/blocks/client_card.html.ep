@@ -116,7 +116,7 @@
     padding-bottom: 5px;
   }
   
-  .input-group {
+  .ccard-input-group {
     min-height: 34px;
   }
   
@@ -534,14 +534,14 @@
 
       var xhtml = '<div class="subscription" data-guid="' + subscription.guid + '">';
       xhtml += '<div class="cardheader mainheader">';
-      xhtml += '<div class="input-group">'
+      xhtml += '<div class="input-group ccard-input-group">'
       xhtml += '<p>' + (subscription.offer_type_code == 'sale' ? '&nbspПродажа' : '&nbspАренда') + ': ' + add_date.format('DD.MM.YYYY') + ' - <input readonly data-action="end-date-set" name="end_date" class="date-input spec-label-' + (end_date < moment() ? 'red' : 'green') + '"></p>';
       xhtml += '<a href="#" class="input-group-addon emode" data-action="subscription-delete" data-guid=' + subscription.guid +'><span class="glyphicon glyp-big glyphicon-minus-sign text-danger"></span></a>';
       xhtml += '</div>';
       xhtml += '</div>';
       
       xhtml += subscription.queries.map(function (x) {
-          var res = '<div class="input-group">';
+          var res = '<div class="input-group ccard-input-group">';
           res += '<a href="#" class="input-group-addon" data-action="tag-select"><span data-guid=' + subscription.guid +' class="tag-button color-tag-placeholder color-tag-' + subscription.color_tag_id + ' pull-right"></span></a>';
           res += '<textarea type="text" class="form-control text-input" name="query" rows="2" placeholder="Текст запроса">' + Rplus.Util.escape(x) + '</textarea>';
           res += '<span id="query-alert" class="input-group-addon glyphicon glyp-big glyphicon-exclamation-sign spec-label-red nodispaly"></span>';
@@ -758,37 +758,37 @@
       <div class="modal-body" style="">
         <div class="main col-md-12" style="padding: 0px">
           <form role="form" id="clientCard_clientForm">
-            <div class="input-group hidden">
+            <div class="input-group ccard-input-group hidden">
               <span class="input-group-addon glyphicon glyphicon-paperclip"></span>
               <input type="text" class="form-control text-input" name="id" id="clientCard_clientForm_inputId" placeholder="Id">
             </div>
-            <div class="input-group">
+            <div class="input-group ccard-input-group">
               <span class="input-group-addon glyphicon glyphicon-user"></span>
               <input type="text" class="form-control text-input" name="name" id="clientCard_clientForm_inputName" placeholder="Имя">
             </div>
             <hr width="90%" align="right">
-            <div class="input-group">
+            <div class="input-group ccard-input-group">
               <span class="input-group-addon glyphicon glyphicon-earphone"></span>
               <input type="text" class="form-control text-input" name="phone_num" id="clientCard_clientForm_inputPhoneNum" placeholder="Телефон"></input>
               <span id="phone-num-alert" class="input-group-addon glyphicon glyp-big glyphicon-exclamation-sign spec-label-red hidden"></span>
             </div>
             <hr width="90%" align="right">
-            <div class="input-group">
+            <div class="input-group ccard-input-group">
               <span class="input-group-addon glyphicon glyphicon-envelope"></span>
               <input type="text" class="form-control text-input" name="email" placeholder="email">
             </div>
             <hr width="90%" align="right">
-            <div class="input-group">
+            <div class="input-group ccard-input-group">
               <span class="input-group-addon glyphicon glyphicon-cloud"></span>
               <input type="text" class="form-control text-input" name="skype" placeholder="skype">
             </div>
             <hr width="90%" align="right">
-            <div class="input-group">
+            <div class="input-group ccard-input-group">
               <span class="input-group-addon glyphicon glyphicon-pencil"></span>
               <input class="form-control text-input" id="clientCard_clientForm_inputDescription" name="description" rows="1" placeholder="Дополнительная информация"></textarea>
             </div>
             <hr width="90%" align="right">
-            <div class="input-group">
+            <div class="input-group ccard-input-group">
               <span class="input-group-addon glyphicon glyphicon-phone"></span>
               <span class="input-group-addon">Телефон собственника</span>
               <input class="" type="checkbox" id="phonecb" name="send_owner_phone" style="margin-top: 10px"></textarea>
@@ -796,20 +796,20 @@
           </form>
 
           <div class="cardheader mainheader">
-            <div class="input-group">
+            <div class="input-group ccard-input-group">
               <span class="input-group-addon glyphicon glyphicon-tag"></span>
               <p>Тэги</p>
             </div>
           </div>
   
-          <div class="tag-group input-group">
+          <div class="tag-group input-group ccard-input-group">
             % for my $x (@{Rplus::Model::DictColorTag::Manager->get_objects(query => [delete_date => undef], sort_by => 'id')}) {
               <span class="round-button color-tag-<%= $x->id %>" data-action="subscription-set-color_tag_id" data-val="<%= $x->id %>"></span>
             % }
           </div>
   
           <div class="cardheader mainheader">
-            <div class="input-group">
+            <div class="input-group ccard-input-group">
               <span class="hidden input-group-addon glyphicon glyphicon-send"></span>
               <span class="input-group-addon smode-btn glyphicon glyp-big glyphicon-send"></span>
               <a href="#" class="input-group-addon emode-btn hidden" data-action="subscription-create"><span class="glyphicon glyp-big glyphicon-plus-sign text-success"></span></a>
@@ -821,7 +821,6 @@
           <form role="form" id="clientCard_subscriptionForm">
             <div class="subscription-container">
             </div>
-            <hr width="90%" align="right">
             <div class="spacer"></div>
             <hr width="90%" align="right">
             <div class="spacer"></div>

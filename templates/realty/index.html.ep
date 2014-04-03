@@ -48,6 +48,11 @@
     box-shadow: 0px 0px 5px #888888;
   }
 
+  .cmenu-tag-group {
+    height: 22px;
+    display: block;
+  }
+  
   % for my $x (@{Rplus::Model::DictColorTag::Manager->get_objects(query => [delete_date => undef], sort_by => 'id')}) {
   .color-tag-<%= $x->id %> {
     background: #<%= $x->color %>;
@@ -427,10 +432,11 @@
         {divider: true},
         {header: '&nbspТеги...'},
         {header:  // '+' to concat strings, '' - to match last +
+          '<span class="cmenu-tag-group">' +
           % for my $x (@{Rplus::Model::DictColorTag::Manager->get_objects(query => [delete_date => undef], sort_by => 'id')}) {
-            '<button type="button" class="round-button color-tag-<%= $x->id %>" data-action="realty-set-color_tag_id" data-val="<%= $x->id %>"></button>' + 
+            '<span class="round-button color-tag-<%= $x->id %>" data-action="realty-set-color_tag_id" data-val="<%= $x->id %>"></span>' + 
           % }
-          ''},
+          '</span>'},
         {divider: true},
         {text: '<span class="glyphicon glyphicon-print"></span>  Печать'},
       ]);
