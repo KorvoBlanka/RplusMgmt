@@ -39,11 +39,11 @@
     margin-top: 5px;    
   }
 
-  .modal-header {
+  #client-card-header {
     background-color: #eaeaea;
   }
   
-  .modal-body {
+  #client-card-body {
     height: 560px !important;
     overflow-y: scroll;
     overflow-x: hidden;
@@ -778,14 +778,14 @@
 <div class="modal " id="clientCard_modal" role="dialog" tabindex="-1"  style="display: none;" data-focus-on="input:first" aria-labelledby="myModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content flipbox">
-      <div class="modal-header">
+      <div class="modal-header" id="client-card-header">
         <a href="#" class="ctrl-button smode-btn" data-dismiss="modal">Закрыть</a>
         <a href="#" class="ctrl-button emode-btn hidden" data-action="client-cancel">Отменить</a>
         <a href="#" class="ctrl-button rmode hidden" data-action="close-proposed"><span class="glyphicon glyphicon-arrow-left"></span>  Назад</a>
         <a href="#" class="ctrl-button pull-right smode-btn" data-action="client-unlock">Изменить</a>
         <a href="#" class="ctrl-button pull-right emode-btn hidden" data-action="client-save">Готово</a>
       </div>
-      <div class="modal-body" style="">
+      <div class="modal-body" id="client-card-body">
         <div class="main col-md-12" style="padding: 0px">
           <form role="form" id="clientCard_clientForm">
             <div class="input-group ccard-input-group hidden">
