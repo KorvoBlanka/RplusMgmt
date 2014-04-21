@@ -90,7 +90,7 @@ sub upload {
             where => [id => $realty_id],
         );
 
-        return $self->render(json => {status => 'success', id => $photo->id});
+        return $self->render(json => {status => 'success', id => $photo->id, realty_id => $realty_id, thumbnail_url => $self->config->{'storage'}->{'url'}.'/photos/'.$photo->realty_id.'/'.$photo->thumbnail_filename,});
     }
 
     return $self->render(json => {error => 'Bad Request'}, status => 400);

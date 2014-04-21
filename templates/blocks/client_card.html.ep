@@ -15,7 +15,7 @@
   }
   
   #clientCard_modal .modal-dialog {
-    width: 520px !important;    
+    width: 480px !important;    
   }
 
   #clientCard_modal .modal-content {
@@ -27,6 +27,10 @@
     text-decoration: none !important;
     font-size: 15px;
     color: #428bca !important;
+  }
+  
+  .ctrl-button:hover {
+    color: #3070b0 !important;
   }
   
   .mainheader > div > p {
@@ -51,10 +55,6 @@
     
     padding: 0px;
     border-radius: 0px;
-    /*
-    overflow-y: scroll;
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch; */
   }
   
   hr {
@@ -104,7 +104,14 @@
     outline: none;
   }
   
-  .input-group-addon {
+  .ccard-input-group-addon {
+    padding: 6px 12px;
+    font-size: 14px;
+    font-weight: normal;
+    line-height: 1;
+    color: #555;
+    text-align: center;
+    display: table-cell;
     border: none;
     box-shadow: none;
     background-color: rgba(255, 255, 255, 0);
@@ -137,6 +144,10 @@
   }
 
   .spec-label-red {
+    color: #ddd;
+  }
+
+  .spec-label-red:hover {
     color: #CA2F2F;
   }
   
@@ -228,7 +239,6 @@
 % end
 
 % content_for after_bootstrap => begin
-%= js_once "$assets_url/flippy/jquery.flippy.js";
 %= js_once "/js/bootstrap-datepicker.js";
 % end
 
@@ -244,8 +254,7 @@
     // Global variables
 
     var $modal, cmode = 0, events = {}, subs = {}, client = {};
-    
-    var $rc = $('#realtyCard_data');
+    var selected_tag_id = 0;
 
     // Init here
     $(function () {
@@ -272,8 +281,8 @@
       $modal.on('click', '[data-action="show-proposed"]', function(e) {
         var $this = $(this);
         var guid = $this.data('guid');
-        var subscription = subs[guid]; //$('.subscription[data-guid="' + guid + '"]', $modal).data('obj');
-        pushRealtyToTable(subscription.proposed_realty, $rc);
+        var subscription = subs[guid]; //$('.subscription[data-guid="' + guid + '"]', $modal).data('obj');        
+        pushRealtyToTable(subscription.realty);
         
         var subs_array = [];
         // Save (add/update) queries
@@ -299,56 +308,25 @@
           subscriptions: subs_array,
         };
         
-        console.log(client);
-        
-        setTimeout(function () {
-          $(".flipbox").flippy({
-            duration: "1000",
-            verso: $rc,
-            depth: 2,
-            light: 30,
-          });
-        }, 1200);
+        showProposedRealty(true);
       });
 
       $modal.on('click', '[data-action="close-proposed"]', function(e) {
-        $(".flipbox").flippyReverse();
-        setTimeout(function () {
-          setClientView(client, cmode, false);
-        }, 600);
+        showProposedRealty(false);
       });
       
-      // Set color tag for realty object
+      // Set color tag for subscription
       $modal.on('click', '[data-action="subscription-set-color_tag_id"]', function (e) {
-        var new_tag_id = $(this).data('val');
-        var $selected = $('.tag-selected');
-        $selected.each(function () {
-          var $this = $(this);
-          var guid = $(this).data('guid');
-          var subscription = subs[guid];
-          //var subscription = $('.subscription[data-guid="' + guid + '"]', $modal).data('obj');
-          subscription.color_tag_id = 0;
-          if(!$this.hasClass("color-tag-" + new_tag_id)) {
-            subscription.color_tag_id = new_tag_id;
-            $this.removeClass (function (index, css) {
-              return (css.match ("color-tag-[\\d]") || []).join(' ');
-            });
-          }
-          //$('.subscription[data-guid="' + guid + '"]', $modal).data('obj', subscription);
-          subs[guid] = subscription;
-          $this.toggleClass("color-tag-" + new_tag_id);
-        });
-      });
-
-      $modal.on('click', '[data-action="tag-select"]', function (e) {
-        if(cmode == 0) return;
-        var $selected = $('.tag-selected');
-        if(!$(this).children().first().hasClass('tag-selected')) {
-          $selected.each(function () {
-            $(this).removeClass('tag-selected');
-          });
+        if (cmode == 0) return;
+        
+        if (selected_tag_id != $(this).data('val')) {
+          $('.tag-selected').removeClass('tag-selected');
+          selected_tag_id = $(this).data('val');
         }
-        $(this).children().first().toggleClass('tag-selected');
+        else {
+          selected_tag_id = 0;
+        }
+        $(this).toggleClass('tag-selected');
       });
 
       // Action: delete subscription
@@ -359,7 +337,6 @@
 
       // Action: create subscription
       $modal. on('click', '[data-action="subscription-create"]', function (e) {
-        console.log('sc');
         var sub_type = '';
         var sub_type = $( "#subscription-type" ).html();
         if (sub_type == 'Продажа') {
@@ -383,13 +360,31 @@
       // Action: save client & his subscriptions
       $modal.on('click', '[data-action="client-save"]', function (e) {
         save();
+        setMode(0);
       });
     });
 
+    function showProposedRealty(show) {
+      
+      if (show) {
+        $('.emode-btn').addClass("hidden");
+        $('.smode-btn').addClass("hidden");
+        $('.rmode-btn').removeClass("hidden");
+
+        $('#proposed-realty-table').removeClass('hidden');
+        $('#client-card').addClass('hidden');
+      } else {
+        setMode(cmode);
+        $('.rmode-btn').addClass("hidden");
+
+        $('#proposed-realty-table').addClass('hidden');
+        $('#client-card').removeClass('hidden');        
+      }
+    }
+    
     function setMode(mode) {
       cmode = mode;
-      if(mode == 0) {
-        $('.rmode').addClass("hidden");
+      if(mode == 0) {        
         $('.emode').addClass("invisible");
         $('.smode').removeClass("invisible");
         $('.emode-btn').addClass("hidden");
@@ -397,8 +392,7 @@
         $('#phonecb', $modal).attr('disabled', true);
         $('.text-input').attr('readonly', true);
         $('[name="end_date"]:input', $modal).addClass('ddp');
-      } else if(mode == 1) {
-        $('.rmode').addClass("hidden");
+      } else if(mode == 1) {       
         $('.emode').removeClass("invisible");
         $('.smode').addClass("invisible");
         $('.emode-btn').removeClass("hidden");
@@ -411,7 +405,6 @@
 
     function save() {
       $('#phone-num-alert', $modal).addClass('hidden');
-      console.log('!');
       $('#clientCard_subscriptionForm > div > div:visible', $modal).each(function (index, elem) {       
         var empty_query = false;
         $('[name="query"]', this).each(function (index, elem) {
@@ -444,6 +437,7 @@
         skype: $('#clientCard_clientForm [name="skype"]:input', $modal).val(),
         description: $('#clientCard_clientForm [name="description"]:input', $modal).val(),
         send_owner_phone: $('#clientCard_clientForm [name="send_owner_phone"]', $modal).prop('checked'),
+        color_tag_id: selected_tag_id,
       };
       $.ajax({
         type: "POST",
@@ -504,13 +498,16 @@
             })
               .done(function (data, textStatus, jqXHR) {
                 setClientView(data, 0, true);
-                $modal.modal({show: true, backdrop: false});
+                //$modal.modal({show: true, backdrop: false});
+                // Emit event
+                if ($.isFunction(events.saved)) {
+                  events.saved(data);
+                }
+                
               })
-            setMode(0);
           } else {
             $modal.addClass('shaker');
             setTimeout('$("#clientCard_modal").removeClass("shaker");', 1000);
-
           }
         })
         .fail(function (jqXHR, textStatus, errorThrown) {
@@ -538,6 +535,11 @@
       //$('#clientCard_addDate', $modal).text(moment(client.add_date).format('DD.MM.YYYY'));
       $('#clientCard_clientForm [name="send_owner_phone"]', $modal).prop('checked', client.send_owner_phone);
       
+      $('.round-button').each(function(){
+        $(this).removeClass('tag-selected');
+      });
+      $('.color-tag-' + client.color_tag_id + '').addClass('tag-selected');
+      
       // Clear subscriptions table
       $('.subscription-container', $modal).empty();
       if (client.subscriptions) {
@@ -549,12 +551,6 @@
     }
 
     function pushSubscriptionToTableView(subscription) {
-      var $selected = $('.tag-selected');
-      
-      $selected.each(function () {
-        $(this).removeClass("tag-selected");
-      });
-
       if (!subscription.guid) subscription.guid = Rplus.Util.guid();
 
       var add_date = moment(subscription.add_date),
@@ -564,16 +560,16 @@
       xhtml += '<div class="cardheader mainheader">';
       xhtml += '<div class="input-group ccard-input-group">'
       xhtml += '<p>' + (subscription.offer_type_code == 'sale' ? '&nbspПродажа' : '&nbspАренда') + ': ' + add_date.format('DD.MM.YYYY') + ' - <input readonly data-action="end-date-set" name="end_date" class="date-input spec-label-' + (end_date < moment() ? 'red' : 'green') + '"></p>';
-      xhtml += '<a href="#" class="input-group-addon emode" data-action="subscription-delete" data-guid=' + subscription.guid +'><span class="glyphicon glyp-big glyphicon-minus-sign text-danger"></span></a>';
+      xhtml += '<a href="#" style="padding-left: 113px;" class="ccard-input-group-addon emode" data-action="subscription-delete" data-guid=' + subscription.guid +'><span class="glyphicon glyp-big glyphicon-minus-sign text-danger"></span></a>';
       xhtml += '</div>';
       xhtml += '</div>';
       
       xhtml += subscription.queries.map(function (x) {
           var res = '<div class="input-group ccard-input-group">';
-          res += '<a href="#" class="input-group-addon" data-action="tag-select"><span data-guid=' + subscription.guid +' class="tag-button color-tag-placeholder color-tag-' + subscription.color_tag_id + ' pull-right"></span></a>';
+          //res += '<a href="#" class="ccard-input-group-addon" data-action="tag-select"><span data-guid=' + subscription.guid +' class="tag-button color-tag-placeholder color-tag-' + subscription.color_tag_id + ' pull-right"></span></a>';
           res += '<textarea type="text" class="form-control text-input" name="query" rows="2" placeholder="Текст запроса">' + Rplus.Util.escape(x) + '</textarea>';
-          res += '<span id="query-alert" class="input-group-addon glyphicon glyp-big glyphicon-exclamation-sign spec-label-red nodispaly"></span>';
-          res += '<a href="#" id="arrow" class="input-group-addon" data-action="show-proposed" data-guid=' + subscription.guid +'><span  class="glyphicon glyphicon-arrow-right"></span></a>';
+          res += '<span id="query-alert" style="color: red;" class="ccard-input-group-addon glyphicon glyp-big glyphicon-exclamation-sign nodispaly"></span>';
+          res += '<a href="#" id="arrow" class="ccard-input-group-addon" data-action="show-proposed" data-guid=' + subscription.guid +'><span  class="glyphicon glyphicon-arrow-right"></span></a>';
           res += '</div>';
           return res;
         }).join("\n");
@@ -597,9 +593,9 @@
       }
     }
 
-    function pushRealtyToTable(realtyId, $rc) {
+    function pushRealtyToTable(realtyId) {
       var row_count = 20;
-      $('tbody', $rc).html('');
+      $('tbody', $modal).html('');
       if (realtyId) {
         var left_count = realtyId.length;
         row_count -= left_count;
@@ -616,9 +612,9 @@
   
               var classes = [Rplus.Table['realty_states'][data.state_code].metadata['icon-class']];
               xhtml += '<td><span class="glyphicon ' + classes.join(' ') + '"></span></td>';
-              xhtml += '<td>' + getDigest(data, true) + '</td>';
+              xhtml += '<td>' + Rplus.Realty.getDigest(data, true) + '</td>';
               xhtml += '</tr>';
-              $('tbody', $rc).prepend(xhtml);
+              $('tbody', $modal).prepend(xhtml);
               if (left_count == 0) {
   
               }
@@ -630,45 +626,8 @@
         dummy += '<td><span class="glyphicon"></span></td>';
         dummy += '<td></td>';
         dummy += '</tr>';
-        $('tbody', $rc).append(dummy);
+        $('tbody', $modal).append(dummy);
       }
-    }
-
-    function getDigest(r, withDescription) {
-      var digest = [];
-
-      digest.push('<strong>' + Rplus.Util.escape(Rplus.Table.realty_types[r.type_code].name) + '</strong>');
-      if (r.rooms_count) digest.push(r.rooms_count + 'к');
-      if (r.address_object) {
-        digest.push(
-          Rplus.Util.escape(r.address_object.name + ' ' + r.address_object.short_type) +
-          (r.sublandmark ? ' (' + r.sublandmark.name + ')' : '')
-        );
-        digest.push(Rplus.Util.escape(r.address_object.addr_parts[1].name + ' ' + r.address_object.addr_parts[1].short_type));
-      }
-      if (r.ap_scheme_id) digest.push(Rplus.Table.Dict.ap_schemes[r.ap_scheme_id].metadata.description || Rplus.Table.Dict.ap_schemes[r.ap_scheme_id].name);
-      if (r.house_type_id) digest.push(Rplus.Table.Dict.house_types[r.house_type_id].metadata.description || Rplus.Table.Dict.house_types[r.house_type_id].name);
-      if (r.room_scheme_id) digest.push(Rplus.Table.Dict.room_schemes[r.room_scheme_id].metadata.description || Rplus.Table.Dict.room_schemes[r.room_scheme_id].name);
-      if (r.floor && r.floors_count) { digest.push(r.floor + '/' + r.floors_count + ' эт.') } else if (r.floor || r.floors_count) { digest.push((r.floor || r.floors_count) + ' эт.'); }
-      if (r.condition_id) digest.push(Rplus.Table.Dict.conditions[r.condition_id].metadata.description || Rplus.Table.Dict.conditions[r.condition_id].name);
-      if (r.balcony_id) digest.push(Rplus.Table.Dict.balconies[r.balcony_id].metadata.description || Rplus.Table.Dict.balconies[r.balcony_id].name);
-      if (r.bathroom_id) digest.push(Rplus.Table.Dict.bathrooms[r.bathroom_id].metadata.description || Rplus.Table.Dict.bathrooms[r.bathroom_id].name);
-      {
-        var squares = [];
-        if (r.square_total) squares.push(r.square_total);
-        if (r.square_living) squares.push(r.square_living);
-        if (r.square_kitchen) squares.push(r.square_kitchen);
-        if (squares.length) digest.push(squares.join('/') + ' кв. м.');
-      }
-      if (r.square_land && r.square_land_type) digest.push(r.square_land + ' ' + (r.square_land_type == 'ar' ? 'сот.' : 'га'));
-      if (withDescription && r.description) digest.push(Rplus.Util.escape(r.description));
-      if (r.price) digest.push('<span class="text-primary">' + r.price + ' тыс. руб.' + '</span>');
-      if (r.agent_id) {
-        var agent = Rplus.Table.users[r.agent_id];
-        digest.push('<br><span>Агент: ' + (agent.public_name || agent.name) + ', ' + (agent.public_phone_num || Rplus.Util.formatPhoneNum(Rplus.Table.users[r.agent_id].phone_num)) + '</span>');
-      }
-
-      return digest.join(', ');
     }
     
     return function (options) {
@@ -697,7 +656,6 @@
             data: {id: id, with_subscriptions: true},
           })
             .done(function (data, textStatus, jqXHR) {
-              console.log(data);
               setClientView(data, 0, true);
               $modal.modal({show: true, backdrop: false});
             })
@@ -714,12 +672,10 @@
             url: "/api/client/get",
             data: {phone_num: phoneNum, with_subscriptions: true},
             success: function (data, textStatus, jqXHR) {
-              console.log(data);
               setClientView(data, 0, true);
               $modal.modal({show: true, backdrop: false});
             },
             error: function (jqXHR, textStatus, errorThrown) {
-              console.log('ой: ' + textStatus);
               setClientView({phone_num: phoneNum}, 0, true);
               $modal.modal({show: true, backdrop: false});
             },
@@ -750,11 +706,10 @@
           subscription.send_owner_phone = 0;
           subscription.color_tag_id = 0;
           subscription.realty = [];
-          subscription.proposed_realty = realtyIds;
           
           skel.subscriptions.push(subscription);
           
-          setClientView(skel, 1, true);
+          setClientView(skel, 0, true);
 
           $modal.modal({show: true, backdrop: false});
           //$modal.modal('show');
@@ -781,53 +736,61 @@
       <div class="modal-header" id="client-card-header">
         <a href="#" class="ctrl-button smode-btn" data-dismiss="modal">Закрыть</a>
         <a href="#" class="ctrl-button emode-btn hidden" data-action="client-cancel">Отменить</a>
-        <a href="#" class="ctrl-button rmode hidden" data-action="close-proposed"><span class="glyphicon glyphicon-arrow-left"></span>  Назад</a>
+        <a href="#" class="ctrl-button rmode-btn hidden" data-action="close-proposed"><span class="glyphicon glyphicon-arrow-left"></span>  Назад</a>
         <a href="#" class="ctrl-button pull-right smode-btn" data-action="client-unlock">Изменить</a>
         <a href="#" class="ctrl-button pull-right emode-btn hidden" data-action="client-save">Готово</a>
       </div>
       <div class="modal-body" id="client-card-body">
-        <div class="main col-md-12" style="padding: 0px">
+        
+        <div id="proposed-realty-table" class="realty col-md-12 hidden" style="padding: 0px">
+          <table class="table table-striped table-condensed" id="subscriptionRealtyTable">
+            <thead></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        
+        <div id="client-cart" class="col-md-12" style="padding: 0px">
           <form role="form" id="clientCard_clientForm">
             <div class="input-group ccard-input-group hidden">
-              <span class="input-group-addon glyphicon glyphicon-paperclip"></span>
+              <span class="ccard-input-group-addon glyphicon glyphicon-paperclip"></span>
               <input type="text" class="form-control text-input" name="id" id="clientCard_clientForm_inputId" placeholder="Id">
             </div>
             <div class="input-group ccard-input-group">
-              <span class="input-group-addon glyphicon glyphicon-user"></span>
+              <span class="ccard-input-group-addon glyphicon glyphicon-user"></span>
               <input type="text" class="form-control text-input" name="name" id="clientCard_clientForm_inputName" placeholder="Имя">
             </div>
             <hr width="90%" align="right">
             <div class="input-group ccard-input-group">
-              <span class="input-group-addon glyphicon glyphicon-earphone"></span>
-              <input type="text" class="form-control text-input" name="phone_num" id="clientCard_clientForm_inputPhoneNum" placeholder="Телефон"></input>
-              <span id="phone-num-alert" class="input-group-addon glyphicon glyp-big glyphicon-exclamation-sign spec-label-red hidden"></span>
+              <span class="ccard-input-group-addon glyphicon glyphicon-earphone"></span>
+              <input type="text" style="width: 365px !important;" class="form-control text-input" name="phone_num" id="clientCard_clientForm_inputPhoneNum" placeholder="Телефон"></input>
+              <span id="phone-num-alert" style="color: red;" class="ccard-input-group-addon glyphicon glyp-big glyphicon-exclamation-sign hidden"></span>
             </div>
             <hr width="90%" align="right">
             <div class="input-group ccard-input-group">
-              <span class="input-group-addon glyphicon glyphicon-envelope"></span>
+              <span class="ccard-input-group-addon glyphicon glyphicon-envelope"></span>
               <input type="text" class="form-control text-input" name="email" placeholder="email">
             </div>
             <hr width="90%" align="right">
             <div class="input-group ccard-input-group">
-              <span class="input-group-addon glyphicon glyphicon-cloud"></span>
+              <span class="ccard-input-group-addon glyphicon glyphicon-cloud"></span>
               <input type="text" class="form-control text-input" name="skype" placeholder="skype">
             </div>
             <hr width="90%" align="right">
             <div class="input-group ccard-input-group">
-              <span class="input-group-addon glyphicon glyphicon-pencil"></span>
+              <span class="ccard-input-group-addon glyphicon glyphicon-pencil"></span>
               <input class="form-control text-input" id="clientCard_clientForm_inputDescription" name="description" rows="1" placeholder="Дополнительная информация"></textarea>
             </div>
             <hr width="90%" align="right">
             <div class="input-group ccard-input-group">
-              <span class="input-group-addon glyphicon glyphicon-phone"></span>
-              <span class="input-group-addon">Телефон собственника</span>
+              <span class="ccard-input-group-addon glyphicon glyphicon-phone"></span>
+              <span class="ccard-input-group-addon">Телефон собственника</span>
               <input class="" type="checkbox" id="phonecb" name="send_owner_phone" style="margin-top: 10px"></textarea>
             </div>
           </form>
 
           <div class="cardheader mainheader">
             <div class="input-group ccard-input-group">
-              <span class="input-group-addon glyphicon glyphicon-tag"></span>
+              <span class="ccard-input-group-addon glyphicon glyphicon-tag"></span>
               <p>Тэги</p>
             </div>
           </div>
@@ -840,11 +803,11 @@
   
           <div class="cardheader mainheader">
             <div class="input-group ccard-input-group">
-              <span class="hidden input-group-addon glyphicon glyphicon-send"></span>
-              <span class="input-group-addon smode-btn glyphicon glyp-big glyphicon-send"></span>
-              <a href="#" class="input-group-addon emode-btn hidden" data-action="subscription-create"><span class="glyphicon glyp-big glyphicon-plus-sign text-success"></span></a>
+              <span class="hidden ccard-input-group-addon glyphicon glyphicon-send"></span>
+              <span class="ccard-input-group-addon smode-btn glyphicon glyp-big glyphicon-send"></span>
+              <a href="#" class="ccard-input-group-addon emode-btn hidden" data-action="subscription-create"><span class="glyphicon glyp-big glyphicon-plus-sign text-success"></span></a>
               <p>Подписка</p>
-              <a href="#" class="input-group-addon ctrl-button emode invisible" data-action="subscription-type-change"><span id="subscription-type">Аренда</span></a>
+              <a href="#" style="padding-left: 285px;" class="ccard-input-group-addon ctrl-button emode invisible" data-action="subscription-type-change"><span id="subscription-type">Аренда</span></a>
             </div>
           </div>
   
@@ -866,20 +829,4 @@
     </div>
   </div><!-- /.modal-body -->
 </div><!-- /.modal -->
-
-<div class="hidden" style="position: absolute; left: -1000px;">
-<div class="modal-content" id="realtyCard_data">
-  <div class="modal-header">
-    <a href="#" class="ctrl-button" data-action="close-proposed"><span class="glyphicon glyphicon-arrow-left"></span>  Назад</a>
-  </div>
-  <div class="modal-body" style="">
-    <div class="realty col-md-12" style="padding: 0px">
-      <table class="table table-striped table-condensed" id="subscriptionRealtyTable">
-        <thead></thead>
-        <tbody></tbody>
-      </table>
-    </div>
-  </div>
-</div>
-</div>
 % end

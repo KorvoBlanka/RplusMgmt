@@ -218,8 +218,8 @@
             if (r.address_object.addr_parts[0]) addr += r.address_object.addr_parts[0].name + ' ' + r.address_object.addr_parts[0].short_type;
             if (r.house_num) addr += (addr ? ', ' : '-') + r.house_num;
           }
-          if (r.color_tag != null) {
-            addr += '<span class="tag-button color-tag-' + r.color_tag + ' pull-right"></span>';
+          if (r.color_tag_id != null) {
+            addr += '<span class="tag-button color-tag-' + r.color_tag_id + ' pull-right"></span>';
           }
           return addr;
         }},
@@ -299,6 +299,7 @@
 
     var media_export = {};
     var agents_ids = {};
+    var card_opened = false;
     
     function loadHistory() {
       var h_string = localStorage["history"];
@@ -545,24 +546,26 @@
       var offerTypeCode = $('[data-filter="offer_type_code"]').data('val');
       var agentId = $('[data-filter="agent_id"]').data('val');
       var sortBy = $('#realtyTable').data('sort');
+      var colorTagId = $('[data-filter="color_tag_id"]').data('val');
       _listRealty_started = true;
+
       $.ajax({
         type: "POST",
         url: "/api/realty/list",
-        data: {q: q, state_code: stateCode, offer_type_code: offerTypeCode, agent_id: agentId, sort_by: sortBy, page: 1, per_page: 30},
+        data: {q: q, state_code: stateCode, offer_type_code: offerTypeCode, agent_id: agentId, color_tag_id: colorTagId, sort_by: sortBy, page: 1, per_page: 30},
         complete: function () { _listRealty_started = false; }
       })
         .done(function (data, textStatus, jqXHR) {
           
           _tid = setTimeout(function(){updateRealty()},10000);
-          var xhtml = '';
+          
           var inserted = 0;
           for (var i = 0; i < data.list.length; i++) {
             var r = data.list[i];
             // check if id in table
             if($('#realtyTable > tbody > tr[data-id="' + r.id + '"]').length > 0) {continue;};
             inserted ++;
-            xhtml += '<tr data-page="' + data.page + '" data-id="' + r.id + '" data-lat="' + r.latitude + '" data-lng="' + r.longitude +  '"';
+            var xhtml = '<tr data-page="' + data.page + '" data-id="' + r.id + '" data-lat="' + r.latitude + '" data-lng="' + r.longitude +  '"';
             xhtml += ' class="';
             var h = getHistory(r.id);
 			if(h) {
@@ -572,8 +575,8 @@
 				if (h.modified > 0) {
 				  xhtml += 'modified ';
 				} 
-				if (h.wasshown > 0) {
-				  xhtml += 'wasshown ';
+				if (h.shown > 0) {
+				  xhtml += 'shown ';
 				}
 			}
             xhtml += '">';
@@ -583,54 +586,34 @@
               xhtml += '<td class="' + (!f.visible ? 'hidden' : '') + '"' + (f.style ? ' style="' + f.style + '"' : '') + '>' + f.val(r) + '</td>';
             }
             xhtml += '</tr>';
+            $('#realtyTable > tbody').prepend(xhtml);
+            var $tr = $('#realtyTable > tbody > tr[data-id="' + r.id + '"]');
+            $tr.data('obj', r);
+            $('#realtyTableWrapper').scrollTop($('#realtyTableWrapper').scrollTop() + $tr.height() );            
           }
           _listRealty_finished = false;
-          
-          if (inserted > 0) {
-            $('#realtyTable > tbody').prepend(xhtml);          
-            for (var i = 0; i < data.list.length; i++) {
-              var r = data.list[i];
-              $('#realtyTable > tbody > tr[data-id="' + r.id + '"]').data('obj', r);
-            }
-          }
         });
     }    
     
     // Open realty object card
-    function openRealtyCard(id, backgroung) {
+    function openRealtyCard(id, background) {
       if (!id) return;
 
       // Check that the card doesn't  opened
       if ($('#navTab > li > a[data-id="' + id + '"]').length) {
-        if (!backgroung) {
+        if (!background) {
           $('#navTab > li > a[data-id="' + id + '"]').tab('show');
         }
         return;
       }
-
+      
       var card = RealtyCard({
-        container: function (r) {
-          // Additionaly check that container does not exists
-          if (!$('#navTab > li > a[data-id="' + r.id + '"]').length) {
-            $('#navTab').append('<li><a href="#realty-' + r.guid + '" data-toggle="tab" data-id="' + r.id + '" data-guid="' + r.guid + '">' + Rplus.Util.escape(r.title) + '&nbsp;&nbsp;<button type="button" class="close" aria-hidden="true"><small>&times;</small></button></a></li>');
-            $('#navTabContent').append('<div class="tab-pane" id="realty-' + r.guid + '" data-guid="' + r.guid + '"></div>');
-            return $('#navTabContent > #realty-' + r.guid);
-          } else {
-            return null;
-          }
-        },
         loaded: function (r) {
-          $('#navTab a[href="#realty-' + r.guid + '"]').data('card', card);
-          if (!backgroung) {
-            $('#navTab a[href="#realty-' + r.guid + '"]').tab('show');
-          }
           // Mark opened realty object in the table
-          $('tr[data-id="' + r.id + '"]', '#realtyTable').removeClass('selected').addClass('opened');
-          putToHistory(id, "selected", 0);
+          $('tr[data-id="' + r.id + '"]', '#realtyTable').addClass('opened');
+          card_opened = true;
         },
         saved: function (r) {
-          // Update title
-          $('#navTab > li > a[href="#realty-' + r.guid + '"]').html(Rplus.Util.escape(r.title) + '&nbsp;&nbsp;<button type="button" class="close" aria-hidden="true"><small>&times;</small></button>');
           // Update object row in the table
           var $tr = $('#realtyTable > tbody > tr[data-id="' + r.id + '"]');
           if ($tr.length) {
@@ -639,64 +622,31 @@
               $('td:nth-child(' + (j + 1) + ')', $tr).html(f.val(r));
             }
             if(r.state_code == 'deleted') {
-              $tr.removeClass('selected').removeClass('modified').removeClass('opened').removeClass('shown').addClass('deleted');
+              $tr.removeClass('modified').removeClass('shown').addClass('deleted');
             } else {
-              $tr.removeClass('selected').removeClass('deleted').addClass('modified');
+              $tr.removeClass('deleted').addClass('modified');
             }
             agents_ids[r.id] = r.agent_id;
             media_export[r.id] = r.export_media;
             putToHistory(id, "modified", 1);
-            putToHistory(id, "selected", 0);
+            $tr.data('lat', r.latitude);
+            $tr.data('lng', r.longitude);
           }
         },
+        addr_changed: function (r) {
+          var $tr = $('#realtyTable > tbody > tr[data-id="' + r.id + '"]');
+          $tr.data('lat', r.latitude);
+          $tr.data('lng', r.longitude);
+        },
         close: function (r) {
-          closeRealtyCard(r.guid);
+          console.log(r);
+          var $tr = $('#realtyTable > tbody > tr[data-id="' + r.id + '"]');
+          $tr.removeClass('opened').addClass('shown');
+          putToHistory(id, "shown", 1);
+          card_opened = false;
         },
       });
       card.open(id);
-    }
-
-    function closeRealtyCard(guid) {
-      var $this = $('#navTab > li > a[href="#realty-' + guid + '"]');
-      if ($this.length) {
-        var id = $this.data('id'),
-            card = $this.data('card');
-
-        // Open next tab
-        if ($this.closest('li').hasClass('active')) {
-          var $next = $this.closest('li').next();
-          if ($next.length) {
-            $('> a', $next).tab('show');
-          } else {
-            $('#navTab > li > a[href="#search"]').tab('show');
-          }
-        }
-
-        // Remove tab and container
-        card.close();
-        $('#navTab > li > a[href="#realty-' + guid + '"]').parent().remove();
-        $('#navTabContent > div.tab-pane[id="realty-' + guid + '"]').remove();
-
-        // Remove the highlighting in the table
-        if (id) {
-          $('#realtyTable > tbody > tr[data-id="' + id + '"]').addClass('shown');
-            putToHistory(id, "shown", 1);
-            putToHistory(id, "selected", 0);
-        }
-
-        $.ajax({
-          type: "POST",
-          url: "/api/realty/lock",
-          data: {id: id, lock: 0},
-          complete: function () {}
-        })
-        .done(function (data, textStatus, jqXHR) {
-          last_event_id.push(data.event_id);
-          if (data.lock < 1) {
-              $('#realtyTable > tbody > tr[data-id="' + id + '"]').removeClass('opened');
-          }
-        });
-      }
     }
 
     $(function () {
@@ -798,10 +748,6 @@
       // Infinite scroll
       $('#realtyTableWrapper').scroll(function (e) {
         //if ($(this).scrollTop() + $(this).innerHeight() >= $(this)[0].scrollHeight) {)
-        console.log($(this).scrollTop())
-        console.log($(this).innerHeight())
-        console.log($(this)[0].scrollHeight);
-        console.log('--');
         if ($(this).scrollTop() + $(this).innerHeight() >= $(this)[0].scrollHeight - 1) {   // clutch for iMac
           var lastPage = $('#realtyTable > tbody > tr:last').data('page');
           if (!_listRealty_started && !_listRealty_finished) listRealty(lastPage + 1);
@@ -827,6 +773,7 @@
         });
 
         $('body').click(function(e){
+          if(card_opened) return;
           if (hasTouch()) return;
           if($(e.target).is('body')) {
             clearHistorySelected();
@@ -891,6 +838,7 @@
                   });
                 } else {  // select/deselect cliked
                   if (!$this.hasClass('opened')) {
+                    clearHistorySelected();
                     var $selected = $('#realtyTable > tbody > tr.selected');
                     $selected.each(function () {
                       var $this = $(this);
@@ -908,7 +856,8 @@
                 break;
               case 3:    // rmb
                 if (!$this.hasClass('selected')) {
-                   var $selected = $('#realtyTable > tbody > tr.selected');
+                  clearHistorySelected();
+                  var $selected = $('#realtyTable > tbody > tr.selected');
                   $selected.each(function () {
                     var $this = $(this);
                     var id = $this.data('id');
@@ -930,6 +879,7 @@
           var id = $this.data('id');
           if(e.which == 1) {  // lmb pressed
                   var sel_idx = $this.index();
+                  clearHistorySelected();
                   var $selected = $('#realtyTable > tbody > tr.selected');
                   $selected.each(function () {
                     var $this = $(this);
@@ -1011,10 +961,6 @@
           realtyIds.push($(this).data('id'));
         });
 
-        console.log(q);
-        console.log(offerTypeCode);
-        console.log(realtyIds);
-        
         var card = ClientCard({
           saved: function (client) {
             $('#sfPhoneNum').val(client.phone_num);
@@ -1026,26 +972,49 @@
       // Create realty object card
       $('[data-action="realty-create"]').click(function (e) {
         var card = RealtyCard({
-          container: function (r) {
-            $('#navTab').append('<li><a href="#realty-' + r.guid + '" data-guid="' + r.guid + '" data-toggle="tab">' + Rplus.Util.escape(r.title) + '&nbsp;&nbsp;<button type="button" class="close" aria-hidden="true"><small>&times;</small></button></a></li>');
-            $('#navTabContent').append('<div class="tab-pane" id="realty-' + r.guid + '" data-guid="' + r.guid + '"></div>');
-            return $('#navTabContent > #realty-' + r.guid);
-          },
           loaded: function (r) {
-            $('#navTab a[href="#realty-' + r.guid + '"]').data('card', card);
-            $('#navTab a[href="#realty-' + r.guid + '"]').tab('show');
+            card_opened = true;
           },
           saved: function (r) {
-            // Update title
-            $('#navTab > li > a[href="#realty-' + r.guid + '"]').data('id', r.id).html(Rplus.Util.escape(r.title) + '&nbsp;&nbsp;<button type="button" class="close" aria-hidden="true"><small>&times;</small></button>');
-            // TODO: Insert object to top of the table
+            // TODO: Insert object to top of the table           
+              media_export[r.id] = r.export_media;
+              agents_ids[r.id] = r.agent_id;
+              var xhtml = '<tr data-page="' + 1 + '" data-id="' + r.id + '" data-lat="' + r.latitude + '" data-lng="' + r.longitude +  '"';
+              xhtml += ' class="';
+              var h = getHistory(r.id);
+              if (h) {
+                if (h.selected > 0) {
+                  xhtml += 'selected ';
+                }
+                if (h.modified > 0) {
+                  xhtml += 'modified ';
+                }
+                if (h.shown > 0) {
+                  xhtml += 'shown ';
+                }
+              }
+              if (r.lock != -1) {
+                xhtml += 'opened ';
+              }
+              xhtml += '">';
+    
+              for (var j = 0; j < realtyTableConf.fields.length; j++) {
+                var f = realtyTableConf.fields[j];
+                xhtml += '<td class="' + (!f.visible ? 'hidden' : '') + '"' + (f.style ? ' style="' + f.style + '"' : '') + '>' + f.val(r) + '</td>';
+              }
+              xhtml += '</tr>';
+              $('#realtyTable > tbody').prepend(xhtml);
+              $('#realtyTable > tbody > tr[data-id="' + r.id + '"]').data('obj', r);
+              $('#realtyTable > tbody > tr[data-id="' + r.id + '"]').addClass('selected');
           },
           close: function (r) {
-            closeRealtyCard(r.guid);
+            card_opened = false;
           }
         });
         card.create({
           type_code: 'apartment',
+          state_code: 'raw',
+          agent_id: '<%= $self->stash('user')->{id} %>',
           offer_type_code: $('[data-filter="offer_type_code"]').data('val'),
         });
       });
@@ -1057,12 +1026,6 @@
         $selected.each(function () {
           openRealtyCard($(this).data('id'), $selected.length > 1);
         });
-      });
-
-      // Close realty object card
-      $('#navTab').on('click', 'button.close', function (e) {
-        e.preventDefault();
-        closeRealtyCard($(this).parent().data('guid'));
       });
 
       // Change agent
@@ -1263,6 +1226,59 @@
         ;
 
         // Load photos
+        $('[data-action="photos-show"]').on('click', function (e) {
+          var realtyId = $(this).data('id');
+          $.ajax({
+            type: 'POST',
+            url: '/api/photo/list',
+            data: {realty_id: realtyId}
+          })
+            .done(function (data, textStatus, jqXHR) {
+              guid = Rplus.Util.guid();
+              $('#photosModal .modal-body').html(template.replace(/{guid}/g, guid));
+
+              for (var i = 0; i < data.list.length; i++) {
+                var x = data.list[i];
+                $('#photosCarousel-' + guid + ' > .carousel-indicators').append('<li data-target="#photosCarousel-' + guid + '" data-slide-to="' + i + '" class="' + (i == 0 ? 'active' : '') + '"></li>');
+                $('#photosCarousel-' + guid + ' > .carousel-inner').append('<div class="item' + (i == 0 ? ' active' : '') + '"><img src="' + x.photo_url + '"></div>');
+              }
+
+              if (data.list.length) { $('#photosModal').modal('show'); };
+            })
+          ;
+          return false;
+        });
+        
+        // Load photos
+        $(document).bind('showPhoto', function (e, id, photo_id) {
+          var realtyId = id;
+          $.ajax({
+            type: 'POST',
+            url: '/api/photo/list',
+            data: {realty_id: realtyId}
+          })
+            .done(function (data, textStatus, jqXHR) {
+              guid = Rplus.Util.guid();
+              $('#photosModal .modal-body').html(template.replace(/{guid}/g, guid));
+              
+              var img_num = 0;
+              for (var i = 0; i < data.list.length; i++) {
+                var x = data.list[i];
+                if (photo_id == x.id) {
+                  img_num = i;
+                }
+                $('#photosCarousel-' + guid + ' > .carousel-indicators').append('<li data-target="#photosCarousel-' + guid + '" data-slide-to="' + i + '" class="' + (i == 0 ? 'active' : '') + '"></li>');
+                $('#photosCarousel-' + guid + ' > .carousel-inner').append('<div class="item' + (i == 0 ? ' active' : '') + '"><img src="' + x.photo_url + '"></div>');
+              }
+              
+              $('#photosCarousel-' + guid).carousel(img_num);
+              if (data.list.length) { $('#photosModal').modal('show'); };
+            })
+          ;
+          return false;
+        });
+            
+        // Load photos
         $('#realtyTable > tbody').on('click', 'td:has([data-action="photos-show"])', function (e) {
           var realtyId = $(this).closest('tr').data('id');
           $.ajax({
@@ -1400,7 +1416,7 @@
 % content_for modals => begin
 
 <!-- Modal:Geo -->
-<div class="modal fade" id="geoModal" tabindex="-1" role="dialog" aria-hidden="true">
+<div class="modal" id="geoModal" tabindex="-1" role="dialog" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-body">
@@ -1411,7 +1427,7 @@
 </div><!-- /.modal -->
 
 <!-- Modal:Photos -->
-<div class="modal fade" id="photosModal" tabindex="-1" role="dialog" aria-hidden="true">
+<div class="modal" id="photosModal" tabindex="-1" role="dialog" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-body">
@@ -1438,6 +1454,7 @@
 </div><!-- /.modal -->
 % end
 
+<!--
 <div class="row margin-bottom-15">
   <div class="col-md-12 col-lg-12">
     <ul class="nav nav-tabs" id="navTab">
@@ -1445,6 +1462,7 @@
     </ul>
   </div>
 </div>
+-->
 
 <div class="tab-content" id="navTabContent">
   <div class="tab-pane active" id="search">
@@ -1471,14 +1489,9 @@
 
     <nav class="navbar navbar-default navbar-fixed-bottom">
       <div class="container">
-        <ul class="nav navbar-nav">
-          <li class="dropdown">
-            <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span role="display"><span class="glyphicon glyphicon-plus"></span>&nbsp&nbspДобавить</span> <b class="caret"></b></a>
-            <ul class="dropdown-menu">
-                <li><a href="#" data-action="realty-create"><%= ucfloc 'realty' %></a></li>
-                <li><a href="#" data-action="client-open"><%= ucfloc 'client' %></a></li>
-            </ul>
-          <li><a href="#" data-action="realty-open"><span class="glyphicon glyphicon-folder-open"></span> <%= ucfloc 'open' %></a></li>
+        <ul class="nav navbar-nav">            
+          <li><a href="#" data-action="realty-create"><span class="glyphicon glyphicon-plus"></span> <%= ucfloc 'add' %></a></li>  
+          <li><a href="#" data-action="realty-open"><span class="glyphicon glyphicon-folder-open"></span>&nbsp;&nbsp;<%= ucfloc 'open' %></a></li>
           <li><a href="#" data-action="realty-geo"><span class="glyphicon glyphicon-globe"></span> <%= ucfloc 'geo' %></a></li>
         </ul>
 

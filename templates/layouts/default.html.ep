@@ -178,6 +178,10 @@
             <li class="<%= $controller eq 'realty' && 'active' %>"><a href="/realty"><span class="glyphicon glyphicon-home"></span> <%= ucfloc q{realty} %></a></li>
           % }
           % if (has_permission(clients => 'read')) {
+            <li><a href="/clients/clients"><span class="glyphicon glyphicon-user"></span> <%= ucfloc q{clients} %></a></li>
+          % }
+          % if (1 == 2) {
+            <li><a href="/clients/clients"><span class="glyphicon glyphicon-user"></span> <%= ucfloc q{clients} %></a></li>
             <li class="dropdown">
               <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-user"></span> <%= ucfloc q{sales} %> <b class="caret"></b></a>
               <ul class="dropdown-menu">

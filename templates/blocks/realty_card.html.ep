@@ -16,6 +16,15 @@
 %= css_once "$assets_url/leaflet.fullscreen/$leafletjs_fullscreen_ver/Control.FullScreen.css";
 %= css_once "$assets_url/jquery-file-upload/8.8.5/css/jquery.fileupload-ui.css";
 <style type="text/css">
+  
+  .control-label {
+    padding-top: 5px;
+  }
+  
+  #realtyCard_modal .modal-dialog {
+    width: 560px !important;
+  }
+  
   .realty-form .well > .row:last-of-type .form-group {
     margin-bottom: 0;
   }
@@ -27,6 +36,155 @@
   .thumbnail > canvas {
     display: block;
     margin: 0 auto;
+  }
+  
+  .prev, .next {
+    display: block;
+    position: absolute;
+    
+    top: 0px;
+    padding: 15px 5px 13px 5px;
+    
+    outline: 0;
+    cursor: pointer;
+    text-decoration: none;
+    
+    
+    width: 50px;
+    height: 100px;
+    
+    background: #000;
+    opacity: 0.0;
+    
+    text-align: center;
+    
+    -webkit-transition: opacity 500ms linear;
+    -moz-transition: opacity 500ms linear;
+    -o-transition: opacity 500ms linear;
+    transition: opacity 500ms linear;
+  }
+  
+  .slider_block:hover > .prev, .slider_block:hover > .next {
+    opacity: 0.4;
+  }
+  
+  .prev > span, .next > span {
+    padding-top: 27px;
+  }
+  
+  .next {
+    right: 0px;
+  }
+  
+  .flipbox {
+    border-radius: 0px;
+  }
+  
+  #progress {
+    height: 16px;
+  }
+  
+  .bar {
+    height: 4px;
+    background: green;
+  }
+  
+  .carousel-img {
+    -webkit-transition: all .2s ease-in-out;
+  }
+  
+  .carousel-img:hover {
+    -webkit-transform: scale(1.1);
+  }
+
+  .img-overlay > .photo_del_wrap {
+    opacity: 0.0;
+  }
+  
+  .img-overlay:hover > .photo_del_wrap {
+    opacity: 1.0;
+  }
+  
+  .photo_del_wrap {
+    position: absolute;
+    z-index: 10;
+    right: 0px;
+    top: 0px;
+    background: #222;
+    background: rgba(0, 0, 0, 0.8);
+    /*padding: 3px;*/
+    cursor: pointer;
+    filter: alpha(opacity=0);
+    -webkit-border-radius: 0px;
+    -moz-border-radius: 0px;
+    border-radius: 0px;
+    -webkit-transition: opacity 100ms linear;
+    -moz-transition: opacity 100ms linear;
+    -o-transition: opacity 100ms linear;
+    transition: opacity 100ms linear;
+  }
+  
+  % for my $x (@{Rplus::Model::DictColorTag::Manager->get_objects(query => [delete_date => undef], sort_by => 'id')}) {
+  .card-color-tag-<%= $x->id %> {
+    background: #<%= $x->color %>;
+    border: 1px solid #<%= $x->border_color %>;
+  }
+  % }
+  
+  .rcard-input-group-addon {
+    padding: 6px 12px;
+    font-size: 14px;
+    font-weight: normal;
+    line-height: 1;
+    color: #555;
+    text-align: center;
+    display: table-cell;
+    border: none;
+    box-shadow: none;
+    background-color: rgba(255, 255, 255, 0);
+  }
+  
+  #view-group {
+    min-height: 370px;
+  }
+  
+  .view-group {
+    margin-bottom: 0px;
+    
+    display: box;
+    display: -moz-box;
+    display: -webkit-box;
+  }
+
+  .edit-group {
+
+    margin-bottom: 10px;
+    
+    display: box;
+    display: -moz-box;
+    display: -webkit-box;
+  }
+  
+  .view-label {
+    color: #aeaeae;
+  }
+  
+  #realty-card-header {
+    background-color: #eaeaea;
+  }
+  
+  #realty-card-body {
+    height: 600px !important;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    
+    padding: 0px;
+    border-radius: 0px;
+  }
+  
+  .modal-content {
+    border-radius: 0px;
   }
 </style>
 % end
@@ -52,6 +210,9 @@
 %= js_once "$assets_url/jquery-file-upload/8.8.5/js/jquery.fileupload-image.js";
 <!-- The File Upload validation plugin -->
 %= js_once "$assets_url/jquery-file-upload/8.8.5/js/jquery.fileupload-validate.js";
+
+%= js_once "$assets_url/carouFredSel-6.2.1/jquery.carouFredSel-6.2.1.js";
+
 % end
 
 % content_for javascript => begin
@@ -59,441 +220,437 @@
   "use strict";
 
   var last_event_id = [];
-  
+  var events = {
+    loaded: null,
+    saved: null,
+    close: null,
+    addr_changed: null,
+  };
+      
   var RealtyCard = (function () {
     // Global variables
-    var template;
+    var $realty_modal, realty;
+    var cmode = 0;
+    var selected_tag_id = 0;
+    
+    function setMode(mode) {
+      
+      if (realty.agent_id != '<%= $self->stash('user')->{id} %>' && realty.title != 'Новый' && '<%= $self->stash('user')->{role} %>' != 'manager' && '<%= $self->stash('user')->{role} %>' != 'agent_plus' && realty.agent_id != null) {
+        return;
+      }
+      
+      cmode = mode;
+      if(mode == 0) {
+        $('.rmode').addClass("hidden");
+        $('.emode').addClass("invisible");
+        $('.smode').removeClass("invisible");
+        $('.emode-btn').addClass("hidden");
+        $('.smode-btn').removeClass("hidden");
+      } else if(mode == 1) {
+        $('.rmode').addClass("hidden");
+        $('.emode').removeClass("invisible");
+        $('.smode').addClass("invisible");
+        $('.emode-btn').removeClass("hidden");
+        $('.smode-btn').addClass("hidden");
+      }
+    }
+    
+    function cancel() {
+      setRealtyEditView(realty);
+    }
+    
+    function save() {
+      var formData = {
+        id: realty.id,
+        export_media: [],
+        owner_phones: [],
+        latitude: realty.latitude,
+        longitude: realty.longitude,
+        color_tag_id: selected_tag_id,
+      };
+      var formArray = $('#realty-form').serializeArray();
+      for (var i = 0; i < formArray.length; i++) {
+        var x = formArray[i];
+        if ((typeof formData[x.name] == 'object') && (formData[x.name] instanceof Array)) {
+          if (x.value) formData[x.name].push(x.value);
+        } else {
+          formData[x.name] = x.value || null;
+        }
+      }
+      for (x in formData) {
+        if ((typeof formData[x] == 'object') && (formData[x] instanceof Array) && !formData[x].length) formData[x] = null;
+      }
+      $.ajax({
+        type: "POST",
+        url: "/api/realty/save",
+        data: formData,
+        beforeSend: function (jqXHR, settings) { $('[data-action="realty-obj-save"]').button('loading'); },
+        complete: function (jqXHR, textStatus) { $('[data-action="realty-obj-save"]').button('reset'); },
+      })
+        .done(function (data) {
+          realty = data.realty;
+          
+          last_event_id.push(data.event_id);
+            
+          // Emit event
+          if ($.isFunction(events.saved)) {
+            events.saved(realty);
+          }
+          
+          setRealtyView(realty);
+          setRealtyEditView(realty);
+          setMode(0);
+        })
+        .fail(function (jqXHR, textStatus, errorThrown) {
+            $realty_modal.addClass('shaker');
+            setTimeout(function () { $realty_modal.removeClass("shaker") }, 1000);
+        })
+      ;
+    }
+    
+    function close() {
+      // Emit event
+      if ($.isFunction(events.close)) {
+        events.close(realty);
+      }
+      $realty_modal.hide();
+    }
+    
+    function setRealtyView(realty) {
+      var digest_dict = Rplus.Realty.getDigestDict(realty)
+      for (var f in digest_dict) {
+        var v = digest_dict[f];
+        var el = $('span[data-name="' + f + '"]', $realty_modal);
+        el.html(v);
+      }
+
+      $('#realty-color-tag-1').removeClass(function (index, css) {
+        return (css.match (/card-color-tag-\d/g) || []).join(' ');
+      });
+      
+      $('#realty-color-tag-1').addClass('card-color-tag-' + realty.color_tag_id);
+      
+      if (realty.agent_id != '<%= $self->stash('user')->{id} %>' && realty.title != 'Новый' && '<%= $self->stash('user')->{role} %>' != 'manager' && '<%= $self->stash('user')->{role} %>' != 'agent_plus' && realty.agent_id != null) {
+        $('#unlock-btn').addClass('hidden');
+      } else {
+        $('#unlock-btn').removeClass('hidden');
+      }
+    }
+    
+    function setRealtyEditView(realty) {
+      
+      var formArray = $('#realty-form').serializeArray();
+      for (var i = 0; i < formArray.length; i++) {
+        var x = formArray[i];
+        var el = $('[name="' + x.name + '"]:input', $realty_modal);
+        el.val('');
+      }
+      
+      $('[name="address_object_name"]', $realty_modal)
+        .typeahead({
+          name: 'address_object',
+          valueKey: "expanded_name",
+          limit: 10,
+          remote: "/api/address/complete?term=%QUERY&limit=10",
+        })
+        .bind('typeahead:selected', function (e, obj) {
+          $('[name="address_object_id"]:input', $realty_modal).val(obj.id).data('addrobj', obj);
+          updateGeo();
+        })
+        .blur(function (e) {
+          if ($(this).val() == '') {
+            $('[name="address_object_id"]:input', $realty_modal).val(null).data('addrobj', null);
+            updateGeo();
+          }
+        })
+      ;
+
+      var updateGeoTimeout = null;
+      $('[name="house_num"]:input', $realty_modal).bind('input', function (e) {
+        if (updateGeoTimeout) { clearTimeout(updateGeoTimeout); updateGeoTimeout = null; }
+        updateGeoTimeout = setTimeout(function () { updateGeo(); }, 700);
+      });
+
+      // Sublandmark field
+      if (realty.sublandmarks) {
+        for (var i = 0; i < realty.sublandmarks.length; i++) {
+          var x = realty.sublandmarks[i];
+          $('[name="sublandmark_id"]:input', $realty_modal).append('<option value="' + x.id + '">' + Rplus.Util.escape(x.name) + '</option>');
+        }
+      }
+
+      for (var f in realty) {
+        var v = realty[f];
+        var el = $('[name="' + f + '"]:input', $realty_modal);
+
+        if (f == 'address_object' && v) {
+          $('[name="address_object_id"]:input').data('addrobj', v);
+          $('[name="address_object_name"]:input', $realty_modal).typeahead('setQuery', v.expanded_name);
+        } else if (f == 'owner_phones' && v) {
+          $('[name="owner_phones"]:input', $realty_modal).each(function (i) {
+            $(this).val(Rplus.Util.formatPhoneNum(v[i]));
+          });
+        } else if (f == 'add_date' || f == 'change_date') {
+          $('span[data-name="' + f + '"]', $realty_modal).text(moment(v).format("DD.MM.YYYY"));
+        } else if (f == 'source_media_id' && v) {
+          $('span[data-name="source_media_name"]', $realty_modal).text(Rplus.Table.media[v].name);
+          $('#sourceBlock-' + 0, $realty_modal).show();
+        } else if (f == 'source_media_text' && v) {
+          $('span[data-name="' + f + '"]', $realty_modal).text(v);
+          $('#sourceBlock-' + 0, $realty_modal).show();
+        } else if (el.length) {
+          el.val(v);
+        }
+      }
+
+      $('#tag-select > .realty-color-tag').each(function(){
+        $(this).removeClass('tag-selected');
+      });
+      $('#tag-select > .card-color-tag-' + realty.color_tag_id + '').addClass('tag-selected');
+      
+      pushPhotos(realty.id);
+
+      $('#fileupload', $realty_modal).fileupload({
+        url: '/api/photo/upload',
+        dataType: 'json',
+        formData: function () { var formData = [{ name: 'realty_id', value: realty.id }]; return formData; },
+        autoUpload: true,
+        singleFileUploads: true,
+        acceptFileTypes: /(\.|\/)(gif|jpe?g|png)$/i,
+        maxFileSize: 10000000, // 10 MB
+        disableImageResize: /Android(?!.*Chrome)|Opera/.test(window.navigator.userAgent),
+        imageMaxWidth: 1920,
+        imageMaxHeight: 1280,
+        previewMaxWidth: 203,
+        previewMaxHeight: 151,
+        previewCrop: true,
+        previewOrientation: false,
+        progressall: function (e, data) {
+          var progress = parseInt(data.loaded / data.total * 100, 10);
+          $('#progress .bar').css('width', progress + '%');
+        },
+        done: function (e, data) {
+          $('#progress .bar').css('width', 0 + '%');
+          var x = data.result;
+          var xhtml = '<div class="img-wrap pull-left" style="height: 100px;">';
+          xhtml += '<div class="img-overlay" style="position: relative; display: inline-block;">';
+          xhtml += '<img class="carousel-img" data-action="photos-show" data-photo-id="' + x.id + '" data-id="' + realty.id + '" src="' + x.thumbnail_url + '" style="height: 100px; padding-left: 4px">';
+          xhtml += '<div class="photo_del_wrap emode-btn" style="width: 22px; height: 22px;">';
+          xhtml += '<a class="del-btn" data-action="photo-delete" data-photo-id="' + x.id + '" style="color: white;" href="#"><span class="glyphicon glyphicon-remove" style="padding-left: 4px; padding-top: 3px;"></span></a>';
+          xhtml += '</div>';
+          xhtml += '</div>';
+          xhtml += '</div>';
+            
+          $('#carousel', $realty_modal).trigger('insertItem', [xhtml]);
+          $('#carousel', $realty_modal).trigger('slideTo', -2);
+          $('.carousel-img').bind('click', function (e) {
+            var realtyId = $(this).data('id');
+            var photoId = $(this).data('photo-id');
+            $(document).trigger('showPhoto', [realtyId, photoId]);
+            return false;
+          });
+        }
+      });
+    }
+    
+    function pushPhotos(realty_id) {
+      var xhtml = '';
+      $('#carousel', $realty_modal).html(xhtml);
+      $.ajax({
+        type: 'POST',
+        url: '/api/photo/list',
+        data: {realty_id: realty_id},
+      })
+        .done(function (data, textStatus, jqXHR) {
+          var xhtml = '';
+          for (var i = 0; i < data.list.length; i++) {
+            var x = data.list[i];
+            xhtml += '<div class="img-wrap pull-left" style="height: 100px;">';
+            xhtml += '<div class="img-overlay" style="position: relative; display: inline-block;">';
+            xhtml += '<img class="carousel-img" data-action="photos-show" data-photo-id="' + x.id + '" data-id="' + realty.id + '" src="' + x.thumbnail_url + '" style="height: 100px; padding-left: 4px">';
+            xhtml += '<div class="photo_del_wrap emode-btn hidden" style="width: 22px; height: 22px;">';
+            xhtml += '<a class="del-btn" data-action="photo-delete" data-photo-id="' + x.id + '" style="color: white;" href="#"><span class="glyphicon glyphicon-remove" style="padding-left: 4px; padding-top: 3px;"></span></a>';
+            xhtml += '</div>';
+            xhtml += '</div>';
+            xhtml += '</div>';
+          }
+          $('#carousel', $realty_modal).html(xhtml);
+          $('#carousel', $realty_modal).carouFredSel({
+              items: 4,
+              //infinite: true,         // Determines whether the carousel should be infinite. Note: It is possible to create a non-circular, infinite carousel, but it is not possible to create a circular, non-infinite carousel. 
+              direction: "left",
+              responsive: true,
+              width: 498,            // The width of the carousel. Can be null (width will be calculated), a number, "variable" (automatically resize the carousel when scrolling items with variable widths), "auto" (measure the widest item) or a percentage like "100%" (only applies on horizontal carousels)
+              height: 100,           // The height of the carousel. Can be null (width will be calculated), a number, "variable" (automatically resize the carousel when scrolling items with variable heights), "auto" (measure the tallest item) or a percentage like "100%" (only applies on vertical carousels)
+              //align: "center",     // Whether and how to align the items inside a fixed width/height. Possible values: "center", "left", "right" or false.
+              scroll : {
+                  play: false,
+                  items: 1,
+                  easing: "linear",
+              },
+              next: {
+                button: $(".next"),
+              },
+              prev: {
+                button: $(".prev"),
+              },
+          });
+          //$('#carousel', $realty_modal).trigger('slideTo', -2);
+          //$('#carousel', $realty_modal).trigger('slideTo', 0);
+          
+          // Load photos
+          $('.carousel-img').bind('click', function (e) {
+            var realtyId = $(this).data('id');
+            var photoId = $(this).data('photo-id');
+            $(document).trigger('showPhoto', [realtyId, photoId]);
+            return false;
+          });
+          
+        });
+    }
+
+    function updateGeo() {
+      function clearGeo() {
+        $('[name="sublandmark_id"]:input', $realty_modal).html('<option value="">-</option>');
+        realty.latitude = null;
+        realty.longitude = null;
+        
+        if ($.isFunction(events.addr_changed)) {
+          events.addr_changed(realty);
+        }
+      }
+
+      var city, street,
+          houseNum = $('[name="house_num"]:input', $realty_modal).val(),
+          addrobj = $('[name="address_object_id"]:input', $realty_modal).data('addrobj')
+      ;
+      if (addrobj && addrobj.addr_parts && addrobj.addr_parts[0].level == 7) {
+        street = addrobj.addr_parts[0].name;
+        city = addrobj.addr_parts[1].name;
+      }
+      if (city && street && houseNum) {
+        $.ajax({
+          url: 'http://catalog.api.2gis.ru/geo/search',
+          data: {
+            q: city + ', ' + street + ', ' + houseNum,
+            key: 'rujrdp3400',
+            version: 1.3,
+            output: 'jsonp',
+            types: 'house'
+          },
+          dataType: 'jsonp',
+        })
+          .done(function (data) {
+            if (data.result) {
+              var re = /^POINT\((\d+\.\d+) (\d+\.\d+)\)$/;
+              var ra = re.exec(data.result[0].selection);
+              realty.latitude = ra[2];
+              realty.longitude = ra[1];
+
+              if ($.isFunction(events.addr_changed)) {
+                events.addr_changed(realty);
+              }
+              
+              //if (realty.latitude && realty.longitude) {
+                $.ajax({
+                  url: '/api/landmark/list',
+                  data: {type: 'sublandmark', lat: realty.latitude, lng: realty.longitude},
+                })
+                  .done(function (data) {
+                    var xhtml = '<option value="">-</option>';
+                    for (var i = 0; i < data.list.length; i++) {
+                      var x = data.list[i];
+                      xhtml += '<option value="' + x.id + '">' + x.name + '</option>';
+                    }
+                    $('[name="sublandmark_id"]:input', $realty_modal).html(xhtml);
+                    if (data.list.length == 1) $('[name="sublandmark_id"]:input', $realty_modal).val(data.list[0].id);
+                  })
+                ;
+              //}
+            } else {
+              clearGeo();
+            }
+          })
+        ;
+      } else {
+        clearGeo();
+      }
+    }
     
     $(function () {
-      template = $('#realtyCardTemplate').html();
+      $realty_modal = $('#realtyCard_modal').modal({show: false, backdrop: false});
+      
+      $realty_modal.on('click', '[data-action="realty-unlock"]', function (e) {
+        setMode(1);
+      });
+      
+      $realty_modal.on('click', '[data-action="realty-cancel"]', function (e) {
+        cancel();
+        setMode(0);
+      });
+      
+      $realty_modal.on('click', '[data-action="realty-save"]', function (e) {
+        save();
+      });
+
+      $realty_modal.on('click', '[data-action="realty-close"]', function (e) {
+        close();
+      });
+      
+      $realty_modal.on('click', '[data-action="photo-delete"]', function (e) {
+        var p_id = $(this).data('photo-id');
+        var $el = $(this).closest('.img-wrap');
+        $.ajax({
+          type: 'POST',
+          url: '/api/photo/delete',
+          data: {id: p_id}
+        })
+          .done(function (data) {
+            if (data.status == 'success') {
+              $('#carousel', $realty_modal).trigger('removeItem', $el);
+            }
+          })
+          .fail(function (jqXHR, textStatus, errorThrown) {
+            alert('Error');
+          });
+      });
+
+      $realty_modal.on('click', '[data-action="realty-card-set-color_tag_id"]', function (e) {
+        //if (cmode == 0) return;
+        if (selected_tag_id != $(this).data('val')) {
+          $('.tag-selected').removeClass('tag-selected');
+          selected_tag_id = $(this).data('val');
+        }
+        else {
+          selected_tag_id = 0;
+        }
+        $(this).toggleClass('tag-selected');
+      });
     });
 
     return function (options) {
-      // Per-object variables
-      var guid, realty, container, geoMap;
-
-      // Per-object events
-      var events = {
+      
+      events = {
         loaded: options.loaded,
         saved: options.saved,
+        close: options.close,
+        addr_changed: options.addr_changed,
       };
-
-      function getTitle() {
-        var title = 'Object';
-        if (realty.address_object && realty.address_object.addr_parts && realty.address_object.addr_parts[0]) {
-          title = realty.address_object.addr_parts[0].name + ' ' + realty.address_object.addr_parts[0].short_type;
-          if (realty.house_num) title += ', ' + realty.house_num;
-        } else if (realty.type_code) {
-          title = Rplus.Table.realty_types[realty.type_code].name;
-        }
-        return title;
-      }
-
-      function fillForm() {
-          $.ajax({
-            type: "POST",
-            url: "/api/realty/lock",
-            data: {id: realty.id, lock: 1},
-            complete: function () {}
-          })
-          .done(function (data, textStatus, jqXHR) {
-            last_event_id.push(data.event_id);
-            if (data.lock != '<%= $self->stash('user')->{id} %>' || realty.agent_id != '<%= $self->stash('user')->{id} %>' && realty.title != 'Новый' && '<%= $self->stash('user')->{role} %>' != 'manager' && '<%= $self->stash('user')->{role} %>' != 'agent_plus' && realty.agent_id != null) {
-                $('#form-' + guid + ' input[type=text]').each(function () {
-                    $(this).attr("readonly", "");
-                });
-                $('#form-' + guid + ' textarea').each(function () {
-                    $(this).attr("readonly", "");
-                });        
-                $('#form-' + guid + ' select').each(function () {
-                    $(this).attr("disabled", "");
-                });
-                $('input[type=checkbox]').each(function () {
-                    $(this).attr("disabled", "");
-                });
-            }
-          });
-        
-
-
-        for (var f in realty) {
-          var v = realty[f];
-          var el = $('[name="' + f + '"]:input', container);
-
-          if (f == 'address_object' && v) {
-            $('[name="address_object_id"]:input').data('addrobj', v);
-            $('[name="address_object_name"]:input', container).typeahead('setQuery', v.expanded_name);
-          } else if (f == 'owner_phones' && v) {
-            $('[name="owner_phones"]:input', container).each(function (i) {
-              $(this).val(Rplus.Util.formatPhoneNum(v[i]));
-            });
-          } else if (f == 'add_date' || f == 'change_date') {
-            $('span[data-name="' + f + '"]', container).text(moment(v).format("DD.MM.YYYY"));
-          } else if (f == 'source_media_id' && v) {
-            $('span[data-name="source_media_name"]', container).text(Rplus.Table.media[v].name);
-            $('#sourceBlock-' + guid, container).show();
-          } else if (f == 'source_media_text' && v) {
-            $('span[data-name="' + f + '"]', container).text(v);
-            $('#sourceBlock-' + guid, container).show();
-          } else if (el.length) {
-            el.val(v);
-          }
-        }
-      }
-
-      function updateGeo() {
-        function clearGeo() {
-          $('[name="sublandmark_id"]:input', container).html('<option value="">-</option>');
-          realty.latitude = null;
-          realty.longitude = null;
-        }
-
-        var city, street,
-            houseNum = $('[name="house_num"]:input', container).val(),
-            addrobj = $('[name="address_object_id"]:input', container).data('addrobj')
-        ;
-        if (addrobj && addrobj.addr_parts && addrobj.addr_parts[0].level == 7) {
-          street = addrobj.addr_parts[0].name;
-          city = addrobj.addr_parts[1].name;
-        }
-        if (city && street && houseNum) {
-          $.ajax({
-            url: 'http://catalog.api.2gis.ru/geo/search',
-            data: {
-              q: city + ', ' + street + ', ' + houseNum,
-              key: 'rujrdp3400',
-              version: 1.3,
-              output: 'jsonp',
-              types: 'house'
-            },
-            dataType: 'jsonp',
-          })
-            .done(function (data) {
-              if (data.result) {
-                var re = /^POINT\((\d+\.\d+) (\d+\.\d+)\)$/;
-                var ra = re.exec(data.result[0].selection);
-                realty.latitude = ra[2];
-                realty.longitude = ra[1];
-
-                //if (realty.latitude && realty.longitude) {
-                  $.ajax({
-                    url: '/api/landmark/list',
-                    data: {type: 'sublandmark', lat: realty.latitude, lng: realty.longitude},
-                  })
-                    .done(function (data) {
-                      var xhtml = '<option value="">-</option>';
-                      for (var i = 0; i < data.list.length; i++) {
-                        var x = data.list[i];
-                        xhtml += '<option value="' + x.id + '">' + x.name + '</option>';
-                      }
-                      $('[name="sublandmark_id"]:input', container).html(xhtml);
-                      if (data.list.length == 1) $('[name="sublandmark_id"]:input', container).val(data.list[0].id);
-                    })
-                  ;
-                //}
-              } else {
-                clearGeo();
-              }
-            })
-          ;
-        } else {
-          clearGeo();
-        }
-      }
-
-      function initMainTab() {
-        $('[name="address_object_name"]', container)
-          .typeahead({
-            name: 'address_object',
-            valueKey: "expanded_name",
-            limit: 10,
-            remote: "/api/address/complete?term=%QUERY&limit=10",
-          })
-          .bind('typeahead:selected', function (e, obj) {
-            $('[name="address_object_id"]:input', container).val(obj.id).data('addrobj', obj);
-            updateGeo();
-          })
-          .blur(function (e) {
-            if ($(this).val() == '') {
-              $('[name="address_object_id"]:input', container).val(null).data('addrobj', null);
-              updateGeo();
-            }
-          })
-        ;
-
-        var updateGeoTimeout = null;
-        $('[name="house_num"]:input', container).bind('input', function (e) {
-          if (updateGeoTimeout) { clearTimeout(updateGeoTimeout); updateGeoTimeout = null; }
-          updateGeoTimeout = setTimeout(function () { updateGeo(); }, 700);
-        });
-
-        // Sublandmark field
-        if (realty.sublandmarks) {
-          for (var i = 0; i < realty.sublandmarks.length; i++) {
-            var x = realty.sublandmarks[i];
-            $('[name="sublandmark_id"]:input', container).append('<option value="' + x.id + '">' + Rplus.Util.escape(x.name) + '</option>');
-          }
-        }
-      }
-
-      function initGeoTab() {
-        var marker;
-
-        $('a[href="#geoTab-' + guid + '"]', container).bind('shown.bs.tab', function (e) {
-          if (!geoMap) {
-            geoMap = L.map('geoMap-' + guid, {
-              center: [48.480232846617845, 135.07203340530396],
-              zoom: 16,
-            });
-
-            Rplus.GeoMap.initLayer(geoMap);
-          }
-
-          if (realty.latitude && realty.longitude) {
-            if (!marker) {
-              marker = L.marker([realty.latitude, realty.longitude])
-                        .addTo(geoMap);
-                        //.bindPopup(realty.title);
-            } else {
-              marker.setLatLng([realty.latitude, realty.longitude]);
-            }
-            geoMap.panTo([realty.latitude, realty.longitude]);
-          } else {
-            if (marker) { geoMap.removeLayer(marker); marker = null; }
-          }
-        });
-      }
-
-      function initPhotosTab() {
-        var photosContainer = $('#photosTab-' + guid, container);
-
-        function listPhotos() {
-          $.ajax({
-            type: 'POST',
-            url: '/api/photo/list',
-            data: {realty_id: realty.id},
-          })
-            .done(function (data, textStatus, jqXHR) {
-              var xhtml = '';
-              for (var i = 0; i < data.list.length; i++) {
-                var x = data.list[i];
-                xhtml += '<div class="col-md-3 col-lg-3 photo-container" data-id="' + x.id + '">';
-                xhtml += '<div class="pull-right">';
-                xhtml += '<a href="#" data-action="photo-set-main"><span class="glyphicon glyphicon-ok-circle' + (x.is_main ? '' : ' text-muted') + '" title="Set as main photo"></span></a>';
-                xhtml += '<a href="#" data-action="photo-delete" style="margin-left: 6px;"><span class="glyphicon glyphicon-remove" title="Delete photo"></span></a>';
-                xhtml += '</div>';
-                xhtml += '<div class="clearfix"></div>';
-                xhtml += '<a href="#" class="thumbnail">';
-                xhtml += '<img src="' + x.thumbnail_url + '" class="img-responsive">';
-                xhtml += '</a>';
-                xhtml += '</div>';
-              }
-              $('.photo-list', photosContainer).html(xhtml);
-            })
-          ;
-        }
-
-        $('input[type="file"]', photosContainer).fileupload({
-          url: '/api/photo/upload',
-          dataType: 'json',
-          formData: function () { var formData = [{ name: 'realty_id', value: realty.id }]; return formData; },
-          autoUpload: false,
-          singleFileUploads: true,
-          acceptFileTypes: /(\.|\/)(gif|jpe?g|png)$/i,
-          maxFileSize: 10000000, // 10 MB
-          disableImageResize: /Android(?!.*Chrome)|Opera/.test(window.navigator.userAgent),
-          imageMaxWidth: 1920,
-          imageMaxHeight: 1280,
-          previewMaxWidth: 203,
-          previewMaxHeight: 151,
-          previewCrop: true,
-          previewOrientation: false,
-        })
-          .on('fileuploadadd', function (e, data) {
-            data.context = $('<div class="col-md-3 col-lg-3 photo-container"></div>').appendTo($('.photo-queue', photosContainer));
-            var node = $(
-              '<div class="pull-right">' +
-              '<a href="#" data-action="photo-delete"><span class="glyphicon glyphicon-remove" title="Delete photo"></span></a>' +
-              '</div>' +
-              '<div class="clearfix"></div>' +
-              '<div class="thumbnail"></div>'
-            ).appendTo(data.context);
-            data.context.data(data);
-          })
-          .on('fileuploadprocessalways', function (e, data) {
-            var file = data.files[0];
-            if (file.preview) {
-              $('.thumbnail', data.context).append(file.preview);
-            }
-          })
-          .on('fileuploadprogressall', function (e, data) {
-            var progress = parseInt(data.loaded / data.total * 100, 10);
-            $('.progress .progress-bar', photosContainer).css('width', progress + '%');
-          })
-          .on('fileuploaddone', function (e, data) {
-            data.context.remove();
-            $('.progress .progress-bar', photosContainer).css('width', '0%');
-            listPhotos();
-          })
-          .on('fileuploadfail', function (e, data) {
-            alert('Error while uploading file');
-            data.context.remove();
-            $('.progress .progress-bar', photosContainer).css('width', '0%');
-          })
-        ;
-
-        $('.start', photosContainer).click(function (e) {
-          $('.photo-queue > .photo-container', photosContainer).each(function (index, el) {
-            var $this = $(this),
-                data = $this.data();
-            data.submit();
-          });
-        });
-
-        // Delete pre-uploaded photo
-        $('.photo-queue', photosContainer).on('click', '.photo-container [data-action="photo-delete"]', function (e) {
-          $(this).closest('.photo-container').remove();
-        });
-
-        // Delete photo
-        $('.photo-list', photosContainer).on('click', '.photo-container [data-action="photo-delete"]', function (e) {
-          var parent = $(this).closest('.photo-container'),
-              id     = parent.data('id');
-          $.ajax({
-            type: 'POST',
-            url: '/api/photo/delete',
-            data: {id: id}
-          })
-            .done(function (data) {
-              if (data.status == 'success') {
-                parent.remove();
-              }
-            })
-            .fail(function (jqXHR, textStatus, errorThrown) {
-              alert('Error');
-            })
-            ;
-        });
-
-        // Set photo as main
-        $('.photo-list', photosContainer).on('click', '.photo-container [data-action="photo-set-main"]', function (e) {
-          var parent = $(this).closest('.photo-container'),
-              id     = parent.data('id');
-          $.ajax({
-            type: 'POST',
-            url: '/api/photo/update',
-            data: {id: id, is_main: true},
-          })
-            .done(function (data, textStatus, jqXHR) {
-              if (data.status == 'success') {
-                $('.photo-container [data-action="photo-set-main"] > span:not(.text-muted)').addClass('text-muted');
-                $('.photo-container[data-id="' + id + '"] [data-action="photo-set-main"] > span.text-muted', photosContainer).removeClass('text-muted');
-              }
-            })
-            .fail(function (jqXHR, textStatus, errorThrown) {
-              alert('Error');
-            })
-          ;
-        });
-
-        listPhotos();
-      }
-
-      function initActions() {
-        // Save action
-        $('[data-action="realty-obj-save"]', container).click(function (e) {
-          var formData = {
-            id: realty.id,
-            export_media: [],
-            owner_phones: [],
-            latitude: realty.latitude,
-            longitude: realty.longitude,
-          };
-          var formArray = $('#form-' + guid).serializeArray();
-          for (var i = 0; i < formArray.length; i++) {
-            var x = formArray[i];
-            if ((typeof formData[x.name] == 'object') && (formData[x.name] instanceof Array)) {
-              if (x.value) formData[x.name].push(x.value);
-            } else {
-              formData[x.name] = x.value || null;
-            }
-          }
-          for (x in formData) {
-            if ((typeof formData[x] == 'object') && (formData[x] instanceof Array) && !formData[x].length) formData[x] = null;
-          }
-          $.ajax({
-            type: "POST",
-            url: "/api/realty/save",
-            data: formData,
-            beforeSend: function (jqXHR, settings) { $('[data-action="realty-obj-save"]').button('loading'); },
-            complete: function (jqXHR, textStatus) { $('[data-action="realty-obj-save"]').button('reset'); },
-          })
-            .done(function (data) {
-              realty = data.realty;
-              realty.guid = guid;
-              realty.title = getTitle();
-              
-              last_event_id.push(data.event_id);
-                
-              if (data.status == 'success') {
-                if (!realty.similar_realty_id) {
-                  $('[data-display="realty-save-status"]', container).html('<span class="text-success">Success</span>');
-                } else {
-                  $('[data-display="realty-save-status"]', container).html('<span class="text-warning">Success (Found similar)</span>');
-                }
-              } else {
-                $('[data-display="realty-save-status"]', container).html('<span class="text-danger">Error</span>');
-              }
-
-              // Emit event
-              if ($.isFunction(events.saved)) {
-                events.saved(realty);
-              }
-
-              % if (config->{realty} && config->{realty}->{close_on_save}) {
-                if ($.isFunction(options.close)) { options.close(realty); }
-              % }
-            })
-            .fail(function (jqXHR, textStatus, errorThrown) {
-              $('[data-display="realty-save-status"]', container).html('<span class="text-danger">Error</span>');
-            })
-          ;
-        });
-
-        // Close action
-        $('[data-action="realty-obj-close"]', container).click(function (e) {
-          if ($.isFunction(options.close)) {
-            options.close(realty);
-          }
-        });
-      }
 
       var $this = {
         create: function (obj) {
           realty = obj || {};
-          guid = realty.guid = Rplus.Util.guid();
           realty.title = '<%= ucfloc q{new} %>';
 
-          if ($.isFunction(options.container)) {
-            container = options.container(obj);
-          } else {
-            container = options.container;
-          }
-          if (!container) return;
-          container.html(template.replace(/{guid}/g, realty.guid));
-
-          initMainTab();
-          initGeoTab();
-          initPhotosTab();
-          initActions();
-
-          fillForm();
-
-          $('span[data-name="add_date"], span[data-name="change_date"]', container).html(moment().format("DD.MM.YYYY"));
-
+          setRealtyEditView(realty);
+          setRealtyView(realty);
+          
           if ($.isFunction(events.loaded)) {
             events.loaded(realty);
           }
+          
+          setMode(1);
+          $realty_modal.show();
 
           return $this;
         },
@@ -506,27 +663,15 @@
           })
             .done(function (data, textStatus, jqXHR) {
               realty = data;
-              guid = realty.guid = Rplus.Util.guid();
-              realty.title = getTitle();
 
-              if ($.isFunction(options.container)) {
-                container = options.container(realty);
-              } else {
-                container = options.container;
-              }
-              if (!container) return;
-              container.html(template.replace(/{guid}/g, realty.guid));
-
-              initMainTab();
-              initGeoTab();
-              initPhotosTab();
-              initActions();
-
-              fillForm();
+              setRealtyEditView(realty);
+              setRealtyView(realty);
 
               if ($.isFunction(events.loaded)) {
                 events.loaded(realty);
               }
+
+              $realty_modal.show();
             })
           ;
           return $this;
@@ -543,427 +688,417 @@
 </script>
 % end
 
-<!-- #RealtyCardTemplate -->
-<div class="hidden" id="realtyCardTemplate">
-  <nav class="navbar navbar-default navbar-fixed-bottom">
-    <div class="container">
-      <div class="navbar-left">
-        % unless (config->{realty} && config->{realty}->{close_on_save}) {
-        <button type="button" class="btn btn-warning btn-sm navbar-btn" data-action="realty-obj-close"><span class="glyphicon glyphicon-remove"></span> <%= ucfloc 'close' %></button>
-        % }
-        <button type="button" class="btn btn-success btn-sm navbar-btn" data-action="realty-obj-save" data-loading-text="<%= ucfloc 'saving...' %>"><span class="glyphicon glyphicon-ok"></span> <%= ucfloc 'save' %></button>
-      </div>
-      <p class="navbar-text pull-right" data-display="realty-save-status"></p>
-    </div>
-  </nav>
+% content_for modals => begin
 
-  <div class="row">
-    <div class="col-md-2 col-lg-2">
-      <!-- Menu block -->
-      <div class="row margin-bottom-15">
-        <div class="col-md-12 col-lg-12">
-          <ul class="nav nav-pills nav-stacked" role="menu">
-            <li class="active"><a href="#mainTab-{guid}" data-toggle="pill"><span class="glyphicon glyphicon-home"></span> <%= ucfloc 'main' %></a></li>
-            <li><a href="#geoTab-{guid}" data-toggle="pill"><span class="glyphicon glyphicon-globe"></span> <%= ucfloc 'geo' %></a></li>
-            <li><a href="#photosTab-{guid}" data-toggle="pill"><span class="glyphicon glyphicon-camera"></span> <%= ucfloc 'photos' %></a></li>
-          </ul>
+<div class="modal " id="realtyCard_modal" role="dialog" tabindex="-1"  style="display: none;" data-focus-on="input:first" aria-labelledby="myModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header" id="realty-card-header">
+        <a href="#" class="ctrl-button smode-btn" data-action="realty-close">Закрыть</a>
+        <a href="#" class="ctrl-button emode-btn hidden" data-action="realty-cancel">Отменить</a>
+        <a href="#" id="unlock-btn" class="ctrl-button pull-right smode-btn" data-action="realty-unlock">Изменить</a>
+        <a href="#" class="ctrl-button pull-right emode-btn hidden" data-action="realty-save">Готово</a>
+      </div>
+      <div class="modal-body" id="realty-card-body">       
+        <div id="realty-main" class="main col-md-12" style="padding: 0px;">
+        
+        <div id="view-group" class="smode-btn" style="margin-top: 10px;">
+        
+          <div class="form-group view-group">
+            <label class="col-md-4 col-lg-4 control-label view-label">Улица/Район</label>
+            <div class="col-md-8 col-lg-8" style="padding-top: 5px;">
+              <p class="form-control-static text-left"><span class="" data-name="dg_p1"></span></p>
+            </div>
+          </div>
+
+          <div class="form-group view-group">
+            <label class="col-md-4 col-lg-4 control-label view-label">Планировка/Тип</label>
+            <div class="col-md-8 col-lg-8" style="padding-top: 5px;">
+              <p class="form-control-static text-left"><span class="" data-name="dg_p2"></span></p>
+            </div>
+          </div>
+
+          <div class="form-group view-group">
+            <label class="col-md-4 col-lg-4 control-label view-label">Комнаты/Этаж</label>
+            <div class="col-md-8 col-lg-8" style="padding-top: 5px;">
+              <p class="form-control-static text-left"><span class="" data-name="dg_p3"></span></p>
+            </div>
+          </div>
+
+          <div class="form-group view-group">
+            <label class="col-md-4 col-lg-4 control-label view-label">Состояние</label>
+            <div class="col-md-8 col-lg-8" style="padding-top: 5px;">
+              <p class="form-control-static text-left"><span class="" data-name="dg_p4"></span></p>
+            </div>
+          </div>
+
+          <div class="form-group view-group">
+            <label class="col-md-4 col-lg-4 control-label view-label">Балконы/Ванные</label>
+            <div class="col-md-8 col-lg-8" style="padding-top: 5px;">
+              <p class="form-control-static text-left"><span class="" data-name="dg_p5"></span></p>
+            </div>
+          </div>
+
+          <div class="form-group view-group">
+            <label class="col-md-4 col-lg-4 control-label view-label">Площадь</label>
+            <div class="col-md-8 col-lg-8" style="padding-top: 5px;">
+              <p class="form-control-static text-left"><span class="" data-name="dg_p6"></span></p>
+            </div>
+          </div>
+
+          <div class="form-group view-group">
+            <label class="col-md-4 col-lg-4 control-label view-label">Описание</label>
+            <div class="col-md-8 col-lg-8" style="padding-top: 5px;">
+              <p class="form-control-static text-left"><span class="" data-name="dg_p7"></span></p>
+            </div>
+          </div>          
+
+          <div class="form-group view-group">
+            <label class="col-md-4 col-lg-4 control-label view-label">Цена</label>
+            <div class="col-md-8 col-lg-8" style="padding-top: 5px;">
+              <p class="form-control-static text-left"><span class="" data-name="dg_p8"></span></p>
+            </div>
+          </div>
+          
+          <div class="form-group view-group">
+            <label class="col-md-4 col-lg-4 control-label view-label">Агент</label>
+            <div class="col-md-8 col-lg-8" style="padding-top: 5px;">
+              <p class="form-control-static text-left"><span class="" data-name="dg_p9"></span></p>
+            </div>
+          </div>
+
+        <div class="form-group view-group">
+          <label class="col-md-4 col-lg-4 control-label view-label">Тэги</label>
+            <div class="col-md-8 col-lg-8" style="padding-top: 5px;">
+              <div id="rcard-tag-group" class="tag-group input-group ccard-input-group" style="padding-left: 0px;">
+                <span id="realty-color-tag-1" class="realty-color-tag round-button" style="margin-top: 0px;"></span>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
 
-      <!-- Export block -->
-      <div class="row">
-        <div class="col-md-12 col-lg-12">
-          <div class="panel panel-default panel-sm">
-            <div class="panel-body">
-              <strong><small><%= ucfloc 'export' %></small></strong>
-              % for my $x (@{Rplus::Model::Media::Manager->get_objects(query => [type => 'export', delete_date => undef])}) {
-                <div class="checkbox">
-                  <label><input type="checkbox" name="export_media" value="<%= $x->id %>" form="form-{guid}"> <small><%= $x->name %></small></label>
-                </div>
+        </div>
+
+        <div class="form-group view-group smode-btn" style="margin-top: 10px; margin-bottom: 10px;">
+          <label class="col-md-4 col-lg-4 control-label view-label">
+            <a class="" href="#" data-action="realty-geo" style="text-decoration: none !important;">
+              <span class="glyphicon glyphicon-globe"></span>  Показать на карте
+            </a>
+          </label>
+          <div class="col-md-8 col-lg-8 hidden" style="padding-top: 5px;">
+            <p class="form-control-static text-left"><span class="" data-name="dg_p10"></span></p>
+          </div>
+        </div>
+
+        <div id="edit-group" class="emode-btn hidden">
+          
+        <form class="realty-form" id="realty-form" role="form">
+
+          <div class="form-group edit-group">
+            <label class="col-md-3 col-lg-3 control-label">Дата</label>
+            <div class="col-md-9 col-lg-9" style="padding-top: 5px;">
+              <p class="form-control-static text-left"><small><span class="text-primary" data-name="add_date"></span>&nbsp;/&nbsp;<span class="text-success" data-name="change_date"></span></small></p>
+            </div>
+          </div>
+        
+          <div class="form-group edit-group" style="margin-top: 15px;">
+            <label class="col-md-3 col-lg-3 control-label" for="typeInput"><%= ucfloc 'type' %></label>
+            <div class="col-md-9 col-lg-9">
+              %# New experimental types
+              % {
+              %   my $type_optgroups = [];
+              %   my $realty_types = db->dbh->selectall_arrayref(q{SELECT t1.id, t1.name, t1.code, t2.name AS category_name FROM realty_types t1 JOIN realty_categories t2 ON (t1.category_code = t2.code) ORDER BY t2.id, t1.id}, {Slice => {}});
+              %   my %categories;
+              %   for (@$realty_types) {
+              %     my $x = $_->{category_name};
+              %     unless (exists $categories{$x}) {
+              %       $categories{$x} = scalar keys %categories;
+              %       $type_optgroups->[$categories{$x}] = {$x => []};
+              %     }
+              %     push $type_optgroups->[$categories{$x}]->{$x}, [$_->{name}, $_->{code}];
+              %   }
+              %= select_field 'type_code' => $type_optgroups, class => 'form-control input-sm', id => 'typeInput'
               % }
             </div>
           </div>
-        </div>
-      </div>
 
-      <!-- Source block -->
-      <div class="row" id="sourceBlock-{guid}" style="display: none;">
-        <div class="col-md-12 col-lg-12">
-          <div class="panel panel-default panel-sm">
-            <div class="panel-body">
-              <small>
-                <strong><%= ucfloc 'source' %>: </strong> <span data-name="source_media_name">?</span><br>
-                <span data-name="source_media_text">Text</span>
-              </small>
+          <div class="form-group edit-group">
+            <label class="col-md-3 col-lg-3 control-label" for="stateInput"><%= ucfloc 'state' %></label>
+            <div class="col-md-9 col-lg-9">
+              <select class="form-control input-sm" name="state_code" id="stateInput">
+              % for my $x (@{Rplus::Model::RealtyState::Manager->get_objects(sort_by => 'id')}) {
+                <option value="<%= $x->code %>"><%= $x->name %></option>
+              % }
+              </select>
             </div>
           </div>
+        
+          <div class="form-group edit-group">
+            <label class="col-md-3 col-lg-3 control-label" for="offerTypeInput"><%= ucfloc 'offer', 2 %></label>
+            <div class="col-md-9 col-lg-9">
+              <select class="form-control input-sm" name="offer_type_code" id="offerTypeInput">
+              % for my $x (@{Rplus::Model::RealtyOfferType::Manager->get_objects(sort_by => 'name')}) {
+                <option value="<%= $x->code %>"><%= $x->name %></option>
+              % }
+              </select>
+            </div>
+          </div>
+        
+          <div class="form-group edit-group">
+            <label class="col-md-3 col-lg-3 control-label" for="agentInput"><%= ucfloc 'agent' %></label>
+            <div class="col-md-9 col-lg-9">
+              <select class="form-control input-sm" name="agent_id" id="agentInput">
+              %# check read (!) permission to prevent empty list
+              % if (has_permission(realty => read => undef)) {
+                <option class="text-muted" value="">-</option>
+              % }
+              % for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [role => ['agent', 'agent_ext', 'manager'], delete_date => undef], sort_by => 'name')}) {
+                % if ($self->stash('user')->{role} eq 'manager' || $x->id == $self->stash('user')->{id}) {
+                  <option value="<%= $x->id %>"><%= $x->name %></option>
+                % } else {
+                  <option disabled value="<%= $x->id %>"><%= $x->name %></option>
+                % }
+              % }
+
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group edit-group">
+            <label class="col-md-3 col-lg-3 control-label" for="addrObjInput"><%= ucfloc 'addr' %>&nbsp&nbsp</label>
+            <div class="col-md-9 col-lg-9">
+              <input type="hidden" name="address_object_id">
+              <div class="input-group">
+                <a class="input-group-addon" href="#" data-action="realty-geo"><span class="glyphicon glyphicon-globe"></span></a>
+                <input type="text" class="form-control input-sm" name="address_object_name" id="addrObjInput placeholder="<%= ucfloc 'street' %>, <%= ucfloc 'city' %>">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group edit-group">
+            <label class="col-md-3 col-lg-3 control-label" for="houseNumInput"><%= ucfloc 'num' %></label>
+            <div class="col-md-9 col-lg-9">
+              <input type="text" class="form-control input-sm" name="house_num" id="houseNumInput" placeholder="<%= ucfloc 'house' %>" style="width: 45%; display: inline-block;">&nbsp;/&nbsp;<input type="text" class="form-control input-sm" name="ap_num" placeholder="<%= ucfloc 'ap' %>" style="width: 45%; display: inline-block;">
+            </div>
+          </div>
+          
+          <div class="form-group edit-group">
+            <label class="col-md-3 col-lg-3 control-label" for="sublandmarkInput"><%= ucfloc 'landmark' %></label>
+            <div class="col-md-9 col-lg-9">
+              <select class="form-control input-sm" name="sublandmark_id" id="sublandmarkInput">
+                <option class="text-muted" value="">-</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group edit-group">
+            <label class="col-md-3 col-lg-3 control-label" for="apSchemeInput"><%= ucfloc 'scheme', 2 %></label>
+            <div class="col-md-9 col-lg-9">
+              <select class="form-control input-sm" name="ap_scheme_id" id="apSchemeInput">
+                <option class="text-muted" value="">-</option>
+                % for my $x (@{Rplus::Model::DictApScheme::Manager->get_objects(sort_by => 'name')}) {
+                  <option value="<%= $x->id %>"><%= $x->name %></option>
+                % }
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group edit-group">
+            <label class="col-md-3 col-lg-3 control-label" for="houseTypeInput">Материал</label>
+            <div class="col-md-9 col-lg-9">
+              <select class="form-control input-sm" name="house_type_id" id="houseTypeInput">
+                <option class="text-muted" value="">-</option>
+                % for my $x (@{Rplus::Model::DictHouseType::Manager->get_objects(sort_by => 'name')}) {
+                  <option value="<%= $x->id %>"><%= $x->name %></option>
+                % }
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group edit-group">
+            <label class="col-md-3 col-lg-3 control-label" for="roomSchemeInput"><%= ucfloc 'rooms' %></label>
+            <div class="col-md-9 col-lg-9">
+              <select class="form-control input-sm" name="room_scheme_id" id="roomSchemeInput">
+                <option class="text-muted" value="">-</option>
+                % for my $x (@{Rplus::Model::DictRoomScheme::Manager->get_objects(sort_by => 'name')}) {
+                  <option value="<%= $x->id %>"><%= $x->name %></option>
+                % }
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group edit-group">
+            <label class="col-md-3 col-lg-3 control-label" for="roomsCountInput"><%= ucfloc 'rooms' %></label>
+            <div class="col-md-9 col-lg-9">
+              <input type="text" class="form-control input-sm" name="rooms_offer_count" placeholder="<%= ucfloc 'sale' %>" style="width: 45%; display: inline-block;">&nbsp;/&nbsp;<input type="text" class="form-control input-sm" id="roomsCountInput" name="rooms_count" placeholder="<%= ucfloc 'total' %>" style="width: 45%; display: inline-block;">
+            </div>
+          </div>
+
+          <div class="form-group edit-group">
+            <label class="col-md-3 col-lg-3 control-label" for="floorInput"><%= ucfloc 'floors' %></label>
+            <div class="col-md-9 col-lg-9">
+              <input type="text" class="form-control input-sm" name="floor" id="floorInput" placeholder="<%= ucfloc 'floor' %>" style="width: 28%; display: inline-block;">&nbsp;/&nbsp;<input type="text" class="form-control input-sm" name="floors_count" placeholder="<%= ucfloc 'total' %>" style="width: 28%; display: inline-block;">&nbsp;/&nbsp;<input type="text" class="form-control input-sm" name="levels_count" placeholder="<%= ucfloc 'levels' %>" style="width: 28%; display: inline-block;">
+            </div>
+          </div>
+
+          <div class="form-group edit-group">
+            <label class="col-md-3 col-lg-3 control-label" for="squareLandInput"><%= ucfloc 'land' %></label>
+            <div class="col-md-9 col-lg-9">
+              <input type="text" class="form-control input-sm" name="square_land" id="squareLandInput" placeholder="<%= ucfloc 'total' %>" style="width: 46%; display: inline-block;">&nbsp;
+              <select class="form-control input-sm" name="square_land_type" style="width:46%; display: inline-block;">
+                <option class="text-muted" value="">-</option>
+                <option value="ar"><%= ucfloc 'ar' %></option>
+                <option value="hectare"><%= ucfloc 'hectare' %></option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group edit-group">
+            <label class="col-md-3 col-lg-3 control-label" for="squareTotalInput"><%= ucfloc 'square' %></label>
+            <div class="col-md-9 col-lg-9">
+              <input type="text" class="form-control input-sm" name="square_total" id="squareTotalInput" placeholder="<%= ucfloc 'total' %>" style="width: 28%; display: inline-block;">&nbsp;/&nbsp;<input type="text" class="form-control input-sm" name="square_living" placeholder="<%= ucfloc 'living' %>" style="width: 28%; display: inline-block;">&nbsp;/&nbsp;<input type="text" class="form-control input-sm" name="square_kitchen" placeholder="<%= ucfloc 'kitchen' %>" style="width: 28%; display: inline-block;">
+            </div>
+          </div>
+
+          <div class="form-group edit-group">
+            <label class="col-md-3 col-lg-3 control-label" for="conditionInput"><%= ucfloc 'condition' %></label>
+            <div class="col-md-9 col-lg-9">
+              <select class="form-control input-sm" name="condition_id" id="conditionInput">
+                <option class="text-muted" value="">-</option>
+                % for my $x (@{Rplus::Model::DictCondition::Manager->get_objects(sort_by => 'name')}) {
+                  <option value="<%= $x->id %>"><%= $x->name %></option>
+                % }
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group edit-group">
+            <label class="col-md-3 col-lg-3 control-label" for="balconyInput"><%= ucfloc 'balcony' %></label>
+            <div class="col-md-9 col-lg-9">
+              <select class="form-control input-sm" name="balcony_id" id="balconyInput">
+                <option class="text-muted" value="">-</option>
+                % for my $x (@{Rplus::Model::DictBalcony::Manager->get_objects(sort_by => 'name')}) {
+                  <option value="<%= $x->id %>"><%= $x->name %></option>
+                % }
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group edit-group">
+            <label class="col-md-3 col-lg-3 control-label" for="bathroomInput"><%= ucfloc 'bathroom' %></label>
+            <div class="col-md-9 col-lg-9">
+              <select class="form-control input-sm" name="bathroom_id" id="bathroomInput">
+                <option class="text-muted" value="">-</option>
+                % for my $x (@{Rplus::Model::DictBathroom::Manager->get_objects(sort_by => 'name')}) {
+                  <option value="<%= $x->id %>"><%= $x->name %></option>
+                % }
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group edit-group">
+            <label class="col-md-3 col-lg-3 control-label" for="ownerPriceInput"><%= ucfloc 'price' %></label>
+            <div class="col-md-9 col-lg-9">
+              <input type="text" class="form-control input-sm" name="owner_price" id="ownerPriceInput" placeholder="<%= ucfloc 'owner' %>" style="width: 45%; display: inline-block;">&nbsp;/&nbsp;<input type="text" class="form-control input-sm" name="agency_price" placeholder="<%= ucfloc 'agency' %>" style="width: 45%; display: inline-block;">
+            </div>
+          </div>
+
+          <div class="form-group edit-group">
+            <label class="col-md-3 col-lg-3 control-label" for="ownerPhoneInput"><%= ucfloc 'phones' %>&nbsp;<span style="top: 0px; font-size: 10px; color: rgb(221, 41, 41);" class="glyphicon glyphicon-asterisk"></span></label>
+            <div class="col-md-9 col-lg-9">
+              <input type="text" class="form-control input-sm" style="display: inline-block; width: 30%;" name="owner_phones" id="ownerPhoneInput" placeholder="<%= ucfloc 'phone' %> 1">&nbsp;&nbsp;<input type="text" class="form-control input-sm" style="display: inline-block; width: 30%;" name="owner_phones" placeholder="<%= ucfloc 'phone' %> 2">&nbsp;&nbsp;<input type="text" class="form-control input-sm" style="display: inline-block; width: 30%;" name="owner_phones" placeholder="<%= ucfloc 'phone' %> 3">
+            </div>
+          </div>
+
+          <div class="form-group edit-group">
+            <label class="col-md-3 col-lg-3 control-label" for="descriptionInput"><%= ucfloc 'description' %></label>
+            <div class="col-md-9 col-lg-9">
+              <textarea class="form-control input-sm" name="description" id="descriptionInput" rows="3" placeholder="<%= ucfloc 'additional description' %>"></textarea>
+            </div>
+          </div>
+
+          <div class="form-group edit-group">
+            <label class="col-md-3 col-lg-3 control-label" for="workInfoInput"><%= ucfloc 'work info' %></label>
+            <div class="col-md-9 col-lg-9">
+              <textarea class="form-control input-sm" name="work_info" id="workInfoInput" rows="3" placeholder="<%= ucfloc 'work info' %>"></textarea>
+            </div>
+          </div>
+        </form>
+
+          <div class="cardheader mainheader">
+            <div class="input-group ccard-input-group">
+              <span class="rcard-input-group-addon glyphicon glyphicon-tag"></span>
+              <p>Экспорт</p>
+            </div>
+          </div>
+
+          <div class="form-group edit-group">
+            <div class="col-md-12 col-lg-12">
+            % for my $x (@{Rplus::Model::Media::Manager->get_objects(query => [type => 'export', delete_date => undef])}) {
+              <div class="checkbox">
+                <input type="checkbox" name="export_media" value="<%= $x->id %>" form="realty-form"> <small><%= $x->name %></small>
+              </div>
+            % }
+            </div>
+          </div>
+
+          <div class="cardheader mainheader">
+            <div class="input-group ccard-input-group">
+              <span class="rcard-input-group-addon glyphicon glyphicon-tag"></span>
+              <p>Тэги</p>
+            </div>
+          </div>
+  
+          <div id="tag-select" class="tag-group input-group ccard-input-group">
+            % for my $x (@{Rplus::Model::DictColorTag::Manager->get_objects(query => [delete_date => undef], sort_by => 'id')}) {
+              <span class="realty-color-tag round-button card-color-tag-<%= $x->id %>" data-action="realty-card-set-color_tag_id" data-val="<%= $x->id %>"></span>
+            % }
+          </div>
+          
+          </div> <!-- edit group -->
+          
+          <div class="cardheader mainheader">
+            <div class="input-group ccard-input-group">
+              <span class="rcard-input-group-addon glyphicon glyphicon-camera"></span>
+              <p>Фотографии</p>
+                <span class="fileinput-button ccard-input-group-addon input-group-addon emode-btn hidden">
+                  <i class="glyphicon glyphicon-plus"></i>
+                  <!-- The file input field used as target for the file upload widget -->
+                  <input id="fileupload" type="file" name="files[]" multiple>
+                </span>
+            </div>
+          </div>
+
+          <div id="progress">
+              <div class="bar" style="width: 0%;"></div>
+          </div>
+          
+          <div class="slider_block" style="position: relative; margin-bottom: 15px">
+            <div id="carousel">
+            </div>
+            <a class="prev" style="color: white;" href="#"><span class="glyphicon glyphicon-chevron-left"></span></a>
+            <a class="next" style="color: white;" href="#"><span class="glyphicon glyphicon-chevron-right"></span></a>
+          </div>
+          
         </div>
       </div>
     </div>
+  </div><!-- /.modal-body -->
+</div><!-- /.modal -->
 
-    <div class="col-md-10 col-lg-10">
-      <div class="tab-content">
-        <!-- Main tab -->
-        <div class="tab-pane active" id="mainTab-{guid}">
-          <form class="form-horizontal realty-form" id="form-{guid}" role="form">
-
-            <div class="well well-md"> <!-- well -->
-                <div class="row">
-                  <div class="col-md-4 col-lg-4">
-                    <div class="form-group">
-                      <label class="col-md-4 col-lg-4 control-label" for="typeInput-{guid}"><%= ucfloc 'type' %></label>
-                      <div class="col-md-8 col-lg-8">
-                        %#<select class="form-control input-sm" name="type_code" id="typeInput-{guid}">
-                        %# for my $x (@{Rplus::Model::RealtyType::Manager->get_objects(sort_by => 'name')}) {
-                        %#  <option value="<%= $x->code %>"><%= $x->name %></option>
-                        %# }
-                        %#</select>
-
-                        %# New experimental types
-                        % {
-                        %   my $type_optgroups = [];
-                        %   my $realty_types = db->dbh->selectall_arrayref(q{SELECT t1.id, t1.name, t1.code, t2.name AS category_name FROM realty_types t1 JOIN realty_categories t2 ON (t1.category_code = t2.code) ORDER BY t2.id, t1.id}, {Slice => {}});
-                        %   my %categories;
-                        %   for (@$realty_types) {
-                        %     my $x = $_->{category_name};
-                        %     unless (exists $categories{$x}) {
-                        %       $categories{$x} = scalar keys %categories;
-                        %       $type_optgroups->[$categories{$x}] = {$x => []};
-                        %     }
-                        %     push $type_optgroups->[$categories{$x}]->{$x}, [$_->{name}, $_->{code}];
-                        %   }
-                        %= select_field 'type_code' => $type_optgroups, class => 'form-control input-sm', id => 'typeInput-{guid}'
-                        % }
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="col-md-4 col-lg-4">
-                    <div class="form-group">
-                      <label class="col-md-4 col-lg-4 control-label" for="offerTypeInput-{guid}"><%= ucfloc 'offer', 2 %></label>
-                      <div class="col-md-8 col-lg-8">
-                        <select class="form-control input-sm" name="offer_type_code" id="offerTypeInput-{guid}">
-                        % for my $x (@{Rplus::Model::RealtyOfferType::Manager->get_objects(sort_by => 'name')}) {
-                          <option value="<%= $x->code %>"><%= $x->name %></option>
-                        % }
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="col-md-4 col-lg-4">
-                    <div class="form-group">
-                      <label class="col-md-4 col-lg-4 control-label" for="agentInput-{guid}"><%= ucfloc 'agent' %></label>
-                      <div class="col-md-8 col-lg-8">
-                        <select class="form-control input-sm" name="agent_id" id="agentInput-{guid}">
-                        %# check read (!) permission to prevent empty list
-                        % if (has_permission(realty => read => undef)) {
-                          <option class="text-muted" value="">-</option>
-                        % }
-                        % for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [role => ['agent', 'agent_ext', 'manager'], delete_date => undef], sort_by => 'name')}) {
-                          % if ($self->stash('user')->{role} eq 'manager' || $x->id == $self->stash('user')->{id}) {
-                            <option value="<%= $x->id %>"><%= $x->name %></option>
-                          % } else {
-                            <option disabled value="<%= $x->id %>"><%= $x->name %></option>
-                          % }
-                        % }
-
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-            </div> <!-- /well -->
-
-            <div class="row"> <!-- row -->
-              <div class="col-md-8 col-lg-8">
-                <div class="panel panel-default panel-md">
-                  <div class="panel-body">
-                    <div class="row">
-                      <input type="hidden" name="address_object_id">
-                      <div class="col-md-12 col-lg-12">
-                        <div class="form-group">
-                          <label class="col-md-2 col-lg-2 control-label" for="addrObjInput-{guid}"><%= ucfloc 'addr' %></label>
-                          <div class="col-md-10 col-lg-10">
-                            <input type="text" class="form-control input-sm" name="address_object_name" id="addrObjInput-{guid}" placeholder="<%= ucfloc 'street' %>, <%= ucfloc 'city' %>">
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="row">
-                      <div class="col-md-6 col-lg-6">
-                        <div class="form-group">
-                          <label class="col-md-4 col-lg-4 control-label" for="houseNumInput-{guid}"><%= ucfloc 'num' %></label>
-                          <div class="col-md-8 col-lg-8">
-                            <input type="text" class="form-control input-sm" name="house_num" id="houseNumInput-{guid}" placeholder="<%= ucfloc 'house' %>" style="width: 55%; display: inline-block;">&nbsp;/&nbsp;<input type="text" class="form-control input-sm" name="ap_num" placeholder="<%= ucfloc 'ap' %>" style="width: 35%; display: inline-block;">
-                          </div>
-                        </div>
-                      </div>
-
-                      <div class="col-md-6 col-lg-6">
-                        <div class="form-group">
-                          <label class="col-md-4 col-lg-4 control-label" for="sublandmarkInput-{guid}"><%= ucfloc 'landmark' %></label>
-                          <div class="col-md-8 col-lg-8">
-                            <select class="form-control input-sm" name="sublandmark_id" id="sublandmarkInput-{guid}">
-                              <option class="text-muted" value="">-</option>
-                            </select>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="col-md-4 col-lg-4">
-                <div class="panel panel-default panel-md">
-                  <div class="panel-body">
-                    <div class="row">
-                      <div class="col-md-12 col-lg-12">
-                        <div class="form-group">
-                          <label class="col-md-4 col-lg-4 control-label"><%= ucfloc 'date' %></label>
-                          <div class="col-md-8 col-lg-8">
-                            <p class="form-control-static text-left"><small><span class="text-primary" data-name="add_date">dd.mm.yyyy</span>&nbsp;/&nbsp;<span class="text-success" data-name="change_date">dd.mm.yyyy</span></small></p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="row">
-                      <div class="col-md-12 col-lg-12">
-                        <div class="form-group">
-                          <label class="col-md-4 col-lg-4 control-label" for="stateInput-{guid}"><%= ucfloc 'state' %></label>
-                          <div class="col-md-8 col-lg-8">
-                            <select class="form-control input-sm" name="state_code" id="stateInput-{guid}">
-                            % for my $x (@{Rplus::Model::RealtyState::Manager->get_objects(sort_by => 'id')}) {
-                              <option value="<%= $x->code %>"><%= $x->name %></option>
-                            % }
-                            </select>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div> <!-- /row -->
-
-            <div class="well well-md"> <!-- well -->
-                <div class="row">
-                  <div class="col-md-4 col-lg-4">
-                    <div class="form-group">
-                      <label class="col-md-4 col-lg-4 control-label" for="apSchemeInput-{guid}"><%= ucfloc 'scheme', 2 %></label>
-                      <div class="col-md-8 col-lg-8">
-                        <select class="form-control input-sm" name="ap_scheme_id" id="apSchemeInput-{guid}">
-                          <option class="text-muted" value="">-</option>
-                          % for my $x (@{Rplus::Model::DictApScheme::Manager->get_objects(sort_by => 'name')}) {
-                            <option value="<%= $x->id %>"><%= $x->name %></option>
-                          % }
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="col-md-4 col-lg-4">
-                    <div class="form-group">
-                      <label class="col-md-4 col-lg-4 control-label" for="houseTypeInput-{guid}"><%= ucfloc 'house' %></label>
-                      <div class="col-md-8 col-lg-8">
-                        <select class="form-control input-sm" name="house_type_id" id="houseTypeInput-{guid}">
-                          <option class="text-muted" value="">-</option>
-                          % for my $x (@{Rplus::Model::DictHouseType::Manager->get_objects(sort_by => 'name')}) {
-                            <option value="<%= $x->id %>"><%= $x->name %></option>
-                          % }
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="col-md-4 col-lg-4">
-                    <div class="form-group">
-                      <label class="col-md-4 col-lg-4 control-label" for="roomSchemeInput-{guid}"><%= ucfloc 'rooms' %></label>
-                      <div class="col-md-8 col-lg-8">
-                        <select class="form-control input-sm" name="room_scheme_id" id="roomSchemeInput-{guid}">
-                          <option class="text-muted" value="">-</option>
-                          % for my $x (@{Rplus::Model::DictRoomScheme::Manager->get_objects(sort_by => 'name')}) {
-                            <option value="<%= $x->id %>"><%= $x->name %></option>
-                          % }
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="row">
-                  <div class="col-md-4 col-lg-4">
-                    <div class="form-group">
-                      <label class="col-md-4 col-lg-4 control-label" for="roomsCountInput-{guid}"><%= ucfloc 'rooms' %></label>
-                      <div class="col-md-8 col-lg-8">
-                        <input type="text" class="form-control input-sm" name="rooms_offer_count" placeholder="<%= ucfloc 'sale' %>" style="width: 45%; display: inline-block;">&nbsp;/&nbsp;<input type="text" class="form-control input-sm" id="roomsCountInput-{guid}" name="rooms_count" placeholder="<%= ucfloc 'total' %>" style="width: 45%; display: inline-block;">
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="col-md-8 col-lg-8">
-                    <div class="form-group">
-                      <label class="col-md-2 col-lg-2 control-label" for="floorInput-{guid}"><%= ucfloc 'floors' %></label>
-                      <div class="col-md-6 col-lg-6">
-                        <input type="text" class="form-control input-sm" name="floor" id="floorInput-{guid}" placeholder="<%= ucfloc 'floor' %>" style="width: 28%; display: inline-block;">&nbsp;/&nbsp;<input type="text" class="form-control input-sm" name="floors_count" placeholder="<%= ucfloc 'total' %>" style="width: 28%; display: inline-block;">&nbsp;/&nbsp;<input type="text" class="form-control input-sm" name="levels_count" placeholder="<%= ucfloc 'levels' %>" style="width: 28%; display: inline-block;">
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="row">
-                  <div class="col-md-4 col-lg-4">
-                    <div class="form-group">
-                      <label class="col-md-4 col-lg-4 control-label" for="squareLandInput-{guid}"><%= ucfloc 'land' %></label>
-                      <div class="col-md-8 col-lg-8">
-                        <input type="text" class="form-control input-sm" name="square_land" id="squareLandInput-{guid}" placeholder="<%= ucfloc 'total' %>" style="width: 46%; display: inline-block;">&nbsp;
-                        <select class="form-control input-sm" name="square_land_type" style="width:46%; display: inline-block;">
-                          <option class="text-muted" value="">-</option>
-                          <option value="ar"><%= ucfloc 'ar' %></option>
-                          <option value="hectare"><%= ucfloc 'hectare' %></option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="col-md-8 col-lg-8">
-                    <div class="form-group">
-                      <label class="col-md-2 col-lg-2 control-label" for="squareTotalInput-{guid}"><%= ucfloc 'square' %></label>
-                      <div class="col-md-6 col-lg-6">
-                        <input type="text" class="form-control input-sm" name="square_total" id="squareTotalInput-{guid}" placeholder="<%= ucfloc 'total' %>" style="width: 28%; display: inline-block;">&nbsp;/&nbsp;<input type="text" class="form-control input-sm" name="square_living" placeholder="<%= ucfloc 'living' %>" style="width: 28%; display: inline-block;">&nbsp;/&nbsp;<input type="text" class="form-control input-sm" name="square_kitchen" placeholder="<%= ucfloc 'kitchen' %>" style="width: 28%; display: inline-block;">
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="row">
-                  <div class="col-md-4 col-lg-4">
-                    <div class="form-group">
-                      <label class="col-md-4 col-lg-4 control-label" for="conditionInput-{guid}"><%= ucfloc 'condition' %></label>
-                      <div class="col-md-8 col-lg-8">
-                        <select class="form-control input-sm" name="condition_id" id="conditionInput-{guid}">
-                          <option class="text-muted" value="">-</option>
-                          % for my $x (@{Rplus::Model::DictCondition::Manager->get_objects(sort_by => 'name')}) {
-                            <option value="<%= $x->id %>"><%= $x->name %></option>
-                          % }
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="col-md-4 col-lg-4">
-                    <div class="form-group">
-                      <label class="col-md-4 col-lg-4 control-label" for="balconyInput-{guid}"><%= ucfloc 'balcony' %></label>
-                      <div class="col-md-8 col-lg-8">
-                        <select class="form-control input-sm" name="balcony_id" id="balconyInput-{guid}">
-                          <option class="text-muted" value="">-</option>
-                          % for my $x (@{Rplus::Model::DictBalcony::Manager->get_objects(sort_by => 'name')}) {
-                            <option value="<%= $x->id %>"><%= $x->name %></option>
-                          % }
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="col-md-4 col-lg-4">
-                    <div class="form-group">
-                      <label class="col-md-4 col-lg-4 control-label" for="bathroomInput-{guid}"><%= ucfloc 'bathroom' %></label>
-                      <div class="col-md-8 col-lg-8">
-                        <select class="form-control input-sm" name="bathroom_id" id="bathroomInput-{guid}">
-                          <option class="text-muted" value="">-</option>
-                          % for my $x (@{Rplus::Model::DictBathroom::Manager->get_objects(sort_by => 'name')}) {
-                            <option value="<%= $x->id %>"><%= $x->name %></option>
-                          % }
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-            </div> <!-- /well -->
-
-            <div class="panel panel-default panel-md"> <!-- panel -->
-              <div class="panel-body">
-                <div class="row">
-                  <div class="col-md-4 col-lg-4">
-                    <div class="form-group">
-                      <label class="col-md-4 col-lg-4 control-label" for="ownerPriceInput-{guid}"><%= ucfloc 'price' %></label>
-                      <div class="col-md-8 col-lg-8">
-                        <input type="text" class="form-control input-sm" name="owner_price" id="ownerPriceInput-{guid}" placeholder="<%= ucfloc 'owner' %>" style="width: 45%; display: inline-block;">&nbsp;/&nbsp;<input type="text" class="form-control input-sm" name="agency_price" placeholder="<%= ucfloc 'agency' %>" style="width: 45%; display: inline-block;">
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="col-md-8 col-lg-8">
-                    <div class="form-group">
-                      <label class="col-md-2 col-lg-2 control-label" for="ownerPhoneInput-{guid}"><%= ucfloc 'phones' %></label>
-                      <div class="col-md-10 col-lg-10">
-                        <input type="text" class="form-control input-sm" style="display: inline-block; width: 30%;" name="owner_phones" id="ownerPhoneInput-{guid}" placeholder="<%= ucfloc 'phone' %> 1">&nbsp;&nbsp;<input type="text" class="form-control input-sm" style="display: inline-block; width: 30%;" name="owner_phones" placeholder="<%= ucfloc 'phone' %> 2">&nbsp;&nbsp;<input type="text" class="form-control input-sm" style="display: inline-block; width: 30%;" name="owner_phones" placeholder="<%= ucfloc 'phone' %> 3">
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div> <!-- /panel -->
-
-            <div class="well well-md"> <!-- well -->
-                <div class="row">
-                  <div class="col-md-6 col-lg-6">
-                    <div class="form-group">
-                      <label class="col-md-3 col-lg-3 control-label" for="descriptionInput-{guid}"><%= ucfloc 'description' %></label>
-                      <div class="col-md-9 col-lg-9">
-                        <textarea class="form-control input-sm" name="description" id="descriptionInput-{guid}" rows="3" placeholder="<%= ucfloc 'additional description' %>"></textarea>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="col-md-6 col-lg-6">
-                    <div class="form-group">
-                      <label class="col-md-3 col-lg-3 control-label" for="workInfoInput-{guid}"><%= ucfloc 'work info' %></label>
-                      <div class="col-md-9 col-lg-9">
-                        <textarea class="form-control input-sm" name="work_info" id="workInfoInput-{guid}" rows="3" placeholder="<%= ucfloc 'work info' %>"></textarea>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-            </div> <!-- /well -->
-
-          </form>
-        </div>
-
-        <div class="tab-pane" id="geoTab-{guid}">
-          <div class="geo-map" id="geoMap-{guid}" style="width: 100%; height: 500px;"></div>
-        </div>
-
-        <div class="tab-pane" id="photosTab-{guid}">
-          <div class="row">
-            <div class="col-md-7 col-lg-7">
-              <p>
-                <span class="btn btn-success btn-sm fileinput-button">
-                  <i class="glyphicon glyphicon-plus"></i>
-                  <span><%= ucfloc 'add files...' %></span>
-                  <!-- The file input field used as target for the file upload widget -->
-                  <input id="fileupload-{guid}" type="file" name="files[]" multiple>
-                </span>
-                <button class="btn btn-primary btn-sm start">
-                    <i class="glyphicon glyphicon-upload"></i>
-                    <span><%= ucfloc 'start upload' %></span>
-                </button>
-              </p>
-            </div>
-            <div class="col-md-5 col-lg-5">
-              <div class="progress progress-striped">
-                  <div class="progress-bar progress-bar-success" role="progressbar" aria-valuemin="0" aria-valuemax="100"></div>
-              </div>
-            </div>
-          </div>
-          <div class="row photo-queue"></div>
-          <div class="row photo-list"></div>
-        </div>
-
-      </div>
+<div class="hidden" style="position: absolute; left: -1000px;">
+<div class="modal-content" id="realtyCard_data">
+  <div class="modal-header">
+    <a href="#" class="ctrl-button" data-action="close-proposed"><span class="glyphicon glyphicon-arrow-left"></span>  Назад</a>
+  </div>
+  <div class="modal-body" style="padding-left: 0px; padding-right: 0px; padding-top: 0px;">
+    <div class="realty col-md-12" style="padding: 0px">
+      <table class="table table-striped table-condensed" id="subscriptionRealtyTable">
+        <thead></thead>
+        <tbody></tbody>
+      </table>
     </div>
   </div>
 </div>
-<!-- /#RealtyCardTemplate -->
+</div>
+% end

@@ -43,7 +43,7 @@ my $_serialize = sub {
                 addr_parts => from_json($realty->address_object->metadata)->{'addr_parts'},
             } : undef,
 
-            color_tag => undef,
+            color_tag_id => undef,
             
             sublandmark => $realty->sublandmark ? {id => $realty->sublandmark->id, name => $realty->sublandmark->name} : undef,
 
@@ -53,7 +53,7 @@ my $_serialize = sub {
         if($realty->color_tags) {
             foreach ($realty->color_tags) {
                 if ($_->user_id == $self->stash('user')->{id}) {
-                    $x->{color_tag} = $_->{color_tag_id};
+                    $x->{color_tag_id} = $_->{color_tag_id};
                     last;
                 }
             }
@@ -444,6 +444,7 @@ sub save {
     }
 
     # Prepare data
+    my $color_tag_id = $self->param('color_tag_id');
     my %data;
     for (@fields) {
         $data{$_} = $self->param_n($_);
@@ -481,6 +482,24 @@ sub save {
         return $self->render(json => {error => $@}, status => 500) unless $realty;
     };
 
+    my $user_id = $self->stash('user')->{id};
+    my $color_tag = Rplus::Model::ColorTag::Manager->get_objects(query => [realty_id => $realty->id, user_id => $user_id,])->[0];
+    if ($color_tag) {
+        if ($color_tag_id != $color_tag->color_tag_id) {
+          $color_tag->color_tag_id($color_tag_id);
+        } else {
+          #$color_tag->color_tag_id(undef);
+        }
+        $color_tag->save(changes_only => 1);
+    } else {
+        $color_tag = Rplus::Model::ColorTag->new(
+            realty_id => $realty->id,
+            user_id => $user_id,
+            color_tag_id => $color_tag_id,
+        );
+        $color_tag->save(insert => 1);
+    }    
+    
     $realty->load;
 
     my $res = {

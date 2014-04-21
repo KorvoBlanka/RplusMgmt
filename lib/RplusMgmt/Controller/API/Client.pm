@@ -4,6 +4,8 @@ use Mojo::Base 'Mojolicious::Controller';
 
 use Rplus::Model::Client;
 use Rplus::Model::Client::Manager;
+use Rplus::Model::ClientColorTag::Manager;
+use Rplus::Model::Client::Manager;
 use Rplus::Model::Subscription;
 use Rplus::Model::Subscription::Manager;
 use Rplus::Model::SubscriptionRealty;
@@ -12,6 +14,10 @@ use Rplus::Model::Realty;
 use Rplus::Model::Realty::Manager;
 use Rplus::Model::SmsMessage;
 use Rplus::Model::SmsMessage::Manager;
+
+use JSON;
+use Mojo::Util qw(trim);
+use Mojo::Collection;
 
 sub list {
     my $self = shift;
@@ -39,7 +45,10 @@ sub list {
         page => $page,
     };
 
-    my $clients_iter = Rplus::Model::Client::Manager->get_objects_iterator(query => [delete_date => undef], sort_by => 'id asc');
+    my $clients_iter = Rplus::Model::Client::Manager->get_objects_iterator(query => [delete_date => undef],
+                                                                          sort_by => 'id desc',
+                                                                          page => $page,
+                                                                          per_page => $per_page,);
     while (my $client = $clients_iter->next) {
         my $x = {
             id => $client->id,
@@ -49,24 +58,31 @@ sub list {
             email => $client->email,
             skype => $client->skype,
             description => $client->description,
-            queries => [],
-            realty => [],
+            subscriptions => [],
+            color_tag_id => 0,
         };
-        
-        my $subscription_iter = Rplus::Model::Subscription::Manager->get_objects_iterator(query => [client_id => $client->id, delete_date => undef]);
-        while (my $subscription = $subscription_iter->next) {
-            push @{$x->{queries}}, $subscription->queries;
-            
-            my $realty_iter = Rplus::Model::SubscriptionRealty::Manager->get_objects_iterator(query => [id => $x->{id}, delete_date => undef]);
-            while (my $realty = $realty_iter->next) {
-                push @{$x->{realty}}, $realty->id;
+
+        if($client->client_color_tags) {
+            foreach ($client->client_color_tags) {
+                if ($_->user_id == $self->stash('user')->{id}) {
+                    $x->{color_tag_id} = $_->{color_tag_id};
+                    last;
+                }
             }
+        }
+        
+        my $subscription_iter = Rplus::Model::Subscription::Manager->get_objects_iterator(query => [client_id => $client->id, delete_date => undef],);
+        while (my $subscription = $subscription_iter->next) {
+            my $sub = {
+                id => $subscription->id,
+                queries => $subscription->queries,
+                offer_type => $subscription->offer_type_code,
+            };
+            push @{$x->{subscriptions}}, $sub;
         }
         
         push @{$res->{list}}, $x;
     }
-
-    $res->{count} = scalar @{$res->{list}};
 
     return $self->render(json => $res);
 }
@@ -75,13 +91,13 @@ sub get {
     my $self = shift;
 
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(clients => 'read');
-
+    
     # Retrieve client (by id or phone_num)
     my $client;
     if (my $id = $self->param('id')) {
-        $client = Rplus::Model::Client::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
+        $client = Rplus::Model::Client::Manager->get_objects(query => [id => $id, delete_date => undef], with_objects => ['client_color_tags'],)->[0];
     } elsif (my $phone_num = $self->parse_phone_num(scalar $self->param('phone_num'))) {
-        $client = Rplus::Model::Client::Manager->get_objects(query => [phone_num => $phone_num, delete_date => undef])->[0];
+        $client = Rplus::Model::Client::Manager->get_objects(query => [phone_num => $phone_num, delete_date => undef], with_objects => ['client_color_tags'],)->[0];
     }
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $client;
 
@@ -94,8 +110,18 @@ sub get {
         add_date => $self->format_datetime($client->add_date),
         description => $client->description,
         send_owner_phone => $client->send_owner_phone,
+        color_tag_id => 0,
     };
 
+    if($client->client_color_tags) {
+        foreach ($client->client_color_tags) {
+            if ($_->user_id == $self->stash('user')->{id}) {
+                $res->{color_tag_id} = $_->{color_tag_id};
+                last;
+            }
+        }
+    }
+    
     if ($self->param_b('with_subscriptions')) {
         # Load subscription data
         $res->{subscriptions} = [];
@@ -107,7 +133,7 @@ sub get {
                 'subscription_realty.delete_date' => undef,
             ],
             require_objects => ['client'],
-            with_objects => ['subscription_realty', 'subscription_color_tags'],
+            with_objects => ['subscription_realty'],
             sort_by => 'id',
         );
         my %realty_h;
@@ -122,20 +148,7 @@ sub get {
                 realty_count => scalar @{$subscription->subscription_realty},
                 realty_limit => $subscription->realty_limit,
                 send_owner_phone => $subscription->send_owner_phone ? \1 : \0,
-                color_tag_id => 0,
-                realty => [],
-                proposed_realty => scalar $subscription->proposed_realty,
             };
-            
-            if($subscription->subscription_color_tags) {
-                foreach ($subscription->subscription_color_tags) {
-                    if ($_->user_id == $self->stash('user')->{id}) {
-                        $x->{color_tag_id} = $_->{color_tag_id};
-                        last;
-                    }
-                }
-            }
-            
             push @{$res->{subscriptions}}, $x;
         }
     }
@@ -173,7 +186,8 @@ sub save {
     my $skype = $self->param_n('skype');
     my $description = $self->param_n('description');
     my $send_owner_phone = $self->param_b('send_owner_phone');
-
+    my $color_tag_id = $self->param('color_tag_id');
+    
     # Save
     $client->name($name);
     $client->phone_num($phone_num);
@@ -187,6 +201,24 @@ sub save {
     } or do {
         return $self->render(json => {error => $@}, status => 500);
     };
+
+    my $user_id = $self->stash('user')->{id};
+    my $color_tag = Rplus::Model::ClientColorTag::Manager->get_objects(query => [client_id => $client->id, user_id => $user_id,])->[0];
+    if ($color_tag) {
+        if ($color_tag_id != $color_tag->color_tag_id) {
+          $color_tag->color_tag_id($color_tag_id);
+        } else {
+          #$color_tag->color_tag_id(undef);
+        }
+        $color_tag->save(changes_only => 1);
+    } else {
+        $color_tag = Rplus::Model::ClientColorTag->new(
+            client_id => $client->id,
+            user_id => $user_id,
+            color_tag_id => $color_tag_id,
+        );
+        $color_tag->save(insert => 1);
+    }
 
     return $self->render(json => {status => 'success', id => $client->id});
 }
