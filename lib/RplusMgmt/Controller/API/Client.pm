@@ -46,7 +46,7 @@ sub list {
     };
 
     my $clients_iter = Rplus::Model::Client::Manager->get_objects_iterator(query => [delete_date => undef],
-                                                                          sort_by => 'id desc',
+                                                                          sort_by => 'change_date desc',
                                                                           page => $page,
                                                                           per_page => $per_page,);
     while (my $client = $clients_iter->next) {
@@ -195,6 +195,7 @@ sub save {
     $client->skype($skype);
     $client->description($description);
     $client->send_owner_phone($send_owner_phone);
+    $client->change_date('now()');
     
     eval {
         $client->save($client->id ? (changes_only => 1) : (insert => 1));
@@ -283,8 +284,9 @@ sub subscribe {
     my $client = Rplus::Model::Client::Manager->get_objects(query => [phone_num => $phone_num, delete_date => undef], db => $db)->[0];
     if (!$client) {
         $client = Rplus::Model::Client->new(phone_num => $phone_num, db => $db);
-        $client->save;
     }
+    $client->change_date('now()');
+    $client->save;
 
     # Add subscription
     my $subscription = Rplus::Model::Subscription->new(
