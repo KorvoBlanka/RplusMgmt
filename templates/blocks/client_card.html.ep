@@ -779,7 +779,7 @@
           </table>
         </div>
         
-        <div id="client-cart" class="col-md-12" style="padding: 0px">
+        <div id="client-card" class="col-md-12" style="padding: 0px">
           <form role="form" id="clientCard_clientForm">
             <div class="input-group ccard-input-group hidden">
               <span class="ccard-input-group-addon glyphicon glyphicon-paperclip"></span>

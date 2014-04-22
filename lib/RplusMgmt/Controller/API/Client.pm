@@ -53,6 +53,7 @@ sub list {
         my $x = {
             id => $client->id,
             add_date => $self->format_datetime($client->add_date),
+            change_date => $self->format_datetime($client->change_date),
             name => $client->name,
             phone_num => $client->phone_num,
             email => $client->email,
@@ -108,6 +109,7 @@ sub get {
         email => $client->email,
         skype => $client->skype,
         add_date => $self->format_datetime($client->add_date),
+        change_date => $self->format_datetime($client->change_date),
         description => $client->description,
         send_owner_phone => $client->send_owner_phone,
         color_tag_id => 0,

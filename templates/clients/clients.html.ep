@@ -203,6 +203,10 @@
   .tree {
     width:100%;
     border-collapse:collapse;
+    table-layout:fixed;
+    cursor: pointer;
+    -webkit-user-select: none;
+            user-select: none;
   }
   
   .tree > tbody {
@@ -430,6 +434,7 @@
             xhtml += '<td><span class="glyphicon ' + classes.join(' ') + '"></span>' + tag + '</td>';
             xhtml += '<td>' + photo + '</td>';
             xhtml += '<td>' + Rplus.Realty.getDigestEx(r, false) + '</td>';
+            xhtml += '<td style="padding-top: 0px;padding-bottom: 10px;"><span style="font-size: 10px;">' + moment(r.change_date).format("DD.MM.YY HH:mm") + '</span><br>&nbsp;</td>';
             xhtml += '<td><a style="padding-right: 22px; margin-right: 0px;" href="#" data-action="remove-proposal"><span class="glyphicon spec-label-red glyphicon-minus-sign"></span></a></td></tr>';
                 
             $('#realtyTable > tbody').append(xhtml);
@@ -462,13 +467,16 @@
             var skeep = true;
 
             var phtml = '<tr data-id=' + x.id + ' class="client-node treegrid-' + node_id + '">';
-            var caption = x.name == null ? Rplus.Util.formatPhoneNum(x.phone_num) : x.name ;
+            var caption = x.name == null ? Rplus.Util.formatPhoneNum(x.phone_num) + '<br>&nbsp;&nbsp' : x.name + '<br>&nbsp;&nbsp;&nbsp;&nbsp;' + Rplus.Util.formatPhoneNum(x.phone_num) ;
             var tag = '';
             if (x.color_tag_id != 0) {
               tag = '<span class="tag-button color-tag-placeholder color-tag-' + x.color_tag_id + '" style="display: inline-block"></span>';
             }
             
-            phtml += '<td>&nbsp&nbsp' + tag + '&nbsp&nbsp' + caption + '</td><td><a style="display: inline-block;" href="#" data-action="delete-client"><span data-action="delete-client" class="glyphicon spec-label-red glyphicon-minus-sign pull-right"></span></a></td>';
+            phtml += '<td style="width: 1px;"></td>';
+            phtml += '<td style="width: 220px;">&nbsp&nbsp' + tag + '&nbsp&nbsp' + caption + '</td>'
+            phtml += '<td style="width: 100px;padding-top: 0px;padding-bottom: 10px;"><span style="font-size: 10px;">' + moment(x.change_date).format("DD.MM.YY HH:mm") + '</span><br>&nbsp;</td>';
+            phtml += '<td><a style="display: inline-block;" href="#" data-action="delete-client"><span data-action="delete-client" class="glyphicon spec-label-red glyphicon-minus-sign pull-right"></span></a></td>';
             phtml += '</tr>';
 
             var parent = node_id;
@@ -478,7 +486,10 @@
               if (x.subscriptions[si].offer_type == offer_type) {
                 node_id ++;
                 phtml += '<tr data-page=' + page + ' data-offer_type=' + x.subscriptions[si].offer_type + ' data-subscription=' + x.subscriptions[si].id + ' class="treegrid-temp subscription-node treegrid-' + node_id + ' treegrid-parent-' + parent + '">';
-                phtml += '<td class="query">' + x.subscriptions[si].queries + '</td><td>' + x.subscriptions[si].offer_type + '</td>';
+                phtml += '<td></td>';
+                phtml += '<td class="query">' + x.subscriptions[si].queries + '</td>';
+                phtml += '<td style="padding-top: 0px;padding-bottom: 10px;"><span style="font-size: 10px;">' + moment(x.add_date).format("DD.MM.YY HH:mm") + '</span><br>&nbsp;</td>';
+                phtml += '<td>' + /*x.subscriptions[si].offer_type*/ '' + '</td>';
                 phtml += '</tr>';
               }
             }
@@ -505,6 +516,64 @@
       }
       return count;
     }
+    
+    // open client card
+    function openClientCard(client_id) {
+      var card = ClientCard({
+      saved: function (client) {
+      
+        var x = client;
+        node_id ++;
+
+        var xhtml = '<tr data-id=' + x.id + ' class="client-node treegrid-' + node_id + ' cselected">';
+        var caption = x.name == null ? Rplus.Util.formatPhoneNum(x.phone_num) : x.name ;
+        var tag = '';
+        if (x.color_tag_id != 0) {
+          tag = '<span class="tag-button color-tag-placeholder color-tag-' + x.color_tag_id + '" style="display: inline-block"></span>';
+        }
+        
+        xhtml += '<td>&nbsp&nbsp' + tag + '&nbsp&nbsp' + caption + '</td><td><a style="display: inline-block;" href="#" data-action="delete-client"><span data-action="delete-client" class="glyphicon spec-label-red glyphicon-minus-sign pull-right"></span></a></td>';
+        xhtml += '</tr>';
+
+        var parent = node_id;
+        for(var si in x.subscriptions) {
+          subscriptions[x.subscriptions[si].id] = x.subscriptions[si];
+          node_id ++;
+          xhtml += '<tr data-page=' + 1 + ' data-offer_type=' + x.subscriptions[si].offer_type + ' data-subscription=' + x.subscriptions[si].id + ' class="treegrid-temp subscription-node treegrid-' + node_id + ' treegrid-parent-' + parent + '">';
+          xhtml += '<td class="query">' + x.subscriptions[si].queries + '</td><td>' + x.subscriptions[si].offer_type_code + '</td>';
+          xhtml += '</tr>';
+        }
+        
+        $('.treegrid-collapsed').each(function(){
+          $(this).removeClass('treegrid-collapsed');
+        });
+        $('.treegrid-expanded').each(function(){
+          $(this).removeClass('treegrid-expanded');
+        });
+      
+        //$selected.treegrid('expand');
+        //$('.treegrid-' + node_id).treegrid('expand');
+        
+        //$selected.addClass('hidden');
+        
+        $selected.treegrid('getChildNodes').each(function () {
+            //$(this).addClass('hidden');
+            $(this).remove();
+        });
+        $selected.after(xhtml);
+        $selected.remove();
+        $('.tree').treegrid({initialState: "collapsed"});
+      
+         $selected = $('.tree > tbody > tr.cselected');
+        $selected.each(function () {
+          $(this).treegrid('expand');
+        });
+      
+      },
+      
+    }).open(client_id);
+    }
+    
     
     // Open realty object card
     function openRealtyCard(id, background) {
@@ -673,7 +742,7 @@
 
       // Set realty table wrapper height
       // Fixme: $('.navbar-fixed-bottom').height() - doesn't work
-      $('#clientTreeWrapper').height($(window).height() - $('#realtyTable').get(0).getBoundingClientRect().top - 50/*$('.navbar-fixed-bottom').height()*/);
+      $('#clientTreeWrapper').height($(window).height() - $('#realtyTable').get(0).getBoundingClientRect().top - 80/*$('.navbar-fixed-bottom').height()*/);
       $('#realtyTableWrapper').height($(window).height() - $('#realtyTable').get(0).getBoundingClientRect().top - 50/*$('.navbar-fixed-bottom').height()*/);
 
       // Show/hide realty table columns
@@ -763,6 +832,26 @@
         });
         
         $('.tree').on('click', 'tr.client-node', function (e) {
+          if (hasTouch()) return;
+          var $this = $(this);
+          var id = $this.data('id');
+          if (!e.altKey && !e.ctrlKey && !e.shiftKey && !cmd_down) {
+            if (!_dblclick_timer || _dblclick_timer[0] != id) {
+              _dblclick_timer = [
+                id, setTimeout(function () {
+                  if (_dblclick_timer[0] == id) _dblclick_timer = null;
+                }, _dblclick_timeout)
+              ];
+            } else {
+              clearTimeout(_dblclick_timer[1]);
+              openClientCard(_dblclick_timer[0], false);
+              _dblclick_timer = null;
+            }
+          }
+        });
+        
+        $('.tree').on('mousedown', 'tr.client-node', function (e) {
+          if (hasTouch()) return;
           var $this = $(this);
           var hc = $this.hasClass('cselected');
           var $selected = $('.tree > tbody > tr.cselected');
@@ -781,8 +870,46 @@
             var $this = $(this);
               $this.removeClass('subselected');
           });
-          
         });
+        
+        // 'mobile' stuff: tap to select/deselect, long tap to open
+        $('.tree').on('touchstart', 'tr.client-node', function (e) {
+          var $this = $(this);
+          var id = $this.data('id');
+          cancel_click = true;
+          if (!$this.hasClass('opened')) {
+            cancel_click = false;
+            select_timer = window.setTimeout(function() {
+              cancel_click = true;
+              $this.addClass('cselected')
+            }, select_delay);
+            open_timer = window.setTimeout(function() {
+                openClientCard(id, false);
+            }, open_delay);
+          }
+        });
+
+        $('.tree').on('touchend', 'tr.client-node', function (e) {
+          clearTimeout(select_timer);
+          clearTimeout(open_timer);
+          var $this = $(this);
+          var id = $this.data('id');
+          if (!cancel_click) {
+            $this.toggleClass('cselected');
+          }
+        });
+
+        $('.tree').on('touchcancel', 'tr.client-node', function (e) {
+          cancel_click = true;
+          clearTimeout(select_timer);
+          clearTimeout(open_timer);
+        });
+        
+        $('.tree').on('touchmove', 'tr.client-node', function (e) {
+          cancel_click = true;
+          clearTimeout(select_timer);
+          clearTimeout(open_timer);
+        });        
         
         $('body').click(function(e){
           if (hasTouch()) return;
@@ -943,6 +1070,8 @@
         });
       })();
 
+      
+      
       // Open ClientCard
       $('[data-action="client-create"]').click(function (e) {
         
@@ -950,9 +1079,6 @@
             offerTypeCode = $('[data-filter="offer_type_code"]').data('val'),
             realtyIds = [],
             phoneNum = '';
-        $('#realtyTable > tbody > tr.selected').each(function (idx, elem) {
-          realtyIds.push($(this).data('id'));
-        });
         
         var card = ClientCard({
           saved: function (client) {
@@ -963,13 +1089,16 @@
             node_id ++;
 
             var xhtml = '<tr data-id=' + x.id + ' class="client-node treegrid-' + node_id + ' cselected">';
-            var caption = x.name == null ? Rplus.Util.formatPhoneNum(x.phone_num) : x.name ;
+            var caption = x.name == null ? Rplus.Util.formatPhoneNum(x.phone_num) + '<br>&nbsp;&nbsp' : x.name + '<br>&nbsp;&nbsp;&nbsp;&nbsp;' + Rplus.Util.formatPhoneNum(x.phone_num) ;
             var tag = '';
             if (x.color_tag_id != 0) {
               tag = '<span class="tag-button color-tag-placeholder color-tag-' + x.color_tag_id + '" style="display: inline-block"></span>';
             }
             
-            xhtml += '<td>&nbsp&nbsp' + tag + '&nbsp&nbsp' + caption + '</td><td><a style="display: inline-block;" href="#" data-action="delete-client"><span data-action="delete-client" class="glyphicon spec-label-red glyphicon-minus-sign pull-right"></span></a></td>';
+            xhtml += '<td style="width: 1px;"></td>';
+            xhtml += '<td style="width: 220px;">&nbsp&nbsp' + tag + '&nbsp&nbsp' + caption + '</td>'
+            xhtml += '<td style="width: 100px;padding-top: 0px;padding-bottom: 10px;"><span style="font-size: 10px;">' + moment(x.change_date).format("DD.MM.YY HH:mm") + '</span><br>&nbsp;</td>';
+            xhtml += '<td><a style="display: inline-block;" href="#" data-action="delete-client"><span data-action="delete-client" class="glyphicon spec-label-red glyphicon-minus-sign pull-right"></span></a></td>';
             xhtml += '</tr>';
 
             var parent = node_id;
@@ -977,7 +1106,10 @@
               subscriptions[x.subscriptions[si].id] = x.subscriptions[si];
               node_id ++;
               xhtml += '<tr data-page=' + 1 + ' data-offer_type=' + x.subscriptions[si].offer_type + ' data-subscription=' + x.subscriptions[si].id + ' class="treegrid-temp subscription-node treegrid-' + node_id + ' treegrid-parent-' + parent + '">';
-              xhtml += '<td class="query">' + x.subscriptions[si].queries + '</td><td>' + x.subscriptions[si].offer_type_code + '</td>';
+              xhtml += '<td></td>';
+              xhtml += '<td class="query">' + x.subscriptions[si].queries + '</td>';
+              xhtml += '<td style="padding-top: 0px;padding-bottom: 10px;"><span style="font-size: 10px;">' + moment(x.add_date).format("DD.MM.YY HH:mm") + '</span><br>&nbsp;</td>';
+              xhtml += '<td>' + /*x.subscriptions[si].offer_type*/ '' + '</td>';
               xhtml += '</tr>';
             }
             
@@ -1005,19 +1137,20 @@
           var card = ClientCard({
             saved: function (client) {
             
-              console.log(client);
-             
               var x = client;
               node_id ++;
   
               var xhtml = '<tr data-id=' + x.id + ' class="client-node treegrid-' + node_id + ' cselected">';
-              var caption = x.name == null ? Rplus.Util.formatPhoneNum(x.phone_num) : x.name ;
+              var caption = x.name == null ? Rplus.Util.formatPhoneNum(x.phone_num) + '<br>&nbsp;&nbsp' : x.name + '<br>&nbsp;&nbsp;&nbsp;&nbsp;' + Rplus.Util.formatPhoneNum(x.phone_num) ;
               var tag = '';
               if (x.color_tag_id != 0) {
                 tag = '<span class="tag-button color-tag-placeholder color-tag-' + x.color_tag_id + '" style="display: inline-block"></span>';
               }
               
-              xhtml += '<td>&nbsp&nbsp' + tag + '&nbsp&nbsp' + caption + '</td><td><a style="display: inline-block;" href="#" data-action="delete-client"><span data-action="delete-client" class="glyphicon spec-label-red glyphicon-minus-sign pull-right"></span></a></td>';
+              xhtml += '<td style="width: 1px;"></td>';
+              xhtml += '<td style="width: 220px;">&nbsp&nbsp' + tag + '&nbsp&nbsp' + caption + '</td>'
+              xhtml += '<td style="width: 100px;padding-top: 0px;padding-bottom: 10px;"><span style="font-size: 10px;">' + moment(x.change_date).format("DD.MM.YY HH:mm") + '</span><br>&nbsp;</td>';
+              xhtml += '<td><a style="display: inline-block;" href="#" data-action="delete-client"><span data-action="delete-client" class="glyphicon spec-label-red glyphicon-minus-sign pull-right"></span></a></td>';
               xhtml += '</tr>';
   
               var parent = node_id;
@@ -1025,7 +1158,10 @@
                 subscriptions[x.subscriptions[si].id] = x.subscriptions[si];
                 node_id ++;
                 xhtml += '<tr data-page=' + 1 + ' data-offer_type=' + x.subscriptions[si].offer_type + ' data-subscription=' + x.subscriptions[si].id + ' class="treegrid-temp subscription-node treegrid-' + node_id + ' treegrid-parent-' + parent + '">';
-                xhtml += '<td class="query">' + x.subscriptions[si].queries + '</td><td>' + x.subscriptions[si].offer_type_code + '</td>';
+                xhtml += '<td></td>';
+                xhtml += '<td class="query">' + x.subscriptions[si].queries + '</td>';
+                xhtml += '<td style="padding-top: 0px;padding-bottom: 10px;"><span style="font-size: 10px;">' + moment(x.add_date).format("DD.MM.YY HH:mm") + '</span><br>&nbsp;</td>';
+                xhtml += '<td>' + /*x.subscriptions[si].offer_type*/ '' + '</td>';
                 xhtml += '</tr>';
               }
               
