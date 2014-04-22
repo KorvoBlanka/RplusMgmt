@@ -282,7 +282,7 @@
         var $this = $(this);
         var guid = $this.data('guid');
         var subscription = subs[guid]; //$('.subscription[data-guid="' + guid + '"]', $modal).data('obj');        
-        pushRealtyToTable(subscription.realty);
+        pushRealtyToTable(subscription.id);
         
         var subs_array = [];
         // Save (add/update) queries
@@ -593,8 +593,37 @@
       }
     }
 
-    function pushRealtyToTable(realtyId) {
+    function pushRealtyToTable(subscription_id) {
       var row_count = 20;
+      var page = 1;
+      var _listRealty_started = true;
+      $.ajax({
+        type: "POST",
+        url: "/api/subscription/realty_list",
+        data: {subscription_id: subscription_id, page: page, per_page: 100},
+        complete: function () { _listRealty_started = false; }
+      })
+        .done(function (data, textStatus, jqXHR) {
+          
+          if (page == 1) {
+            $('#realtyTableWrapper').scrollTop(0);
+            $('#realtyTable > tbody').html('');
+            $('#objectsCount').text(data.count);
+          }
+
+          for (var i = 0; i < data.list.length; i++) {
+            var r = data.list[i];
+            var xhtml = '<tr data-id="' + r.id + '">';
+
+            var classes = [Rplus.Table['realty_states'][r.state_code].metadata['icon-class']];
+            xhtml += '<td><span class="glyphicon ' + classes.join(' ') + '"></span></td>';
+            xhtml += '<td>' + Rplus.Realty.getDigest(r, true) + '</td>';
+            xhtml += '</tr>';
+            $('tbody', $modal).prepend(xhtml);
+          }
+        });
+      
+      /*
       $('tbody', $modal).html('');
       if (realtyId) {
         var left_count = realtyId.length;
@@ -620,7 +649,8 @@
               }
             }).fail(function (jqXHR, textStatus, errorThrown) {});
         }
-      }
+        */
+      
       for (var i = 0; i < row_count; i++) {
         var dummy = '<tr>';
         dummy += '<td><span class="glyphicon"></span></td>';
