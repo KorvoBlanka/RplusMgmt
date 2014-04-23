@@ -38,6 +38,7 @@ sub run {
             my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
                 query => [
                     offer_type_code => $subscr->offer_type_code,
+                    state_code => 'work',
                     or => [
                         state_change_date => {gt => $subscr->add_date},
                         price_change_date => {gt => ($subscr->last_check_date || $subscr->add_date)},

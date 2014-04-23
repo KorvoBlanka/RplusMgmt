@@ -246,7 +246,6 @@
 %= js_once "$assets_url/TreeGrid/js/jquery.treegrid.js";
 %= js_once "$assets_url/TreeGrid/js/jquery.treegrid.bootstrap3.js";
 
-
 % end
 
 % content_for javascript => begin
@@ -413,9 +412,8 @@
                 })
               ;
             }
-            
+
             var classes = [Rplus.Table['realty_states'][r.state_code].metadata['icon-class']];
-            
             var tag = r.color_tag_id ? '<span style="margin-left: 2px; margin-bottom: 6px;" class="tag-button color-tag-' + r.color_tag_id + ' pull-left"></span>' : '';
             var photo = r.main_photo_thumbnail ? '<a href="#" data-action="photos-show"><span class="glyphicon glyphicon-camera"></span></a>' : '';
             var state_class = '';
@@ -424,13 +422,8 @@
             } else if (data.state_list[i].state_code == 'shown') {
               state_class = 'shown';
             }
-            
-            
+
             var xhtml = '<tr class="' + state_class + '" data-id="' + r.id + '" data-page="' + data.page + '" data-lat="' + r.latitude + '" data-lng="' + r.longitude + '">';
-            //xhtml += '<td>' + tag + '</td>';
-            //xhtml += '<td>' + photo + '</td>';
-            //xhtml += '<td><span class="glyphicon ' + classes.join(' ') + '"></span></td>';
-            console.log(r.color_tag);
             xhtml += '<td><span class="glyphicon ' + classes.join(' ') + '"></span>' + tag + '</td>';
             xhtml += '<td>' + photo + '</td>';
             xhtml += '<td>' + Rplus.Realty.getDigestEx(r, false) + '</td>';
@@ -444,11 +437,13 @@
     }
 
     var node_id = 0;
+    var tree_options = {initialState: "collapsed"};
+    var settings = {};
     function listClients(page) {
       var offer_type = $('[data-filter="offer_type_code"]').data('val');
-      var count = 0;
       var max_count = 0;
-      var per_page = 32;
+      var count = 0;
+      var per_page = 16;
       $.ajax({
         type: 'POST',
         url: '/api/client/list',
@@ -457,60 +452,62 @@
         success: function (data) {
           max_count = data.count;
           if (page == 1) {
+            node_id = 0;
             $('.tree').html('');
+            $('.tree').scrollTop(0);
           }
-          var xhtml = '';
+
+          settings = $.extend({}, $.fn.treegrid.defaults, tree_options);
           for (var i = 0; i < data.list.length; i++) {
             var x = data.list[i];
             node_id ++;
-            
             var skeep = true;
 
-            var phtml = '<tr data-id=' + x.id + ' class="client-node treegrid-' + node_id + '">';
+            var xhtml = '<tr data-id=' + x.id + ' class="tree-tmp client-node treegrid-' + node_id + '">';
             var caption = x.name == null ? Rplus.Util.formatPhoneNum(x.phone_num) + '<br>&nbsp;&nbsp' : x.name + '<br>&nbsp;&nbsp;&nbsp;&nbsp;' + Rplus.Util.formatPhoneNum(x.phone_num) ;
             var tag = '';
             if (x.color_tag_id != 0) {
               tag = '<span class="tag-button color-tag-placeholder color-tag-' + x.color_tag_id + '" style="display: inline-block"></span>';
             }
             
-            phtml += '<td style="width: 1px;"></td>';
-            phtml += '<td style="width: 220px;">&nbsp&nbsp' + tag + '&nbsp&nbsp' + caption + '</td>'
-            phtml += '<td style="width: 100px;padding-top: 0px;padding-bottom: 10px;"><span style="font-size: 10px;">' + moment(x.change_date).format("DD.MM.YY HH:mm") + '</span><br>&nbsp;</td>';
-            phtml += '<td><a style="display: inline-block;" href="#" data-action="delete-client"><span data-action="delete-client" class="glyphicon spec-label-red glyphicon-minus-sign pull-right"></span></a></td>';
-            phtml += '</tr>';
-
+            xhtml += '<td style="width: 1px;"></td>';
+            xhtml += '<td style="width: 220px;">&nbsp&nbsp' + tag + '&nbsp&nbsp' + caption + '</td>'
+            xhtml += '<td style="width: 100px;padding-top: 0px;padding-bottom: 10px;"><span style="font-size: 10px;">' + moment(x.change_date).format("DD.MM.YY HH:mm") + '</span><br>&nbsp;</td>';
+            xhtml += '<td><a style="display: inline-block;" href="#" data-action="delete-client"><span data-action="delete-client" class="glyphicon spec-label-red glyphicon-minus-sign pull-right"></span></a></td>';
+            xhtml += '</tr>';
+            
             var parent = node_id;
+            
             for(var si in x.subscriptions) {
               if(x.subscriptions[si].offer_type == offer_type) skeep = false;
               subscriptions[x.subscriptions[si].id] = x.subscriptions[si];
               if (x.subscriptions[si].offer_type == offer_type) {
                 node_id ++;
-                phtml += '<tr data-page=' + page + ' data-offer_type=' + x.subscriptions[si].offer_type + ' data-subscription=' + x.subscriptions[si].id + ' class="treegrid-temp subscription-node treegrid-' + node_id + ' treegrid-parent-' + parent + '">';
-                phtml += '<td></td>';
-                phtml += '<td class="query">' + x.subscriptions[si].queries + '</td>';
-                phtml += '<td style="padding-top: 0px;padding-bottom: 10px;"><span style="font-size: 10px;">' + moment(x.add_date).format("DD.MM.YY HH:mm") + '</span><br>&nbsp;</td>';
-                phtml += '<td>' + /*x.subscriptions[si].offer_type*/ '' + '</td>';
-                phtml += '</tr>';
+                xhtml += '<tr data-page=' + page + ' data-offer_type=' + x.subscriptions[si].offer_type + ' data-subscription=' + x.subscriptions[si].id + ' class="subscription-node treegrid-' + node_id + ' treegrid-parent-' + parent + '">';
+                xhtml += '<td></td>';
+                xhtml += '<td class="query">' + x.subscriptions[si].queries + '</td>';
+                xhtml += '<td style="padding-top: 0px;padding-bottom: 10px;"><span style="font-size: 10px;">' + moment(x.add_date).format("DD.MM.YY HH:mm") + '</span><br>&nbsp;</td>';
+                xhtml += '<td>' + /*x.subscriptions[si].offer_type*/ '' + '</td>';
+                xhtml += '</tr>';
               }
             }
             if (!skeep) {
               count ++;
-              xhtml += phtml;
+              $('.tree').append(xhtml);
+              if (page != 1) {
+                $('.tree-tmp').treegrid('initNode', settings);
+                $('.tree-tmp').removeClass('tree-tmp');
+              }
             }
           }
-
-          $('.treegrid-collapsed').each(function(){
-            $(this).removeClass('treegrid-collapsed');
-          });
-          $('.treegrid-expanded').each(function(){
-            $(this).removeClass('treegrid-expanded');
-          });
-
-          $('.tree').append(xhtml);
+          if (page == 1) {
+            $('.tree-tmp').removeClass('tree-tmp');
+            $('.tree').treegrid(tree_options);
+          }
         }
       });
       
-      console.log(page + ' | ' + per_page + ' | ' + max_count)
+      console.log(page + ' | ' + per_page + ' | ' + max_count);
       if (page * per_page >= max_count) {
         return 9000;
       }
@@ -521,50 +518,45 @@
     function openClientCard(client_id) {
       var card = ClientCard({
       saved: function (client) {
-      
         var x = client;
         node_id ++;
 
-        var xhtml = '<tr data-id=' + x.id + ' class="client-node treegrid-' + node_id + ' cselected">';
-        var caption = x.name == null ? Rplus.Util.formatPhoneNum(x.phone_num) : x.name ;
+        var xhtml = '<tr data-id=' + x.id + ' class="tree-tmp cselected client-node treegrid-' + node_id + '">';
+        var caption = x.name == null ? Rplus.Util.formatPhoneNum(x.phone_num) + '<br>&nbsp;&nbsp' : x.name + '<br>&nbsp;&nbsp;&nbsp;&nbsp;' + Rplus.Util.formatPhoneNum(x.phone_num) ;
         var tag = '';
         if (x.color_tag_id != 0) {
           tag = '<span class="tag-button color-tag-placeholder color-tag-' + x.color_tag_id + '" style="display: inline-block"></span>';
         }
         
-        xhtml += '<td>&nbsp&nbsp' + tag + '&nbsp&nbsp' + caption + '</td><td><a style="display: inline-block;" href="#" data-action="delete-client"><span data-action="delete-client" class="glyphicon spec-label-red glyphicon-minus-sign pull-right"></span></a></td>';
+        xhtml += '<td style="width: 1px;"></td>';
+        xhtml += '<td style="width: 220px;">&nbsp&nbsp' + tag + '&nbsp&nbsp' + caption + '</td>'
+        xhtml += '<td style="width: 100px;padding-top: 0px;padding-bottom: 10px;"><span style="font-size: 10px;">' + moment(x.change_date).format("DD.MM.YY HH:mm") + '</span><br>&nbsp;</td>';
+        xhtml += '<td><a style="display: inline-block;" href="#" data-action="delete-client"><span data-action="delete-client" class="glyphicon spec-label-red glyphicon-minus-sign pull-right"></span></a></td>';
         xhtml += '</tr>';
 
         var parent = node_id;
         for(var si in x.subscriptions) {
           subscriptions[x.subscriptions[si].id] = x.subscriptions[si];
           node_id ++;
-          xhtml += '<tr data-page=' + 1 + ' data-offer_type=' + x.subscriptions[si].offer_type + ' data-subscription=' + x.subscriptions[si].id + ' class="treegrid-temp subscription-node treegrid-' + node_id + ' treegrid-parent-' + parent + '">';
-          xhtml += '<td class="query">' + x.subscriptions[si].queries + '</td><td>' + x.subscriptions[si].offer_type_code + '</td>';
+          xhtml += '<tr data-page=' + 1 + ' data-offer_type=' + x.subscriptions[si].offer_type + ' data-subscription=' + x.subscriptions[si].id + ' class="subscription-node treegrid-' + node_id + ' treegrid-parent-' + parent + '">';
+          xhtml += '<td></td>';
+          xhtml += '<td class="query">' + x.subscriptions[si].queries + '</td>';
+          xhtml += '<td style="padding-top: 0px;padding-bottom: 10px;"><span style="font-size: 10px;">' + moment(x.add_date).format("DD.MM.YY HH:mm") + '</span><br>&nbsp;</td>';
+          xhtml += '<td>' + /*x.subscriptions[si].offer_type*/ '' + '</td>';
           xhtml += '</tr>';
         }
         
-        $('.treegrid-collapsed').each(function(){
-          $(this).removeClass('treegrid-collapsed');
-        });
-        $('.treegrid-expanded').each(function(){
-          $(this).removeClass('treegrid-expanded');
-        });
-      
-        //$selected.treegrid('expand');
-        //$('.treegrid-' + node_id).treegrid('expand');
-        
-        //$selected.addClass('hidden');
-        
+        var $selected = $('.tree > tbody > tr.cselected');
         $selected.treegrid('getChildNodes').each(function () {
-            //$(this).addClass('hidden');
-            $(this).remove();
+          $(this).remove();
         });
         $selected.after(xhtml);
         $selected.remove();
-        $('.tree').treegrid({initialState: "collapsed"});
+        
+        $('.tree-tmp').treegrid('initNode', settings);
+        $('.tree-tmp').removeClass('tree-tmp');
       
-         $selected = $('.tree > tbody > tr.cselected');
+        $selected = $('.tree > tbody > tr.cselected');
         $selected.each(function () {
           $(this).treegrid('expand');
         });
@@ -602,37 +594,25 @@
         saved: function (r) {
           // Update object row in the table
           var $tr = $('#realtyTable > tbody > tr[data-id="' + r.id + '"]');
-          
+
           if ($tr.length) {
-            /*
-            for (var j = 0; j < realtyTableConf.fields.length; j++) {
-              var f = realtyTableConf.fields[j];
-              $('td:nth-child(' + (j + 1) + ')', $tr).html(f.val(r));
-            }
-            */
-            
             var classes = [Rplus.Table['realty_states'][r.state_code].metadata['icon-class']];            
             var tag = r.color_tag_id ? '<span style="margin-left: 2px; margin-bottom: 6px;" class="tag-button color-tag-' + r.color_tag_id + ' pull-left"></span>' : '';
             var photo = r.main_photo_thumbnail ? '<a href="#" data-action="photos-show"><span class="glyphicon glyphicon-camera"></span></a>' : '';
-            
-            //var xhtml = '<tr class="' + state_class + '" data-id="' + r.id + '" data-page="' + data.page + '" data-lat="' + r.latitude + '" data-lng="' + r.longitude + '">';
-            //var xhtml = '<td>' + tag + '</td>';
-            //xhtml += '<td>' + photo + '</td>';
-            //xhtml += '<td><span class="glyphicon ' + classes.join(' ') + '"></span></td>';
-            console.log(tag);
+
             var xhtml = '<td><span class="glyphicon ' + classes.join(' ') + '"></span>' + tag + '</td>';
             xhtml += '<td>' + photo + '</td>';
             xhtml += '<td>' + Rplus.Realty.getDigestEx(r, false) + '</td>';
+            xhtml += '<td style="padding-top: 0px;padding-bottom: 10px;"><span style="font-size: 10px;">' + moment(r.change_date).format("DD.MM.YY HH:mm") + '</span><br>&nbsp;</td>';
             xhtml += '<td><a style="padding-right: 22px; margin-right: 0px;" href="#" data-action="remove-proposal"><span class="glyphicon spec-label-red glyphicon-minus-sign"></span></a></td>'; //'</tr>';
             $tr.html(xhtml);
-            
-            
-            
+
             if(r.state_code == 'deleted') {
               //$tr.removeClass('selected').removeClass('modified').removeClass('opened').removeClass('shown').addClass('deleted');
             } else {
               //$tr.removeClass('selected').removeClass('deleted').addClass('modified');
             }
+
             agents_ids[r.id] = r.agent_id;
             media_export[r.id] = r.export_media;
           }
@@ -677,11 +657,10 @@
         
         var last_page = 0;
         var total_count = 0;
-        while (total_count < 32) {
+        while (total_count < 16) {
           last_page ++;
           total_count += listClients(last_page);
         }
-        $('.tree').treegrid({initialState: "collapsed"});
       });
 
       // Init realty table and menu
@@ -710,11 +689,10 @@
         if ($(this).scrollTop() + $(this).innerHeight() >= $(this)[0].scrollHeight) {
           var lastPage = $('.tree > tbody > tr:last-child').data('page');
           var total_count = 0;
-          while (total_count < 34) {
+          while (total_count < 16) {
             lastPage ++;
             total_count += listClients(lastPage);
           }
-          $('.tree').treegrid({initialState: "collapsed"});
         }
       });
       
@@ -798,37 +776,28 @@
           console.log('!');
           $tr = $(this).closest('tr');
         });
-        
-        $('.tree').on('click', 'td.query', function (e) {
-          var $this = $(this);
-          var $tr = $(this).closest('tr');        
-          subscription_id = $tr.data('subscription');
-          offer_type = $tr.data('offer_type');
-          
-          $('#searchQuery').val($this.text());
-          listSubscriptionRealty(subscription_id, 1);
-        });
-        
+
         $('.tree').on('click', 'tr.subscription-node', function (e) {
           var $this = $(this);
-          var hc = $this.hasClass('subselected');
           var $selected = $('.tree > tbody > tr.subselected');
           $selected.each(function () {
             var $this = $(this);
               $this.removeClass('subselected');
           });
-          if (hc) {
-            $this.removeClass('subselected');
-          } else {
-            $this.addClass('subselected');
-          }
-          
+          $this.addClass('subselected');
+
           var $selected = $('.tree > tbody > tr.cselected');
           $selected.each(function () {
             var $this = $(this);
               $this.removeClass('cselected');
           });
           $this.treegrid('getParentNode').addClass("cselected");
+          
+          subscription_id = $this.data('subscription');
+          offer_type = $this.data('offer_type');
+          
+          $('#searchQuery').val($('.query', $this).text());
+          listSubscriptionRealty(subscription_id, 1);
         });
         
         $('.tree').on('click', 'tr.client-node', function (e) {
@@ -853,22 +822,17 @@
         $('.tree').on('mousedown', 'tr.client-node', function (e) {
           if (hasTouch()) return;
           var $this = $(this);
-          var hc = $this.hasClass('cselected');
           var $selected = $('.tree > tbody > tr.cselected');
           $selected.each(function () {
             var $this = $(this);
               $this.removeClass('cselected');
           });
-          if (hc) {
-            $this.removeClass('cselected');
-          } else {
-            $this.addClass('cselected');
-          }
+          $this.addClass('cselected');
           
           var $selected = $('.tree > tbody > tr.subselected');
           $selected.each(function () {
             var $this = $(this);
-              $this.removeClass('subselected');
+            $this.removeClass('subselected');
           });
         });
         
@@ -1072,29 +1036,27 @@
 
       
       
-      // Open ClientCard
+      // Create ClientCard
       $('[data-action="client-create"]').click(function (e) {
         
         var q = $('#searchQuery').val().trim(),
             offerTypeCode = $('[data-filter="offer_type_code"]').data('val'),
             realtyIds = [],
             phoneNum = '';
-        
+        var saved = false;
         var card = ClientCard({
           saved: function (client) {
-            console.log('created');
-            console.log(client);
-            
+            console.log(saved);
             var x = client;
             node_id ++;
 
-            var xhtml = '<tr data-id=' + x.id + ' class="client-node treegrid-' + node_id + ' cselected">';
+            var xhtml = '<tr data-id=' + x.id + ' class="tree-tmp cselected client-node treegrid-' + node_id + '">';
             var caption = x.name == null ? Rplus.Util.formatPhoneNum(x.phone_num) + '<br>&nbsp;&nbsp' : x.name + '<br>&nbsp;&nbsp;&nbsp;&nbsp;' + Rplus.Util.formatPhoneNum(x.phone_num) ;
             var tag = '';
             if (x.color_tag_id != 0) {
               tag = '<span class="tag-button color-tag-placeholder color-tag-' + x.color_tag_id + '" style="display: inline-block"></span>';
             }
-            
+
             xhtml += '<td style="width: 1px;"></td>';
             xhtml += '<td style="width: 220px;">&nbsp&nbsp' + tag + '&nbsp&nbsp' + caption + '</td>'
             xhtml += '<td style="width: 100px;padding-top: 0px;padding-bottom: 10px;"><span style="font-size: 10px;">' + moment(x.change_date).format("DD.MM.YY HH:mm") + '</span><br>&nbsp;</td>';
@@ -1105,25 +1067,37 @@
             for(var si in x.subscriptions) {
               subscriptions[x.subscriptions[si].id] = x.subscriptions[si];
               node_id ++;
-              xhtml += '<tr data-page=' + 1 + ' data-offer_type=' + x.subscriptions[si].offer_type + ' data-subscription=' + x.subscriptions[si].id + ' class="treegrid-temp subscription-node treegrid-' + node_id + ' treegrid-parent-' + parent + '">';
+              xhtml += '<tr data-page=' + 1 + ' data-offer_type=' + x.subscriptions[si].offer_type + ' data-subscription=' + x.subscriptions[si].id + ' class="subscription-node treegrid-' + node_id + ' treegrid-parent-' + parent + '">';
               xhtml += '<td></td>';
               xhtml += '<td class="query">' + x.subscriptions[si].queries + '</td>';
               xhtml += '<td style="padding-top: 0px;padding-bottom: 10px;"><span style="font-size: 10px;">' + moment(x.add_date).format("DD.MM.YY HH:mm") + '</span><br>&nbsp;</td>';
               xhtml += '<td>' + /*x.subscriptions[si].offer_type*/ '' + '</td>';
               xhtml += '</tr>';
             }
+
+            if (!saved) {
+              $('.cselected').removeClass('cselected');
+              $('.tree').prepend(xhtml);
+              $('.tree-tmp').treegrid('initNode', settings);
+              $('.tree-tmp').removeClass('tree-tmp');            
+              $('.treegrid-' + node_id).treegrid('expand');
+            } else {
+              var $selected = $('.tree > tbody > tr.cselected');
+              $selected.treegrid('getChildNodes').each(function () {
+                $(this).remove();
+              });
+              $selected.after(xhtml);
+              $selected.remove();
+              
+              $('.tree-tmp').treegrid('initNode', settings);
+              $('.tree-tmp').removeClass('tree-tmp');
             
-            $('.treegrid-collapsed').each(function(){
-              $(this).removeClass('treegrid-collapsed');
-            });
-            $('.treegrid-expanded').each(function(){
-              $(this).removeClass('treegrid-expanded');
-            });
-          
-            $('.tree').prepend(xhtml);
-            $('.tree').treegrid({initialState: "collapsed"});
-            $('.treegrid-' + node_id).treegrid('expand');
-          
+              $selected = $('.tree > tbody > tr.cselected');
+              $selected.each(function () {
+                $(this).treegrid('expand');
+              });              
+            }
+            saved = true;
           },
         }).createWithSubscription(q, offerTypeCode, realtyIds);
       });
@@ -1486,12 +1460,10 @@
       //listRealty(1);
       var last_page = 0;
       var total_count = 0;
-      console.log('!');
-      while (total_count < 30) {
+      while (total_count < 16) {
         last_page ++;
         total_count += listClients(last_page);
       }
-      $('.tree').treegrid({initialState: "collapsed"});      
     });
   })();
 </script>
