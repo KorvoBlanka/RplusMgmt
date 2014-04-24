@@ -83,7 +83,7 @@ sub index {
                       type_code => 'apartment',
                       type_code => 'apartment_small',
                       type_code => 'room',
-                    ]
+                    ],
                     export_media => {'&&' => $media->id},
                 ],
                 sort_by => 'address_object.expanded_name',
