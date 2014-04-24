@@ -143,6 +143,10 @@
     background-color: #dff0d8; /* green = success */
   }
 
+  #realtyTable > tbody > tr.modified:nth-child(even) > td {
+    background-color: #d3ecc9;
+  }  
+  
   #realtyTable > tbody > tr.modified:hover > td {
     background-color: #d0e9c6;
   }
@@ -441,29 +445,29 @@
     var settings = {};
     function listClients(page) {
       var offer_type = $('[data-filter="offer_type_code"]').data('val');
-      var max_count = 0;
-      var count = 0;
       var per_page = 16;
       $.ajax({
         type: 'POST',
         url: '/api/client/list',
-        async:   false,
-        data: {page: page, per_page: per_page},
-        success: function (data) {
-          max_count = data.count;
+        data: {
+          subscription_offer_types: offer_type,
+          page: page,
+          per_page: per_page
+        },
+        complete: function (jqXHR, textStatus) {},
+      })
+        .done(function (data, textStatus, jqXHR) {
           if (page == 1) {
             node_id = 0;
             $('.tree').html('');
             $('.tree').scrollTop(0);
           }
-
           settings = $.extend({}, $.fn.treegrid.defaults, tree_options);
           for (var i = 0; i < data.list.length; i++) {
             var x = data.list[i];
             node_id ++;
-            var skeep = true;
-
-            var xhtml = '<tr data-id=' + x.id + ' class="tree-tmp client-node treegrid-' + node_id + '">';
+            
+            var xhtml = '<tr data-page=' + page + ' data-id=' + x.id + ' class="tree-tmp client-node treegrid-' + node_id + '">';
             var caption = x.name == null ? Rplus.Util.formatPhoneNum(x.phone_num) + '<br>&nbsp;&nbsp' : x.name + '<br>&nbsp;&nbsp;&nbsp;&nbsp;' + Rplus.Util.formatPhoneNum(x.phone_num) ;
             var tag = '';
             if (x.color_tag_id != 0) {
@@ -478,8 +482,9 @@
             
             var parent = node_id;
             
+            console.log('-');
             for(var si in x.subscriptions) {
-              if(x.subscriptions[si].offer_type == offer_type) skeep = false;
+              console.log(x.subscriptions[si].offer_type);
               subscriptions[x.subscriptions[si].id] = x.subscriptions[si];
               if (x.subscriptions[si].offer_type == offer_type) {
                 node_id ++;
@@ -491,27 +496,18 @@
                 xhtml += '</tr>';
               }
             }
-            if (!skeep) {
-              count ++;
-              $('.tree').append(xhtml);
-              if (page != 1) {
-                $('.tree-tmp').treegrid('initNode', settings);
-                $('.tree-tmp').removeClass('tree-tmp');
-              }
+
+            $('.tree').append(xhtml);
+            if (page != 1) {
+              $('.tree-tmp').treegrid('initNode', settings);
+              $('.tree-tmp').removeClass('tree-tmp');
             }
           }
           if (page == 1) {
             $('.tree-tmp').removeClass('tree-tmp');
             $('.tree').treegrid(tree_options);
           }
-        }
-      });
-      
-      console.log(page + ' | ' + per_page + ' | ' + max_count);
-      if (page * per_page >= max_count) {
-        return 9000;
-      }
-      return count;
+        });
     }
     
     // open client card
@@ -654,13 +650,7 @@
       $('[data-filter] > ul > li > a').click(function (e) {
         var $display = $(this).closest('[data-filter]').data('val', $(this).data('val')).find('> a [role="display"]');
         if ($(this).data('type') == 'text') { $display.text($(this).text()) } else { $display.html($(this).html()) };
-        
-        var last_page = 0;
-        var total_count = 0;
-        while (total_count < 16) {
-          last_page ++;
-          total_count += listClients(last_page);
-        }
+        listClients(1);
       });
 
       // Init realty table and menu
@@ -688,11 +678,7 @@
       $('#clientTreeWrapper').scroll(function (e) {
         if ($(this).scrollTop() + $(this).innerHeight() >= $(this)[0].scrollHeight) {
           var lastPage = $('.tree > tbody > tr:last-child').data('page');
-          var total_count = 0;
-          while (total_count < 16) {
-            lastPage ++;
-            total_count += listClients(lastPage);
-          }
+          listClients(lastPage + 1);
         }
       });
       
@@ -1046,7 +1032,6 @@
         var saved = false;
         var card = ClientCard({
           saved: function (client) {
-            console.log(saved);
             var x = client;
             node_id ++;
 
@@ -1458,12 +1443,7 @@
       $.pnotify.defaults.styling = 'bootstrap3';
 
       //listRealty(1);
-      var last_page = 0;
-      var total_count = 0;
-      while (total_count < 16) {
-        last_page ++;
-        total_count += listClients(last_page);
-      }
+      listClients(1);
     });
   })();
 </script>

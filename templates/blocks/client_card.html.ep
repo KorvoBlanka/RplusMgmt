@@ -517,6 +517,21 @@
           $('#phone-num-alert', $modal).removeClass('hidden');
         })
       ;
+      
+      setTimeout(function () {
+        $.ajax({
+          type: "POST",
+          url: "/api/client/update_offer_types",
+          data: {id: client.id},
+          beforeSend: function (jqXHR, settings) {},
+          complete: function (jqXHR, textStatus) {},
+        })
+          .done(function (data, textStatus, jqXHR) {
+              console.log('update_offer_types');
+          })
+        ;
+      }, 1500);
+      
     }
 
     var cached_client = null;

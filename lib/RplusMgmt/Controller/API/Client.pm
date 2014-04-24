@@ -36,6 +36,7 @@ sub list {
     }
 
     # Input params
+    my $subscription_offer_types = $self->param("subscription_offer_types") || 'none';
     my $page = $self->param("page") || 1;
     my $per_page = $self->param("per_page") || 30;
 
@@ -45,10 +46,18 @@ sub list {
         page => $page,
     };
 
-    my $clients_iter = Rplus::Model::Client::Manager->get_objects_iterator(query => [delete_date => undef],
-                                                                          sort_by => 'change_date desc',
-                                                                          page => $page,
-                                                                          per_page => $per_page,);
+    my $clients_iter = Rplus::Model::Client::Manager->get_objects_iterator(
+        query => [
+        or => [
+            subscription_offer_types => $subscription_offer_types,
+            subscription_offer_types => 'both',
+        ],
+        delete_date => undef],
+        sort_by => 'change_date desc',
+        page => $page,
+        per_page => $per_page,
+    );
+    
     while (my $client = $clients_iter->next) {
         my $x = {
             id => $client->id,
@@ -61,6 +70,7 @@ sub list {
             description => $client->description,
             subscriptions => [],
             color_tag_id => 0,
+            subscription_offer_types => $client->subscription_offer_types,
         };
 
         if($client->client_color_tags) {
@@ -72,16 +82,31 @@ sub list {
             }
         }
         
-        my $subscription_iter = Rplus::Model::Subscription::Manager->get_objects_iterator(query => [client_id => $client->id, delete_date => undef],);
+        my $subscription_iter = Rplus::Model::Subscription::Manager->get_objects_iterator(
+            query => [
+                client_id => $client->id,
+                delete_date => undef,                
+                '!end_date' => undef,
+                #'subscription_realty.delete_date' => undef,
+            ],
+        );
+        
+        my $offer_type_code = 'none';
         while (my $subscription = $subscription_iter->next) {
             my $sub = {
                 id => $subscription->id,
                 queries => $subscription->queries,
                 offer_type => $subscription->offer_type_code,
             };
+            if ($offer_type_code eq 'none') {
+                $offer_type_code = $subscription->offer_type_code;
+            } elsif ($offer_type_code ne $subscription->offer_type_code) {
+                $offer_type_code = 'both';
+            }
             push @{$x->{subscriptions}}, $sub;
         }
-        
+        $client->subscription_offer_types($offer_type_code);
+        $client->save();
         push @{$res->{list}}, $x;
     }
 
@@ -129,8 +154,8 @@ sub get {
         $res->{subscriptions} = [];
         my $subscription_iter = Rplus::Model::Subscription::Manager->get_objects_iterator(
             query => [
-                delete_date => undef,
                 client_id => $client->id,
+                delete_date => undef,                
                 '!end_date' => undef,
                 'subscription_realty.delete_date' => undef,
             ],
@@ -156,6 +181,38 @@ sub get {
     }
 
     return $self->render(json => $res);
+}
+
+sub update_offer_types {
+    my $self = shift;
+    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(clients => 'write');
+    
+    # Retrieve client
+    my $id = $self->param('id');
+    my $client = Rplus::Model::Client::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
+    return $self->render(json => {error => 'Not Found'}, status => 404) unless $client;
+    
+    my $subscription_iter = Rplus::Model::Subscription::Manager->get_objects_iterator(
+        query => [
+            client_id => $client->id,
+            delete_date => undef,                
+            '!end_date' => undef,
+            #'subscription_realty.delete_date' => undef,
+        ],
+    );
+    
+    my $offer_type_code = 'none';
+    while (my $subscription = $subscription_iter->next) {
+        if ($offer_type_code eq 'none') {
+            $offer_type_code = $subscription->offer_type_code;
+        } elsif ($offer_type_code ne $subscription->offer_type_code) {
+            $offer_type_code = 'both';
+        }
+    } 
+    $client->subscription_offer_types($offer_type_code);
+    $client->save();
+    
+    return $self->render(json => {offer_type => $offer_type_code, status => 'success'});    
 }
 
 sub save {
@@ -189,6 +246,7 @@ sub save {
     my $description = $self->param_n('description');
     my $send_owner_phone = $self->param_b('send_owner_phone');
     my $color_tag_id = $self->param('color_tag_id');
+    my $subscription_offer_types = $self->param('subscription_offer_types');
     
     # Save
     $client->name($name);
@@ -198,6 +256,7 @@ sub save {
     $client->description($description);
     $client->send_owner_phone($send_owner_phone);
     $client->change_date('now()');
+    $client->subscription_offer_types($subscription_offer_types);
     
     eval {
         $client->save($client->id ? (changes_only => 1) : (insert => 1));
@@ -301,6 +360,26 @@ sub subscribe {
     );
     $subscription->save;
 
+    my $subscription_iter = Rplus::Model::Subscription::Manager->get_objects_iterator(
+        query => [
+            client_id => $client->id,
+            delete_date => undef,                
+            '!end_date' => undef,
+            #'subscription_realty.delete_date' => undef,
+        ],
+    );
+    
+    my $offer_type_code = 'none';    
+    while (my $subscription = $subscription_iter->next) {
+        if ($offer_type_code eq 'none') {
+            $offer_type_code = $subscription->offer_type_code;
+        } elsif ($offer_type_code ne $subscription->offer_type_code) {
+            $offer_type_code = 'both';
+        }
+    }
+    $client->subscription_offer_types($offer_type_code);
+    $client->save();    
+    
     # Add realty to subscription & generate SMS
     for my $realty_id (@$realty_ids) {
         my $realty = Rplus::Model::Realty::Manager->get_objects(

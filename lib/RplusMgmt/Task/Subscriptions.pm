@@ -54,42 +54,42 @@ sub run {
                 $found++;
                 Rplus::Model::SubscriptionRealty->new(subscription_id => $subscr->id, realty_id => $realty->id)->save;
 
-                    # Prepare SMS for client
-                    if ($subscr->client->phone_num =~ /^9\d{9}$/) {
-                        # TODO: Add template settings
-                        my @parts;
-                        {
-                            push @parts, $realty->type->name;
-                            push @parts, $realty->rooms_count.'к' if $realty->rooms_count;
-                            push @parts, $realty->address_object->name.' '.$realty->address_object->short_type.($realty->address_object->name !~ /[()]/ && $realty->sublandmark ? ' ('.$realty->sublandmark->name.')' : '') if $realty->address_object;
-                            push @parts, ($realty->floor || '?').'/'.($realty->floors_count || '?').' эт.' if $realty->floor || $realty->floors_count;
-                            push @parts, $realty->price.' тыс. руб.' if $realty->price;
-                            if ($subscr->client->send_owner_phone) {
-                                push @parts, "Собственник: ".join(', ', $realty->owner_phones);
-                            } elsif ($realty->agent) {
-                                push @parts, "Агент: ".($realty->agent->public_name || $realty->agent->name);
-                                push @parts, $realty->agent->public_phone_num || $realty->agent->phone_num;
-                            }
+                # Prepare SMS for client
+                if ($subscr->client->phone_num =~ /^9\d{9}$/) {
+                    # TODO: Add template settings
+                    my @parts;
+                    {
+                        push @parts, $realty->type->name;
+                        push @parts, $realty->rooms_count.'к' if $realty->rooms_count;
+                        push @parts, $realty->address_object->name.' '.$realty->address_object->short_type.($realty->address_object->name !~ /[()]/ && $realty->sublandmark ? ' ('.$realty->sublandmark->name.')' : '') if $realty->address_object;
+                        push @parts, ($realty->floor || '?').'/'.($realty->floors_count || '?').' эт.' if $realty->floor || $realty->floors_count;
+                        push @parts, $realty->price.' тыс. руб.' if $realty->price;
+                        if ($subscr->client->send_owner_phone) {
+                            push @parts, "Собственник: ".join(', ', $realty->owner_phones);
+                        } elsif ($realty->agent) {
+                            push @parts, "Агент: ".($realty->agent->public_name || $realty->agent->name);
+                            push @parts, $realty->agent->public_phone_num || $realty->agent->phone_num;
                         }
-                        my $sms_body = join(', ', @parts);
-                        my $sms_text = 'По вашему запросу поступило: '.$sms_body.($sms_body =~ /\.$/ ? '' : '.').($c->config->{subscriptions}->{contact_info} ? ' '.$c->config->{subscriptions}->{contact_info} : '');
-                        Rplus::Model::SmsMessage->new(phone_num => $subscr->client->phone_num, text => $sms_text)->save;
                     }
-    
-                    # Prepare SMS for agent
-                    if (!$subscr->client->send_owner_phone && $realty->agent && ($realty->agent->phone_num || '') =~ /^9\d{9}$/) {
-                        # TODO: Add template settings
-                        my @parts;
-                        {
-                            push @parts, $realty->type->name;
-                            push @parts, $realty->rooms_count.'к' if $realty->rooms_count;
-                            push @parts, $realty->address_object->name.' '.$realty->address_object->short_type.($realty->house_num ? ', '.$realty->house_num : '') if $realty->address_object;
-                            push @parts, $realty->price.' тыс. руб.' if $realty->price;
-                            push @parts, 'Клиент: '.$c->format_phone_num($subscr->client->phone_num);
-                        }
-                        my $sms_text = 'Подобрано: '.join(', ', @parts);
-                        Rplus::Model::SmsMessage->new(phone_num => $realty->agent->phone_num, text => $sms_text)->save;
+                    my $sms_body = join(', ', @parts);
+                    my $sms_text = 'По вашему запросу поступило: '.$sms_body.($sms_body =~ /\.$/ ? '' : '.').($c->config->{subscriptions}->{contact_info} ? ' '.$c->config->{subscriptions}->{contact_info} : '');
+                    Rplus::Model::SmsMessage->new(phone_num => $subscr->client->phone_num, text => $sms_text)->save;
+                }
+
+                # Prepare SMS for agent
+                if (!$subscr->client->send_owner_phone && $realty->agent && ($realty->agent->phone_num || '') =~ /^9\d{9}$/) {
+                    # TODO: Add template settings
+                    my @parts;
+                    {
+                        push @parts, $realty->type->name;
+                        push @parts, $realty->rooms_count.'к' if $realty->rooms_count;
+                        push @parts, $realty->address_object->name.' '.$realty->address_object->short_type.($realty->house_num ? ', '.$realty->house_num : '') if $realty->address_object;
+                        push @parts, $realty->price.' тыс. руб.' if $realty->price;
+                        push @parts, 'Клиент: '.$c->format_phone_num($subscr->client->phone_num);
                     }
+                    my $sms_text = 'Подобрано: '.join(', ', @parts);
+                    Rplus::Model::SmsMessage->new(phone_num => $realty->agent->phone_num, text => $sms_text)->save;
+                }
             }
             $c->app->log->debug("Found: $found");
         }

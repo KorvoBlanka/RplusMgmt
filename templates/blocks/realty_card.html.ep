@@ -298,7 +298,7 @@
           }
           
           setRealtyView(realty);
-          setRealtyEditView(realty);
+          //setRealtyEditView(realty);
           setMode(0);
         })
         .fail(function (jqXHR, textStatus, errorThrown) {
@@ -342,8 +342,10 @@
       var formArray = $('#realty-form').serializeArray();
       for (var i = 0; i < formArray.length; i++) {
         var x = formArray[i];
-        var el = $('[name="' + x.name + '"]:input', $realty_modal);
-        el.val('');
+        if (x.name != 'export_media') {
+          var el = $('[name="' + x.name + '"]:input', $realty_modal);
+          el.val('');
+        }
       }
       
       $('[name="address_object_name"]', $realty_modal)
@@ -407,7 +409,8 @@
         $(this).removeClass('tag-selected');
       });
       $('#tag-select > .card-color-tag-' + realty.color_tag_id + '').addClass('tag-selected');
-      
+      selected_tag_id = realty.color_tag_id || 0;
+
       pushPhotos(realty.id);
 
       $('#fileupload', $realty_modal).fileupload({

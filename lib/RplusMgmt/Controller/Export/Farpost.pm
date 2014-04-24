@@ -44,31 +44,24 @@ sub index {
         my $P = $meta->{'params'};
 
         {
-            my $worksheet = $workbook->add_worksheet("Лист1");
+            my $worksheet = $workbook->add_worksheet("Квартиры");
 
             # Заголовок листа
             my $header_fmt1 = $workbook->add_format(border => 1, bold => 0, bg_color => 'silver', valign  => 'vcenter', align => 'center', text_wrap => 1);
             my $header_fmt2 = $workbook->add_format(); $header_fmt2->copy($header_fmt1);
             my $header = {
-                'A1' => { text => "Код сделки" },
-                'B1' => { text => "Тип сделки", width => 15 },
-                'C1' => { text => "Вид недвижимости", width => 15 },
-                'D1' => { text => "Район", width => 22 },
+                'A1' => { text => "Тип сделки", width => 15 },
+                'B1' => { text => "Тип недвижимости", width => 15 },
+                'C1' => { text => "Кол. комн." },
+                'D1' => { text => "Р-он", width => 22 },
                 'E1' => { text => "Улица", width => 35 },
                 'F1' => { text => "Номер дома" },
-                'G1' => { text => "Количество комнат" },
-                'H1' => { text => "Общая площадь" },
-                'I1' => { text => "Этаж" },
-                'J1' => { text => "Всего этажей" },
-                'K1' => { text => "Состояние", width => 15 },
-                'L1' => { text => "Срок аренды" },
-                'M1' => { text => "Дополнительные платежи", widht => 20 },
-                'N1' => { text => "Дополнительное описание", width => 25 },
-                'O1' => { text => "Особые требования к съемщикам", width => 20 },
-                'P1' => { text => "Цена (руб)" },
-                'Q1' => { text => "Коммисия агенства", width => 15 },
-                'R1' => { text => "Стоимость просмотра", width => 15 },
-                'S1' => { text => "Ссылки на фотографии", width => 70 },
+                'G1' => { text => "Общая площадь, кв.м." },
+                'H1' => { text => "Этаж" },
+                'I1' => { text => "Всего этажей" },
+                'J1' => { text => "Дополнительное описание", width => 25 },
+                'K1' => { text => "Ссылки на фотографии", width => 70 },
+                'L1' => { text => "Цена руб." },
             };
             for my $x (keys %$header) {
                 if ($x =~ /^(\S)\d$/) {
@@ -83,10 +76,14 @@ sub index {
             my $txt_fmt = $workbook->add_format(num_format => '@');
             my $txt_fmt2 = $workbook->add_format(); $txt_fmt2->set_text_wrap();
 
-            # Выборка частных домов и коттеджей
             my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
                 query => [
                     state_code => 'work',
+                    or => [
+                      type_code => 'apartment',
+                      type_code => 'apartment_small',
+                      type_code => 'room',
+                    ]
                     export_media => {'&&' => $media->id},
                 ],
                 sort_by => 'address_object.expanded_name',
@@ -104,25 +101,18 @@ sub index {
                 my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $realty->id, delete_date => undef])};
 
                 my $row = [
-                    '',
                     $realty->offer_type->name,
                     $realty->type->name,
+                    $realty->rooms_count || '',
                     $area ? $area->name : '',
                     $realty->address_object ? $realty->address_object->name.($realty->address_object->short_type ne 'ул' ? ' '.$realty->address_object->short_type : '') : '',
                     $realty->house_num || '',
-                    $realty->rooms_count || '',
                     $realty->square_total || '',
                     $realty->floor || '',
                     $realty->floors_count || '',
-                    $realty->condition ? $realty->condition->name : '',
-                    '',
-                    '',
                     $realty->description,
-                    '',
-                    $realty->price * 1000,
-                    '',
-                    '',
                     @photos ? {type => 'photo_list', body => join("\n", map { $self->config->{'storage'}->{'url'}.'/photos/'.$_->realty_id.'/'.$_->filename } @photos)} : '',
+                    $realty->price * 1000,
                 ];
                 for my $col_num (0..(scalar(@$row)-1)) {
                     my $x = $row->[$col_num];
@@ -139,6 +129,117 @@ sub index {
             }
         }
 
+=begin comment
+        {
+            my $worksheet = $workbook->add_worksheet("Частные дома и котеджи");
+
+            # Заголовок листа
+            my $header_fmt1 = $workbook->add_format(border => 1, bold => 0, bg_color => 'silver', valign  => 'vcenter', align => 'center', text_wrap => 1);
+            my $header_fmt2 = $workbook->add_format(); $header_fmt2->copy($header_fmt1);
+            my $header = {
+                'A1' => { text => "Тип сделки", width => 15 },
+                'B1' => { text => "Тип недвижимости", width => 15 },
+                'С1' => { text => "Р-он", width => 22 },
+                'D1' => { text => "Расположение", width => 35 },
+                'E1' => { text => "Тип дома" },
+                'F1' => { text => "Площадь участка(сот.)" },
+                'G1' => { text => "Площадь.дома,кв.м." },
+                'H1' => { text => "Кол.ком." },
+                
+                'I1' => { text => "Права на участок" },
+                'J1' => { text => "Водоснабжение" },
+                'K1' => { text => "Электричество" },
+                'L1' => { text => "Отопление" },
+                
+                'M1' => { text => "Дополнительное описание", width => 25 },
+                'N1' => { text => "Ссылки на фотографии", width => 70 },
+                'O1' => { text => "Цена руб." },
+            };
+            for my $x (keys %$header) {
+                if ($x =~ /^(\S)\d$/) {
+                    $worksheet->write_string($x, $header->{$x}->{'text'}, $header_fmt1);
+                    $worksheet->set_column("$1:$1", $header->{$x}->{'width'}) if exists $header->{$x}->{'width'};
+                } elsif ($x =~ /^(\S)(\d)\:(\S)(\d)$/) {
+                    $worksheet->merge_range($x, $header->{$x}->{'text'}, $header_fmt2);
+                    $worksheet->set_column("$1:$3", $header->{$x}->{'width'}) if exists $header->{$x}->{'width'};
+                }
+            }
+
+            my $txt_fmt = $workbook->add_format(num_format => '@');
+            my $txt_fmt2 = $workbook->add_format(); $txt_fmt2->set_text_wrap();
+
+            my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
+                query => [
+                    state_code => 'work',
+                    or => [
+                      type_code => 'cottage',
+                      type_code => 'house',
+                    ]
+                    export_media => {'&&' => $media->id},
+                ],
+                sort_by => 'address_object.expanded_name',
+                require_objects => ['type', 'offer_type'],
+                with_objects => ['address_object', 'sublandmark', 'condition', 'agent'],
+            );
+            my $row_num = 1;
+            while(my $realty = $realty_iter->next) {
+                my $area = Rplus::Model::Landmark::Manager->get_objects(query => [id => scalar($realty->landmarks), type => 'farpost', delete_date => undef], limit => 1)->[0] if @{$realty->landmarks};
+                my $phones = $P->{'phones'} || '';
+                if ($phones =~ /%agent\.phone_num%/ && $realty->agent_id) {
+                    my $x = from_json($realty->agent->metadata)->{'public_phone_num'} || $realty->agent->phone_num;
+                    $phones =~ s/%agent\.phone_num%/$x/;
+                }
+                my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $realty->id, delete_date => undef])};
+
+                'A1' => { text => "Тип сделки", width => 15 },
+                'B1' => { text => "Тип недвижимости", width => 15 },
+                'С1' => { text => "Р-он", width => 22 },
+                'D1' => { text => "Расположение", width => 35 },
+                'E1' => { text => "Тип дома" },
+                'F1' => { text => "Площадь участка(сот.)" },
+                'G1' => { text => "Площадь.дома,кв.м." },
+                'H1' => { text => "Кол.ком." },
+                
+                'I1' => { text => "Права на участок" },
+                'J1' => { text => "Водоснабжение" },
+                'K1' => { text => "Электричество" },
+                'L1' => { text => "Отопление" },
+                
+                'M1' => { text => "Дополнительное описание", width => 25 },
+                'N1' => { text => "Ссылки на фотографии", width => 70 },
+                'O1' => { text => "Цена руб." },
+                
+                my $row = [
+                    $realty->offer_type->name,
+                    $realty->type->name,
+                    $realty->rooms_count || '',
+                    $area ? $area->name : '',
+                    $realty->address_object ? $realty->address_object->name.($realty->address_object->short_type ne 'ул' ? ' '.$realty->address_object->short_type : '') : '',
+                    $realty->house_num || '',
+                    $realty->square_total || '',
+                    $realty->floor || '',
+                    $realty->floors_count || '',
+                    $realty->description,
+                    @photos ? {type => 'photo_list', body => join("\n", map { $self->config->{'storage'}->{'url'}.'/photos/'.$_->realty_id.'/'.$_->filename } @photos)} : '',
+                    $realty->price * 1000,
+                ];
+                for my $col_num (0..(scalar(@$row)-1)) {
+                    my $x = $row->[$col_num];
+                    if (ref($x) eq 'HASH') {
+                        if ($x->{'type'} eq 'photo_list') {
+                            $worksheet->set_row($row_num, 60);
+                            $worksheet->write_string($row_num, $col_num, $x->{'body'}, $txt_fmt2);
+                        }
+                    } else {
+                        $worksheet->write($row_num, $col_num, $x);
+                    }
+                }
+                $row_num++;
+            }
+        }        
+=end comment
+=cut
+        
         $workbook->close;
     }
 
