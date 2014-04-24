@@ -274,13 +274,17 @@ sub realty_list {
     my $page = $self->param('page');
     my $per_page = $self->param('per_page');
     my $subscription_id = $self->param('subscription_id');
-
+    my $color_tag_id = $self->param("color_tag_id") || 'any';
+    
     my $subscription = Rplus::Model::Subscription::Manager->get_objects(query => [id => $subscription_id, delete_date => undef])->[0];
     update_subscription_realty($subscription);
 
     my $res = {
         count => Rplus::Model::SubscriptionRealty::Manager->get_objects_count(
-            query => [subscription_id => $subscription->id, delete_date => undef],
+            query => [
+                subscription_id => $subscription->id,
+                delete_date => undef
+            ],
             sort_by => 'state_code ASC',
             page => $page,
             per_page => $per_page,),
@@ -292,23 +296,26 @@ sub realty_list {
 
     my $realty_objs = [];
     my $realty_id_iter = Rplus::Model::SubscriptionRealty::Manager->get_objects_iterator(
-        query => [subscription_id => $subscription->id, delete_date => undef],
+        query => [
+            subscription_id => $subscription->id,
+            delete_date => undef
+        ],
         sort_by => 'state_code ASC',
         page => $page,
-        per_page => $per_page,);
+        per_page => $per_page,
+    );
 
     while (my $realty_id = $realty_id_iter->next) {
-
-        my $realty = Rplus::Model::Realty::Manager->get_objects(
-            query => [id => $realty_id->realty_id, delete_date => undef],
-            with_objects => ['address_object', 'sublandmark', 'color_tags'],
-            )->[0];
-
         my $x = {
             state_code => $realty_id->state_code,
         };
         push @{$res->{state_list}}, $x;
-        push @{$realty_objs}, $realty;
+        push @{$realty_objs}, $realty_id->realty;
+        
+        if ($realty_id->state_code eq 'new') {
+          $realty_id->state_code('old');
+          $realty_id->save(changes_only => 1);
+        }        
     }
 
     $res->{list} = [$_serialize->($self, $realty_objs)];

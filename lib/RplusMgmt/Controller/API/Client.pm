@@ -369,15 +369,15 @@ sub subscribe {
         ],
     );
     
-    my $offer_type_code = 'none';    
+    my $subscription_offer_types = 'none';    
     while (my $subscription = $subscription_iter->next) {
-        if ($offer_type_code eq 'none') {
-            $offer_type_code = $subscription->offer_type_code;
-        } elsif ($offer_type_code ne $subscription->offer_type_code) {
-            $offer_type_code = 'both';
+        if ($subscription_offer_types eq 'none') {
+            $subscription_offer_types = $subscription->offer_type_code;
+        } elsif ($subscription_offer_types ne $subscription->offer_type_code) {
+            $subscription_offer_types = 'both';
         }
     }
-    $client->subscription_offer_types($offer_type_code);
+    $client->subscription_offer_types($subscription_offer_types);
     $client->save();    
     
     # Add realty to subscription & generate SMS

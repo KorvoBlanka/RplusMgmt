@@ -131,6 +131,10 @@
     color: #fff;
   }
 
+  #realtyTable > tbody > tr.selected > td > span {
+    color: #fff;
+  }
+  
   #realtyTable > tbody > tr.shown > td {
     background-color: #dbe2f0;
   }
@@ -140,7 +144,7 @@
   }
 
   #realtyTable > tbody > tr.modified > td {
-    background-color: #dff0d8; /* green = success */
+    background-color: #dff0d8;
   }
 
   #realtyTable > tbody > tr.modified:nth-child(even) > td {
@@ -264,7 +268,7 @@
     var confVer = '1.0';
     var stackBottomRight = {"dir1": "up", "dir2": "left", "firstpos1": 75, "firstpos2": 25};
 
-    var subscriptions = {};
+    var clients = {};
     var subscription_id;
     var offer_type = 'sale';
 
@@ -406,17 +410,6 @@
           for (var i = 0; i < data.list.length; i++) {
             var r = data.list[i];
 
-            if (data.state_list[i].state_code != 'shown') {
-              $.ajax({
-                type: 'POST',
-                url: '/api/subscription/set_subscription_realty_state_code',
-                data: {realty_id: r.id, subscription_id: subscription_id, state_code: 'old'}
-              })
-                .done(function (data, textStatus, jqXHR) {
-                })
-              ;
-            }
-
             var classes = [Rplus.Table['realty_states'][r.state_code].metadata['icon-class']];
             var tag = r.color_tag_id ? '<span style="margin-left: 2px; margin-bottom: 6px;" class="tag-button color-tag-' + r.color_tag_id + ' pull-left"></span>' : '';
             var photo = r.main_photo_thumbnail ? '<a href="#" data-action="photos-show"><span class="glyphicon glyphicon-camera"></span></a>' : '';
@@ -440,12 +433,63 @@
       ;
     }
 
+    function clearRealty() {
+      $('#realtyTableWrapper').scrollTop(0);
+      $('#realtyTable > tbody').html('');
+      $('#objectsCount').text('0');
+    }
+    
+    function listRealty(page) {
+      var q = $('#searchQuery').val();
+      var stateCode = '';//$('[data-filter="state_code"]').data('val');
+      var offerTypeCode = $('[data-filter="offer_type_code"]').data('val');
+      var agentId = $('[data-filter="agent_id"]').data('val');
+      var sortBy = $('#realtyTable').data('sort');
+      var colorTagId = $('[data-filter="color_tag_id"]').data('val');
+      _listRealty_started = true;
+ 
+      $.ajax({
+        type: "POST",
+        url: "/api/realty/list",
+        data: {q: q, state_code: stateCode, offer_type_code: offerTypeCode, agent_id: agentId, color_tag_id: colorTagId, sort_by: sortBy, page: page, per_page: 34},
+        complete: function () { _listRealty_started = false; }
+      })
+        .done(function (data, textStatus, jqXHR) {
+
+          if (page == 1) {
+            $('#realtyTableWrapper').scrollTop(0);
+            $('#realtyTable > tbody').html('');
+            $('#objectsCount').text(data.count);
+          }
+
+          for (var i = 0; i < data.list.length; i++) {
+            var r = data.list[i];
+
+            var classes = [Rplus.Table['realty_states'][r.state_code].metadata['icon-class']];
+            var tag = r.color_tag_id ? '<span style="margin-left: 2px; margin-bottom: 6px;" class="tag-button color-tag-' + r.color_tag_id + ' pull-left"></span>' : '';
+            var photo = r.main_photo_thumbnail ? '<a href="#" data-action="photos-show"><span class="glyphicon glyphicon-camera"></span></a>' : '';
+            var state_class = '';
+
+            var xhtml = '<tr class="' + state_class + '" data-id="' + r.id + '" data-page="' + data.page + '" data-lat="' + r.latitude + '" data-lng="' + r.longitude + '">';
+            xhtml += '<td><span class="glyphicon ' + classes.join(' ') + '"></span>' + tag + '</td>';
+            xhtml += '<td>' + photo + '</td>';
+            xhtml += '<td>' + Rplus.Realty.getDigestEx(r, false) + '</td>';
+            xhtml += '<td style="padding-top: 0px;padding-bottom: 10px;"><span style="font-size: 10px;">' + moment(r.change_date).format("DD.MM.YY HH:mm") + '</span><br>&nbsp;</td>';
+            xhtml += '<td><a style="padding-right: 22px; margin-right: 0px;" href="#" data-action="remove-proposal"><span class="glyphicon spec-label-red glyphicon-minus-sign"></span></a></td></tr>';
+                
+            $('#realtyTable > tbody').append(xhtml);
+          }        
+        
+        })
+      ;
+    }    
+    
     var node_id = 0;
     var tree_options = {initialState: "collapsed"};
     var settings = {};
     function listClients(page) {
       var offer_type = $('[data-filter="offer_type_code"]').data('val');
-      var per_page = 16;
+      var per_page = 24;
       $.ajax({
         type: 'POST',
         url: '/api/client/list',
@@ -458,6 +502,7 @@
       })
         .done(function (data, textStatus, jqXHR) {
           if (page == 1) {
+            clients = {};
             node_id = 0;
             $('.tree').html('');
             $('.tree').scrollTop(0);
@@ -465,6 +510,7 @@
           settings = $.extend({}, $.fn.treegrid.defaults, tree_options);
           for (var i = 0; i < data.list.length; i++) {
             var x = data.list[i];
+            clients[x.id] = x;
             node_id ++;
             
             var xhtml = '<tr data-page=' + page + ' data-id=' + x.id + ' class="tree-tmp client-node treegrid-' + node_id + '">';
@@ -482,15 +528,13 @@
             
             var parent = node_id;
             
-            console.log('-');
             for(var si in x.subscriptions) {
-              console.log(x.subscriptions[si].offer_type);
-              subscriptions[x.subscriptions[si].id] = x.subscriptions[si];
-              if (x.subscriptions[si].offer_type == offer_type) {
+              var subscription = x.subscriptions[si];
+              if (subscription.offer_type == offer_type) {
                 node_id ++;
-                xhtml += '<tr data-page=' + page + ' data-offer_type=' + x.subscriptions[si].offer_type + ' data-subscription=' + x.subscriptions[si].id + ' class="subscription-node treegrid-' + node_id + ' treegrid-parent-' + parent + '">';
+                xhtml += '<tr data-page=' + page + ' data-offer_type=' + subscription.offer_type + ' data-subscription=' + subscription.id + ' class="subscription-node treegrid-' + node_id + ' treegrid-parent-' + parent + '">';
                 xhtml += '<td></td>';
-                xhtml += '<td class="query">' + x.subscriptions[si].queries + '</td>';
+                xhtml += '<td class="query">' + subscription.queries + '</td>';
                 xhtml += '<td style="padding-top: 0px;padding-bottom: 10px;"><span style="font-size: 10px;">' + moment(x.add_date).format("DD.MM.YY HH:mm") + '</span><br>&nbsp;</td>';
                 xhtml += '<td>' + /*x.subscriptions[si].offer_type*/ '' + '</td>';
                 xhtml += '</tr>';
@@ -532,11 +576,11 @@
 
         var parent = node_id;
         for(var si in x.subscriptions) {
-          subscriptions[x.subscriptions[si].id] = x.subscriptions[si];
+          var subscription = x.subscriptions[si];
           node_id ++;
-          xhtml += '<tr data-page=' + 1 + ' data-offer_type=' + x.subscriptions[si].offer_type + ' data-subscription=' + x.subscriptions[si].id + ' class="subscription-node treegrid-' + node_id + ' treegrid-parent-' + parent + '">';
+          xhtml += '<tr data-page=' + 1 + ' data-offer_type=' + subscription.offer_type + ' data-subscription=' + subscription.id + ' class="subscription-node treegrid-' + node_id + ' treegrid-parent-' + parent + '">';
           xhtml += '<td></td>';
-          xhtml += '<td class="query">' + x.subscriptions[si].queries + '</td>';
+          xhtml += '<td class="query">' + subscription.queries + '</td>';
           xhtml += '<td style="padding-top: 0px;padding-bottom: 10px;"><span style="font-size: 10px;">' + moment(x.add_date).format("DD.MM.YY HH:mm") + '</span><br>&nbsp;</td>';
           xhtml += '<td>' + /*x.subscriptions[si].offer_type*/ '' + '</td>';
           xhtml += '</tr>';
@@ -640,7 +684,7 @@
         .bind('keydown', function (e) {
           if (e.which == 13) {
             $('#searchQuery').typeahead('close');
-            //listRealty(1);
+            listRealty(1);
           }
         });
 
@@ -752,16 +796,6 @@
             cmd_down = false;
           }
         });
-        
-        $('.tree > tbody').on('click', 'td:has([data-action="delete-client"])', function (e) {
-          console.log('!');
-          $tr = $(this).closest('tr');        
-        });
-        
-        $('[data-action="delete-client"]').on('click', function (e) {
-          console.log('!');
-          $tr = $(this).closest('tr');
-        });
 
         $('.tree').on('click', 'tr.subscription-node', function (e) {
           var $this = $(this);
@@ -813,6 +847,7 @@
             var $this = $(this);
               $this.removeClass('cselected');
           });
+          clearRealty();
           $this.addClass('cselected');
           
           var $selected = $('.tree > tbody > tr.subselected');
@@ -1020,8 +1055,17 @@
         });
       })();
 
-      
-      
+      $('[data-action="client-add-query"]').click(function (e) {
+        var $selected = $('.tree > tbody > tr.cselected');
+        var id = $selected.data('id');
+        var client = clients[id];
+        console.log(client);
+      });
+
+      $('[data-action="client-change-query"]').click(function (e) {
+        console.log('ch');
+      });
+
       // Create ClientCard
       $('[data-action="client-create"]').click(function (e) {
         
@@ -1050,11 +1094,11 @@
 
             var parent = node_id;
             for(var si in x.subscriptions) {
-              subscriptions[x.subscriptions[si].id] = x.subscriptions[si];
+              var subscription = x.subscriptions[si];
               node_id ++;
-              xhtml += '<tr data-page=' + 1 + ' data-offer_type=' + x.subscriptions[si].offer_type + ' data-subscription=' + x.subscriptions[si].id + ' class="subscription-node treegrid-' + node_id + ' treegrid-parent-' + parent + '">';
+              xhtml += '<tr data-page=' + 1 + ' data-offer_type=' + subscription.offer_type + ' data-subscription=' + subscription.id + ' class="subscription-node treegrid-' + node_id + ' treegrid-parent-' + parent + '">';
               xhtml += '<td></td>';
-              xhtml += '<td class="query">' + x.subscriptions[si].queries + '</td>';
+              xhtml += '<td class="query">' + subscription.queries + '</td>';
               xhtml += '<td style="padding-top: 0px;padding-bottom: 10px;"><span style="font-size: 10px;">' + moment(x.add_date).format("DD.MM.YY HH:mm") + '</span><br>&nbsp;</td>';
               xhtml += '<td>' + /*x.subscriptions[si].offer_type*/ '' + '</td>';
               xhtml += '</tr>';
@@ -1114,43 +1158,35 @@
   
               var parent = node_id;
               for(var si in x.subscriptions) {
-                subscriptions[x.subscriptions[si].id] = x.subscriptions[si];
+                var subscription = x.subscriptions[si];
                 node_id ++;
-                xhtml += '<tr data-page=' + 1 + ' data-offer_type=' + x.subscriptions[si].offer_type + ' data-subscription=' + x.subscriptions[si].id + ' class="treegrid-temp subscription-node treegrid-' + node_id + ' treegrid-parent-' + parent + '">';
+                xhtml += '<tr data-page=' + 1 + ' data-offer_type=' + subscription.offer_type + ' data-subscription=' + subscription.id + ' class="treegrid-temp subscription-node treegrid-' + node_id + ' treegrid-parent-' + parent + '">';
                 xhtml += '<td></td>';
-                xhtml += '<td class="query">' + x.subscriptions[si].queries + '</td>';
+                xhtml += '<td class="query">' + subscription.queries + '</td>';
                 xhtml += '<td style="padding-top: 0px;padding-bottom: 10px;"><span style="font-size: 10px;">' + moment(x.add_date).format("DD.MM.YY HH:mm") + '</span><br>&nbsp;</td>';
                 xhtml += '<td>' + /*x.subscriptions[si].offer_type*/ '' + '</td>';
                 xhtml += '</tr>';
               }
-              
+
               $('.treegrid-collapsed').each(function(){
                 $(this).removeClass('treegrid-collapsed');
               });
               $('.treegrid-expanded').each(function(){
                 $(this).removeClass('treegrid-expanded');
               });
-            
-              //$selected.treegrid('expand');
-              //$('.treegrid-' + node_id).treegrid('expand');
-              
-              //$selected.addClass('hidden');
-              
+
               $selected.treegrid('getChildNodes').each(function () {
-                  //$(this).addClass('hidden');
-                  $(this).remove();
+                $(this).remove();
               });
               $selected.after(xhtml);
               $selected.remove();
               $('.tree').treegrid({initialState: "collapsed"});
-            
-               $selected = $('.tree > tbody > tr.cselected');
+
+              $selected = $('.tree > tbody > tr.cselected');
               $selected.each(function () {
                 $(this).treegrid('expand');
-              });
-            
+              });            
             },
-            
           }).open(cid);
         });
       });
@@ -1502,22 +1538,26 @@
   <div class="tab-pane active" id="search">
     <div class="row">
       <div class="col-md-12 col-lg-12">
-        <form role="search">
-          <div class="form-group">
-            <input type="text" class="form-control input-sm" id="searchQuery" name="q" placeholder="<%= ucfloc 'search' %>" autocomplete="off" x-webkit-speech>
-          </div>
-        </form>
+          <form role="search">
+            <div class="input-group input-group-sm">
+              <input type="text" class="form-control input-sm" id="searchQuery" name="q" placeholder="<%= ucfloc 'search' %>" autocomplete="off" x-webkit-speech>
+              <div class="input-group-btn">
+                <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">A<span class="caret"></span></button>
+                <ul class="dropdown-menu pull-right" role="menu">
+                  <li><a href="#" data-action="client-add-query">A</a></li>
+                  <li><a href="#" data-action="client-change-query" data-days="14">C</a></li>
+                </ul>
+              </div>
+            </div>
+          </form>
       </div>
     </div>
 
     <div class="row">
       <div class="col-md-4 col-lg-4" style="padding-right: 0px;">
-        
-        <div style="" class="input-group input-group-sm">
-          <input style="width: 375px;" type="text" class="form-control" id="sfPhoneNum" name="phoneNum" placeholder="Телефон" autocomplete="off">
-            <div class="input-group-btn">
-            <button type="button" class="hidden btn btn-default" data-action="client-open"><span class="glyphicon glyphicon-user"></span></button>
-          </div>
+                
+        <div class="form-group" style="margin-bottom: 0px; margin-top: 15px;">
+          <input type="text" name="filter" class="form-control input-sm" placeholder="Поиск">
         </div>
         
         <div id="clientTreeWrapper">

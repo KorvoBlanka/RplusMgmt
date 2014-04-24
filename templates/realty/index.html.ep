@@ -110,14 +110,10 @@
     background-color: #dff0d8; /* green = success */
   }
 
-  #realtyTable > tbody > tr.modified:nth-child(even) > td {
-    background-color: #d0e9c6;
-  }
-
   #realtyTable > tbody > tr.modified:hover > td {
     background-color: #d0e9c6;
   }
-  
+
   #realtyTable > tbody > tr.opened > td {
     background-color: #f2dede;
   }
@@ -469,7 +465,9 @@
         complete: function () { _listRealty_started = false; }
       })
         .done(function (data, textStatus, jqXHR) {
-          media_export = {};
+          if (page == 1) {
+            media_export = {};
+          }
           var xhtml = '';
           for (var i = 0; i < data.list.length; i++) {
             var r = data.list[i];

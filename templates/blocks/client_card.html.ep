@@ -851,8 +851,8 @@
               <span class="hidden ccard-input-group-addon glyphicon glyphicon-send"></span>
               <span class="ccard-input-group-addon smode-btn glyphicon glyp-big glyphicon-send"></span>
               <a href="#" class="ccard-input-group-addon emode-btn hidden" data-action="subscription-create"><span class="glyphicon glyp-big glyphicon-plus-sign text-success"></span></a>
-              <p>Подписка</p>
-              <a href="#" style="padding-left: 285px;" class="ccard-input-group-addon ctrl-button emode invisible" data-action="subscription-type-change"><span id="subscription-type">Аренда</span></a>
+              <p>Запросы клиента</p>
+              <a href="#" style="padding-left: 225px;" class="ccard-input-group-addon ctrl-button emode invisible" data-action="subscription-type-change"><span id="subscription-type">Аренда</span></a>
             </div>
           </div>
   
