@@ -269,12 +269,31 @@ sub set_subscription_realty_state_code {
     return $self->render(json => {status => 'success', id => $realty_record->id});
 }
 
+sub realty_clear_list {
+    my $self = shift;
+    my $subscription_id = $self->param('subscription_id');
+    
+    my $subscription = Rplus::Model::Subscription::Manager->get_objects(query => [id => $subscription_id, delete_date => undef])->[0];
+
+    my $num_rows_updated = Rplus::Model::SubscriptionRealty::Manager->update_objects(
+        set => {delete_date => \'now()'},
+        where => [
+            subscription_id => $subscription_id,
+            delete_date => undef
+        ],
+    );
+    return $self->render(json => {error => 'Not Found'}, status => 404) unless $num_rows_updated;
+
+    return $self->render(json => {status => 'success'});
+}
+
 sub realty_list {
     my $self = shift;
     my $page = $self->param('page');
     my $per_page = $self->param('per_page');
     my $subscription_id = $self->param('subscription_id');
     my $color_tag_id = $self->param("color_tag_id") || 'any';
+    my $subscription_realty_state_code = $self->param("state_code") || 'any';
     
     my $subscription = Rplus::Model::Subscription::Manager->get_objects(query => [id => $subscription_id, delete_date => undef])->[0];
     update_subscription_realty($subscription);
@@ -283,11 +302,9 @@ sub realty_list {
         count => Rplus::Model::SubscriptionRealty::Manager->get_objects_count(
             query => [
                 subscription_id => $subscription->id,
-                delete_date => undef
+                delete_date => undef,
             ],
-            sort_by => 'state_code ASC',
-            page => $page,
-            per_page => $per_page,),
+        ),
         list => [],
         state_list => [],
         page => $page,
@@ -295,15 +312,29 @@ sub realty_list {
     };
 
     my $realty_objs = [];
-    my $realty_id_iter = Rplus::Model::SubscriptionRealty::Manager->get_objects_iterator(
-        query => [
-            subscription_id => $subscription->id,
-            delete_date => undef
-        ],
-        sort_by => 'state_code ASC',
-        page => $page,
-        per_page => $per_page,
-    );
+    my $realty_id_iter;
+    if ($subscription_realty_state_code eq 'any') {
+        $realty_id_iter = Rplus::Model::SubscriptionRealty::Manager->get_objects_iterator(
+            query => [
+                subscription_id => $subscription->id,
+                delete_date => undef
+            ],
+            sort_by => 'state_code ASC',
+            page => $page,
+            per_page => $per_page,
+        );      
+    } else {    
+        $realty_id_iter = Rplus::Model::SubscriptionRealty::Manager->get_objects_iterator(
+            query => [
+                subscription_id => $subscription->id,
+                state_code => $subscription_realty_state_code,
+                delete_date => undef
+            ],
+            sort_by => 'state_code ASC',
+            page => $page,
+            per_page => $per_page,
+        );
+    }
 
     while (my $realty_id = $realty_id_iter->next) {
         my $x = {
@@ -320,7 +351,7 @@ sub realty_list {
 
     $res->{list} = [$_serialize->($self, $realty_objs)];
     
-    return $self->render(json => $res);    
+    return $self->render(json => $res);
 }
 
 sub update_subscription_realty {
@@ -335,6 +366,7 @@ sub update_subscription_realty {
                 offer_type_code => $subscr->offer_type_code,
                 or => [
                   state_code => 'work',
+                  state_code => 'suspended',
                   state_code => 'raw',
                 ],
                 #or => [
@@ -396,8 +428,7 @@ sub save {
     my $queries = Mojo::Collection->new($self->param('queries[]'))->map(sub { trim $_ })->compact->uniq;
     my $realty_limit = $self->param('realty_limit') || 0;
     my $send_owner_phone = $self->param_b('send_owner_phone');
-
-    #my $realty_ids = Mojo::Collection->new($self->param('realty[]'))->compact->uniq;
+    my $realty_ids = Mojo::Collection->new($self->param('realty_ids[]'))->compact->uniq;
 
     return $self->render(json => {errors => [{queries => 'Empty queries'}]}, status => 400) unless @$queries;
 
@@ -409,16 +440,79 @@ sub save {
     $subscription->realty_limit($realty_limit);
     $subscription->send_owner_phone($send_owner_phone);
     #$subscription->proposed_realty($realty_ids);
-    
+
     eval {
         $subscription->save($subscription->id ? (changes_only => 1) : (insert => 1));
         1;
     } or do {
         return $self->render(json => {error => $@}, status => 500);
     };
-
-
     
+    # Find/create client by phone number
+    my $client = Rplus::Model::Client::Manager->get_objects(query => [id => $client_id, delete_date => undef])->[0];
+    if (!$client) {
+        return $self->render(json => {error => 'Not Found'}, status => 404) unless $subscription;
+    }
+    $client->change_date('now()');
+    $client->save;
+
+    for my $realty_id (@$realty_ids) {
+        my $realty = Rplus::Model::Realty::Manager->get_objects(
+            query => [
+                id => $realty_id,
+                state_code => ['raw', 'suspended'],
+                offer_type_code => $offer_type_code,
+            ],
+        )->[0];
+        if ($realty) {
+            Rplus::Model::SubscriptionRealty->new(subscription_id => $subscription->id, realty_id => $realty->id, state_code => 'attention')->save;
+        }
+    }
+    
+    # Add realty to subscription & generate SMS
+    for my $realty_id (@$realty_ids) {
+        my $realty = Rplus::Model::Realty::Manager->get_objects(
+            query => [id => $realty_id, state_code => ['work'], offer_type_code => $offer_type_code],
+            with_objects => ['address_object', 'agent', 'type', 'sublandmark'],
+        )->[0];
+        if ($realty) {
+            Rplus::Model::SubscriptionRealty->new(subscription_id => $subscription->id, realty_id => $realty->id, state_code => 'offered')->save;
+
+            # Prepare SMS for client
+            if ($client->phone_num =~ /^9\d{9}$/) {
+                # TODO: Add template settings
+                my @parts;
+                {
+                    push @parts, $realty->type->name;
+                    push @parts, $realty->rooms_count.'к' if $realty->rooms_count;
+                    push @parts, $realty->address_object->name.' '.$realty->address_object->short_type.($realty->address_object->name !~ /[()]/ && $realty->sublandmark ? ' ('.$realty->sublandmark->name.')' : '') if $realty->address_object;
+                    push @parts, ($realty->floor || '?').'/'.($realty->floors_count || '?').' эт.' if $realty->floor || $realty->floors_count;
+                    push @parts, $realty->price.' тыс. руб.' if $realty->price;
+                    push @parts, $realty->agent->public_name || $realty->agent->name if $realty->agent;
+                    push @parts, $realty->agent->public_phone_num || $realty->agent->phone_num if $realty->agent;
+                }
+                my $sms_body = join(', ', @parts);
+                my $sms_text = 'Вы интересовались: '.$sms_body.($sms_body =~ /\.$/ ? '' : '.').($self->config->{subscriptions}->{contact_info} ? ' '.$self->config->{subscriptions}->{contact_info} : '');
+                Rplus::Model::SmsMessage->new(phone_num => $client->phone_num, text => $sms_text)->save;
+            }
+
+            # Prepare SMS for agent
+            if ($realty->agent && ($realty->agent->phone_num || '') =~ /^9\d{9}$/) {
+                # TODO: Add template settings
+                my @parts;
+                {
+                    push @parts, $realty->type->name;
+                    push @parts, $realty->rooms_count.'к' if $realty->rooms_count;
+                    push @parts, $realty->address_object->name.' '.$realty->address_object->short_type.($realty->house_num ? ', '.$realty->house_num : '') if $realty->address_object;
+                    push @parts, $realty->price.' тыс. руб.' if $realty->price;
+                    push @parts, 'Клиент: '.$self->format_phone_num($client->phone_num);
+                }
+                my $sms_text = join(', ', @parts);
+                Rplus::Model::SmsMessage->new(phone_num => $realty->agent->phone_num, text => $sms_text)->save;
+            }
+        }
+    }
+
     return $self->render(json => {status => 'success', id => $subscription->id});
 }
 

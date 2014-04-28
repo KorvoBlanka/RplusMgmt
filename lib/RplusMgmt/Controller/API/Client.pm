@@ -95,8 +95,13 @@ sub list {
         while (my $subscription = $subscription_iter->next) {
             my $sub = {
                 id => $subscription->id,
-                queries => $subscription->queries,
-                offer_type => $subscription->offer_type_code,
+                queries => scalar $subscription->queries,
+                offer_type_code => $subscription->offer_type_code,
+                add_date => $self->format_datetime($subscription->add_date),
+                end_date => $self->format_datetime($subscription->end_date),
+                realty_count => scalar @{$subscription->subscription_realty},
+                realty_limit => $subscription->realty_limit,
+                send_owner_phone => $subscription->send_owner_phone ? \1 : \0,
             };
             if ($offer_type_code eq 'none') {
                 $offer_type_code = $subscription->offer_type_code;
@@ -167,14 +172,13 @@ sub get {
         while (my $subscription = $subscription_iter->next) {
             my $x = {
                 id => $subscription->id,
-                client_id => $subscription->client_id,
                 offer_type_code => $subscription->offer_type_code,
                 queries => scalar $subscription->queries,
                 add_date => $self->format_datetime($subscription->add_date),
                 end_date => $self->format_datetime($subscription->end_date),
                 realty_count => scalar @{$subscription->subscription_realty},
                 realty_limit => $subscription->realty_limit,
-                send_owner_phone => $subscription->send_owner_phone ? \1 : \0,
+                send_owner_phone => $subscription->send_owner_phone ? \1 : \0,                
             };
             push @{$res->{subscriptions}}, $x;
         }

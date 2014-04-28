@@ -283,31 +283,6 @@
         var guid = $this.data('guid');
         var subscription = subs[guid]; //$('.subscription[data-guid="' + guid + '"]', $modal).data('obj');        
         pushRealtyToTable(subscription.id);
-        
-        var subs_array = [];
-        // Save (add/update) queries
-        $('#clientCard_subscriptionForm > div > div:visible', $modal).each(function (index, elem) {
-          var subscription = subs[$(this).data('guid')];
-          subscription.queries = [];
-          $('[name="query"]', this).each(function (index, elem) {
-            subscription.queries.push($(this).val());
-          });
-
-          subscription.end_date = moment($('[name="end_date"]:input', this).datepicker('getDate')).format('YYYY-MM-DD') + 'T' + moment(subscription.add_date).format('HH:mm:ssZZ');
-          subs_array.unshift(subscription);
-        });
-
-        client = {
-          id: $('#clientCard_clientForm [name="id"]:input', $modal).val(),
-          name: $('#clientCard_clientForm [name="name"]:input', $modal).val(),
-          phone_num: $('#clientCard_clientForm [name="phone_num"]:input', $modal).val(),
-          email: $('#clientCard_clientForm [name="email"]:input', $modal).val(),
-          skype: $('#clientCard_clientForm [name="skype"]:input', $modal).val(),
-          description: $('#clientCard_clientForm [name="description"]:input', $modal).val(),
-          send_owner_phone: $('#clientCard_clientForm [name="send_owner_phone"]', $modal).prop('checked'),
-          subscriptions: subs_array,
-        };
-        
         showProposedRealty(true);
       });
 
@@ -487,7 +462,7 @@
               error: function (jqXHR2, textStatus2, errorThrown2) {
                 success = false;
               },
-            })
+            });
           });
 
           if(success) {
@@ -562,6 +537,17 @@
           pushSubscriptionToTableView(client.subscriptions[i]);
         }
       }
+      
+      var dummy = '';
+      if (client.subscriptions.length == 1) {
+        for (var i = 0; i < 3; i++) {
+          dummy += '<hr width="90%" align="right">';
+          dummy += '<div class="spacer"></div>';
+        }
+      }
+      dummy += '<hr width="90%" align="right">';
+      $('.subscription-container', $modal).append(dummy);
+      
       setMode(mode);
     }
 
@@ -609,21 +595,20 @@
     }
 
     function pushRealtyToTable(subscription_id) {
-      var row_count = 20;
       var page = 1;
       var _listRealty_started = true;
       $.ajax({
         type: "POST",
         url: "/api/subscription/realty_list",
-        data: {subscription_id: subscription_id, page: page, per_page: 100},
+        data: {subscription_id: subscription_id, state_code: 'offered', page: page, per_page: 100},
         complete: function () { _listRealty_started = false; }
       })
         .done(function (data, textStatus, jqXHR) {
           
           if (page == 1) {
-            $('#realtyTableWrapper').scrollTop(0);
-            $('#realtyTable > tbody').html('');
-            $('#objectsCount').text(data.count);
+            $('tbody', $modal).scrollTop(0);
+            var dummy = '';
+            $('tbody', $modal).html(dummy);
           }
 
           for (var i = 0; i < data.list.length; i++) {
@@ -635,6 +620,17 @@
             xhtml += '<td>' + Rplus.Realty.getDigest(r, true) + '</td>';
             xhtml += '</tr>';
             $('tbody', $modal).prepend(xhtml);
+          }
+          var h = 546 - $('tbody', $modal).height();
+          if (h > 0) {
+            var row_count = h / 34;
+            for (var i = 0; i < row_count; i++) {
+              dummy += '<tr>';
+              dummy += '<td><span class="glyphicon"></span></td>';
+              dummy += '<td></td>';
+              dummy += '</tr>';
+            }
+            $('tbody', $modal).append(dummy);
           }
         });
       
@@ -665,14 +661,6 @@
             }).fail(function (jqXHR, textStatus, errorThrown) {});
         }
         */
-      
-      for (var i = 0; i < row_count; i++) {
-        var dummy = '<tr>';
-        dummy += '<td><span class="glyphicon"></span></td>';
-        dummy += '<td></td>';
-        dummy += '</tr>';
-        $('tbody', $modal).append(dummy);
-      }
     }
     
     return function (options) {
@@ -788,7 +776,7 @@
       <div class="modal-body" id="client-card-body">
         
         <div id="proposed-realty-table" class="realty col-md-12 hidden" style="padding: 0px">
-          <table class="table table-striped table-condensed" id="subscriptionRealtyTable">
+          <table style="margin-bottom: 0px;" class="table table-striped table-condensed" id="subscriptionRealtyTable">
             <thead></thead>
             <tbody></tbody>
           </table>
@@ -859,15 +847,6 @@
           <form role="form" id="clientCard_subscriptionForm">
             <div class="subscription-container">
             </div>
-            <div class="spacer"></div>
-            <hr width="90%" align="right">
-            <div class="spacer"></div>
-            <hr width="90%" align="right">
-            <div class="spacer"></div>
-            <hr width="90%" align="right">
-            <div class="spacer"></div>
-            <hr width="90%" align="right">
-            <div class="spacer"></div>
           </form>
         </div>
       </div>

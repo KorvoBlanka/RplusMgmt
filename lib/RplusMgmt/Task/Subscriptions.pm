@@ -52,7 +52,7 @@ sub run {
             my $found = 0;
             while (my $realty = $realty_iter->next) {
                 $found++;
-                Rplus::Model::SubscriptionRealty->new(subscription_id => $subscr->id, realty_id => $realty->id)->save;
+                Rplus::Model::SubscriptionRealty->new(subscription_id => $subscr->id, realty_id => $realty->id, state_code => 'offered')->save;
 
                 # Prepare SMS for client
                 if ($subscr->client->phone_num =~ /^9\d{9}$/) {

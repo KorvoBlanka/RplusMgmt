@@ -180,26 +180,16 @@
           % if (has_permission(clients => 'read')) {
             <li><a href="/clients/clients"><span class="glyphicon glyphicon-user"></span> <%= ucfloc q{clients} %></a></li>
           % }
-          % if (1 == 2) {
-            <li><a href="/clients/clients"><span class="glyphicon glyphicon-user"></span> <%= ucfloc q{clients} %></a></li>
-            <li class="dropdown">
-              <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-user"></span> <%= ucfloc q{sales} %> <b class="caret"></b></a>
-              <ul class="dropdown-menu">
-                <li><a href="/clients/clients"><span class="glyphicon glyphicon-list-alt"></span> <%= ucfloc q{clients} %></a></li>
-              % if (has_permission(subscriptions => 'read')) {
-                <li><a href="/clients/subscriptions"><span class="glyphicon glyphicon-list-alt"></span> <%= ucfloc q{subscriptions} %></a></li>
-              % }
-              </ul>
-            </li>
-          % }          
-          % if (has_permission(realty => 'export')) {
+          % if (has_permission(realty => 'export') || has_permission(realty => 'analyse')) {
             <li class="dropdown">
               <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-star"></span> <%= ucfloc q{services} %> <b class="caret"></b></a>
               <ul class="dropdown-menu">
               % if (has_permission(realty => 'export')) {
                 <li><a href="/service/export"><span class="glyphicon glyphicon-export"></span> <%= ucfloc q{export media} %></a></li>
               % }
-              <li><a href="/analytics"><span class="glyphicon glyphicon-list-alt"></span> <%= ucfloc q{analytics} %></a></li>
+              % if(has_permission(realty => 'analyse')) {
+                <li><a href="/analytics"><span class="glyphicon glyphicon-list-alt"></span> <%= ucfloc q{analytics} %></a></li>
+              % }
               </ul>
             </li>
           % }
