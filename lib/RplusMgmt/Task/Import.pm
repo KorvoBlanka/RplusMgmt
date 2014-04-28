@@ -46,6 +46,7 @@ sub run {
 REALTY:     for my $data (@$realty_data) {
             if ($last_id < $data->{id}) {
                 $last_id = $data->{id};
+                $rt_param->value("{\"last_id\": $last_id}")->save;
             }
             
             for (@{$data->{'owner_phones'}}) {
@@ -77,8 +78,6 @@ REALTY:     for my $data (@$realty_data) {
             
         }
     }
-    $rt_param->value("{\"last_id\": $last_id}");
-    $rt_param->save;
     say 'last_id: ' . $last_id;
 }
 

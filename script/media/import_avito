@@ -302,6 +302,12 @@ sub process_url_list {
                         }
                     }
                     $addr = join(', ', @t);
+                    
+                    my %coords = Rplus::Util::Geo::get_coords_by_addr_ex($addr, uc($1));
+                    if (%coords) {
+                        @{$data}{keys %coords} = values %coords;
+                    }
+                    
                     my $ts_query = join(' | ', grep { $_ && length($_) > 1 } split(/\W/, $addr));
                     if ($ts_query) {
                         $ts_query =~ s/'/''/g;
