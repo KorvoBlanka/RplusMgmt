@@ -1047,17 +1047,14 @@
         $('#realtyTable > tbody').on('touchstart', 'tr', function (e) {
           var $this = $(this);
           var id = $this.data('id');
-          cancel_click = true;
-          if (!$this.hasClass('opened')) {
-            cancel_click = false;
-            select_timer = window.setTimeout(function() {
-              cancel_click = true;
-              $this.addClass('selected')
-            }, select_delay);
-            open_timer = window.setTimeout(function() {
-                openRealtyCard(id, false);
-            }, open_delay);
-          }
+          cancel_click = false;
+          select_timer = window.setTimeout(function() {
+            cancel_click = true;
+            $this.addClass('selected')
+          }, select_delay);
+          open_timer = window.setTimeout(function() {
+              openRealtyCard(id, false);
+          }, open_delay);
         });
 
         $('#realtyTable > tbody').on('touchend', 'tr', function (e) {
