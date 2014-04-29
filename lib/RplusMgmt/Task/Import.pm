@@ -43,7 +43,7 @@ sub run {
     my $tx = $ua->get("http://192.168.5.1:3000/api/realty/list?last_id=$last_id");
     if (my $res = $tx->success) {
         my $realty_data = $res->json->{list};
-REALTY:     for my $data (@$realty_data) {
+REALTY: for my $data (@$realty_data) {
             if ($last_id < $data->{id}) {
                 $last_id = $data->{id};
                 $rt_param->value("{\"last_id\": $last_id}");

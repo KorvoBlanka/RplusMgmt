@@ -734,7 +734,7 @@
               <p class="form-control-static text-left"><span class="" data-name="dg_p4"></span></p>
             </div>
           </div>
-
+  
           <div class="form-group view-group">
             <label class="col-md-4 col-lg-4 control-label view-label">Балконы/Ванные</label>
             <div class="col-md-8 col-lg-8" style="padding-top: 5px;">
@@ -797,6 +797,20 @@
           
         <form class="realty-form" id="realty-form" role="form">
 
+          <!-- Source block -->
+          <div class="row" id="sourceBlock-{guid}">
+            <div class="col-md-12 col-lg-12">
+              <div class="panel panel-default panel-sm" style="border-top: 0px; border-radius: 0px;">
+                <div class="panel-body">
+                  <small>
+                    <strong><%= ucfloc 'source' %>: </strong> <span data-name="source_media_name">?</span><br>
+                    <span data-name="source_media_text">Text</span>
+                  </small>
+                </div>
+              </div>
+            </div>
+          </div>
+        
           <div class="form-group edit-group">
             <label class="col-md-3 col-lg-3 control-label">Дата</label>
             <div class="col-md-9 col-lg-9" style="padding-top: 5px;">
