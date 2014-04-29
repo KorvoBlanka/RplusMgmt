@@ -539,7 +539,7 @@
       }
       
       var dummy = '';
-      if (client.subscriptions.length == 1) {
+      if (client.subscriptions && client.subscriptions.length == 1) {
         for (var i = 0; i < 3; i++) {
           dummy += '<hr width="90%" align="right">';
           dummy += '<div class="spacer"></div>';
@@ -561,7 +561,7 @@
       xhtml += '<div class="cardheader mainheader">';
       xhtml += '<div class="input-group ccard-input-group">'
       xhtml += '<p>' + (subscription.offer_type_code == 'sale' ? '&nbspПродажа' : '&nbspАренда') + ': ' + add_date.format('DD.MM.YYYY') + ' - <input readonly data-action="end-date-set" name="end_date" class="date-input spec-label-' + (end_date < moment() ? 'red' : 'green') + '"></p>';
-      xhtml += '<a href="#" style="padding-left: 113px;" class="ccard-input-group-addon emode" data-action="subscription-delete" data-guid=' + subscription.guid +'><span class="glyphicon glyp-big glyphicon-minus-sign text-danger"></span></a>';
+      xhtml += '<div><a href="#" class="ccard-input-group-addon emode" data-action="subscription-delete" data-guid=' + subscription.guid +'><span class="glyphicon glyp-big glyphicon-minus-sign text-danger"></span></a></div>';
       xhtml += '</div>';
       xhtml += '</div>';
       

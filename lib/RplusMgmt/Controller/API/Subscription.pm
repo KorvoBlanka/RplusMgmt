@@ -426,7 +426,7 @@ sub save {
     my $offer_type_code = $self->param('offer_type_code');
     my $end_date = $self->parse_datetime(scalar $self->param('end_date'));
     my $queries = Mojo::Collection->new($self->param('queries[]'))->map(sub { trim $_ })->compact->uniq;
-    my $realty_limit = $self->param('realty_limit') || 0;
+    my $realty_limit = $self->param('realty_limit') || 20;
     my $send_owner_phone = $self->param_b('send_owner_phone');
     my $realty_ids = Mojo::Collection->new($self->param('realty_ids[]'))->compact->uniq;
 
