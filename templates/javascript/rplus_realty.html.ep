@@ -43,7 +43,7 @@
         if (squares.length) digest.push(squares.join('/') + ' кв. м.');
       }
       if (r.square_land && r.square_land_type) digest.push(r.square_land + ' ' + (r.square_land_type == 'ar' ? 'сот.' : 'га'));
-      if (withDescription && r.description) digest.push('<div style="width: 550px;word-wrap: break-word;">' + r.description + '</div>');
+      if (withDescription && r.description) digest.push(Rplus.Util.escape(r.description));
       if (r.price) digest.push('<span class="text-primary">' + r.price + ' тыс. руб.' + '</span>');
       if (r.agent_id) {
         var agent = Rplus.Table.users[r.agent_id];
