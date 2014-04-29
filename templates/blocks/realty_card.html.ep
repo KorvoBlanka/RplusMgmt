@@ -398,7 +398,7 @@
           $('span[data-name="source_media_name"]', $realty_modal).text(Rplus.Table.media[v].name);
           $('#sourceBlock-' + 0, $realty_modal).show();
         } else if (f == 'source_media_text' && v) {
-          $('span[data-name="' + f + '"]', $realty_modal).text(v);
+          $('div[data-name="' + f + '"]', $realty_modal).text(v);
           $('#sourceBlock-' + 0, $realty_modal).show();
         } else if (el.length) {
           el.val(v);
@@ -804,7 +804,7 @@
                 <div class="panel-body">
                   <small>
                     <strong><%= ucfloc 'source' %>: </strong> <span data-name="source_media_name">?</span><br>
-                    <span data-name="source_media_text">Text</span>
+                    <div data-name="source_media_text" style="padding-left: 15px;">Text</div>
                   </small>
                 </div>
               </div>
