@@ -106,7 +106,7 @@ sub index {
                     $realty->rooms_count || '',
                     $area ? $area->name : '',
                     $realty->address_object ? $realty->address_object->name.($realty->address_object->short_type ne 'ул' ? ' '.$realty->address_object->short_type : '') : '',
-                    '', #$realty->house_num || '',
+                    $realty->house_num || '',
                     $realty->square_total || '',
                     $realty->floor || '',
                     $realty->floors_count || '',
