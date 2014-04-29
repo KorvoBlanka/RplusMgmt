@@ -270,12 +270,18 @@
       };
       var formArray = $('#realty-form').serializeArray();
       for (var i = 0; i < formArray.length; i++) {
+        
         var x = formArray[i];
         if ((typeof formData[x.name] == 'object') && (formData[x.name] instanceof Array)) {
           if (x.value) formData[x.name].push(x.value);
-        } else {
-          formData[x.name] = x.value || null;
-        }
+        } else
+          if (x.name == 'description') {
+            var t = x.value.split(",").map(function(x) { return x.trim(); }).join(', ');
+            console.log(t);
+            formData[x.name] = t;
+          } else {
+            formData[x.name] = x.value || null;
+          }
       }
       for (x in formData) {
         if ((typeof formData[x] == 'object') && (formData[x] instanceof Array) && !formData[x].length) formData[x] = null;
