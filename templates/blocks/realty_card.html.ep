@@ -277,7 +277,6 @@
         } else
           if (x.name == 'description') {
             var t = x.value.split(",").map(function(x) { return x.trim(); }).join(', ');
-            console.log(t);
             formData[x.name] = t;
           } else {
             formData[x.name] = x.value || null;
@@ -353,6 +352,9 @@
           el.val('');
         }
       }
+      
+      $('[data-name="source_media_text"]', $realty_modal).html('');
+      $('[data-name="source_media_name"]', $realty_modal).html('?');
       
       $('[name="address_object_name"]', $realty_modal)
         .typeahead({
