@@ -810,7 +810,7 @@
                 <div class="panel-body">
                   <small>
                     <strong><%= ucfloc 'source' %>: </strong> <span data-name="source_media_name">?</span><br>
-                    <div data-name="source_media_text" style="padding-left: 15px;">Text</div>
+                    <div data-name="source_media_text" style="padding-left: 15px;"></div>
                   </small>
                 </div>
               </div>

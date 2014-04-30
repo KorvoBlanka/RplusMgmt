@@ -426,7 +426,7 @@
           client.id = data.id;
 
           // Delete old queries
-          $('#clientCard_subscriptionForm > div > div:hidden', $modal).each(function (index, elem) {
+          $('#clientCard_subscriptionForm > div > div.subscription:hidden', $modal).each(function (index, elem) {
             var subscription = subs[$(this).data('guid')];
             if (subscription.id) {
               $.ajax({
@@ -443,7 +443,7 @@
           });
 
           // Save (add/update) queries
-          $('#clientCard_subscriptionForm > div > div:visible', $modal).each(function (index, elem) {
+          $('#clientCard_subscriptionForm > div > div.subscription:visible', $modal).each(function (index, elem) {
             var subscription = subs[$(this).data('guid')];
             subscription.queries = [];
             $('[name="query"]', this).each(function (index, elem) {
@@ -560,8 +560,8 @@
       var xhtml = '<div class="subscription" data-guid="' + subscription.guid + '">';
       xhtml += '<div class="cardheader mainheader">';
       xhtml += '<div class="input-group ccard-input-group">'
-      xhtml += '<p>' + (subscription.offer_type_code == 'sale' ? '&nbspПродажа' : '&nbspАренда') + ': ' + add_date.format('DD.MM.YYYY') + ' - <input readonly data-action="end-date-set" name="end_date" class="date-input spec-label-' + (end_date < moment() ? 'red' : 'green') + '"></p>';
-      xhtml += '<div><a href="#" class="ccard-input-group-addon emode" data-action="subscription-delete" data-guid=' + subscription.guid +'><span class="glyphicon glyp-big glyphicon-minus-sign text-danger"></span></a></div>';
+      xhtml += '<span class="ccard-input-group-addon " style="text-align: left;">' + (subscription.offer_type_code == 'sale' ? '&nbspПродажа' : '&nbspАренда') + ': ' + add_date.format('DD.MM.YYYY') + ' - <input readonly data-action="end-date-set" name="end_date" class="date-input spec-label-' + (end_date < moment() ? 'red' : 'green') + '"></span>';
+      xhtml += '<div class="ccard-input-group-addon" style="width: 1%;"><a href="#" class="emode" data-action="subscription-delete" data-guid=' + subscription.guid +'><span class="glyphicon glyp-big glyphicon-minus-sign text-danger"></span></a></div>';
       xhtml += '</div>';
       xhtml += '</div>';
       
