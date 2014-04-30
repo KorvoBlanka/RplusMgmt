@@ -806,8 +806,8 @@
         <form class="realty-form" id="realty-form" role="form">
 
           <!-- Source block -->
-          <div class="row" id="sourceBlock-{guid}">
-            <div class="col-md-12 col-lg-12">
+          <div class="" id="sourceBlock-{guid}">
+            <div class="col-md-12 col-lg-12" style="padding: 0px;">
               <div class="panel panel-default panel-sm" style="border-top: 0px; border-radius: 0px;">
                 <div class="panel-body">
                   <small>
