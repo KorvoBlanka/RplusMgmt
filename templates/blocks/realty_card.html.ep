@@ -382,6 +382,7 @@
       });
 
       // Sublandmark field
+      $('[name="sublandmark_id"]:input', $realty_modal).html('<option class="text-muted" value>-</option>');
       if (realty.sublandmarks) {
         for (var i = 0; i < realty.sublandmarks.length; i++) {
           var x = realty.sublandmarks[i];
