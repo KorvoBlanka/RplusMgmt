@@ -23,7 +23,7 @@ sub run {
         $c->app->log->debug("Processing subscription #".$subscr->id);
 
         # Check realty limit
-        my $realty_count = Rplus::Model::SubscriptionRealty::Manager->get_objects_count(query => [subscription_id => $subscr->id, delete_date => undef]);
+        my $realty_count = Rplus::Model::SubscriptionRealty::Manager->get_objects_count(query => [subscription_id => $subscr->id, state_code => 'offered', delete_date => undef]);
         if ($subscr->realty_limit > 0 && $realty_count >= $subscr->realty_limit) {
             $c->app->log->debug("Skipping. Subscription realty limit is exceeded.");
             next;
@@ -43,7 +43,7 @@ sub run {
                         state_change_date => {gt => $subscr->add_date},
                         price_change_date => {gt => ($subscr->last_check_date || $subscr->add_date)},
                     ],
-                    [\"t1.id NOT IN (SELECT SR.realty_id FROM subscription_realty SR WHERE SR.subscription_id = ? AND SR.delete_date IS NULL)" => $subscr->id],
+                    [\"t1.id NOT IN (SELECT SR.realty_id FROM subscription_realty SR WHERE SR.subscription_id = ? AND SR.state_code = 'offered' AND SR.delete_date IS NULL)" => $subscr->id],
                     delete_date => undef,
                     @query
                 ],
@@ -52,7 +52,12 @@ sub run {
             my $found = 0;
             while (my $realty = $realty_iter->next) {
                 $found++;
-                Rplus::Model::SubscriptionRealty->new(subscription_id => $subscr->id, realty_id => $realty->id, state_code => 'offered')->save;
+                my $sr = Rplus::Model::SubscriptionRealty::Manager->get_objects(query => [subscription_id => $subscr->id, realty_id => $realty->id])->[0];
+                if (!$sr) {
+                  $sr = Rplus::Model::SubscriptionRealty->new(subscription_id => $subscr->id, realty_id => $realty->id);
+                }
+                $sr->state_code('offered');
+                $sr->save;
 
                 # Prepare SMS for client
                 if ($subscr->client->phone_num =~ /^9\d{9}$/) {

@@ -29,17 +29,17 @@ sub run {
         }
     }
     my $ua = Mojo::UserAgent->new;
-    
+
     my $rt_param = Rplus::Model::RuntimeParam->new(key => 'import_param')->load();
     my $last_id = 0;
     if (!$rt_param) {
         Rplus::Model::RuntimeParam->new(key => 'tasks_run_mutex', value => '{"last_id": 0}')->save; # Create record
-    
+
     } else {
         $last_id = from_json($rt_param->{value})->{last_id};
     }
     say $last_id;
-    
+
     my $tx = $ua->get("http://192.168.5.1:3000/api/realty/list?last_id=$last_id");
     if (my $res = $tx->success) {
         my $realty_data = $res->json->{list};
@@ -49,7 +49,7 @@ REALTY: for my $data (@$realty_data) {
                 $rt_param->value("{\"last_id\": $last_id}");
                 $rt_param->save;
             }
-            
+
             for (@{$data->{'owner_phones'}}) {
                 if(exists $MEDIATOR_PHONES{$_}) {
                   say "mediator: $_";
@@ -73,6 +73,10 @@ REALTY: for my $data (@$realty_data) {
                     }
                 }
                 #$self->realty_event('c', $id);
+                # Сохраним историю
+                if ($id && !Rplus::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $data->{source_media_id}, media_num => '', realty_id => $id])) {
+                    Rplus::Model::MediaImportHistory->new(media_id => $data->{source_media_id}, media_num => '', media_text => $data->{'source_media_text'}, realty_id => $id)->save;                    
+                }
             } or do {
                 say $@;
             };

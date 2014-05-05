@@ -448,14 +448,7 @@
             //xhtml += '<td><a style="padding-right: 22px; margin-right: 0px;" href="#" data-action="remove-proposal"><span class="glyphicon spec-label-red glyphicon-minus-sign"></span></a></td></tr>';
             xhtml += '<td style="width: 42px;">' + label + '<a style="margin-left: 12px; margin-top: 6px;" href="#" data-action="remove-proposal"><span class="glyphicon spec-label-red glyphicon-minus-sign"></span></a>' + '</td>'
             xhtml += '</tr>';
-            
-            /*
-            xhtml += '<tr><td style="width: 20px; height: 1px; padding-top: 0px; padding-bottom: 0px;"></td>' +
-            '<td style="width: 20px; height: 1px;padding-top: 0px; padding-bottom: 0px;"></td>' +
-            '<td style="height: 1px;padding-top: 0px; padding-bottom:0px;"></td>' +
-            '<td style="width: 50px; height: 1px;padding-top: 0px; padding-bottom: 0px;"></td>' +
-            '<td style="width: 42px; height: 1px;padding-top: 0px; padding-bottom: 0px;"></td></tr>';
-            */
+
             $('#realtyTable > tbody').append(xhtml);
           }
         })
@@ -515,6 +508,7 @@
     }    
     
     function getHtmlForClient(client, insert_class) {
+      var offer_type = $('[data-filter="offer_type_code"]').data('val');
       node_id ++;
       var xhtml = '<tr data-id=' + client.id + ' class="' + insert_class + ' client-node treegrid-' + node_id + '">';
       var caption = client.name == null ? Rplus.Util.formatPhoneNum(client.phone_num) + '<br>&nbsp;&nbsp' : client.name + '<br>&nbsp;&nbsp;&nbsp;&nbsp;' + Rplus.Util.formatPhoneNum(client.phone_num) ;
@@ -532,14 +526,16 @@
       var parent = node_id;
       for(var si in client.subscriptions) {
         var subscription = client.subscriptions[si];
-        node_id ++;
-        xhtml += '<tr data-page=' + 1 + ' data-offer_type=' + subscription.offer_type_code +
-          ' data-subscription=' + subscription.id + ' class="subscription-node treegrid-' + node_id + ' treegrid-parent-' + parent + '">';
-        xhtml += '<td></td>';
-        xhtml += '<td class="query">' + subscription.queries + '</td>';
-        xhtml += '<td style="padding-top: 0px;padding-bottom: 10px;"><span style="font-size: 10px;">' + moment(subscription.add_date).format("DD.MM.YY HH:mm") + '</span><br>&nbsp;</td>';
-        xhtml += '<td style="padding-left: 0px;"><a style="display: inline-block;" href="#" data-action="client-delete-query"><span class="glyphicon glyphicon-minus-sign pull-right"></span></a></td>';
-        xhtml += '</tr>';
+        if (subscription.offer_type_code == offer_type) {
+          node_id ++;
+          xhtml += '<tr data-page=' + 1 + ' data-offer_type=' + subscription.offer_type_code +
+            ' data-subscription=' + subscription.id + ' class="subscription-node treegrid-' + node_id + ' treegrid-parent-' + parent + '">';
+          xhtml += '<td></td>';
+          xhtml += '<td class="query">' + subscription.queries + '</td>';
+          xhtml += '<td style="padding-top: 0px;padding-bottom: 10px;"><span style="font-size: 10px;">' + moment(subscription.add_date).format("DD.MM.YY HH:mm") + '</span><br>&nbsp;</td>';
+          xhtml += '<td style="padding-left: 0px;"><a style="display: inline-block;" href="#" data-action="client-delete-query"><span class="glyphicon glyphicon-minus-sign pull-right"></span></a></td>';
+          xhtml += '</tr>';
+        }
       }
       return xhtml;
     }
@@ -633,7 +629,7 @@
       var card = RealtyCard({
         loaded: function (r) {
           // Mark opened realty object in the table
-          $('tr[data-id="' + r.id + '"]', '#realtyTable').removeClass('selected').addClass('opened');
+          $('tr[data-id="' + r.id + '"]', '#realtyTable').removeClass('selected').addClass('shown');
           
           var realty_id = r.id;
           var subscription_id = $('.subselected').data('subscription');
@@ -659,18 +655,12 @@
             var tag = r.color_tag_id ? '<span style="margin-left: 2px; margin-bottom: 6px;" class="tag-button color-tag-' + r.color_tag_id + ' pull-left"></span>' : '';
             var photo = r.main_photo_thumbnail ? '<a href="#" data-action="photos-show"><span class="glyphicon glyphicon-camera"></span></a>' : '';
 
-            var xhtml = '<td><span class="glyphicon ' + classes.join(' ') + '"></span>' + tag + '</td>';
-            xhtml += '<td>' + photo + '</td>';
+            var xhtml = '<td style="width: 20px;">' + tag + '</td>';
+            xhtml += '<td style="width: 20px;"><span class="glyphicon ' + classes.join(' ') + '"></span><br>' + photo +'<br><br>' + '' + '</td>';
             xhtml += '<td>' + Rplus.Realty.getDigestEx(r, false) + '</td>';
             xhtml += '<td style="padding-top: 0px;padding-bottom: 10px;"><span style="font-size: 10px;">' + moment(r.change_date).format("DD.MM.YY HH:mm") + '</span><br>&nbsp;</td>';
-            xhtml += '<td><a style="padding-right: 22px; margin-right: 0px;" href="#" data-action="remove-proposal"><span class="glyphicon spec-label-red glyphicon-minus-sign"></span></a></td>'; //'</tr>';
+            xhtml += '<td style="width: 42px;">' + '<a style="margin-left: 12px; margin-top: 6px;" href="#" data-action="remove-proposal"><span class="glyphicon spec-label-red glyphicon-minus-sign"></span></a>' + '</td>'
             $tr.html(xhtml);
-
-            if(r.state_code == 'deleted') {
-              //$tr.removeClass('selected').removeClass('modified').removeClass('opened').removeClass('shown').addClass('deleted');
-            } else {
-              //$tr.removeClass('selected').removeClass('deleted').addClass('modified');
-            }
 
             agents_ids[r.id] = r.agent_id;
             media_export[r.id] = r.export_media;
@@ -890,7 +880,8 @@
           var $this = $(this);
           var id = $this.data('id');
           cancel_click = true;
-          if (!$this.hasClass('opened')) {
+          //if (!$this.hasClass('opened')) {
+          {
             cancel_click = false;
             select_timer = window.setTimeout(function() {
               cancel_click = true;
@@ -963,7 +954,8 @@
               case 1:   // lmb
                 var sel_idx = $this.index();
                 if (cmd_down || e.ctrlKey) { // Add/remove clicked element to/from selection
-                  if (!$this.hasClass('opened')) {
+                  //if (!$this.hasClass('opened')) {
+                  {
                     $this.toggleClass('selected');
                     if ($this.hasClass('selected')) {
                     } else {
@@ -979,7 +971,8 @@
                   $rows.each(function () {
                     var $this = $(this);
                     var id = $this.data('id');
-                    if (!$this.hasClass('opened')) {
+                    //if (!$this.hasClass('opened')) {
+                    {
                       $this.addClass('selected');
                     }
                   });
@@ -1036,7 +1029,8 @@
                   $rows.each(function () {
                     var $this = $(this);
                     var id = $this.data('id');
-                    if (!$this.hasClass('opened')) {
+                    //if (!$this.hasClass('opened')) {
+                    {
                       $this.addClass('selected');
                     }
                   });

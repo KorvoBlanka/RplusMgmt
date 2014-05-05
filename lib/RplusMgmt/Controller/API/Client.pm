@@ -85,6 +85,7 @@ sub list {
         my $subscription_iter = Rplus::Model::Subscription::Manager->get_objects_iterator(
             query => [
                 client_id => $client->id,
+                offer_type_code => $subscription_offer_types,
                 delete_date => undef,                
                 '!end_date' => undef,
                 #'subscription_realty.delete_date' => undef,
