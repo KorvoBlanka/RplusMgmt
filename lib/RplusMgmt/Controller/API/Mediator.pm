@@ -131,6 +131,8 @@ sub save {
         my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(select => 'id, owner_phones', query => ['!state_code' => 'deleted', \("owner_phones && '{".$phone_num."}'")], db => $db);
         while (my $realty = $realty_iter->next) {
             push @$found_phones, ($realty->owner_phones);
+            $realty->mediator($company_name . ', ' . $name);
+            $realty->agent_id(10000)->save;
             $self->realty_event('m', $realty->id);
         }
         $found_phones = $found_phones->uniq;
@@ -145,14 +147,14 @@ sub save {
                 }
             }
 
-            $num_realty_deleted = Rplus::Model::Realty::Manager->update_objects(
-                set => {state_code => 'deleted', change_date => \'now()'},
-                where => [
-                    '!state_code' => 'deleted',
-                    \("owner_phones && '{".$found_phones->join(',')."}'")
-                ],
-                db => $db,
-            );
+            #$num_realty_deleted = Rplus::Model::Realty::Manager->update_objects(
+            #    set => {state_code => 'deleted', change_date => \'now()'},
+            #    where => [
+            #        '!state_code' => 'deleted',
+            #        \("owner_phones && '{".$found_phones->join(',')."}'")
+            #    ],
+            #    db => $db,
+            #);
         }
 
         $db->commit;

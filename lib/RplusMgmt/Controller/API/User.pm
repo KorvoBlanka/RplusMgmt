@@ -19,17 +19,19 @@ sub list {
 
     my $user_iter = Rplus::Model::User::Manager->get_objects_iterator(query => [delete_date => undef], sort_by => 'name');
     while (my $user = $user_iter->next) {
-        my $x = {
-            id => $user->id,
-            login => $user->login,
-            role => $user->role,
-            role_loc => $self->ucfloc($user->role),
-            name => $user->name,
-            phone_num => $user->phone_num,
-            description => $user->description,
-            add_date => $self->format_datetime($user->add_date),
-        };
-        push @{$res->{list}}, $x;
+        if ($user->id != 10000) {
+            my $x = {
+                id => $user->id,
+                login => $user->login,
+                role => $user->role,
+                role_loc => $self->ucfloc($user->role),
+                name => $user->name,
+                phone_num => $user->phone_num,
+                description => $user->description,
+                add_date => $self->format_datetime($user->add_date),
+            };
+            push @{$res->{list}}, $x;
+        }
     }
 
     $res->{count} = scalar @{$res->{list}};

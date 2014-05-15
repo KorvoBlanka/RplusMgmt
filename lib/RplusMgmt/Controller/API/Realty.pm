@@ -177,7 +177,7 @@ sub list {
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => 'read');
 
     # Input validation
-    $self->validation->optional('agent_id')->like(qr/^(?:\d+|any|all|nobody)$/);
+    $self->validation->optional('agent_id')->like(qr/^(?:\d+|any|all|not_med|nobody)$/);
     $self->validation->optional('page')->like(qr/^\d+$/);
     $self->validation->optional('per_page')->like(qr/^\d+$/);
 
@@ -209,7 +209,6 @@ sub list {
           
         if ($state_code ne 'any') { push @query, state_code => $state_code } else { push @query, '!state_code' => 'deleted' };
         if ($offer_type_code ne 'any') { push @query, offer_type_code => $offer_type_code };
-
         if ($self->has_permission(realty => 'read')->{only_work}) {
           push @query, or => [
               agent_id => $self->stash('user')->{id},
@@ -223,6 +222,9 @@ sub list {
             $agent_ok = 1;
         } elsif ($agent_id eq 'all' && $self->has_permission(realty => 'read')->{others}) {
             push @query, '!agent_id' => undef;
+            $agent_ok = 1;
+        } elsif ($agent_id eq 'not_med') {
+            push @query, or => ['!agent_id' => 10000, agent_id => undef];
             $agent_ok = 1;
         } elsif ($agent_id =~ /^\d+$/ && $self->has_permission(realty => read => $agent_id)) {
             push @query, agent_id => $agent_id;
@@ -583,6 +585,73 @@ sub update_color_tag {
     return $self->render(json => $res);
 }
 
+sub add_mediator {
+    my $self = shift;
+    my $mediator = Rplus::Model::Mediator->new;
+
+    # Prepare data
+    my $company_name = shift;
+    my $phone_num = shift;
+    my $name = $phone_num;
+    
+    # Begin transaction
+    my $db = $self->db;
+    $db->begin_work;
+
+    $mediator->db($db);
+    $mediator->name($name);
+    $mediator->phone_num($phone_num);
+
+    my ($num_realty_deleted, $reload_company_list) = (0, 0);
+    eval {
+        my $company = $mediator->company;
+        if (!$company || lc($company->name) ne lc($company_name)) {
+            # Add new company or move mediator to another company
+            $company = Rplus::Model::MediatorCompany::Manager->get_objects(query => [[\'lower(name) = ?' => lc($company_name)], delete_date => undef], db => $db)->[0];
+            if (!$company) {
+                $company = Rplus::Model::MediatorCompany->new(name => $company_name, db => $db);
+                $company->save;
+                $reload_company_list = 1;
+            }
+            $mediator->company($company);
+        }
+
+        $mediator->save;
+
+        # Search for additional mediator phones
+        my $found_phones = Mojo::Collection->new();
+        my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(select => 'id, owner_phones', query => ['!state_code' => 'deleted', \("owner_phones && '{".$phone_num."}'")], db => $db);
+        while (my $realty = $realty_iter->next) {
+            $realty->mediator($company_name);
+            $realty->agent_id(10000)->save;
+            push @$found_phones, ($realty->owner_phones);
+            #$self->realty_event('m', $realty->id);
+        }
+        $found_phones = $found_phones->uniq;
+
+        if ($found_phones->size) {
+            # Add additional mediators from realty owner phones
+            for (@$found_phones) {
+                if ($_ ne $phone_num && !Rplus::Model::Mediator::Manager->get_objects_count(query => [phone_num => $_, delete_date => undef], db => $db)) {
+                    Rplus::Model::Mediator->new(db => $db, name => $name, phone_num => $_, company => $company)->save;
+                }
+            }
+
+            #$num_realty_deleted = Rplus::Model::Realty::Manager->update_objects(
+            #    set => {state_code => 'deleted', change_date => \'now()'},
+            #    where => [
+            #        '!state_code' => 'deleted',
+            #        \("owner_phones && '{".$found_phones->join(',')."}'")
+            #    ],
+            #    db => $db,
+            #);
+        }
+
+        $db->commit;
+        1;
+    }  
+}
+
 sub update {
     my $self = shift;
 
@@ -599,8 +668,18 @@ sub update {
         if ($_ eq 'agent_id') {
             if ($self->param('agent_id') eq '') {
                 $realty->agent_id(undef);
+                $realty->mediator(undef);
             } else {
+                my $agent_id = $self->param('agent_id');
                 $realty->agent_id(scalar $self->param('agent_id'));
+                if ($agent_id == 10000) {
+                    my $company = 'ПОСРЕДНИК В НЕДВИЖИМОСТИ';
+                    add_mediator($self, $company, $realty->owner_phones);
+                    $realty->mediator($company);
+                } else {
+                    $realty->mediator(undef);
+                }
+                
             }
         } elsif ($_ eq 'state_code') {
             $realty->state_code(scalar $self->param('state_code'));

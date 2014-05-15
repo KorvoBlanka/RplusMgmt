@@ -341,7 +341,7 @@
         $('#unlock-btn').removeClass('hidden');
       }
     }
-    
+
     function setRealtyEditView(realty) {
       
       var formArray = $('#realty-form').serializeArray();
@@ -352,7 +352,7 @@
           el.val('');
         }
       }
-      
+
       $('[data-name="source_media_text"]', $realty_modal).html('');
       $('[data-name="source_media_name"]', $realty_modal).html('?');
       

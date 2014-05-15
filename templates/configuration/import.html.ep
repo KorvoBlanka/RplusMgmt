@@ -1,0 +1,147 @@
+% layout 'default';
+
+% use Rplus::Model::Media::Manager;
+% use Rplus::Model::RealtyType::Manager;
+
+% content_for header => begin
+<style type="text/css">
+  #companyList, #mediatorList {
+    max-height: 600px;
+    overflow-y: auto;
+  }
+
+  #mediatorList a.active {
+    background-color: #428bca;
+    border-color: #428bca;
+    color: #fff;
+  }
+</style>
+% end
+
+% content_for javascript => begin
+<script type="text/javascript">
+  "use strict";
+
+  registerGlobalAjaxEvents();
+
+  (function () {
+    var $form;
+
+    function listOptions() {
+
+      $.ajax({
+        type: "POST",
+        url: "/api/options/list",
+        data: {},
+      })
+        .done(function (data, textStatus, jqXHR) {
+          for (var key in data.val) {
+            var r = data.val[key];
+            
+            console.log(key);
+            console.log(r);
+            
+            $('input', $('#' + key)).attr('checked', r > 0 ? true : false);
+          }
+        }).fail(function (jqXHR, textStatus, errorThrown) {
+          alert('<%= loc q{An error occurred while fetching options} %>');
+        })
+      ;
+    }
+
+    function saveOptions(name, val) {
+      $.ajax({
+        type: "POST",
+        url: "/api/options/set",
+        data: {name: name, value: val}
+      })
+        .done(function (data, textStatus, jqXHR) {
+          if (data.status == 'success') {
+
+          }
+        })
+        .fail(function (jqXHR, textStatus, errorThrown) {
+          alert('<%= loc q{An error occurred while saving options} %>');
+        })
+      ;
+    }
+
+    $(function () {
+      $( ".checkbox" ).change(function(e) {
+        var name = $(this).attr('id');
+        var val = $('input', $(this)).is(':checked');
+        console.log(name);
+        console.log(val);
+        saveOptions(name, val)
+        
+      });
+      
+      listOptions();
+
+    });
+  })();
+</script>
+% end
+
+% content_for modals => begin
+
+
+% end
+
+
+<div class="row">
+
+  <h3 class="page-header">Импорт</h3>
+  <ul class="nav nav-tabs">
+    % for my $x (@{Rplus::Model::Media::Manager->get_objects(query => [type => 'import'], sort_by => 'id')}) {
+      <li class="<%= $x->id == 1 ? 'active': '' %>"><a href="#import-<%= $x->code %>" data-toggle="tab"> <%= $x->name %></a></li>
+    % }
+  </ul>
+  
+  <!-- Tab panes -->
+  <div class="tab-content">
+    % for my $x (@{Rplus::Model::Media::Manager->get_objects(query => [type => 'import'], sort_by => 'id')}) {
+      <div class="tab-pane <%= $x->id == 1 ? 'active': '' %> " id="import-<%= $x->code %>">
+        <div class="col-lg-4">
+          <div class="checkbox">
+            <label>
+              <input type="checkbox"><b> Продажа</b>
+            </label>
+          </div>
+          <p></p>
+    % for my $c (@{Rplus::Model::RealtyType::Manager->get_objects(query => [], sort_by => 'id')}) {
+          <div class="checkbox" id="sale-<%= $x->code %>-<%= $c->code %>">
+            <label>
+              <input type="checkbox" > <%= $c->name %>
+            </label>
+          </div>
+    % }
+        </div>
+        <div class="col-lg-4">
+          <div class="checkbox">
+            <label>
+              <input type="checkbox"><b> Аренда</b>
+            </label>
+          </div>
+          <p></p>
+    % for my $c (@{Rplus::Model::RealtyType::Manager->get_objects(query => [], sort_by => 'id')}) {
+          <div class="checkbox" id="rent-<%= $x->code %>-<%= $c->code %>">
+            <label>
+              <input type="checkbox" > <%= $c->name %>
+            </label>
+          </div>
+    % }
+        </div>        
+        
+      </div>
+    % }
+    </div>
+  </div>
+</div>
+
+
+<nav class="navbar navbar-default navbar-fixed-bottom">
+  <div class="container">
+    <p class="navbar-text navbar-right"><span class="glyphicon glyphicon-refresh animation-rotate invisible indicator-ajax"></span></p>
+  </div>
+</nav>

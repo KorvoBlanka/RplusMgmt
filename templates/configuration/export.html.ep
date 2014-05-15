@@ -1,0 +1,191 @@
+% layout 'default';
+
+% use Rplus::Model::Media::Manager;
+% use JSON;
+
+% content_for header => begin
+<style type="text/css">
+  #companyList, #mediatorList {
+    max-height: 600px;
+    overflow-y: auto;
+  }
+
+  #mediatorList a.active {
+    background-color: #428bca;
+    border-color: #428bca;
+    color: #fff;
+  }
+</style>
+% end
+
+% content_for javascript => begin
+<script type="text/javascript">
+  "use strict";
+
+  registerGlobalAjaxEvents();
+
+  (function () {
+    var $form;
+
+    function listOptions() {
+
+      $.ajax({
+        type: "POST",
+        url: "/api/options/listexp",
+        data: {},
+      })
+        .done(function (data, textStatus, jqXHR) {
+          
+          $('#formExportVnh [name="phones"]:input').val(data.val['vnh-phones']);
+          $('#formExportVnh [name="company"]:input').val(data.val['vnh-company']);
+          
+          $('#formExportFarpost [name="phones"]:input').val(data.val['farpost-phones']);
+          
+          $('#formExportPresent [name="add_description_words"]:input').val(data.val['present-descr']);
+          $('#formExportPresent [name="phones"]:input').val(data.val['present-phones']);
+
+        }).fail(function (jqXHR, textStatus, errorThrown) {
+          alert('<%= loc q{An error occurred while fetching options} %>');
+        })
+      ;
+    }
+
+    function saveOptions(name, val) {
+      $.ajax({
+        type: "POST",
+        url: "/api/options/setexp",
+        data: {name: name, value: val}
+      })
+        .done(function (data, textStatus, jqXHR) {
+          if (data.status == 'success') {
+
+          }
+        })
+        .fail(function (jqXHR, textStatus, errorThrown) {
+          alert('<%= loc q{An error occurred while saving options} %>');
+        })
+      ;
+    }
+
+    $(function () {
+      $( ".btn-save" ).click(function(e) {
+        
+        var t;
+        
+        t = $('#formExportVnh [name="phones"]:input').val();
+        console.log(t);
+        saveOptions('vnh-phones', t)
+        
+        t = $('#formExportVnh [name="company"]:input').val();
+        console.log(t);
+        saveOptions('vnh-company', t)
+        
+        t = $('#formExportFarpost [name="phones"]:input').val();
+        console.log(t);
+        saveOptions('farpost-phones', t)
+        
+        t = $('#formExportPresent [name="add_description_words"]:input').val();
+        console.log(t);
+        saveOptions('present-descr', t)
+        
+        t = $('#formExportPresent [name="phones"]:input').val();
+        console.log(t);
+        saveOptions('present-phones', t)
+        /*
+        var name = $(this).attr('id');
+        var val = $('input', $(this)).is(':checked');
+        console.log(name);
+        console.log(val);
+        saveOptions(name, val); */
+      });
+      
+      listOptions();   
+    });
+  })();
+
+  (function () {
+    var $modal, $form;
+
+
+  })();
+</script>
+% end
+
+% content_for modals => begin
+
+
+% end
+
+<div class="row">
+  <h3 class="page-header">Экспорт</h3>
+  <ul class="nav nav-tabs">
+    <li class="active"><a href="#export-vnh" data-toggle="tab">ВНХ</a></li>
+    <li><a href="#export-farpost" data-toggle="tab">Farpost</a></li>
+    <li><a href="#export-present" data-toggle="tab">Презент</a></li>
+  </ul>  
+</div>
+
+  <!-- Tab panes -->
+  <div class="tab-content">
+
+    <div class="tab-pane active" id="export-vnh">
+        <form class="" role="form" id="formExportVnh">
+          <div class="row" style="padding-top: 15px;">
+            <label class="col-lg-2 control-label">Phones</label>
+            <div class="col-lg-5">
+              <input type="text" class="form-control" name="phones" placeholder="Phone1, Phone2">
+            </div>
+          </div>
+          <div class="row" style="padding-top: 15px;">
+            <label class="col-lg-2 control-label">Company</label>
+            <div class="col-lg-5">
+              <input type="text" class="form-control" name="company" placeholder="Company">
+            </div>
+          </div>
+        </form>
+        <div class="form-group">
+          <button type="" class="btn btn-primary btn-save" style="margin-top: 15px">Сохранить</button>
+        </div>
+    </div>
+
+    <div class="tab-pane" id="export-farpost">
+        <form class="" role="form" id="formExportFarpost" action="/export/farpost" method="POST">
+          <div class="row" style="padding-top: 15px;">
+            <label class="col-lg-2 control-label">Phones</label>
+            <div class="col-lg-5">
+              <input type="text" class="form-control" name="phones" placeholder="Phone1, Phone2">
+            </div>
+          </div>
+        </form>
+        <div class="form-group">
+          <button type="" class="btn btn-primary btn-save" style="margin-top: 64px">Сохранить</button>
+        </div>        
+    </div>
+
+    <div class="tab-pane" id="export-present">
+        <form class="" role="form" id="formExportPresent" action="/export/vnh" method="POST">
+          <div class="row" style="padding-top: 15px;">
+            <label class="col-lg-2 control-label">Desc words</label>
+            <div class="col-lg-5">
+              <input type="number" class="form-control" name="add_description_words" style="width: 100px;" placeholder="# of words">
+            </div>
+          </div>
+          <div class="row" style="padding-top: 15px;">
+            <label class="col-lg-2 control-label">Phones</label>
+            <div class="col-lg-5">
+              <input type="text" class="form-control" name="phones" placeholder="Phone1, Phone2">
+            </div>
+          </div>
+        </form>
+        <div class="form-group">
+          <button type="" class="btn btn-primary btn-save" style="margin-top: 15px">Сохранить</button>
+        </div>        
+    </div>
+
+  </div>
+
+<nav class="navbar navbar-default navbar-fixed-bottom">
+  <div class="container">
+    <p class="navbar-text navbar-right"><span class="glyphicon glyphicon-refresh animation-rotate invisible indicator-ajax"></span></p>
+  </div>
+</nav>

@@ -208,6 +208,11 @@
               % if (has_permission(users => 'manage')) {
                 <li><a href="/configuration/users"><span class="glyphicon glyphicon-user"></span> <%= ucfloc q{users} %></a></li>
               % }
+              % if (has_permission(realty=> 'export')) {
+                <li><a href="/configuration/import"><span class="glyphicon glyphicon-import"></span> Импорт</a></li>
+                <li><a href="/configuration/export"><span class="glyphicon glyphicon-export"></span> Экспорт</a></li>
+                <li><a href="/configuration/notifications"><span class="glyphicon glyphicon-send"></span> Уведомления</a></li>
+              % }              
               </ul>
             </li>
           % }

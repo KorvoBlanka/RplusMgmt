@@ -2,6 +2,7 @@
 
 % use Rplus::Model::RealtyOfferType::Manager;
 % use Rplus::Model::Media::Manager;
+% use Rplus::Model::RealtyCategory::Manager;
 % use JSON;
 
 % content_for header => begin
@@ -38,12 +39,123 @@
 % end
 
 <div class="row">
-  <div class="col-lg-5">
-    <h3>Export Media</h3>
-  </div>
+  <h3 class="page-header">Экспорт</h3>
+  <ul class="nav nav-tabs">
+    <li class="active"><a href="#export-vnh" data-toggle="tab">ВНХ</a></li>
+    <li><a href="#export-farpost" data-toggle="tab">Farpost</a></li>
+    <li><a href="#export-present" data-toggle="tab">Презент</a></li>
+  </ul>  
 </div>
 
-<div class="row">
+  <!-- Tab panes -->
+  <div class="tab-content">
+
+    <div class="tab-pane active" id="export-vnh">
+        <form class="" role="form" id="formExportVnh">
+          
+          <div class="row" style="padding-top: 15px;">
+            <div class="col-lg-2">
+              <select class="form-control" name="offer_type_code">
+                <option value="sale">Продажа</option>
+                <option value="rent">Аренда</option>
+              </select>
+            </div>
+          </div>
+          % for my $c (@{Rplus::Model::RealtyCategory::Manager->get_objects(query => [], sort_by => 'id')}) {
+          <div class="checkbox" id="<%= $c->code %>">
+            <label>
+              <input type="checkbox" > <%= $c->name %>
+            </label>
+          </div>
+          % }
+          <div class="row hidden" style="padding-top: 15px;">
+            <label class="col-lg-2 control-label">Phones</label>
+            <div class="col-lg-5">
+              <input type="text" class="form-control" name="phones" placeholder="Phone1, Phone2">
+            </div>
+          </div>
+          <div class="row hidden" style="padding-top: 15px;">
+            <label class="col-lg-2 control-label">Company</label>
+            <div class="col-lg-5">
+              <input type="text" class="form-control" name="company" placeholder="Company">
+            </div>
+          </div>
+        </form>
+        <div class="form-group">
+          <button type="" class="btn btn-primary btn-save" style="margin-top: 15px">Сохранить</button>
+        </div>
+    </div>
+
+    <div class="tab-pane" id="export-farpost">
+        <form class="" role="form" id="formExportFarpost" action="/export/farpost" method="POST">
+          
+          <div class="row" style="padding-top: 15px;">
+            <div class="col-lg-2">
+              <select class="form-control" name="offer_type_code">
+                <option value="sale">Продажа</option>
+                <option value="rent">Аренда</option>
+              </select>
+            </div>
+          </div>
+          % for my $c (@{Rplus::Model::RealtyCategory::Manager->get_objects(query => [], sort_by => 'id')}) {
+          <div class="checkbox" id="<%= $c->code %>">
+            <label>
+              <input type="checkbox" > <%= $c->name %>
+            </label>
+          </div>
+          % }          
+          
+          <div class="row hidden" style="padding-top: 15px;">
+            <label class="col-lg-2 control-label">Phones</label>
+            <div class="col-lg-5">
+              <input type="text" class="form-control" name="phones" placeholder="Phone1, Phone2">
+            </div>
+          </div>
+        </form>
+        <div class="form-group">
+          <button type="" class="btn btn-primary btn-save" style="margin-top: 15px">Сохранить</button>
+        </div>        
+    </div>
+
+    <div class="tab-pane" id="export-present">
+        <form class="" role="form" id="formExportPresent" action="/export/vnh" method="POST">
+          <div class="row" style="padding-top: 15px;">
+            <div class="col-lg-2">
+              <select class="form-control" name="offer_type_code">
+                <option value="sale">Продажа</option>
+                <option value="rent">Аренда</option>
+              </select>
+            </div>
+          </div>
+          % for my $c (@{Rplus::Model::RealtyCategory::Manager->get_objects(query => [], sort_by => 'id')}) {
+          <div class="checkbox" id="<%= $c->code %>">
+            <label>
+              <input type="checkbox" > <%= $c->name %>
+            </label>
+          </div>
+          % }             
+          <div class="row hidden" style="padding-top: 15px;">
+            <label class="col-lg-2 control-label">Desc words</label>
+            <div class="col-lg-5">
+              <input type="number" class="form-control" name="add_description_words" style="width: 100px;" placeholder="# of words">
+            </div>
+          </div>
+          <div class="row hidden" style="padding-top: 15px;">
+            <label class="col-lg-2 control-label">Phones</label>
+            <div class="col-lg-5">
+              <input type="text" class="form-control" name="phones" placeholder="Phone1, Phone2">
+            </div>
+          </div>
+        </form>
+        <div class="form-group">
+          <button type="" class="btn btn-primary btn-save" style="margin-top: 15px">Сохранить</button>
+        </div>        
+    </div>
+
+  </div>
+
+
+<div class="row hidden">
   <div class="col-lg-5">
     <div class="panel panel-default">
       <div class="panel-heading">
@@ -121,7 +233,7 @@
   </div>
 </div>
 
-<div class="row">
+<div class="row hidden">
   <div class="col-lg-5">
     <div class="panel panel-default">
       <div class="panel-heading">

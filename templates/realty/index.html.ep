@@ -247,7 +247,12 @@
         {id: "export", name: "<%= ucfloc 'export' %>", visible: false, val: function (r) {
           return r.export_media ? r.export_media.map(function (x) { return Rplus.Table['media'][x] ? Rplus.Table['media'][x].name : x; }).join('<br>') : '';
         }},
-        {id: "owner", name: "<%= ucfloc 'owner' %>", visible: true, style: "white-space: nowrap;", val: function (r) {
+        
+        {id: "mediator", name: "Предложение", visible: true, style: "width: 120px; font-size: 12px; white-space: normal;", val: function (r) {
+          return r.mediator ? r.mediator : 'Собственник';
+        }},        
+        
+        {id: "owner", name: "Контакты", visible: true, style: "white-space: nowrap;", val: function (r) {
           return r.owner_phones ? r.owner_phones.map(function (x) { return Rplus.Util.formatPhoneNum(x) }).join('<br>') : '';
         }},
         {id: "price", name: "<%= ucfloc 'price' %>", sortName: "price", visible: true, val: function (r) {
@@ -418,9 +423,12 @@
         % if (has_permission(realty => 'write')->{nobody} || has_permission(realty => 'write')->{others}) {
         {text: '<span class="glyphicon glyphicon-user"></span> <%= ucfloc 'agent' %>', element_id: 'el_agents', subMenu: [
             {text: '<strong><%= ucfloc 'nobody' %></strong>', data_action: 'realty-set-agent', data_val: '', },
+            {text: '<strong> Посредник</strong>', data_action: 'realty-set-agent', data_val: '10000', },
           % my $iter = Rplus::Model::User::Manager->get_objects_iterator(select => 'id, name', query => [role => ['agent', 'agent_ext', 'manager'], delete_date => undef], sort_by => 'name');
           % while (my $x = $iter->next) {
+          % if ($x->id != 10000) {  
             {text: '<%= $x->name %>', data_action: 'realty-set-agent', data_val: '<%= $x->id %>', },
+          % }
           % }
         ]},
         % }
@@ -1523,15 +1531,17 @@
                 % }
                 % if (has_permission(realty => 'read')->{others}) {
                 <li><a href="#" data-val="all" data-type="text"><strong><%= ucfloc 'all agents' %></strong></a></li>
+                <li><a href="#" data-val="10000" data-type="text"><strong> Посредник</strong></a></li>
+                <li><a href="#" data-val="not_med" data-type="text"><strong> Собственник</strong></a></li>
                 % }
                 % for my $x (@{Rplus::Model::User::Manager->get_objects(query => [role => ['agent', 'agent_ext', 'manager'], delete_date => undef], sort_by => 'name')}) {
-                  % if (has_permission(realty => read => $x->id)) {
+                  % if (has_permission(realty => read => $x->id) && $x->id != 10000) {
                   <li><a href="#" data-val="<%= $x->id %>" data-type="text"><%= $x->name %></a></li>
                   % }
                 % }
               </ul>
             </li>
-
+            
             <!-- Offer type filter -->
             <li class="dropdown" data-filter="offer_type_code" data-val="sale">
               <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span role="display"><%= ucfloc 'sale' %></span> <b class="caret"></b></a>
