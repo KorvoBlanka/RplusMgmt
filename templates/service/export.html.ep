@@ -51,7 +51,7 @@
   <div class="tab-content">
 
     <div class="tab-pane active" id="export-vnh">
-        <form class="" role="form" id="formExportVnh">
+        <form class="" role="form" id="formExportVnh" action="/export/vnh" method="POST">
           
           <div class="row" style="padding-top: 15px;">
             <div class="col-lg-2">
@@ -62,9 +62,9 @@
             </div>
           </div>
           % for my $c (@{Rplus::Model::RealtyCategory::Manager->get_objects(query => [], sort_by => 'id')}) {
-          <div class="checkbox" id="<%= $c->code %>">
+          <div class="checkbox checked" id="<%= $c->code %>">
             <label>
-              <input type="checkbox" > <%= $c->name %>
+              <input type="checkbox" checked="checked"> <%= $c->name %>
             </label>
           </div>
           % }
@@ -80,10 +80,10 @@
               <input type="text" class="form-control" name="company" placeholder="Company">
             </div>
           </div>
+          <div class="form-group">
+            <button type="submit" class="btn btn-primary btn-save" style="margin-top: 15px">Сохранить</button>
+          </div>          
         </form>
-        <div class="form-group">
-          <button type="" class="btn btn-primary btn-save" style="margin-top: 15px">Сохранить</button>
-        </div>
     </div>
 
     <div class="tab-pane" id="export-farpost">
@@ -100,7 +100,7 @@
           % for my $c (@{Rplus::Model::RealtyCategory::Manager->get_objects(query => [], sort_by => 'id')}) {
           <div class="checkbox" id="<%= $c->code %>">
             <label>
-              <input type="checkbox" > <%= $c->name %>
+              <input type="checkbox" checked="checked"> <%= $c->name %>
             </label>
           </div>
           % }          
@@ -111,14 +111,15 @@
               <input type="text" class="form-control" name="phones" placeholder="Phone1, Phone2">
             </div>
           </div>
+          <div class="form-group">
+            <button type="submit" class="btn btn-primary btn-save" style="margin-top: 15px">Сохранить</button>
+          </div>          
         </form>
-        <div class="form-group">
-          <button type="" class="btn btn-primary btn-save" style="margin-top: 15px">Сохранить</button>
-        </div>        
+
     </div>
 
     <div class="tab-pane" id="export-present">
-        <form class="" role="form" id="formExportPresent" action="/export/vnh" method="POST">
+        <form class="" role="form" id="formExportPresent" action="/export/present" method="POST">
           <div class="row" style="padding-top: 15px;">
             <div class="col-lg-2">
               <select class="form-control" name="offer_type_code">
@@ -130,7 +131,7 @@
           % for my $c (@{Rplus::Model::RealtyCategory::Manager->get_objects(query => [], sort_by => 'id')}) {
           <div class="checkbox" id="<%= $c->code %>">
             <label>
-              <input type="checkbox" > <%= $c->name %>
+              <input type="checkbox" checked="checked"> <%= $c->name %>
             </label>
           </div>
           % }             
@@ -146,10 +147,10 @@
               <input type="text" class="form-control" name="phones" placeholder="Phone1, Phone2">
             </div>
           </div>
+          <div class="form-group">
+            <button type="" class="btn btn-primary btn-save" style="margin-top: 15px">Сохранить</button>
+          </div>          
         </form>
-        <div class="form-group">
-          <button type="" class="btn btn-primary btn-save" style="margin-top: 15px">Сохранить</button>
-        </div>        
     </div>
 
   </div>
