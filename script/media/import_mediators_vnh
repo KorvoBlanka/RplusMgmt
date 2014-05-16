@@ -39,7 +39,7 @@ sub import_mediators_vnh {
 sub process_url_list {
     my ($list_url, $category_code, $type_code, $offer_type) = @_;
     
-    for (my $page = 1; $page < 10; $page++) {
+    for (my $page = 1; $page < 200; $page++) {
       
         my $dom = $ua->get($list_url . '&page=' . $page)->res->dom;
           next unless defined $dom;
@@ -116,7 +116,9 @@ sub add_mediator {
         my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(select => 'id, owner_phones', query => ['!state_code' => 'deleted', \("owner_phones && '{".$phone_num."}'")]);
         while (my $realty = $realty_iter->next) {
             $realty->mediator($company_name);
-            $realty->agent_id(10000)->save;
+            $realty->agent_id(10000);
+            $realty->save(changes_only => 1);
+            say $realty->id;
             push @$found_phones, ($realty->owner_phones);
             #$self->realty_event('m', $realty->id);
         }
