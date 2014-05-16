@@ -421,7 +421,7 @@
           % }
         ]},
         % if (has_permission(realty => 'write')->{nobody} || has_permission(realty => 'write')->{others}) {
-        {text: '<span class="glyphicon glyphicon-user"></span> <%= ucfloc 'agent' %>', element_id: 'el_agents', subMenu: [
+        {text: '<span class="glyphicon glyphicon-user"></span> Назначить', element_id: 'el_agents', subMenu: [
             {text: '<strong><%= ucfloc 'nobody' %></strong>', data_action: 'realty-set-agent', data_val: '', },
             {text: '<strong> Посредник</strong>', data_action: 'realty-set-agent', data_val: '10000', },
           % my $iter = Rplus::Model::User::Manager->get_objects_iterator(select => 'id, name', query => [role => ['agent', 'agent_ext', 'manager'], delete_date => undef], sort_by => 'name');
