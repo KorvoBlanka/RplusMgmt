@@ -616,10 +616,11 @@ sub add_mediator {
 
         # Search for additional mediator phones
         my $found_phones = Mojo::Collection->new();
-        my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(select => 'id, owner_phones', query => ['!state_code' => 'deleted', \("owner_phones && '{".$phone_num."}'")]);
+        my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(query => [delete_date => undef, \("owner_phones && '{".$phone_num."}'")]);
         while (my $realty = $realty_iter->next) {
             $realty->mediator($company_name);
-            $realty->agent_id(10000)->save;
+            $realty->agent_id(10000);
+            $realty->save(changes_only => 1);
             push @$found_phones, ($realty->owner_phones);
             #$self->realty_event('m', $realty->id);
         }
