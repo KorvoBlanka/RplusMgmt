@@ -586,19 +586,14 @@ sub update_color_tag {
 }
 
 sub add_mediator {
-    my $self = shift;
+    #my $self = shift;
     my $mediator = Rplus::Model::Mediator->new;
 
     # Prepare data
     my $company_name = shift;
     my $phone_num = shift;
     my $name = $phone_num;
-    
-    # Begin transaction
-    my $db = $self->db;
-    $db->begin_work;
 
-    $mediator->db($db);
     $mediator->name($name);
     $mediator->phone_num($phone_num);
 
@@ -607,9 +602,9 @@ sub add_mediator {
         my $company = $mediator->company;
         if (!$company || lc($company->name) ne lc($company_name)) {
             # Add new company or move mediator to another company
-            $company = Rplus::Model::MediatorCompany::Manager->get_objects(query => [[\'lower(name) = ?' => lc($company_name)], delete_date => undef], db => $db)->[0];
+            $company = Rplus::Model::MediatorCompany::Manager->get_objects(query => [[\'lower(name) = ?' => lc($company_name)], delete_date => undef])->[0];
             if (!$company) {
-                $company = Rplus::Model::MediatorCompany->new(name => $company_name, db => $db);
+                $company = Rplus::Model::MediatorCompany->new(name => $company_name);
                 $company->save;
                 $reload_company_list = 1;
             }
@@ -620,7 +615,7 @@ sub add_mediator {
 
         # Search for additional mediator phones
         my $found_phones = Mojo::Collection->new();
-        my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(select => 'id, owner_phones', query => ['!state_code' => 'deleted', \("owner_phones && '{".$phone_num."}'")], db => $db);
+        my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(select => 'id, owner_phones', query => ['!state_code' => 'deleted', \("owner_phones && '{".$phone_num."}'")]);
         while (my $realty = $realty_iter->next) {
             $realty->mediator($company_name);
             $realty->agent_id(10000)->save;
@@ -632,8 +627,8 @@ sub add_mediator {
         if ($found_phones->size) {
             # Add additional mediators from realty owner phones
             for (@$found_phones) {
-                if ($_ ne $phone_num && !Rplus::Model::Mediator::Manager->get_objects_count(query => [phone_num => $_, delete_date => undef], db => $db)) {
-                    Rplus::Model::Mediator->new(db => $db, name => $name, phone_num => $_, company => $company)->save;
+                if ($_ ne $phone_num && !Rplus::Model::Mediator::Manager->get_objects_count(query => [phone_num => $_, delete_date => undef])) {
+                    Rplus::Model::Mediator->new(name => $name, phone_num => $_, company => $company)->save;
                 }
             }
 
@@ -646,9 +641,6 @@ sub add_mediator {
             #    db => $db,
             #);
         }
-
-        $db->commit;
-        1;
     }  
 }
 
