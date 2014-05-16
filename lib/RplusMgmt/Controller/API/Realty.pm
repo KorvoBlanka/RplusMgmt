@@ -13,6 +13,7 @@ use Rplus::Model::Photo::Manager;
 use Rplus::Model::ColorTag;
 use Rplus::Model::ColorTag::Manager;
 
+use Rplus::Util::PhoneNum;
 use Rplus::Util::Query;
 use Rplus::Util::Realty;
 
@@ -666,7 +667,7 @@ sub update {
                 $realty->agent_id(scalar $self->param('agent_id'));
                 if ($agent_id == 10000) {
                     my $company = 'ПОСРЕДНИК В НЕДВИЖИМОСТИ';
-                    add_mediator($self, $company, $realty->owner_phones);
+                    add_mediator($company, $realty->owner_phones->[0]);
                     $realty->mediator($company);
                 } else {
                     $realty->mediator(undef);
