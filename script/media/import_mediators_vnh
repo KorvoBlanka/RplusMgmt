@@ -9,6 +9,9 @@ use Rplus::Model::Media;
 use Rplus::Model::Media::Manager;
 use Rplus::Model::Mediator;
 use Rplus::Model::Mediator::Manager;
+use Rplus::Model::MediatorCompany;
+use Rplus::Model::MediatorCompany::Manager;
+
 
 use Rplus::Util::PhoneNum;
 
@@ -32,12 +35,14 @@ import_mediators_vnh ();
 sub import_mediators_vnh {
     my @url_list;
 
-    process_url_list($url_1, 'apartment', 'apartment', 'sale');
-    #process_url_list($sell_house_url, 'house', 'house', 'sale');
+    process_url_list($url_1);
+    process_url_list($url_2);
+    
+    check_mediators();
 }
 
 sub process_url_list {
-    my ($list_url, $category_code, $type_code, $offer_type) = @_;
+    my ($list_url) = @_;
     
     for (my $page = 1; $page < 200; $page++) {
       
@@ -58,24 +63,59 @@ sub process_url_list {
                 my $fdiv = $_->find('div[class="firm"]')->[0];
                 
                 my $href = $fdiv->a->{href};
-                my @tt = split ',', $fdiv->text;
+                my @tt = split /[,;]+/, $fdiv->text;
                 my @phones = splice @tt, 1; 
-
-                say @phones;
                 
                 my $t = $ua->get('http://www.vnh-info.ru' . $href)->res->dom->find('table[class="vnh_tbl_frm"]')->[0];
                 my $mediator_company_name = (split ',', $t->tr->[0]->td->text)[0];
-                
+
                 say $mediator_company_name;
+                say $fdiv->text;
+                
                 
                 foreach (@phones)
                 {
+                    say $_;
                     my $phone_num = Rplus::Util::PhoneNum->parse($_, '4212');
+                    say $phone_num;
                     add_mediator($mediator_company_name, $phone_num);
                 }
                 
                 
             });
+        }
+    }
+}
+
+sub check_mediators {
+    my $mediator_iter = Import::Model::Mediator::Manager->get_objects_iterator(query => [delete_date => undef], require_objects => ['company']);
+    while (my $x = $mediator_iter->next) {
+        #$MEDIATOR_PHONES{$x->phone_num} = {
+        #    id => $x->id,
+        #    name => $x->name,
+        #    company => $x->company->name,
+        #};
+        
+        # Search for additional mediator phones
+        my $found_phones = Mojo::Collection->new();
+        my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(query => [delete_date => undef, \("owner_phones && '{".$x->phone_num."}'")]);
+        while (my $realty = $realty_iter->next) {
+            $realty->mediator($x->company->name);
+            $realty->agent_id(10000);
+            $realty->save(changes_only => 1);
+            say $realty->id;
+            push @$found_phones, ($realty->owner_phones);
+            #$self->realty_event('m', $realty->id);
+        }
+        $found_phones = $found_phones->uniq;
+
+        if ($found_phones->size) {
+            # Add additional mediators from realty owner phones
+            for (@$found_phones) {
+                if ($_ ne $x->phone_num && !Rplus::Model::Mediator::Manager->get_objects_count(query => [phone_num => $_, delete_date => undef])) {
+                    Rplus::Model::Mediator->new(name => $_, phone_num => $_, company => $x->company->name)->save;
+                }
+            }
         }
     }
 }
@@ -108,29 +148,8 @@ sub add_mediator {
             }
             $mediator->company($company);
         }
-
         $mediator->save;
-
-        # Search for additional mediator phones
-        my $found_phones = Mojo::Collection->new();
-        my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(select => 'id, owner_phones', query => ['!state_code' => 'deleted', \("owner_phones && '{".$phone_num."}'")]);
-        while (my $realty = $realty_iter->next) {
-            $realty->mediator($company_name);
-            $realty->agent_id(10000);
-            $realty->save(changes_only => 1);
-            say $realty->id;
-            push @$found_phones, ($realty->owner_phones);
-            #$self->realty_event('m', $realty->id);
-        }
-        $found_phones = $found_phones->uniq;
-
-        if ($found_phones->size) {
-            # Add additional mediators from realty owner phones
-            for (@$found_phones) {
-                if ($_ ne $phone_num && !Rplus::Model::Mediator::Manager->get_objects_count(query => [phone_num => $_, delete_date => undef])) {
-                    Rplus::Model::Mediator->new(name => $name, phone_num => $_, company => $company)->save;
-                }
-            }
-        }
-    }  
+    } or do {
+        say $@;
+    }
 }
