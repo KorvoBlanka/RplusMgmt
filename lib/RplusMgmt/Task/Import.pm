@@ -66,10 +66,10 @@ NEXT:       for my $data (@$realty_data) {
                 }
     
                 for (@{$data->{'owner_phones'}}) {
-                    if ($data->{offer_type} eq 'rent') {
-                        next NEXT;
-                    }
                     if(exists $MEDIATOR_PHONES{$_}) {
+                        if ($data->{offer_type} eq 'rent') {
+                          next NEXT;
+                        }
                         my $mediator = Rplus::Model::Mediator::Manager->get_objects(query => [phone_num => $_, delete_date => undef], require_objects => ['company'])->[0];
                         $data->{mediator} = $mediator->company->name . '. ' . $mediator->name;
                         $data->{agent_id} = 10000;
