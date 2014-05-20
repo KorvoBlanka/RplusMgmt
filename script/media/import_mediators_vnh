@@ -5,6 +5,9 @@ use lib "$FindBin::Bin/../../lib";
 
 use Rplus::Modern;
 
+
+use Rplus::Model::Realty;
+use Rplus::Model::Realty::Manager;
 use Rplus::Model::Media;
 use Rplus::Model::Media::Manager;
 use Rplus::Model::Mediator;
@@ -44,7 +47,7 @@ sub import_mediators_vnh {
 sub process_url_list {
     my ($list_url) = @_;
     
-    for (my $page = 1; $page < 200; $page++) {
+    for (my $page = 1; $page < 1; $page++) {
       
         my $dom = $ua->get($list_url . '&page=' . $page)->res->dom;
           next unless defined $dom;
@@ -88,7 +91,7 @@ sub process_url_list {
 }
 
 sub check_mediators {
-    my $mediator_iter = Import::Model::Mediator::Manager->get_objects_iterator(query => [delete_date => undef], require_objects => ['company']);
+    my $mediator_iter = Rplus::Model::Mediator::Manager->get_objects_iterator(query => [delete_date => undef], require_objects => ['company']);
     while (my $x = $mediator_iter->next) {
         #$MEDIATOR_PHONES{$x->phone_num} = {
         #    id => $x->id,
@@ -113,7 +116,8 @@ sub check_mediators {
             # Add additional mediators from realty owner phones
             for (@$found_phones) {
                 if ($_ ne $x->phone_num && !Rplus::Model::Mediator::Manager->get_objects_count(query => [phone_num => $_, delete_date => undef])) {
-                    Rplus::Model::Mediator->new(name => $_, phone_num => $_, company => $x->company->name)->save;
+                    say $_;
+                    Rplus::Model::Mediator->new(phone_num => $_, company => $x->company->id)->save;
                 }
             }
         }

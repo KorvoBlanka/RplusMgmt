@@ -1521,7 +1521,7 @@
 
             <!-- Agent filter -->
             <li class="dropdown" data-filter="agent_id" data-val="">
-              <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-user"></span> <span role="display"><%= ucfloc 'any' %> <b class="caret"></b></span></a>
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-user"></span><span role="display"><%= ucfloc 'any' %></span> <b class="caret"></b></a>
               <ul class="dropdown-menu">
                 % if (has_permission(realty => 'read')->{nobody} || has_permission(realty => 'read')->{others}) {
                 <li><a href="#" data-val="" data-type="text"><strong><%= ucfloc 'any' %></strong></a></li>
