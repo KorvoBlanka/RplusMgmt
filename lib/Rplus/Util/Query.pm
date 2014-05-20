@@ -282,8 +282,8 @@ sub parse {
                     }
                 }
 
-                @tsv = grep { $_ } split / /, $tsv;
-                $tsv = join ' ', @tsv;
+                #@tsv = grep { $_ } split / /, $tsv;
+                #$tsv = join ' ', @tsv;
             }
 
             # Second processing - streets
@@ -332,7 +332,9 @@ sub parse {
                 }
             }
 
-            if (@{$found{address_object}} && @{$found{landmark}}) {
+            if ($q =~ s/${sta_re}улица${end_re}/ /i && @{$found{address_object}}) {
+              push @params, address_object_id => $found{address_object};
+            } elsif (@{$found{address_object}} && @{$found{landmark}}) {
                 push @params, OR => [
                     address_object_id => $found{address_object},
                     landmarks => {'&&' => $found{landmark}},
