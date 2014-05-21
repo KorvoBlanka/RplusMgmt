@@ -6,6 +6,8 @@ use Rplus::Model::Realty;
 use Rplus::Model::Realty::Manager;
 use Rplus::Model::Landmark;
 use Rplus::Model::Landmark::Manager;
+use Rplus::Model::MediatorCompany;
+use Rplus::Model::MediatorCompany::Manager;
 use Rplus::Model::Mediator;
 use Rplus::Model::Mediator::Manager;
 use Rplus::Model::Photo;
@@ -593,25 +595,16 @@ sub add_mediator {
     # Prepare data
     my $company_name = shift;
     my $phone_num = shift;
-    my $name = $phone_num;
 
-    $mediator->name($name);
     $mediator->phone_num($phone_num);
 
-    my ($num_realty_deleted, $reload_company_list) = (0, 0);
     eval {
-        my $company = $mediator->company;
-        if (!$company || lc($company->name) ne lc($company_name)) {
-            # Add new company or move mediator to another company
-            $company = Rplus::Model::MediatorCompany::Manager->get_objects(query => [[\'lower(name) = ?' => lc($company_name)], delete_date => undef])->[0];
-            if (!$company) {
-                $company = Rplus::Model::MediatorCompany->new(name => $company_name);
-                $company->save;
-                $reload_company_list = 1;
-            }
-            $mediator->company($company);
+        my $company = Rplus::Model::MediatorCompany::Manager->get_objects(query => [[\'lower(name) = ?' => lc($company_name)], delete_date => undef])->[0];
+        if (!$company) {
+            $company = Rplus::Model::MediatorCompany->new(name => $company_name);
+            $company->save;
         }
-
+        $mediator->company($company);
         $mediator->save;
 
         # Search for additional mediator phones
@@ -630,7 +623,8 @@ sub add_mediator {
             # Add additional mediators from realty owner phones
             for (@$found_phones) {
                 if ($_ ne $phone_num && !Rplus::Model::Mediator::Manager->get_objects_count(query => [phone_num => $_, delete_date => undef])) {
-                    Rplus::Model::Mediator->new(name => $name, phone_num => $_, company => $company)->save;
+                    my $nm = Rplus::Model::Mediator->new(phone_num => $_, company => $company);
+                    $nm->save;
                 }
             }
 
@@ -643,7 +637,9 @@ sub add_mediator {
             #    db => $db,
             #);
         }
-    }  
+    }  or do {
+        say 'error ' . $@;
+    }
 }
 
 sub update {
