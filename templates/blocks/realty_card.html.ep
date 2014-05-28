@@ -1039,7 +1039,9 @@
           <div class="form-group edit-group">
             <label class="col-md-3 col-lg-3 control-label" for="ownerPhoneInput"><%= ucfloc 'phones' %>&nbsp;<span style="top: 0px; font-size: 10px; color: rgb(221, 41, 41);" class="glyphicon glyphicon-asterisk"></span></label>
             <div class="col-md-9 col-lg-9">
-              <input type="text" class="form-control input-sm" style="display: inline-block; width: 30%;" name="owner_phones" id="ownerPhoneInput" placeholder="<%= ucfloc 'phone' %> 1">&nbsp;&nbsp;<input type="text" class="form-control input-sm" style="display: inline-block; width: 30%;" name="owner_phones" placeholder="<%= ucfloc 'phone' %> 2">&nbsp;&nbsp;<input type="text" class="form-control input-sm" style="display: inline-block; width: 30%;" name="owner_phones" placeholder="<%= ucfloc 'phone' %> 3">
+              <input type="text" class="form-control input-sm" style="display: inline-block; width: 30%;" name="owner_phones" id="ownerPhoneInput" placeholder="собственник">&nbsp;&nbsp;
+              <input type="text" class="form-control input-sm" style="display: inline-block; width: 30%;" name="owner_phones" placeholder="собственник">&nbsp;&nbsp;
+              <input type="text" class="form-control input-sm" style="display: inline-block; width: 30%;" name="owner_phones" placeholder="собственник">
             </div>
           </div>
 
