@@ -66,8 +66,17 @@ sub process_url_list {
                 my $fdiv = $_->find('div[class="firm"]')->[0];
                 
                 my $href = $fdiv->a->{href};
-                my @tt = split /[,;]+/, $fdiv->text;
-                my @phones = splice @tt, 1; 
+                my $seller = $fdiv->text;
+                my @phones; 
+                        
+                for my $x (split /[ .,;]/, $seller) {
+                    $x =~ s/\D//g;
+                    if ($x =~ /^\s*([\d-]{6,})\s*$/) {
+                        if (my $phone_num = Rplus::Util::PhoneNum->parse($1, $META->{'params'}->{'default_phone_prefix'})) {
+                            push @phones, $phone_num;
+                        }
+                    }
+                }
                 
                 my $t = $ua->get('http://www.vnh-info.ru' . $href)->res->dom->find('table[class="vnh_tbl_frm"]')->[0];
                 my $mediator_company_name = (split ',', $t->tr->[0]->td->text)[0];

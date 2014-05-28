@@ -34,7 +34,7 @@ sub run {
     my $last_id = 0;
     my $t_last_id = 0;
     if (!$rt_param) {
-        Rplus::Model::RuntimeParam->new(key => 'tasks_run_mutex', value => '{"last_id": 0}')->save; # Create record
+        Rplus::Model::RuntimeParam->new(key => 'import_param', value => '{"last_id": 0}')->save; # Create record
 
     } else {
         $last_id = from_json($rt_param->{value})->{last_id};

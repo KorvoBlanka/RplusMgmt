@@ -332,13 +332,15 @@ sub parse {
                 }
             }
 
-            if ($q =~ s/${sta_re}улица${end_re}/ /i && @{$found{address_object}}) {
-              push @params, address_object_id => $found{address_object};
-            } elsif (@{$found{address_object}} && @{$found{landmark}}) {
-                push @params, OR => [
-                    address_object_id => $found{address_object},
-                    landmarks => {'&&' => $found{landmark}},
-                ];
+            if (@{$found{address_object}} && @{$found{landmark}}) {
+                if ($q =~ s/${sta_re}улица${end_re}/ /i) {
+                    push @params, address_object_id => $found{address_object};
+                } else {
+                    push @params, OR => [
+                        address_object_id => $found{address_object},
+                        landmarks => {'&&' => $found{landmark}},
+                    ];
+                }
             } elsif (@{$found{address_object}}) {
                 push @params, address_object_id => $found{address_object};
             } elsif (@{$found{landmark}}) {

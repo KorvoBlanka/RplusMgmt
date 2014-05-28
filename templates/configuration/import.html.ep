@@ -37,10 +37,7 @@
         .done(function (data, textStatus, jqXHR) {
           for (var key in data.val) {
             var r = data.val[key];
-            
-            console.log(key);
-            console.log(r);
-            
+
             $('input', $('#' + key)).attr('checked', r > 0 ? true : false);
           }
         }).fail(function (jqXHR, textStatus, errorThrown) {
@@ -70,14 +67,24 @@
       $( ".checkbox" ).change(function(e) {
         var name = $(this).attr('id');
         var val = $('input', $(this)).is(':checked');
-        console.log(name);
-        console.log(val);
-        saveOptions(name, val)
-        
-      });
-      
-      listOptions();
 
+        if(/^(sale|rent)-\w+$/.test(name)) {
+          $( ".checkbox" ).each(function(e) {
+            var cb_name = $(this).attr('id');
+            if( (new RegExp('^' + name + '-\\w+$')).test(cb_name) ) {
+              if (val) {
+                $('input', $(this)).prop('checked', true);
+              } else {
+                $('input', $(this)).prop('checked', false);
+              }
+              saveOptions(cb_name, val);
+            }
+          });
+        } else {
+          saveOptions(name, val);
+        }
+      });
+      listOptions();
     });
   })();
 </script>
@@ -103,7 +110,7 @@
     % for my $x (@{Rplus::Model::Media::Manager->get_objects(query => [type => 'import'], sort_by => 'id')}) {
       <div class="tab-pane <%= $x->id == 1 ? 'active': '' %> " id="import-<%= $x->code %>">
         <div class="col-lg-4">
-          <div class="checkbox">
+          <div class="checkbox" id="sale-<%= $x->code %>">
             <label>
               <input type="checkbox"><b> Продажа</b>
             </label>
@@ -118,7 +125,7 @@
     % }
         </div>
         <div class="col-lg-4">
-          <div class="checkbox">
+          <div class="checkbox" id="rent-<%= $x->code %>">
             <label>
               <input type="checkbox"><b> Аренда</b>
             </label>
