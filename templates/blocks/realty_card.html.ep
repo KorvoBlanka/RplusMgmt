@@ -340,6 +340,13 @@
       } else {
         $('#unlock-btn').removeClass('hidden');
       }
+      
+      if (realty.agent_id == 10000) {   // посредник
+        $('span[data-name="dg_p9"]', $realty_modal).html(realty.mediator);
+        $('#dg_p9_label', $realty_modal).html('Агенство');
+      } else {
+        $('#dg_p9_label', $realty_modal).html('Агент');
+      }
     }
 
     function setRealtyEditView(realty) {
@@ -773,7 +780,7 @@
           </div>
           
           <div class="form-group view-group">
-            <label class="col-md-4 col-lg-4 control-label view-label">Агент</label>
+            <label class="col-md-4 col-lg-4 control-label view-label" id="dg_p9_label">Агент</label>
             <div class="col-md-8 col-lg-8" style="padding-top: 5px;">
               <p class="form-control-static text-left"><span class="" data-name="dg_p9"></span></p>
             </div>
