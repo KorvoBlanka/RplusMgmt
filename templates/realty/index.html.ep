@@ -1527,7 +1527,7 @@
                 <li><a href="#" data-val="" data-type="text"><strong><%= ucfloc 'any' %></strong></a></li>
                 % }
                 % if (has_permission(realty => 'read')->{nobody}) {
-                <li><a href="#" data-val="nobody" data-type="text"><strong><%= ucfloc 'nobody' %></strong></a></li>
+                <li><a href="#" data-val="nobody" data-type="text"><strong>Не назначено</strong></a></li>
                 % }
                 % if (has_permission(realty => 'read')->{others}) {
                 <li><a href="#" data-val="all" data-type="text"><strong><%= ucfloc 'all agents' %></strong></a></li>

@@ -70,13 +70,19 @@ my $_serialize = sub {
 
 
         # Exclude fields for read permission "2"
-        if ($self->has_permission(realty => read => $realty->agent_id) == 2) {
+        if ($realty->agent_id != 10000 && $self->has_permission(realty => read => $realty->agent_id) == 2) {
             $x->{$_} = undef for @exclude_fields;
+            
+            my $user = Rplus::Model::User::Manager->get_objects(query => [id => $realty->agent_id, delete_date => undef])->[0];
+            $x->{owner_phones} = [$user->public_phone_num];
         }
 
         # Exclude fields for read permission "3"
-        if ($self->has_permission(realty => read => $realty->agent_id) == 3) {
+        if ($realty->agent_id != 10000 && $self->has_permission(realty => read => $realty->agent_id) == 3) {
             $x->{$_} = undef for @exclude_fields_agent_plus;
+            
+            my $user = Rplus::Model::User::Manager->get_objects(query => [id => $realty->agent_id, delete_date => undef])->[0];
+            $x->{owner_phones} = [$user->public_phone_num];            
         }
 
         if ($params{with_sublandmarks}) {
