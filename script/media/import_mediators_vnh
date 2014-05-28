@@ -114,6 +114,7 @@ sub check_mediators {
         while (my $realty = $realty_iter->next) {
             $realty->mediator($x->company->name);
             $realty->agent_id(10000);
+            $realty->state_code('raw');
             $realty->save(changes_only => 1);
             say $realty->id;
             push @$found_phones, ($realty->owner_phones);

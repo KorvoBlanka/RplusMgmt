@@ -619,6 +619,7 @@ sub add_mediator {
         while (my $realty = $realty_iter->next) {
             $realty->mediator($company_name);
             $realty->agent_id(10000);
+            $realty->state_code('raw');
             $realty->save(changes_only => 1);
             push @$found_phones, ($realty->owner_phones);
             #$self->realty_event('m', $realty->id);

@@ -134,6 +134,7 @@ sub save {
             say $realty->id;
             $realty->mediator($company_name);
             $realty->agent_id(10000);
+            $realty->state_code('raw');
             $realty->save(changes_only => 1);
             #$self->realty_event('m', $realty->id);
         }
@@ -180,12 +181,20 @@ sub delete {
 
     my $id = $self->param('id');
 
+    my $mediator = Rplus::Model::Mediator::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
+    my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(query => [delete_date => undef, \("owner_phones && '{".$mediator->phone_num."}'")]);
+    while (my $realty = $realty_iter->next) {
+        $realty->mediator(undef);
+        $realty->agent_id(undef);
+        $realty->save(changes_only => 1);
+    }
+    
     my $num_rows_updated = Rplus::Model::Mediator::Manager->update_objects(
         set => {delete_date => \'now()'},
         where => [id => $id, delete_date => undef],
     );
-    return $self->render(json => {error => 'Not Found'}, status => 404) unless $num_rows_updated;
-
+    return $self->render(json => {error => 'Not Found'}, status => 404) unless $num_rows_updated;    
+    
     $self->render(json => {status => 'success'});
 }
 
