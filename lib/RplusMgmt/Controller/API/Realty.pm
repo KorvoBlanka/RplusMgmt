@@ -46,7 +46,9 @@ my $_serialize = sub {
         while (my $mediator = $mediator_iter->next) {
             $mediator_str = $mediator->company->name;
             $realty->agent_id(10000);
-            $realty->state_code('raw');
+            if ($realty->state_code eq 'work') {
+              $realty->state_code('raw');
+            }
         }
         $realty->save(changes_only => 1);
 
