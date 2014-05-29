@@ -35,6 +35,21 @@ my $_serialize = sub {
 
     my (@serialized, %realty_h);
     for my $realty (@realty_objs) {
+      
+        # check owner phones for mediators
+        my $mediator_str = undef;
+        my $owner_phones = $realty->owner_phones;
+        my $mediator_iter = Rplus::Model::Mediator::Manager->get_objects_iterator(query => [phone_num => \@$owner_phones, delete_date => undef], require_objects => ['company']);
+        if ($realty->agent_id == 10000) {
+            $realty->agent_id(undef);
+        }
+        while (my $mediator = $mediator_iter->next) {
+            $mediator_str = $mediator->company->name;
+            $realty->agent_id(10000);
+            $realty->state_code('raw');
+        }
+        $realty->save(changes_only => 1);
+
         my $x = {
             (map { $_ => ($_ =~ /_date$/ ? $self->format_datetime($realty->$_) : scalar($realty->$_)) } grep { !($_ ~~ [qw(delete_date geocoords landmarks metadata fts)]) } $realty->meta->column_names),
 
@@ -46,13 +61,12 @@ my $_serialize = sub {
                 addr_parts => from_json($realty->address_object->metadata)->{'addr_parts'},
             } : undef,
 
-            color_tag_id => undef,
-            
             sublandmark => $realty->sublandmark ? {id => $realty->sublandmark->id, name => $realty->sublandmark->name} : undef,
-
             main_photo_thumbnail => undef,
+            color_tag_id => undef,            
+            mediator => $mediator_str,
         };
-
+        
         if($realty->color_tags) {
             foreach ($realty->color_tags) {
                 if ($_->user_id == $self->stash('user')->{id}) {
@@ -61,13 +75,6 @@ my $_serialize = sub {
                 }
             }
         }
-        
-        my $meta = from_json($realty->metadata);
-        if(!$meta->{lock}) {
-            $meta->{lock} = -1;
-        } 
-        $x->{lock} = $meta->{lock};
-
 
         # Exclude fields for read permission "2"
         if ($realty->agent_id != 10000 && $self->has_permission(realty => read => $realty->agent_id) == 2) {
@@ -302,7 +309,7 @@ sub list {
     my $realty_objs = Rplus::Model::Realty::Manager->get_objects(
         select => ['realty.*', (map { 'address_object.'.$_ } qw(id name short_type expanded_name metadata))],
         query => [@query, , delete_date => undef],
-        sort_by => [@sort_by, 'realty.id desc'],
+        sort_by => [@sort_by, 'realty.last_seen_date desc'],
         page => $page,
         per_page => $per_page,
         with_objects => ['address_object', 'sublandmark', 'color_tags', @with_objects],

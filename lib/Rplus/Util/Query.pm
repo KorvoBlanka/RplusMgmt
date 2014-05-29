@@ -12,7 +12,7 @@ use Encode qw(decode_utf8);
 use JSON;
 
 # For tests (disable caching)
-our $USE_CACHE = 1;
+our $USE_CACHE = 0;
 
 # Rose::DB::Object params to JSON
 sub _params2json {

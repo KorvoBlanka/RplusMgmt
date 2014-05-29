@@ -176,6 +176,9 @@
 %= js_once "$assets_url/typeahead.js/$typeaheadjs_ver/js/typeahead.js";
 %= js_once "/js/contextmenu/context.js";
 %= js_once "/js/modernizr/modernizr.js";
+
+<script src="http://cdnjs.cloudflare.com/ajax/libs/floatthead/1.2.7/jquery.floatThead.min.js"></script>
+
 % end
 
 % content_for javascript => begin
@@ -185,7 +188,7 @@
   "use strict";
 
   registerGlobalAjaxEvents();
-
+  
   (function () {
     // Configuration of the realty table
     var realtyTableConf = {
@@ -267,6 +270,9 @@
         {id: "changed", name: "<%= ucfloc 'changed' %>", sortName: "change_date", visible: false, val: function (r) {
           return moment(r.change_date).format("DD.MM.YYYY HH:mm");
         }},
+        {id: "topicality", name: "Актуально", sortName: "last_seen_date", visible: true, val: function (r) {
+          return moment(r.last_seen_date).format("DD.MM.YYYY HH:mm");
+        }},        
       ],
     };
     var confVer = '1.0';
@@ -464,7 +470,7 @@
       _listRealty_started = true;
  
        clearTimeout(_tid);
-      _tid = setTimeout(function(){updateRealty()},10000);
+      //_tid = setTimeout(function(){updateRealty()},10000);
  
       $.ajax({
         type: "POST",
@@ -496,9 +502,7 @@
                 xhtml += 'shown ';
               }
             }
-            if (r.lock != -1) {
-              xhtml += 'opened ';
-            }
+
             xhtml += '">';
 
             for (var j = 0; j < realtyTableConf.fields.length; j++) {
@@ -546,6 +550,8 @@
               });
             }
           }
+          var $table = $('#realtyTable');
+          $table.floatThead('reflow');
         })
       ;
     }
@@ -599,9 +605,12 @@
             $('#realtyTable > tbody').prepend(xhtml);
             var $tr = $('#realtyTable > tbody > tr[data-id="' + r.id + '"]');
             $tr.data('obj', r);
-            $('#realtyTableWrapper').scrollTop($('#realtyTableWrapper').scrollTop() + $tr.height() );            
+            //$('#realtyTableWrapper').scrollTop($('#realtyTableWrapper').scrollTop() + $tr.height() );            
           }
           _listRealty_finished = false;
+          
+          var $table = $('#realtyTable');
+          $table.floatThead('reflow');
         });
     }    
     
@@ -710,10 +719,20 @@
         xhtml += '</tr>';
         $('#realtyTable > thead').html(xhtml);
         $('#realtyTableMenu').html(xhtml2);
+        
+        var $table = $('#realtyTable');
+        $table.floatThead({
+          copyTableClass: true,
+          useAbsolutePositioning: true,
+          zIndex: 10,
+          scrollContainer: function($table){
+            return $('#realtyTableWrapper');
+          }
+        });
       })();
 
       // Sorting
-      $('#realtyTable > thead > tr > th[data-sortable="true"]').click(function (e) {
+      $('#realtyTableHeader > tr > th[data-sortable="true"]').click(function (e) {
         var si = $(this).data('index');
         var sf = realtyTableConf.fields[si];
         if (sf.sortName && sf.sortOrder) {
@@ -728,8 +747,8 @@
           }
           sf.sortOrder = 'asc';
         }
-        $('#realtyTable > thead > tr > th > span[data-order]').addClass('hidden');
-        $('#realtyTable > thead > tr > th[data-index="' + si + '"] > span[data-order="' + sf.sortOrder + '"]').removeClass('hidden');
+        $('#realtyTableHeader > tr > th > span[data-order]').addClass('hidden');
+        $('#realtyTableHeader > tr > th[data-index="' + si + '"] > span[data-order="' + sf.sortOrder + '"]').removeClass('hidden');
         $('#realtyTable').data('sort', sf.sortName + ' ' + sf.sortOrder);
         listRealty(1);
       });
@@ -742,17 +761,25 @@
       $('#realtyTableMenu > li > a').click(function (e) {
         var i = $(this).data('index');
         if (realtyTableConf.fields[i].visible) {
-          $('#realtyTable > thead > tr > th:nth-child(' + (i + 1) + ')').toggleClass('hidden');
+          $('#realtyTableHeader > tr > th:nth-child(' + (i + 1) + ')').toggleClass('hidden');
           $('#realtyTable > tbody > tr > td:nth-child(' + (i + 1) + ')').toggleClass('hidden');
           $('.glyphicon', this).css('visibility', 'hidden');
           realtyTableConf.fields[i].visible = false;
         } else {
-          $('#realtyTable > thead > tr > th:nth-child(' + (i + 1) + ')').toggleClass('hidden');
+          $('#realtyTableHeader > tr > th:nth-child(' + (i + 1) + ')').toggleClass('hidden');
           $('#realtyTable > tbody > tr > td:nth-child(' + (i + 1) + ')').toggleClass('hidden');
           $('.glyphicon', this).css('visibility', 'visible');
           realtyTableConf.fields[i].visible = true;
         }
         saveRealtyTableConf();
+        var $table = $('#realtyTable');
+        $table.floatThead('destroy');
+        $table.floatThead({
+          zIndex: 10,
+          scrollContainer: function($table){
+            return $('#realtyTableWrapper');
+          }
+        });
       });
 
       // Infinite scroll
@@ -1490,7 +1517,7 @@
       <div class="col-md-12 col-lg-12">
         <div class="table-responsive" id="realtyTableWrapper">
           <table class="table table-bordered table-condensed table-striped table-hover" id="realtyTable" data-toggle="context">
-            <thead></thead>
+            <thead id="realtyTableHeader" style="background-color: #fff;"></thead>
             <tbody></tbody>
           </table>
         </div>

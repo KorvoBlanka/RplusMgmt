@@ -10,6 +10,7 @@ use Rplus::Model::RuntimeParam;
 use Rplus::Model::RuntimeParam::Manager;
 
 use Rplus::Util::Image;
+use Rplus::Util::Realty;
 
 use JSON;
 
@@ -31,15 +32,11 @@ sub run {
     my $ua = Mojo::UserAgent->new;    
     
     my $rt_param = Rplus::Model::RuntimeParam->new(key => 'import_param')->load();
-    my $last_id = 0;
-    my $t_last_id = 0;
+    my $last_ts;
     if (!$rt_param) {
-        Rplus::Model::RuntimeParam->new(key => 'import_param', value => '{"last_id": 0}')->save; # Create record
-
-    } else {
-        $last_id = from_json($rt_param->{value})->{last_id};
-        $t_last_id = $last_id;
-    }
+        $rt_param = Rplus::Model::RuntimeParam->new(key => 'import_param', ts => 'now()')->save; # Create record
+    } 
+    $last_ts = $rt_param->ts;
 
     #my $rt_param = Rplus::Model::RuntimeParam->new(key => 'opt_var')->load();
     
@@ -55,16 +52,10 @@ sub run {
 
         say $realty_type;
         
-        my $tx = $ua->get("http://192.168.5.1:3000/api/realty/list", form => {last_id => $last_id, offer_type => $offer_type, source_media => $source_media, realty_type => $realty_type});
+        my $tx = $ua->get("http://192.168.5.1:3000/api/realty/list", form => {last_ts => $last_ts, offer_type => $offer_type, source_media => $source_media, realty_type => $realty_type});
         if (my $res = $tx->success) {
             my $realty_data = $res->json->{list};
 NEXT:       for my $data (@$realty_data) {
-                if ($t_last_id < $data->{id}) {
-                    $t_last_id = $data->{id};
-                    $rt_param->value("{\"last_id\": $t_last_id}");
-                    $rt_param->save;                    
-                }
-    
                 for (@{$data->{'owner_phones'}}) {
                     if(exists $MEDIATOR_PHONES{$_}) {
                         if ($data->{offer_type_code} eq 'rent') {
@@ -75,35 +66,44 @@ NEXT:       for my $data (@$realty_data) {
                         $data->{agent_id} = 10000;
                     }
                 }
-                eval {
-                    my $realty = Rplus::Model::Realty->new((map { $_ => $data->{$_} } grep { $_ ne 'category_code' && $_ ne 'id' } keys %$data), state_code => 'raw');
-                    $realty->save;
-                    my $data_id = $data->{id};
-                    my $id = $realty->id;
-                    say "Saved new realty: $id";
-                    
-                    my $tx = $ua->get("http://192.168.5.1:3000/api/realty/get_photos?realty_id=$data_id");
-                    if (my $res = $tx->success) {
-                        my $photo_data = $res->json->{list};
-                        for my $photo (@$photo_data) {
-                            say $photo->{photo_url};
-                            my $image = $ua->get($photo->{photo_url})->res->content->asset;
-                            Rplus::Util::Image::load_image($id, $image, $c->config->{storage}->{path}, 0);
+
+                my $id;
+                if ($id = Rplus::Util::Realty->find_similar(%$data, state_code => ['raw', 'work', 'suspended'])) {
+                    say "Found similar realty: $id";
+                    my $o_realty = Rplus::Model::Realty->new(id => $id)->load;
+                    $o_realty->last_seen_date('now()');
+                    $o_realty->save(changes_only => 1);                
+                } else {
+                    eval {
+                        my $realty = Rplus::Model::Realty->new((map { $_ => $data->{$_} } grep { $_ ne 'category_code' && $_ ne 'id' } keys %$data), state_code => 'raw');
+                        $realty->save;
+                        my $data_id = $data->{id};
+                        my $id = $realty->id;
+                        say "Saved new realty: $id";
+                        
+                        my $tx = $ua->get("http://192.168.5.1:3000/api/realty/get_photos?realty_id=$data_id");
+                        if (my $res = $tx->success) {
+                            my $photo_data = $res->json->{list};
+                            for my $photo (@$photo_data) {
+                                say $photo->{photo_url};
+                                my $image = $ua->get($photo->{photo_url})->res->content->asset;
+                                Rplus::Util::Image::load_image($id, $image, $c->config->{storage}->{path}, 0);
+                            }
                         }
-                    }
-                    #$self->realty_event('c', $id);
-                    # Сохраним историю
-                    if ($id && !Rplus::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $data->{source_media_id}, media_num => '', realty_id => $id])) {
-                        Rplus::Model::MediaImportHistory->new(media_id => $data->{source_media_id}, media_num => '', media_text => $data->{'source_media_text'}, realty_id => $id)->save;                    
-                    }
-                } or do {
-                    say $@;
-                };
-                
+                        #$self->realty_event('c', $id);
+                        # Сохраним историю
+                        if ($id && !Rplus::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $data->{source_media_id}, media_num => '', realty_id => $id])) {
+                            Rplus::Model::MediaImportHistory->new(media_id => $data->{source_media_id}, media_num => '', media_text => $data->{'source_media_text'}, realty_id => $id)->save;                    
+                        }
+                    } or do {
+                        say $@;
+                    };
+                }
             }
         }
     }
-    say 'last_id: ' . $last_id;
+    $rt_param->ts('now');
+    $rt_param->save(chages_only => 1);
 }
 
 1;
