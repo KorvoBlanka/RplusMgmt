@@ -624,7 +624,6 @@ sub add_mediator {
         my $found_phones = Mojo::Collection->new();
         my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(query => [delete_date => undef, \("owner_phones && '{".$phone_num."}'")]);
         while (my $realty = $realty_iter->next) {
-            $realty->mediator($company_name);
             $realty->agent_id(10000);
             $realty->state_code('raw');
             $realty->save(changes_only => 1);
@@ -672,18 +671,13 @@ sub update {
         if ($_ eq 'agent_id') {
             if ($self->param('agent_id') eq '') {
                 $realty->agent_id(undef);
-                $realty->mediator(undef);
             } else {
                 my $agent_id = $self->param('agent_id');
                 $realty->agent_id(scalar $self->param('agent_id'));
                 if ($agent_id == 10000) {
                     my $company = 'ПОСРЕДНИК В НЕДВИЖИМОСТИ';
                     add_mediator($company, $realty->owner_phones->[0]);
-                    $realty->mediator($company);
-                } else {
-                    $realty->mediator(undef);
                 }
-                
             }
         } elsif ($_ eq 'state_code') {
             $realty->state_code(scalar $self->param('state_code'));

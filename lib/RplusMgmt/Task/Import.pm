@@ -71,6 +71,7 @@ NEXT:       for my $data (@$realty_data) {
                 if ($id = Rplus::Util::Realty->find_similar(%$data, state_code => ['raw', 'work', 'suspended'])) {
                     say "Found similar realty: $id";
                     my $o_realty = Rplus::Model::Realty->new(id => $id)->load;
+                    $o_realty->source_media_text($data->{source_media_text});
                     $o_realty->last_seen_date('now()');
                     $o_realty->save(changes_only => 1);                
                 } else {

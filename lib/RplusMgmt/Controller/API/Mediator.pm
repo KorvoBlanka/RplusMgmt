@@ -184,7 +184,6 @@ sub delete {
     my $mediator = Rplus::Model::Mediator::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
     my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(query => [delete_date => undef, \("owner_phones && '{".$mediator->phone_num."}'")]);
     while (my $realty = $realty_iter->next) {
-        $realty->mediator(undef);
         $realty->agent_id(undef);
         $realty->save(changes_only => 1);
     }
