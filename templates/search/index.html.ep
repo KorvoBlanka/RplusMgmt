@@ -68,6 +68,21 @@
   #searchTable > tbody > tr.selected:hover > td > span {
     /*background-color: #0082c7 !important;*/
     color: #fff;
+  }
+  
+  .right-inner-addon {
+    position: relative;
+  }
+
+  .right-inner-addon input {
+    padding-right: 30px;    
+  }
+
+  .right-inner-addon i {
+    position: absolute;
+    right: 0px;
+    padding: 6px 12px;
+    pointer-events: none;
   }  
 </style>
 % end

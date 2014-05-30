@@ -11,6 +11,15 @@ use Time::HiRes;
 use File::Path qw(make_path);
 use Image::Magick;
 
+sub remove_images {
+    my ($realty_id) = @_;
+    
+    Rplus::Model::Photo::Manager->update_objects(
+        set => {delete_date => \'now()'},
+        where => [realty_id => $realty_id],
+    );
+}
+
 sub load_image {
     my ($realty_id, $file, $storage_path, $crop) = @_;
 

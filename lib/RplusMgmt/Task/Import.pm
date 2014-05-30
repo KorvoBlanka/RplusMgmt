@@ -69,10 +69,23 @@ NEXT:       for my $data (@$realty_data) {
                 my $id;
                 if ($id = Rplus::Util::Realty->find_similar(%$data, state_code => ['raw', 'work', 'suspended'])) {
                     say "Found similar realty: $id";
+                    my $data_id = $data->{id};
                     my $o_realty = Rplus::Model::Realty->new(id => $id)->load;
                     $o_realty->source_media_text($data->{source_media_text});
-                    $o_realty->last_seen_date('now()');
-                    $o_realty->save(changes_only => 1);                
+                    $o_realty->last_seen_date($data->{add_date});
+                    $o_realty->save(changes_only => 1);
+                    say "updated realty: $id";
+
+                    Rplus::Util::Image::remove_images();
+                    my $tx = $ua->get("http://192.168.5.1:3000/api/realty/get_photos?realty_id=$data_id");
+                    if (my $res = $tx->success) {
+                        my $photo_data = $res->json->{list};
+                        for my $photo (@$photo_data) {
+                            say $photo->{photo_url};
+                            my $image = $ua->get($photo->{photo_url})->res->content->asset;
+                            Rplus::Util::Image::load_image($id, $image, $c->config->{storage}->{path}, 0);
+                        }
+                    }
                 } else {
                     eval {
                         my $realty = Rplus::Model::Realty->new((map { $_ => $data->{$_} } grep { $_ ne 'category_code' && $_ ne 'id' } keys %$data), state_code => 'raw');

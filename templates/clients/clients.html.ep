@@ -254,6 +254,25 @@
   .subscription-node > td {
     text-align: left;
   }
+  
+  #searchQuery::-webkit-input-placeholder {
+    font-style:italic;
+  }  
+  
+  .right-inner-addon {
+    position: relative;
+  }
+
+  .right-inner-addon input {
+    padding-right: 30px;    
+  }
+
+  .right-inner-addon i {
+    position: absolute;
+    right: 0px;
+    padding: 6px 12px;
+    pointer-events: none;
+  }  
 </style>
 % end
 
@@ -1604,8 +1623,9 @@
     <div class="row">
       <div class="col-md-12 col-lg-12">
         <form role="search">
-          <div class="form-group">
-            <input type="text" class="form-control input-sm" id="searchQuery" name="q" placeholder="<%= ucfloc 'search' %>" autocomplete="off" x-webkit-speech>
+          <div class="form-group right-inner-addon">
+            <i style="z-index: 100;"><span class="glyphicon glyphicon-search"></span></i>
+            <input type="text" class="form-control input-sm" id="searchQuery" name="q" placeholder="введите запрос, например: 1 комнатная квартира 1 микрорайон улучшенная планировка от 3 этаж." autocomplete="off" x-webkit-speech>
           </div>
         </form>
       </div>

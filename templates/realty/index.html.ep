@@ -167,6 +167,24 @@
     color: #c0c0c0;
   }
 
+  #searchQuery::-webkit-input-placeholder {
+    font-style:italic;
+  }
+
+  .right-inner-addon {
+    position: relative;
+  }
+
+  .right-inner-addon input {
+    padding-right: 30px;    
+  }
+
+  .right-inner-addon i {
+    position: absolute;
+    right: 0px;
+    padding: 6px 12px;
+    pointer-events: none;
+  }
 </style>
 % end
 
@@ -470,8 +488,8 @@
       var colorTagId = $('[data-filter="color_tag_id"]').data('val');
       _listRealty_started = true;
  
-       clearTimeout(_tid);
-      //_tid = setTimeout(function(){updateRealty()},10000);
+      clearTimeout(_tid);
+      _tid = setTimeout(function(){updateRealty()},10000);
  
       $.ajax({
         type: "POST",
@@ -1507,8 +1525,9 @@
     <div class="row">
       <div class="col-md-12 col-lg-12">
         <form role="search">
-          <div class="form-group">
-            <input type="text" class="form-control input-sm" id="searchQuery" name="q" placeholder="<%= ucfloc 'search' %>" autocomplete="off" x-webkit-speech>
+          <div class="form-group right-inner-addon">
+            <i style="z-index: 100;"><span class="glyphicon glyphicon-search"></span></i>
+            <input type="text" class="form-control input-sm" id="searchQuery" name="q" placeholder="введите запрос, например: 2 комнатная квартира центр новая планировка до 5000 тыс. руб. 60 кв. м." autocomplete="off" x-webkit-speech>
           </div>
         </form>
       </div>
