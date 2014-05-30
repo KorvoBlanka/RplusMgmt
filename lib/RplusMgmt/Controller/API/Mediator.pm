@@ -132,9 +132,10 @@ sub save {
         while (my $realty = $realty_iter->next) {
             push @$found_phones, ($realty->owner_phones);
             say $realty->id;
-            $realty->mediator($company_name);
             $realty->agent_id(10000);
-            $realty->state_code('raw');
+            if($realty->state_code eq 'work') {
+                $realty->state_code('raw');
+            }
             $realty->save(changes_only => 1);
             #$self->realty_event('m', $realty->id);
         }

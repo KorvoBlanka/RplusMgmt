@@ -166,6 +166,7 @@
     border-radius: 3px;
     color: #c0c0c0;
   }
+
 </style>
 % end
 
@@ -177,7 +178,7 @@
 %= js_once "/js/contextmenu/context.js";
 %= js_once "/js/modernizr/modernizr.js";
 
-<script src="http://cdnjs.cloudflare.com/ajax/libs/floatthead/1.2.7/jquery.floatThead.min.js"></script>
+<!--<script src="http://cdnjs.cloudflare.com/ajax/libs/floatthead/1.2.7/jquery.floatThead.min.js"></script>-->
 
 % end
 
@@ -550,8 +551,8 @@
               });
             }
           }
-          var $table = $('#realtyTable');
-          $table.floatThead('reflow');
+          //var $table = $('#realtyTable');
+          //$table.floatThead('reflow');
         })
       ;
     }
@@ -609,8 +610,8 @@
           }
           _listRealty_finished = false;
           
-          var $table = $('#realtyTable');
-          $table.floatThead('reflow');
+          //var $table = $('#realtyTable');
+          //$table.floatThead('reflow');
         });
     }    
     
@@ -720,7 +721,7 @@
         $('#realtyTable > thead').html(xhtml);
         $('#realtyTableMenu').html(xhtml2);
         
-        var $table = $('#realtyTable');
+        /*var $table = $('#realtyTable');
         $table.floatThead({
           copyTableClass: true,
           useAbsolutePositioning: true,
@@ -728,7 +729,7 @@
           scrollContainer: function($table){
             return $('#realtyTableWrapper');
           }
-        });
+        });*/
       })();
 
       // Sorting
@@ -772,14 +773,14 @@
           realtyTableConf.fields[i].visible = true;
         }
         saveRealtyTableConf();
-        var $table = $('#realtyTable');
+        /*var $table = $('#realtyTable');
         $table.floatThead('destroy');
         $table.floatThead({
           zIndex: 10,
           scrollContainer: function($table){
             return $('#realtyTableWrapper');
           }
-        });
+        });*/
       });
 
       // Infinite scroll

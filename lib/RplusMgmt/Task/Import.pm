@@ -62,7 +62,6 @@ NEXT:       for my $data (@$realty_data) {
                           next NEXT;
                         }
                         my $mediator = Rplus::Model::Mediator::Manager->get_objects(query => [phone_num => $_, delete_date => undef], require_objects => ['company'])->[0];
-                        $data->{mediator} = $mediator->company->name;
                         $data->{agent_id} = 10000;
                     }
                 }
