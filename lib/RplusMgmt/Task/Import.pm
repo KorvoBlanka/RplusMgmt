@@ -73,6 +73,7 @@ NEXT:       for my $data (@$realty_data) {
                     my $o_realty = Rplus::Model::Realty->new(id => $id)->load;
                     $o_realty->source_media_text($data->{source_media_text});
                     $o_realty->last_seen_date($data->{add_date});
+                    $o_realty->owner_price($data->{owner_price});
                     $o_realty->save(changes_only => 1);
                     say "updated realty: $id";
 
