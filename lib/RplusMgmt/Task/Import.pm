@@ -77,7 +77,7 @@ NEXT:       for my $data (@$realty_data) {
                     $o_realty->save(changes_only => 1);
                     say "updated realty: $id";
 
-                    Rplus::Util::Image::remove_images();
+                    Rplus::Util::Image::remove_images($id);
                     my $tx = $ua->get("http://192.168.5.1:3000/api/realty/get_photos?realty_id=$data_id");
                     if (my $res = $tx->success) {
                         my $photo_data = $res->json->{list};
