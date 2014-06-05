@@ -71,6 +71,7 @@ NEXT:       for my $data (@$realty_data) {
                     say "Found similar realty: $id";
                     my $data_id = $data->{id};
                     my $o_realty = Rplus::Model::Realty->new(id => $id)->load;
+                    $o_realty->source_media_id($data->{source_media_id});
                     $o_realty->source_media_text($data->{source_media_text});
                     $o_realty->last_seen_date($data->{add_date});
                     $o_realty->owner_price($data->{owner_price});
