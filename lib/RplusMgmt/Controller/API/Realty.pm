@@ -40,17 +40,24 @@ my $_serialize = sub {
         my $mediator_str = undef;
         my $owner_phones = $realty->owner_phones;
         my $mediator_iter = Rplus::Model::Mediator::Manager->get_objects_iterator(query => [phone_num => \@$owner_phones, delete_date => undef], require_objects => ['company']);
+        my $changed = 0;
         if ($realty->agent_id == 10000) {
             $realty->agent_id(undef);
+            $changed = 1;
         }
         while (my $mediator = $mediator_iter->next) {
             $mediator_str = $mediator->company->name;
-            $realty->agent_id(10000);
-            if ($realty->state_code eq 'work') {
-              $realty->state_code('raw');
+            if($realty->agent_id != 10000) {
+                $changed = 1;
+                $realty->agent_id(10000);
+                if ($realty->state_code eq 'work') {
+                  $realty->state_code('raw');
+                }
             }
         }
-        $realty->save(changes_only => 1);
+        if($changed) {
+            $realty->save(changes_only => 1);
+        }
 
         my $x = {
             (map { $_ => ($_ =~ /_date$/ ? $self->format_datetime($realty->$_) : scalar($realty->$_)) } grep { !($_ ~~ [qw(delete_date geocoords landmarks metadata fts)]) } $realty->meta->column_names),
@@ -501,7 +508,7 @@ sub save {
             }
         }
     }
-    
+
     $self->render(json => $res);
 }
 
