@@ -108,6 +108,7 @@ our %Lexicon = (
     q{mediator name} => 'имя посредника',
     q{main} => 'главная',
     q{manager} => 'менеджер',
+    q{material} => 'материал',
 
     # N
     q{name} => sub {

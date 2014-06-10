@@ -251,7 +251,7 @@
         {id: "scheme", name: "<%= ucfloc 'scheme' %>", sortName: "ap_scheme.name", visible: false, val: function (r) {
           return r.ap_scheme_id ? Rplus.Table.Dict['ap_schemes'][r.ap_scheme_id].name : '';
         }},
-        {id: "house", name: "<%= ucfloc 'house' %>", sortName: "house_type.name", visible: false, val: function (r) {
+        {id: "house", name: "<%= ucfloc 'material' %>", sortName: "house_type.name", visible: false, val: function (r) {
           return r.house_type_id ? Rplus.Table.Dict['house_types'][r.house_type_id].name : '';
         }},
         {id: "floor", name: "<%= ucfloc 'floor' %>", visible: true, val: function (r) {
@@ -1364,106 +1364,6 @@
       $.pnotify.defaults.styling = 'bootstrap3';
 
       listRealty(1);
-      
-      var events = null;
-      setupEvents();
-      var con_timer = setInterval(function() {
-        events.close();
-        setupEvents();
-      }, 20000);
-
-      function setupEvents() {
-        console.log('connecting to events...');
-        events = new EventSource('/events');
-
-        events.addEventListener('open', function(e) {
-            console.log(e.type);
-            clearInterval(con_timer);
-            con_timer = setInterval(function() {
-              events.close();
-              setupEvents()
-            }, 20000);
-        }, false);
-
-        events.addEventListener('error', function(e) {
-            console.log(e.type);
-            clearInterval(con_timer);
-            con_timer = setInterval(function() {
-              events.close();
-              setupEvents()
-            }, 20000);
-        }, false);
-
-        events.addEventListener('heartbeat', function(event) {
-          var edata = event.data;
-          console.log(edata);
-          clearInterval(con_timer);
-          con_timer = setInterval(function() {
-            events.close();
-            setupEvents()
-          }, 20000);
-            
-        }, false);
-
-        // Subscribe to "realty" event
-        events.addEventListener('realty', function(event) {
-          console.log('event: ' + event.data);
-          var edata = JSON.parse(event.data);
-          var event_id = edata.eid;
-          var event = edata.etype;
-          var realty_id = edata.rid;
-
-          var idx = last_event_id.indexOf(event_id);
-          if(idx != -1) {
-            last_event_id.splice(idx, 1);
-            console.log('skip');
-            return;
-          }
-          $.ajax({
-            type: "POST",
-            url: "/api/realty/get",
-            data: {id: realty_id},
-          })
-          .done(function (data, textStatus, jqXHR) {
-            setTimeout(function () {
-            var r = data;
-            if (event == 'c') {
-              media_export[r.id] = r.export_media;
-              agents_ids[r.id] = r.agent_id;
-              var xhtml = '<tr data-page="' + 1 + '" data-id="' + r.id + '" data-lat="' + r.latitude + '" data-lng="' + r.longitude +  '"';
-              xhtml += ' class="';
-              xhtml += '">';
-              for (var j = 0; j < realtyTableConf.fields.length; j++) {
-                var f = realtyTableConf.fields[j];
-                xhtml += '<td class="' + (!f.visible ? 'hidden' : '') + '"' + (f.style ? ' style="' + f.style + '"' : '') + '>' + f.val(r) + '</td>';
-              }
-              xhtml += '</tr>';
-              $('#realtyTable > tbody').prepend(xhtml);
-              var $tr = $('#realtyTable > tbody > tr[data-id="' + r.id + '"]');
-              $('#realtyTableWrapper').scrollTop($('#realtyTableWrapper').scrollTop() + $tr.height() );
-            } else if (event == 'm') {
-              // Update row data in realty table
-              var $tr = $('#realtyTable > tbody > tr[data-id="' + r.id + '"]');
-              if ($tr) {
-                for (var j = 0; j < realtyTableConf.fields.length; j++) {
-                  var f = realtyTableConf.fields[j];
-                  $('td:nth-child(' + (j + 1) + ')', $tr).html(f.val(r));
-                }
-                if (r.lock != -1) {
-                  $tr.addClass('opened');
-                } else {
-                  $tr.removeClass('opened');
-                }
-                if(r.state_code == 'deleted') {
-                  $tr.addClass('deleted');
-                }
-              }
-            }
-            }, 1);
-          }).fail(function (jqXHR, textStatus, errorThrown) {
-          });
-        }, false);
-      }
     });
   })();
 </script>

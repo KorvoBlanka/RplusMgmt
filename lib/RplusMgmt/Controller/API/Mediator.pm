@@ -137,7 +137,6 @@ sub save {
                 $realty->state_code('raw');
             }
             $realty->save(changes_only => 1);
-            #$self->realty_event('m', $realty->id);
         }
         $found_phones = $found_phones->uniq;
 

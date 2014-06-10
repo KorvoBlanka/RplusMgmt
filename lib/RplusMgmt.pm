@@ -32,12 +32,6 @@ use Data::Dumper;
 sub startup {
     my $self = shift;
 
-    my $cache = Cache::FastMmap->new();
-    $cache->set('events',  []);
-    $cache->set('elock',  0);
-    $cache->set('cc', 0);
-    my $eid = 0;
-
     # Plugins
     my $config = $self->plugin('Config' => {file => 'app.conf'});
 
@@ -84,21 +78,6 @@ sub startup {
         return;
     });
 
-    $self->helper(realty_event => sub {
-        my ($self, $etype, $realty_id) = @_;
-        $eid ++;
-        
-        #while ($cache->get('elock') == 1) {
-        #    usleep(200);
-        #    say 'sleep';
-        #}
-
-        my $events = $cache->get('events');
-        #push $events, {eid => $eid, etype => $etype, rid => $realty_id, st => 0};
-        $cache->set('events',  $events);
-        return $eid;
-    });
-    
     # DateTime formatter helper
     $self->helper(format_datetime => sub {
         my ($self, $dt) = @_;
@@ -259,95 +238,6 @@ sub startup {
         # Authentication
         $r2->post('/signin')->to('authentication#signin');
         $r2->get('/signout')->to('authentication#signout');
-
-        # Events
-        #$r2->get('/events')->to(controller => 'events', action => 'realty_events');
-        $r2->get('/events')->to(cb => sub {
-            my $self = shift;
-            my $pound_count = 0;
-            my $cp = 0;
-            
-            my $cc = $cache->get('cc');
-            if (!$cc) {
-              $cc = 0;
-            }
-            $cc ++;
-            $cache->set('cc', $cc);
-            say $cc;
-            
-            my $conn_cnt = $cache->get('user_' . $self->stash('user')->{id});
-            if (!$conn_cnt) {
-                $conn_cnt = 0;
-            }
-            $conn_cnt ++;
-            say $conn_cnt;
-            $cache->set('user_' . $self->stash('user')->{id}, $conn_cnt);
-            
-            # Increase inactivity timeout for connection a bit :)
-            Mojo::IOLoop->stream($self->tx->connection)->timeout(3000);
-
-            # Change content type
-            $self->res->headers->content_type('text/event-stream');
-
-            my $timer_id_0 = Mojo::IOLoop->recurring(2 => sub {
-                my $cc = $cache->get('cc');
-                $cache->set('elock', 1);
-                my $events = $cache->get('events');
-                my $nevents = [];
-                for my $event (@$events) {
-                    $event->{st} ++;
-                    if ($event->{st} < $cc) {
-                        push $nevents, $event;
-                    }
-                    my $estr = encode_json($event);
-                    $self->write_chunk("event:realty\ndata: $estr\n\n");
-                }
-                $cache->set('events', $nevents);
-                $cache->set('elock', 0);
-            });
-
-            my $timer_id_1 = Mojo::IOLoop->recurring(15 => sub {
-                $self->write_chunk("event:heartbeat\ndata: p$pound_count\n\n");
-                $pound_count++;
-            });
-            $self->write_chunk("event:heartbeat\nhello\n\n");
-            # Unsubscribe from event again once we are done
-            $self->on(finish => sub {
-                my $self = shift;
-                #RplusMgmt::Controller::Events::unsubscribe($cb);
-                Mojo::IOLoop->remove($timer_id_0);
-                Mojo::IOLoop->remove($timer_id_1);
-                
-                my $cc = $cache->get('cc');
-                $cc --;
-                $cache->set('cc', $cc);
-                
-                my $conn_cnt = $cache->get('user_' . $self->stash('user')->{id});
-                if (!$conn_cnt) {
-                    $conn_cnt = 1;    # wtf?!
-                }
-                $conn_cnt --;
-                say $conn_cnt;
-                $cache->set('user_' . $self->stash('user')->{id}, $conn_cnt);
-                if ($conn_cnt == 0) {
-                    say 'unlock objects';
-                    my $uid = $self->stash('user')->{id};
-                    my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
-                      query => [
-                          \"metadata->>'lock' = '$uid'",
-                      ],
-                    );
-                    while (my $r = $realty_iter->next) {
-                        say $r->id;
-                        my $meta = from_json($r->metadata);
-                        $meta->{lock} = -1;
-                        $r->metadata(encode_json($meta));
-                        $r->save(changes_only => 1);
-                        $self->realty_event('m', $r->id)
-                    }
-                }
-            });
-        });
 
         # Tasks
         $r2->get('/tasks/:action')->to(controller => 'tasks');
