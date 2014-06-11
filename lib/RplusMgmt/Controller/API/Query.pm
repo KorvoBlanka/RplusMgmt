@@ -59,10 +59,11 @@ sub complete {
                 [\'lower(name) LIKE ?' => lc($term =~ s/([%_])/\\$1/gr).'%'],
                 level => 7,
                 curr_status => 0,
-                ($self->config->{'default_city_guid'} ? (parent_guid => $self->config->{'default_city_guid'}) : ()),
+                #($self->config->{'default_city_guid'} ? (parent_guid => $self->config->{'default_city_guid'}) : ()),
+                parent_guid => $self->config->{'default_city_guid'},
                 '!fts' => undef,
             ],
-            #sort_by => 'level DESC',
+            sort_by => 'code ASC',
             limit => $limit,
         );
         while (my $addrobj = $addrobj_iter->next) {

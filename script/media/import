@@ -59,8 +59,7 @@ sub run {
 
         next if $value eq '0';
 
-        say $source_media;
-        say $realty_type;
+        say $source_media . ' - ' . $realty_type;
 
         my $tx = $ua->get("http://192.168.5.1:3000/api/realty/list", form => {last_ts => $last_ts, offer_type => $offer_type, source_media => $source_media, realty_type => $realty_type});
         if (my $res = $tx->success) {

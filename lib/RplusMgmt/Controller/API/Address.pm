@@ -24,7 +24,7 @@ sub complete {
     my @res;
     my $addrobj_iter = Rplus::Model::AddressObject::Manager->get_objects_iterator(
         query => [[\'lower(expanded_name) LIKE ?' => $term.'%'], curr_status => 0],
-        sort_by => 'level DESC',
+        sort_by => 'code ASC',
         limit => $limit,
     );
     while (my $addrobj = $addrobj_iter->next) {

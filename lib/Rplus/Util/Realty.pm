@@ -43,20 +43,20 @@ sub find_similar {
         return $realty->id if $realty;
 
         # Поиск в таблице истории импорта по тексту объявления
-        my $mih = Rplus::Model::MediaImportHistory::Manager->get_objects(
-            select => 'id, realty_id',
-            query => [
-                media_text => $data{'source_media_text'},
+        #my $mih = Rplus::Model::MediaImportHistory::Manager->get_objects(
+        #    select => 'id, realty_id',
+        #    query => [
+        #        media_text => $data{'source_media_text'},
 
-                'realty.type_code' => $data{'type_code'},
-                'realty.offer_type_code' => $data{'offer_type_code'},
-                'realty.state_code' => $data{'state_code'},
-                ($data{'id'} ? ('!realty_id' => $data{'id'}) : ()),
-            ],
-            require_objects => ['realty'],
-            limit => 1
-        )->[0];
-        return $mih->realty_id if $mih;
+        #        'realty.type_code' => $data{'type_code'},
+        #        'realty.offer_type_code' => $data{'offer_type_code'},
+        #        'realty.state_code' => $data{'state_code'},
+        #        ($data{'id'} ? ('!realty_id' => $data{'id'}) : ()),
+        #    ],
+        #    require_objects => ['realty'],
+        #    limit => 1
+        #)->[0];
+        #return $mih->realty_id if $mih;
     }
 
     #
