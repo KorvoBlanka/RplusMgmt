@@ -36,6 +36,7 @@ sub run {
             };
         }
     }
+
     my $ua = Mojo::UserAgent->new;    
     
     my $rt_param = Rplus::Model::RuntimeParam->new(key => 'import_param')->load();
@@ -49,6 +50,7 @@ sub run {
     
     my $import_param = Rplus::Model::RuntimeParam->new(key => 'opt_var')->load();
     my $import_obj = from_json($import_param->{value});
+
     while (my ($key, $value) = each $import_obj) {
         my @t = split '-', $key;
         my $offer_type = $t[0];
@@ -57,8 +59,9 @@ sub run {
 
         next if $value eq '0';
 
+        say $source_media;
         say $realty_type;
-        
+
         my $tx = $ua->get("http://192.168.5.1:3000/api/realty/list", form => {last_ts => $last_ts, offer_type => $offer_type, source_media => $source_media, realty_type => $realty_type});
         if (my $res = $tx->success) {
             my $realty_data = $res->json->{list};
@@ -70,6 +73,7 @@ NEXT:       for my $data (@$realty_data) {
                         }
                         my $mediator = Rplus::Model::Mediator::Manager->get_objects(query => [phone_num => $_, delete_date => undef], require_objects => ['company'])->[0];
                         $data->{agent_id} = 10000;
+                        last;
                     }
                 }
 
@@ -90,9 +94,14 @@ NEXT:       for my $data (@$realty_data) {
                     if (my $res = $tx->success) {
                         my $photo_data = $res->json->{list};
                         for my $photo (@$photo_data) {
-                            say $photo->{photo_url};
-                            my $image = $ua->get($photo->{photo_url})->res->content->asset;
-                            Rplus::Util::Image::load_image($id, $image, $config->{storage}->{path}, 0);
+
+                            my $new_photo = Rplus::Model::Photo->new;
+                            # Save
+                            $new_photo->realty_id($id);
+                            $new_photo->filename($photo->{photo_url});
+                            $new_photo->thumbnail_filename($photo->{thumbnail_url});
+
+                            $new_photo->save;
                         }
                     }
                 } else {
@@ -107,12 +116,17 @@ NEXT:       for my $data (@$realty_data) {
                         if (my $res = $tx->success) {
                             my $photo_data = $res->json->{list};
                             for my $photo (@$photo_data) {
-                                say $photo->{photo_url};
-                                my $image = $ua->get($photo->{photo_url})->res->content->asset;
-                                Rplus::Util::Image::load_image($id, $image, $config->{storage}->{path}, 0);
+
+                                my $new_photo = Rplus::Model::Photo->new;
+                                # Save
+                                $new_photo->realty_id($id);
+                                $new_photo->filename($photo->{photo_url});
+                                $new_photo->thumbnail_filename($photo->{thumbnail_url});
+
+                                $new_photo->save;
                             }
                         }
-                        #$self->realty_event('c', $id);
+
                         # Сохраним историю
                         if ($id && !Rplus::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $data->{source_media_id}, media_num => '', realty_id => $id])) {
                             Rplus::Model::MediaImportHistory->new(media_id => $data->{source_media_id}, media_num => '', media_text => $data->{'source_media_text'}, realty_id => $id)->save;                    
@@ -126,6 +140,10 @@ NEXT:       for my $data (@$realty_data) {
     }
     $rt_param->ts('now');
     $rt_param->save(chages_only => 1);
+}
+
+sub list_realty {
+
 }
 
 1;

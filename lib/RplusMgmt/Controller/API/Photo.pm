@@ -30,8 +30,8 @@ sub list {
     while (my $photo = $photo_iter->next) {
         my $x = {
             id => $photo->id,
-            photo_url => $self->config->{'storage'}->{'url'}.'/photos/'.$photo->realty_id.'/'.$photo->filename,
-            thumbnail_url => $self->config->{'storage'}->{'url'}.'/photos/'.$photo->realty_id.'/'.$photo->thumbnail_filename,
+            photo_url => $photo->filename =~ /^http/ ? $photo->filename : $self->config->{'storage'}->{'url'}.'/photos/'.$photo->realty_id.'/'.$photo->filename,
+            thumbnail_url => $photo->thumbnail_filename =~ /^http/ ? $photo->thumbnail_filename : $self->config->{'storage'}->{'url'}.'/photos/'.$photo->realty_id.'/'.$photo->thumbnail_filename,
             is_main => $photo->is_main ? \1 : \0,
         };
         push @{$res->{list}}, $x;

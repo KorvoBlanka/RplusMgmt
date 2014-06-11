@@ -52,12 +52,6 @@ sub load_image {
     $photo->thumbnail_filename($name.'_thumbnail.jpg');
 
     $photo->save;
-
-    # Update realty change_date
-    Rplus::Model::Realty::Manager->update_objects(
-        set => {change_date => \'now()'},
-        where => [id => $realty_id],
-    );
 }
 
 1;
