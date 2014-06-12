@@ -26,7 +26,7 @@ sub run {
     my $config = shift;
 
     sleep int(rand(10));
-    while(get_load_average() > 6) {
+    while(get_load_average() > 2) {
         say 'go to sleep';
         sleep int(rand(60));
     }
@@ -68,7 +68,7 @@ sub run {
 
         say $source_media . ' - ' . $realty_type;
 
-        while(get_load_average() > 6) {
+        while(get_load_average() > 2) {
             say 'go to sleep';
             sleep int(rand(30));
         }
