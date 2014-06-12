@@ -24,6 +24,13 @@ run(Rplus::Util::Config::get_config());
 
 sub run {
     my $config = shift;
+
+    sleep int(rand(10));
+    while(get_load_average() > 6) {
+        say 'go to sleep';
+        sleep int(rand(60));
+    }
+
     # Загрузим базу телефонов посредников
     my %MEDIATOR_PHONES;
     {
@@ -61,10 +68,21 @@ sub run {
 
         say $source_media . ' - ' . $realty_type;
 
+        while(get_load_average() > 6) {
+            say 'go to sleep';
+            sleep int(rand(30));
+        }
+
         my $tx = $ua->get("http://192.168.5.1:3000/api/realty/list", form => {last_ts => $last_ts, offer_type => $offer_type, source_media => $source_media, realty_type => $realty_type});
         if (my $res = $tx->success) {
             my $realty_data = $res->json->{list};
 NEXT:       for my $data (@$realty_data) {
+
+                while(get_load_average() > 6) {
+                    print 'go to sleep';
+                    sleep int(rand(10));
+                }
+
                 for (@{$data->{'owner_phones'}}) {
                     if(exists $MEDIATOR_PHONES{$_}) {
                         if ($data->{offer_type_code} eq 'rent') {
@@ -141,8 +159,12 @@ NEXT:       for my $data (@$realty_data) {
     $rt_param->save(chages_only => 1);
 }
 
-sub list_realty {
-
+sub get_load_average {
+    open(LOAD, "/proc/loadavg") or die "Unable to get server load \n";
+    my $load_avg = <LOAD>;
+    close LOAD;
+    my ( $one_min_avg ) = split /\s/, $load_avg;
+    return $one_min_avg;
 }
 
 1;

@@ -172,7 +172,7 @@
         <div class="collapse navbar-collapse navbar-top-collapse">
           <ul class="nav navbar-nav">
           % if (has_permission(realty => 'read') && !is_hidden_nav('search')) {
-            <li class="<%= $controller eq 'search' && 'active' %>"><a href="/search"><span class="glyphicon glyphicon-search"></span> <%= ucfloc q{search} %></a></li>
+            <li class="<%= $controller eq 'search' && 'active' %>"><a href="/search"><span class="glyphicon glyphicon-earphone"></span> Call-центр</a></li>
           % }
           % if (has_permission(realty => 'read') && !is_hidden_nav('realty')) {
             <li class="<%= $controller eq 'realty' && 'active' %>"><a href="/realty"><span class="glyphicon glyphicon-home"></span> <%= ucfloc q{realty} %></a></li>
