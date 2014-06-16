@@ -206,6 +206,18 @@
 <script type="application/javascript">
   "use strict";
 
+  var recognition = new webkitSpeechRecognition();
+  recognition.continuous = true;
+  recognition.interimResults = true;
+
+  recognition.onstart = function() {  }
+  recognition.onresult = function(event) {  }
+  recognition.onerror = function(event) {  }
+  recognition.onend = function() {  }
+
+  //recognition.lang = 
+  //recognition.start();
+
   registerGlobalAjaxEvents();
   
   (function () {

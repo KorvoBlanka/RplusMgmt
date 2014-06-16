@@ -37,7 +37,7 @@
           <form class="form-signin">
             <fieldset>
               <legend><%= loc 'Please Sign In' %></legend>
-              <div class="alert alert-danger alert-sm hidden"><%= ucfloc 'invalid login or password' %></div>
+              <div id="message" class="alert alert-danger alert-sm hidden"><%= ucfloc 'invalid login or password' %></div>
               <div class="form-group">
                 <input type="text" class="form-control" name="login" placeholder="<%= ucfloc 'login' %>" required autofocus>
               </div>
@@ -77,6 +77,12 @@
             .done(function (data, textStatus, jqXHR) {
               if (data.status == 'failed') {
                 $('.form-signin button[type="submit"]').button('reset');
+                if(data.reason == 'no_money') {
+                  $('#message').html('недостаточно средств на счету');
+                } else {
+                  $('#message').html('неверный логин или пароль');
+                }
+                
                 $('.form-group').addClass('has-error');
                 $('.alert-danger').removeClass('hidden');
               } else {

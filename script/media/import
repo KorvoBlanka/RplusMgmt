@@ -58,6 +58,12 @@ sub run {
     my $import_param = Rplus::Model::RuntimeParam->new(key => 'opt_var')->load();
     my $import_obj = from_json($import_param->{value});
 
+    my $tx = $ua->get('http://rplusmgmt.com/api/account/get_by_domain?subdomain=' . 'http://rplusmgmt.com/api/account/get_by_domain?subdomain=' . $config->{'subdomain'});
+    my $acc_data;
+    if (my $res = $tx->success) {
+      $acc_data = $res->json;
+    }
+
     while (my ($key, $value) = each $import_obj) {
         my @t = split '-', $key;
         my $offer_type = $t[0];
@@ -66,11 +72,16 @@ sub run {
 
         next if $value eq '0';
 
-        say $source_media . ' - ' . $realty_type;
+        say $source_media . ' - ' . $offer_type . ' - ' . $realty_type;
 
         while(get_load_average() > 2) {
             say 'go to sleep';
             sleep int(rand(30));
+        }
+
+        if ($acc_data->{mode} ne 'all' && $acc_data->{mode} ne $offer_type) {
+            say 'skip';
+            next;
         }
 
         my $tx = $ua->get("http://192.168.5.1:3000/api/realty/list", form => {last_ts => $last_ts, offer_type => $offer_type, source_media => $source_media, realty_type => $realty_type});
@@ -78,7 +89,7 @@ sub run {
             my $realty_data = $res->json->{list};
 NEXT:       for my $data (@$realty_data) {
 
-                while(get_load_average() > 6) {
+                while(get_load_average() > 2) {
                     print 'go to sleep';
                     sleep int(rand(10));
                 }

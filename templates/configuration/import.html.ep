@@ -15,6 +15,11 @@
     border-color: #428bca;
     color: #fff;
   }
+
+  .inactive {
+    color: #aaa;
+  }
+
 </style>
 % end
 
@@ -26,6 +31,22 @@
 
   (function () {
     var $form;
+
+
+     console.log('<%= $self->session('user')->{mode} %>');
+
+    if ('<%= $self->session('user')->{mode} %>' == 'all') {
+
+    } else if ('<%= $self->session('user')->{mode} %>' == 'sale') {
+      //$('.rent-checkbox').prop('checked', false);
+      $('.rent-checkbox').attr('disabled', true);
+      $('.rent-column').addClass('inactive');
+    } else {
+      //$('.sale-checkbox').prop('checked', false);
+      $('.sale-checkbox').attr('disabled', true);
+      $('.sale-column').addClass('inactive');
+    }
+
 
     function listOptions() {
 
@@ -109,32 +130,32 @@
   <div class="tab-content">
     % for my $x (@{Rplus::Model::Media::Manager->get_objects(query => [type => 'import'], sort_by => 'id')}) {
       <div class="tab-pane <%= $x->id == 1 ? 'active': '' %> " id="import-<%= $x->code %>">
-        <div class="col-lg-4">
+        <div class="col-lg-4 sale-column">
           <div class="checkbox" id="sale-<%= $x->code %>">
             <label>
-              <input type="checkbox"><b> Продажа</b>
+              <input type="checkbox" class="sale-checkbox"><b> Продажа</b>
             </label>
           </div>
           <p></p>
     % for my $c (@{Rplus::Model::RealtyType::Manager->get_objects(query => [], sort_by => 'id')}) {
           <div class="checkbox" id="sale-<%= $x->code %>-<%= $c->code %>">
             <label>
-              <input type="checkbox" > <%= $c->name %>
+              <input type="checkbox" class="sale-checkbox"> <%= $c->name %>
             </label>
           </div>
     % }
         </div>
-        <div class="col-lg-4">
+        <div class="col-lg-4 rent-column">
           <div class="checkbox" id="rent-<%= $x->code %>">
             <label>
-              <input type="checkbox"><b> Аренда</b>
+              <input type="checkbox" class="rent-checkbox"><b> Аренда</b>
             </label>
           </div>
           <p></p>
     % for my $c (@{Rplus::Model::RealtyType::Manager->get_objects(query => [], sort_by => 'id')}) {
           <div class="checkbox" id="rent-<%= $x->code %>-<%= $c->code %>">
             <label>
-              <input type="checkbox" > <%= $c->name %>
+              <input type="checkbox" class="rent-checkbox"> <%= $c->name %>
             </label>
           </div>
     % }
