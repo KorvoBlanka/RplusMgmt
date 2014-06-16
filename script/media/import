@@ -58,7 +58,7 @@ sub run {
     my $import_param = Rplus::Model::RuntimeParam->new(key => 'opt_var')->load();
     my $import_obj = from_json($import_param->{value});
 
-    my $tx = $ua->get('http://rplusmgmt.com/api/account/get_by_domain?subdomain=' . 'http://rplusmgmt.com/api/account/get_by_domain?subdomain=' . $config->{'subdomain'});
+    my $tx = $ua->get('http://rplusmgmt.com/api/account/get_by_domain?subdomain=' . $config->{'subdomain'});
     my $acc_data;
     if (my $res = $tx->success) {
       $acc_data = $res->json;
