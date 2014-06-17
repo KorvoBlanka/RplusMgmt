@@ -624,7 +624,7 @@
             $('#realtyTable > tbody').prepend(xhtml);
             var $tr = $('#realtyTable > tbody > tr[data-id="' + r.id + '"]');
             $tr.data('obj', r);
-            //$('#realtyTableWrapper').scrollTop($('#realtyTableWrapper').scrollTop() + $tr.height() );            
+            $('#realtyTableWrapper').scrollTop($('#realtyTableWrapper').scrollTop() + $tr.height() );            
           }
           _listRealty_finished = false;
           
