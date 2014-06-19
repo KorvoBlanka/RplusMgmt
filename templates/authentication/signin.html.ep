@@ -78,9 +78,9 @@
               if (data.status == 'failed') {
                 $('.form-signin button[type="submit"]').button('reset');
                 if(data.reason == 'no_money') {
-                  $('#message').html('недостаточно средств на счету');
+                  $('#message').html('Недостаточно средств на счету. <a href="http://rplusmgmt.com/cabinet">Перейти в кабинет</a>');
                 } else {
-                  $('#message').html('неверный логин или пароль');
+                  $('#message').html('Неверный логин или пароль');
                 }
                 
                 $('.form-group').addClass('has-error');
