@@ -10,7 +10,13 @@ my $ua = Mojo::UserAgent->new;
 sub auth {
     my $self = shift;
 
-    return 1 if $self->stash('user') && $self->stash('user')->{'id'};
+    my $tx = $ua->get('http://rplusmgmt.com/api/account/get_by_domain?subdomain=' . $self->config->{'subdomain'});
+    my $acc_data;
+    if (my $res = $tx->success) {
+      $acc_data = $res->json;
+    }
+
+    return 1 if !$acc_data->{blocked} && $self->stash('user') && $self->stash('user')->{'id'};
 
     $self->render(template => 'authentication/signin');
     return undef;
@@ -45,7 +51,7 @@ sub signin {
     };
 
     if ($remember_me) {
-        $self->session(expiration => 36000);
+        $self->session(expiration => 28800);
     } else {
         $self->session(expiration => 3600); # default expiration
     }
