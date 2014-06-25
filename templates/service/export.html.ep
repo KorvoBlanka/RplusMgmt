@@ -11,29 +11,75 @@
 % end
 
 % content_for javascript => begin
+
+%= js_once "/js/jquery.multiDownload.js";
+
 <script type="application/javascript">
   !function () {
-    $(function () {
-      % {
-        % my $MEDIA = Rplus::Model::Media::Manager->get_objects(query => [code => 'vnh', type => 'export'])->[0];
-        % my $P = from_json($MEDIA->metadata)->{'params'};
-        $('#formExportVnh [name="offer_type_code"]:input').val("<%= $P->{'offer_type_code'} %>");
-        $('#formExportVnh [name="phones"]:input').val("<%= $P->{'phones'} %>");
-        $('#formExportVnh [name="company"]:input').val("<%= $P->{'company'} %>");
-      % }
-      % {
-        % my $MEDIA = Rplus::Model::Media::Manager->get_objects(query => [code => 'present', type => 'export'])->[0];
-        % my $P = from_json($MEDIA->metadata)->{'params'};
-        $('#formExportPresent [name="offer_type_code"]:input').val("<%= $P->{'offer_type_code'} %>");
-        $('#formExportPresent [name="add_description_words"]:input').val("<%= $P->{'add_description_words'} %>");
-        $('#formExportPresent [name="phones"]:input').val("<%= $P->{'phones'} %>");
-      % }
-      % {
-        % my $MEDIA = Rplus::Model::Media::Manager->get_objects(query => [code => 'farpost', type => 'export'])->[0];
-        % my $P = from_json($MEDIA->metadata)->{'params'};
-        $('#formExportFarpost [name="phones"]:input').val("<%= $P->{'phones'} %>");
-      % }
+
+    $('[data-action="export-vnh"]').on('click', function (e) {
+        var offer_type = $('#formExportVnh [name="offer_type_code"]:input').val();
+        var realty_types = [];
+        var i = 1;
+        $('#formExportVnh [type="checkbox"]:input').each( function () {
+          if(this.checked) {
+            realty_types.push(this.id);
+          }
+        });
+        $('<form action="/export/vnh" method="POST">' + 
+          '<input type="hidden" name="offer_type_code" value="' + offer_type + '">' +
+          '<input type="hidden" name="realty_types" value="' + realty_types.join() + '">' +
+          '</form>').submit();
     });
+
+    $('[data-action="export-farpost"]').on('click', function (e) {
+        var offer_type = $('#formExportFarpost [name="offer_type_code"]:input').val();
+        var realty_types = [];
+        var i = 1;
+        $('#formExportFarpost [type="checkbox"]:input').each( function () {
+          if(this.checked) {
+            realty_types.push(this.id);
+          }
+        });
+        $('<form action="/export/farpost" method="POST">' + 
+          '<input type="hidden" name="offer_type_code" value="' + offer_type + '">' +
+          '<input type="hidden" name="realty_types" value="' + realty_types.join() + '">' +
+          '</form>').submit();        
+    });
+
+    $('[data-action="export-present"]').on('click', function (e) {
+        var offer_type = $('#formExportPresent [name="offer_type_code"]:input').val();
+        var realty_types = [];
+        var i = 1;
+        $('#formExportPresent [type="checkbox"]:input').each( function () {
+          if(this.checked) {
+            realty_types.push(this.id);
+          }
+        });
+        $('<form action="/export/present" method="POST">' + 
+          '<input type="hidden" name="offer_type_code" value="' + offer_type + '">' +
+          '<input type="hidden" name="realty_types" value="' + realty_types.join() + '">' +
+          '</form>').submit();
+    });
+
+    $('[data-action="export-irr"]').on('click', function (e) {
+      var offer_type = $('#formExportIrr [name="offer_type_code"]:input').val();
+
+      var i = 1;
+      $('#formExportIrr [type="checkbox"]:input').each( function () {
+        if(this.checked) {
+          setTimeout( function (realty_type) {
+            $('<form action="/export/irr" method="POST">' + 
+                '<input type="hidden" name="offer_type_code" value="' + offer_type + '">' +
+                '<input type="hidden" name="realty_type" value="' + realty_type + '">' +
+                '</form>').submit();
+          }, 1000 * i, this.id);
+          i ++;
+        }
+      });
+
+    });
+
   }();
 </script>
 % end
@@ -44,220 +90,141 @@
     <li class="active"><a href="#export-vnh" data-toggle="tab">ВНХ</a></li>
     <li><a href="#export-farpost" data-toggle="tab">Farpost</a></li>
     <li><a href="#export-present" data-toggle="tab">Презент</a></li>
+    <li><a href="#export-irr" data-toggle="tab">Из рук в руки</a></li>
   </ul>  
 </div>
 
-  <!-- Tab panes -->
-  <div class="tab-content">
-
-    <div class="tab-pane active" id="export-vnh">
-        <form class="" role="form" id="formExportVnh" action="/export/vnh" method="POST">
-          
-          <div class="row" style="padding-top: 15px;">
-            <div class="col-lg-2">
-              <select class="form-control" name="offer_type_code">
-                <option value="sale">Продажа</option>
-                <option value="rent">Аренда</option>
-              </select>
-            </div>
-          </div>
-          % for my $c (@{Rplus::Model::RealtyCategory::Manager->get_objects(query => [], sort_by => 'id')}) {
-          <div class="checkbox checked" id="<%= $c->code %>">
-            <label>
-              <input type="checkbox" checked="checked"> <%= $c->name %>
-            </label>
-          </div>
-          % }
-          <div class="row hidden" style="padding-top: 15px;">
-            <label class="col-lg-2 control-label">Phones</label>
-            <div class="col-lg-5">
-              <input type="text" class="form-control" name="phones" placeholder="Phone1, Phone2">
-            </div>
-          </div>
-          <div class="row hidden" style="padding-top: 15px;">
-            <label class="col-lg-2 control-label">Company</label>
-            <div class="col-lg-5">
-              <input type="text" class="form-control" name="company" placeholder="Company">
-            </div>
-          </div>
-          <div class="form-group">
-            <button type="submit" class="btn btn-primary btn-save" style="margin-top: 15px">Экспорт</button>
-          </div>          
-        </form>
-    </div>
-
-    <div class="tab-pane" id="export-farpost">
-        <form class="" role="form" id="formExportFarpost" action="/export/farpost" method="POST">
-          
-          <div class="row" style="padding-top: 15px;">
-            <div class="col-lg-2">
-              <select class="form-control" name="offer_type_code">
-                <option value="sale">Продажа</option>
-                <option value="rent">Аренда</option>
-              </select>
-            </div>
-          </div>
-          % for my $c (@{Rplus::Model::RealtyCategory::Manager->get_objects(query => [], sort_by => 'id')}) {
-          <div class="checkbox" id="<%= $c->code %>">
-            <label>
-              <input type="checkbox" checked="checked"> <%= $c->name %>
-            </label>
-          </div>
-          % }          
-          
-          <div class="row hidden" style="padding-top: 15px;">
-            <label class="col-lg-2 control-label">Телефоны</label>
-            <div class="col-lg-5">
-              <input type="text" class="form-control" name="phones" placeholder="Phone1, Phone2">
-            </div>
-          </div>
-          <div class="form-group">
-            <button type="submit" class="btn btn-primary btn-save" style="margin-top: 15px">Экспорт</button>
-          </div>          
-        </form>
-
-    </div>
-
-    <div class="tab-pane" id="export-present">
-        <form class="" role="form" id="formExportPresent" action="/export/present" method="POST">
-          <div class="row" style="padding-top: 15px;">
-            <div class="col-lg-2">
-              <select class="form-control" name="offer_type_code">
-                <option value="sale">Продажа</option>
-                <option value="rent">Аренда</option>
-              </select>
-            </div>
-          </div>
-          % for my $c (@{Rplus::Model::RealtyCategory::Manager->get_objects(query => [], sort_by => 'id')}) {
-          <div class="checkbox" id="<%= $c->code %>">
-            <label>
-              <input type="checkbox" checked="checked"> <%= $c->name %>
-            </label>
-          </div>
-          % }             
-          <div class="row hidden" style="padding-top: 15px;">
-            <label class="col-lg-2 control-label">Количество слов в описании</label>
-            <div class="col-lg-5">
-              <input type="number" class="form-control" name="add_description_words" style="width: 100px;" placeholder="# of words">
-            </div>
-          </div>
-          <div class="row hidden" style="padding-top: 15px;">
-            <label class="col-lg-2 control-label">Телефоны</label>
-            <div class="col-lg-5">
-              <input type="text" class="form-control" name="phones" placeholder="Phone1, Phone2">
-            </div>
-          </div>
-          <div class="form-group">
-            <button type="" class="btn btn-primary btn-save" style="margin-top: 15px">Экспорт</button>
-          </div>          
-        </form>
-    </div>
-
-  </div>
-
-
-<div class="row hidden">
-  <div class="col-lg-5">
-    <div class="panel panel-default">
-      <div class="panel-heading">
-        <h3 class="panel-title">Вся Недвижимость Хабаровска</h3>
+<!-- Tab panes -->
+<div class="tab-content">
+  <div class="tab-pane active" id="export-vnh">
+    <div class="" role="form" id="formExportVnh">
+      <div class="row" style="padding-top: 15px;">
+        <div class="col-lg-2">
+          <select class="form-control" name="offer_type_code">
+            <option value="sale">Продажа</option>
+            <option value="rent">Аренда</option>
+          </select>
+        </div>
       </div>
-      <div class="panel-body">
-        <form class="form-horizontal" role="form" id="formExportVnh" action="/export/vnh" method="POST">
-          <div class="form-group">
-            <label class="col-lg-3 control-label">Тип предложения</label>
-            <div class="col-lg-9">
-              <select class="form-control" name="offer_type_code">
-                <option value="sale">Продажа</option>
-                <option value="rent">Аренда</option>
-              </select>
-            </div>
-          </div>
-          <div class="form-group">
-            <label class="col-lg-3 control-label">Телефоны</label>
-            <div class="col-lg-9">
-              <input type="text" class="form-control" name="phones" placeholder="Phone1, Phone2">
-            </div>
-          </div>
-          <div class="form-group">
-            <label class="col-lg-3 control-label">Компания</label>
-            <div class="col-lg-9">
-              <input type="text" class="form-control" name="company" placeholder="Company">
-            </div>
-          </div>
-          <div class="form-group">
-            <div class="col-lg-offset-3 col-lg-9">
-              <button type="submit" class="btn btn-primary pull-right">Process</button>
-            </div>
-          </div>
-        </form>
+
+      <div class="checkbox">
+        <label>
+          <input type="checkbox" id="apartments_rooms" checked="checked"> Квартиры, комнаты
+        </label>
       </div>
+      <div class="checkbox">
+        <label>
+          <input type="checkbox" id="houses" checked="checked"> Дома, коттеджи
+        </label>
+      </div>
+
+      <div class="form-group">
+        <button type="submit" class="btn btn-primary btn-save" data-action="export-vnh" style="margin-top: 15px">Экспорт</button>
+      </div>          
     </div>
   </div>
 
-  <div class="col-lg-5">
-    <div class="panel panel-default">
-      <div class="panel-heading">
-        <h3 class="panel-title">Презент</h3>
+  <div class="tab-pane" id="export-farpost">
+    <div class="" role="form" id="formExportFarpost">
+      <div class="row" style="padding-top: 15px;">
+        <div class="col-lg-2">
+          <select class="form-control" name="offer_type_code">
+            <option value="sale">Продажа</option>
+            <option value="rent">Аренда</option>
+          </select>
+        </div>
       </div>
-      <div class="panel-body">
-        <form class="form-horizontal" role="form" id="formExportPresent" action="/export/present" method="POST">
-          <div class="form-group">
-            <label class="col-lg-3 control-label">OfferType</label>
-            <div class="col-lg-9">
-              <select class="form-control" name="offer_type_code">
-                <option value="sale">Продажа</option>
-                <option value="rent">Аренда</option>
-              </select>
-            </div>
-          </div>
-          <div class="form-group">
-            <label class="col-lg-3 control-label">Desc words</label>
-            <div class="col-lg-9">
-              <input type="number" class="form-control" name="add_description_words" style="width: 100px;" placeholder="# of words">
-            </div>
-          </div>
-          <div class="form-group">
-            <label class="col-lg-3 control-label">Phones</label>
-            <div class="col-lg-9">
-              <input type="text" class="form-control" name="phones" placeholder="Phone1, Phone2">
-            </div>
-          </div>
-          <div class="form-group">
-            <div class="col-lg-offset-3 col-lg-9">
-              <button type="submit" class="btn btn-primary pull-right">Process</button>
-            </div>
-          </div>
-        </form>
+      % for my $c (@{Rplus::Model::RealtyCategory::Manager->get_objects(query => [], sort_by => 'id')}) {
+      <div class="checkbox" id="<%= $c->code %>">
+        <label>
+          <input type="checkbox" checked="checked"> <%= $c->name %>
+        </label>
       </div>
+      % }          
+      
+      <div class="form-group">
+        <button type="submit" class="btn btn-primary btn-save" data-action="export-farpost" style="margin-top: 15px">Экспорт</button>
+      </div>          
     </div>
   </div>
+
+  <div class="tab-pane" id="export-present">
+    <div class="" role="form" id="formExportPresent">
+      <div class="row" style="padding-top: 15px;">
+        <div class="col-lg-2">
+          <select class="form-control" name="offer_type_code">
+            <option value="sale">Продажа</option>
+            <option value="rent">Аренда</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="checkbox">
+        <label>
+          <input type="checkbox" id="rooms" checked="checked"> Комнаты
+        </label>
+      </div>
+      <div class="checkbox">
+        <label>
+          <input type="checkbox" id="apartments_small" checked="checked"> Малосемейки
+        </label>
+      </div>
+      <div class="checkbox">
+        <label>
+          <input type="checkbox" id="apartments" checked="checked"> Квартиры
+        </label>
+      </div>
+      <div class="checkbox">
+        <label>
+          <input type="checkbox" id="houses" checked="checked"> Дома и коттеджи
+        </label>
+      </div>
+
+      <div class="form-group">
+        <button type="" class="btn btn-primary btn-save" data-action="export-present" style="margin-top: 15px">Экспорт</button>
+      </div>          
+    </div>
+  </div>
+
+  <div class="tab-pane" id="export-irr">
+    <div class="" role="form" id="formExportIrr">
+      <div class="row" style="padding-top: 15px;">
+        <div class="col-lg-2">
+          <select class="form-control" name="offer_type_code">
+            <option value="sale">Продажа</option>
+            <option value="rent">Аренда</option>
+          </select>
+        </div>
+      </div>
+      <div class="checkbox">
+        <label>
+          <input type="checkbox" checked="checked" id="rooms"> Комнаты
+        </label>
+      </div>
+      <div class="checkbox">
+        <label>
+          <input type="checkbox" checked="checked" id="apartments"> Квартиры
+        </label>
+      </div>
+      <div class="checkbox">
+        <label>
+          <input type="checkbox" checked="checked" id="houses"> Дома, коттеджи
+        </label>
+      </div>          
+      <div class="row hidden" style="padding-top: 15px;">
+        <label class="col-lg-2 control-label">Телефоны</label>
+        <div class="col-lg-5">
+          <input type="text" class="form-control" name="phones" placeholder="">
+        </div>
+      </div>
+      <div class="form-group">
+        <button type="" class="btn btn-primary btn-save" data-action="export-irr" style="margin-top: 15px">Экспорт</button>
+      </div>          
+    </div>
+  </div>
+
 </div>
 
-<div class="row hidden">
-  <div class="col-lg-5">
-    <div class="panel panel-default">
-      <div class="panel-heading">
-        <h3 class="panel-title">Farpost</h3>
-      </div>
-      <div class="panel-body">
-        <form class="form-horizontal" role="form" id="formExportFarpost" action="/export/farpost" method="POST">
-          <div class="form-group">
-            <label class="col-lg-3 control-label">Phones</label>
-            <div class="col-lg-9">
-              <input type="text" class="form-control" name="phones" placeholder="Phone1, Phone2">
-            </div>
-          </div>
-          <div class="form-group">
-            <div class="col-lg-offset-3 col-lg-9">
-              <button type="submit" class="btn btn-primary pull-right">Process</button>
-            </div>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-</div>
 
 <nav class="navbar navbar-default navbar-fixed-bottom">
   <div class="container"></div>

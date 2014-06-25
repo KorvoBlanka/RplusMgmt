@@ -10,6 +10,8 @@ use Rplus::Model::Landmark;
 use Rplus::Model::Landmark::Manager;
 use Rplus::Model::Photo;
 use Rplus::Model::Photo::Manager;
+use Rplus::Model::RuntimeParam;
+use Rplus::Model::RuntimeParam::Manager;
 
 use Mojo::Util qw(trim);
 use File::Temp qw(tmpnam);
@@ -27,9 +29,16 @@ sub index {
 
     my $meta = from_json($media->metadata);
 
-    my $phones = trim(scalar $self->param('phones'));
+    my $offer_type_code = $self->param('offer_type_code');
+    my $realty_types = $self->param('realty_types');
 
-    $meta->{'params'}->{'phones'} = $phones;
+    my $n_phones = '';
+
+    my $rt_param = Rplus::Model::RuntimeParam->new(key => 'export')->load();
+    if ($rt_param) {
+        my $config = from_json($rt_param->{value});
+        $n_phones = $config->{'farpost-phones'} ? trim($config->{'farpost-phones'}) : '';
+    }
 
     unlink($meta->{'prev_file'}) if $meta->{'prev_file'};
     my $file = tmpnam();
@@ -79,6 +88,7 @@ sub index {
             my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
                 query => [
                     state_code => 'work',
+                    offer_type_code => $offer_type_code,
                     or => [
                       type_code => 'apartment',
                       type_code => 'apartment_small',

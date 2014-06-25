@@ -1,0 +1,39 @@
+#!/usr/bin/env perl
+
+use FindBin;
+use lib "$FindBin::Bin/../../lib";
+
+use Rplus::Modern;
+
+use Rplus::Model::Realty;
+use Rplus::Model::Realty::Manager;
+use Rplus::Model::Mediator;
+use Rplus::Model::Mediator::Manager;
+use Rplus::Model::RuntimeParam;
+use Rplus::Model::RuntimeParam::Manager;
+
+use Rplus::Util::Image;
+use Rplus::Util::Realty;
+
+use Mojo::UserAgent;
+
+use JSON;
+
+
+run(Rplus::Util::Config::get_config());
+
+sub run {
+    my $config = shift;
+    
+    my $rt_param = Rplus::Model::RuntimeParam->new(key => 'import_param')->load();
+    my $last_ts;
+    if (!$rt_param) {
+        $rt_param = Rplus::Model::RuntimeParam->new(key => 'import_param', ts => 'now()')->save; # Create record
+    }
+
+    $rt_param->ts('now');
+    $rt_param->save(chages_only => 1);
+}
+
+
+1;

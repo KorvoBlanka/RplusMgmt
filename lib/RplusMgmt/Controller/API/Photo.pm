@@ -30,8 +30,8 @@ sub list {
     while (my $photo = $photo_iter->next) {
         my $x = {
             id => $photo->id,
-            photo_url => $photo->filename =~ /^http/ ? $photo->filename : $self->config->{'storage'}->{'url'}.'/photos/'.$photo->realty_id.'/'.$photo->filename,
-            thumbnail_url => $photo->thumbnail_filename =~ /^http/ ? $photo->thumbnail_filename : $self->config->{'storage'}->{'url'}.'/photos/'.$photo->realty_id.'/'.$photo->thumbnail_filename,
+            photo_url => $photo->filename,
+            thumbnail_url => $photo->thumbnail_filename,
             is_main => $photo->is_main ? \1 : \0,
         };
         push @{$res->{list}}, $x;
@@ -76,8 +76,8 @@ sub upload {
 
             # Save
             $photo->realty_id($realty_id);
-            $photo->filename($name.'.jpg');
-            $photo->thumbnail_filename($name.'_thumbnail.jpg');
+            $photo->filename($self->config->{'storage'}->{'url'}.'/photos/'.$photo->realty_id.'/'.$name.'.jpg');
+            $photo->thumbnail_filename($self->config->{'storage'}->{'url'}.'/photos/'.$photo->realty_id.'/'.$name.'_thumbnail.jpg');
 
             $photo->save;
         } or do {
@@ -90,7 +90,7 @@ sub upload {
             where => [id => $realty_id],
         );
 
-        return $self->render(json => {status => 'success', id => $photo->id, realty_id => $realty_id, thumbnail_url => $self->config->{'storage'}->{'url'}.'/photos/'.$photo->realty_id.'/'.$photo->thumbnail_filename,});
+        return $self->render(json => {status => 'success', id => $photo->id, realty_id => $realty_id, thumbnail_url => $photo->thumbnail_filename,});
     }
 
     return $self->render(json => {error => 'Bad Request'}, status => 400);

@@ -28,8 +28,10 @@
 
       $.ajax({
         type: "POST",
-        url: "/api/options/listnot",
-        data: {},
+        url: "/api/options/list",
+        data: {
+          category: "notifications",
+        },
       })
         .done(function (data, textStatus, jqXHR) {
           

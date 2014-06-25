@@ -32,9 +32,6 @@
   (function () {
     var $form;
 
-
-     console.log('<%= $self->session('user')->{mode} %>');
-
     if ('<%= $self->session('user')->{mode} %>' == 'all') {
 
     } else if ('<%= $self->session('user')->{mode} %>' == 'sale') {
@@ -53,13 +50,15 @@
       $.ajax({
         type: "POST",
         url: "/api/options/list",
-        data: {},
+        data: {
+          category: "import",
+        },
       })
         .done(function (data, textStatus, jqXHR) {
           for (var key in data.val) {
             var r = data.val[key];
 
-            $('input', $('#' + key)).attr('checked', r > 0 ? true : false);
+            $('input', $('#' + key)).attr('checked', r == 'true' ? true : false);
           }
         }).fail(function (jqXHR, textStatus, errorThrown) {
           alert('<%= loc q{An error occurred while fetching options} %>');
@@ -71,7 +70,11 @@
       $.ajax({
         type: "POST",
         url: "/api/options/set",
-        data: {name: name, value: val}
+        data: {
+          category: "import",
+          name: name, 
+          value: val
+        }
       })
         .done(function (data, textStatus, jqXHR) {
           if (data.status == 'success') {

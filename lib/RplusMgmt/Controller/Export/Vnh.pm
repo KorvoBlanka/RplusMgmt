@@ -8,6 +8,8 @@ use Rplus::Model::Realty;
 use Rplus::Model::Realty::Manager;
 use Rplus::Model::Landmark;
 use Rplus::Model::Landmark::Manager;
+use Rplus::Model::RuntimeParam;
+use Rplus::Model::RuntimeParam::Manager;
 
 use Mojo::Util qw(trim);
 use File::Temp qw(tmpnam);
@@ -26,12 +28,17 @@ sub index {
     my $meta = from_json($media->metadata);
 
     my $offer_type_code = $self->param('offer_type_code');
-    my $phones = trim(scalar $self->param('phones'));
-    my $company = trim(scalar $self->param('company'));
+    my $realty_types = $self->param('realty_types');
 
-    $meta->{'params'}->{'offer_type_code'} = $offer_type_code;
-    $meta->{'params'}->{'phones'} = $phones;
-    $meta->{'params'}->{'company'} = $company;
+    my $company = '';
+    my $n_phones = '';
+
+    my $rt_param = Rplus::Model::RuntimeParam->new(key => 'export')->load();
+    if ($rt_param) {
+        my $config = from_json($rt_param->{value});
+        $n_phones = $config->{'vnh-phones'} ? trim($config->{'vnh-phones'}) : '';
+        $company = $config->{'vnh-company'} ? trim($config->{'vnh-company'}) : '';
+    }
 
     unlink($meta->{'prev_file'}) if $meta->{'prev_file'};
     my $file = tmpnam();
@@ -40,6 +47,7 @@ sub index {
     $media->metadata(encode_json($meta));
     $media->save(changes_only => 1);
 
+
     {
         my $workbook = Spreadsheet::WriteExcel->new($file);
 
@@ -47,7 +55,7 @@ sub index {
 
         # Раздел: Квартиры
         # Включает в себя комнаты + квартиры
-        {
+        if ($realty_types =~ /apartments_rooms/) {
             my $worksheet = $workbook->add_worksheet("Квартиры");
 
             # Заголовок листа
@@ -92,7 +100,7 @@ sub index {
             my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
                 query => [
                     state_code => 'work',
-                    offer_type_code => $P->{'offer_type_code'},
+                    offer_type_code => $offer_type_code,
                     'type.category_code' => ['room', 'apartment'],
                     export_media => {'&&' => $media->id},
                 ],
@@ -115,7 +123,7 @@ sub index {
                     $area = Rplus::Model::Landmark::Manager->get_objects(query => [id => scalar($realty->landmarks), type => 'vnh_area', delete_date => undef], limit => 1)->[0];
                     $subarea = Rplus::Model::Landmark::Manager->get_objects(query => [id => scalar($realty->landmarks), type => 'vnh_subarea', delete_date => undef], limit => 1)->[0];
                 }
-                my $phones = $P->{'phones'} || '';
+                my $phones = $n_phones;
                 if ($phones =~ /%agent\.phone_num%/ && $realty->agent_id) {
                     my $x = from_json($realty->agent->metadata)->{'public_phone_num'} || $realty->agent->phone_num;
                     $phones =~ s/%agent\.phone_num%/$x/;
@@ -140,7 +148,7 @@ sub index {
                     $realty->condition_id ? (($P->{'dict'}->{'conditions'}->{$realty->condition_id}) // '') : '',
                     $realty->price,
                     $phones,
-                    $P->{'company'} || '',
+                    $company,
                     '+',
                 ];
                 for my $col_num (0..(scalar(@$row)-1)) {
@@ -156,7 +164,7 @@ sub index {
 
         # Раздел: Частные дома и коттеджи
         # Включает в себя дома
-        {
+        if ($realty_types =~ /houses/)  {
             my $worksheet = $workbook->add_worksheet("Частные дома и коттеджи");
 
             # Заголовок листа
@@ -193,7 +201,7 @@ sub index {
             my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
                 query => [
                     state_code => 'work',
-                    offer_type_code => $P->{'offer_type_code'},
+                    offer_type_code => $offer_type_code,
                     'type.category_code' => 'house',
                     export_media => {'&&' => $media->id},
                 ],
@@ -216,7 +224,7 @@ sub index {
                     $area = Rplus::Model::Landmark::Manager->get_objects(query => [id => scalar($realty->landmarks), type => 'vnh_area', delete_date => undef], limit => 1)->[0];
                     $subarea = Rplus::Model::Landmark::Manager->get_objects(query => [id => scalar($realty->landmarks), type => 'vnh_subarea', delete_date => undef], limit => 1)->[0];
                 }
-                my $phones = $P->{'phones'} || '';
+                my $phones = $n_phones;
                 if ($phones =~ /%agent\.phone_num%/ && $realty->agent_id) {
                     my $x = from_json($realty->agent->metadata)->{'public_phone_num'} || $realty->agent->phone_num;
                     $phones =~ s/%agent\.phone_num%/$x/;
@@ -234,7 +242,7 @@ sub index {
                     $realty->description,
                     $realty->price,
                     $phones,
-                    $P->{'company'} || '',
+                    $company,
                     '+',
                 ];
                 for my $col_num (0..(scalar(@$row)-1)) {
