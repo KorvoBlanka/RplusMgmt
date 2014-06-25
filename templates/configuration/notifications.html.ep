@@ -50,8 +50,12 @@
     function saveOptions(name, val) {
       $.ajax({
         type: "POST",
-        url: "/api/options/setnot",
-        data: {name: name, value: val}
+        url: "/api/options/set",
+        data: {
+          category: 'notifications',
+          name: name,
+          value: val,
+        }
       })
         .done(function (data, textStatus, jqXHR) {
           if (data.status == 'success') {
@@ -70,27 +74,17 @@
         var t;
         
         t = $('[name="msg-count"]:input').val();
-        console.log(t);
         saveOptions('msg-count', t)
         
         t = $('[name="company"]:input').val();
-        console.log(t);
         saveOptions('company', t)
         
         t = $('[name="login"]:input').val();
-        console.log(t);
         saveOptions('login', t)
         
         t = $('[name="password"]:input').val();
-        console.log(t);
         saveOptions('password', t)
         
-        /*
-        var name = $(this).attr('id');
-        var val = $('input', $(this)).is(':checked');
-        console.log(name);
-        console.log(val);
-        saveOptions(name, val); */
       });
       
       listOptions();   
