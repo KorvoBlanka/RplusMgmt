@@ -58,7 +58,7 @@
           for (var key in data.val) {
             var r = data.val[key];
 
-            $('input', $('#' + key)).attr('checked', r == 'true' ? true : false);
+            $('input', $('#' + key)).attr('checked', r == 'true' || r == '1' ? true : false);
           }
         }).fail(function (jqXHR, textStatus, errorThrown) {
           alert('<%= loc q{An error occurred while fetching options} %>');

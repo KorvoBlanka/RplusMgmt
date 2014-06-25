@@ -55,7 +55,7 @@ sub run {
 
     #my $rt_param = Rplus::Model::RuntimeParam->new(key => 'opt_var')->load();
     
-    my $import_param = Rplus::Model::RuntimeParam->new(key => 'opt_var')->load();
+    my $import_param = Rplus::Model::RuntimeParam->new(key => 'import')->load();
     my $import_obj = from_json($import_param->{value});
 
     my $tx = $ua->get('http://rplusmgmt.com/api/account/get_by_domain?subdomain=' . $config->{'subdomain'});
@@ -70,7 +70,9 @@ sub run {
         my $source_media = $t[1];
         my $realty_type = $t[2];
 
-        next if $value eq '0';
+        if ($value eq '0' || $value eq 'false') {
+            next;
+        }
 
         say $source_media . ' - ' . $offer_type . ' - ' . $realty_type;
 
