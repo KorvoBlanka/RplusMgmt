@@ -55,13 +55,6 @@ sub process_url_list {
         my $do = $dom->find('table[class="tbl_r_o_list"]');
         if($do->size > 0) {
             $do->first->find('tr[class^="body"]')->each (sub {
-              
-                
-              
-                #my $item_id = $_->td->[1]->div->[0]->div->[1]->text;
-                #my $text = $_->td->[1]->div->[1]->all_text;
-                #my $price = $_->td->[1]->div->[2]->text;
-                
                 
                 my $fdiv = $_->find('div[class="firm"]')->[0];
                 

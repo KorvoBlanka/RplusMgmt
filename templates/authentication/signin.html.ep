@@ -79,8 +79,10 @@
                 $('.form-signin button[type="submit"]').button('reset');
                 if(data.reason == 'no_money') {
                   $('#message').html('Недостаточно средств на счету. <a href="http://rplusmgmt.com/cabinet">Перейти в кабинет</a>');
-                } else {
+                } else if(data.reason == 'not_found') {
                   $('#message').html('Неверный логин или пароль');
+                } else {
+                  $('#message').html('Достигнуто максимальное количество пользователей. <a href="http://rplusmgmt.com/cabinet">Перейти в кабинет</a>');
                 }
                 
                 $('.form-group').addClass('has-error');

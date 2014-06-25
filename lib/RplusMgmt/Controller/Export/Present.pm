@@ -36,7 +36,7 @@ sub index {
     my $rt_param = Rplus::Model::RuntimeParam->new(key => 'export')->load();
     if ($rt_param) {
         my $config = from_json($rt_param->{value});
-        $n_phones = $config->{'present-phones'} ? $config->{'present-phones'} : '';
+        $n_phones = $config->{'present-phones'} ? trim($config->{'present-phones'}) : '';
         $add_description_words = $config->{'present-descr'} ? $config->{'present-descr'} * 1 : 5;
     }
 

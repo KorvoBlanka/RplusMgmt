@@ -960,7 +960,7 @@ sub index {
     my $rt_param = Rplus::Model::RuntimeParam->new(key => 'export')->load();
     if ($rt_param) {
         my $config = from_json($rt_param->{value});
-        $contact_phones = $config->{'irr-phones'} ? $config->{'irr-phones'} : '';
+        $contact_phones = $config->{'irr-phones'} ? trim($config->{'irr-phones'}) : '';
         $contact_name = '';
         $contact_email = $config->{'irr-email'} ? $config->{'irr-email'} : '';
         $site_url = $config->{'irr-url'} ? $config->{'irr-url'} : '';        

@@ -28,9 +28,13 @@ use POSIX;
 
 use Data::Dumper;
 
+my $fmap = Cache::FastMmap->new();
+
 # This method will run once at server start
 sub startup {
     my $self = shift;
+
+    $fmap->set('logins', {});
 
     # Plugins
     my $config = $self->plugin('Config' => {file => 'app.conf'});
@@ -50,6 +54,54 @@ sub startup {
         typeaheadjs_ver => '0.9.4-dev',
         assets_url => $config->{assets}->{url} || '/assets',
     );
+
+    $self->helper(session_check => sub {
+        my ($self, $login, $max_users) = @_;
+        my $login_struct = $fmap->get('logins');
+        return 0 unless exists $login_struct->{$login};
+        return 0 if scalar keys $login_struct > $max_users;
+        return 0 if $self->session->{sid} != $login_struct->{$login};
+
+        return 1;
+    });
+
+    $self->helper(log_in => sub {
+        my ($self, $login) = @_;
+
+        my $login_struct = $fmap->get('logins');
+        $login_struct->{$login} = $self->session->{sid};
+        $fmap->set('logins', $login_struct);
+
+        return;
+    });
+
+    $self->helper(log_out => sub {
+        my ($self, $login) = @_;
+
+        my $login_struct = $fmap->get('logins');
+        delete $login_struct->{$login};
+        $fmap->set('logins', $login_struct);
+
+
+        return;
+    });
+
+    $self->helper(log_in_check => sub {
+        my ($self, $max_users, $asp_login) = @_;
+
+        my $login_struct = $fmap->get('logins');
+
+        if (scalar keys $login_struct > $max_users) {
+            $login_struct = {};
+            $fmap->set('logins', $login_struct);
+        }
+
+        return 1 if exists $login_struct->{$asp_login};
+
+        return 0 if scalar keys $login_struct == $max_users;
+
+        return 1;
+    });
 
     # DB helper
     $self->helper(db => sub { Rplus::DB->new_or_cached });
@@ -227,7 +279,7 @@ sub startup {
     # API namespace
     $r->route('/api/:controller')->bridge->to(cb => sub {
         my $self = shift;
-        return 1 if $self->stash('user');
+        return 1 if $self->stash('user') && $self->session_check($self->session->{'user'}->{login}, 10000);
         $self->render(json => {error => 'Unauthorized'}, status => 401);
         return undef;
     })->route('/:action')->to(namespace => 'RplusMgmt::Controller::API');
