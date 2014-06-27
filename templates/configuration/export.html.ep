@@ -39,14 +39,18 @@
         .done(function (data, textStatus, jqXHR) {
 
           $('#formExportVnh [name="phones"]:input').val(data.val['vnh-phones']);
+          $('#formExportVnh [name="agent-phone"]:input').attr('checked', data.val['vnh-agent-phone'] == 'true' ? true : false);
           $('#formExportVnh [name="company"]:input').val(data.val['vnh-company']);
-          
+
           $('#formExportFarpost [name="phones"]:input').val(data.val['farpost-phones']);
-          
-          $('#formExportPresent [name="add_description_words"]:input').val(data.val['present-descr']);
+          $('#formExportFarpost [name="agent-phone"]:input').attr('checked', data.val['farpost-agent-phone'] == 'true' ? true : false);
+
           $('#formExportPresent [name="phones"]:input').val(data.val['present-phones']);
+          $('#formExportPresent [name="agent-phone"]:input').attr('checked', data.val['present-agent-phone'] == 'true' ? true : false);
+          $('#formExportPresent [name="add_description_words"]:input').val(data.val['present-descr']);
 
           $('#formExportIrr [name="phones"]:input').val(data.val['irr-phones']);
+          $('#formExportIrr [name="agent-phone"]:input').attr('checked', data.val['irr-agent-phone'] == 'true' ? true : false);
           $('#formExportIrr [name="email"]:input').val(data.val['irr-email']);
           $('#formExportIrr [name="url"]:input').val(data.val['irr-url']);
 
@@ -83,36 +87,42 @@
         var t;
         
         t = $('#formExportVnh [name="phones"]:input').val();
-        console.log(t);
         saveOptions('vnh-phones', t);
-        
+
+        t = $('#formExportVnh [name="agent-phone"]:input').is(':checked');
+        saveOptions('vnh-agent-phone', t);
+
         t = $('#formExportVnh [name="company"]:input').val();
-        console.log(t);
         saveOptions('vnh-company', t);
+
         
         t = $('#formExportFarpost [name="phones"]:input').val();
-        console.log(t);
         saveOptions('farpost-phones', t);
-        
+
+        t = $('#formExportFarpost [name="agent-phone"]:input').is(':checked');
+        saveOptions('farpost-agent-phone', t);
+
+
         t = $('#formExportPresent [name="add_description_words"]:input').val();
-        console.log(t);
         saveOptions('present-descr', t);
+
+        t = $('#formExportPresent [name="agent-phone"]:input').is(':checked');
+        saveOptions('present-agent-phone', t);
         
         t = $('#formExportPresent [name="phones"]:input').val();
-        console.log(t);
         saveOptions('present-phones', t);
 
 
         t = $('#formExportIrr [name="phones"]:input').val();
-        console.log(t);
         saveOptions('irr-phones', t);
         
+        t = $('#formExportIrr [name="agent-phone"]:input').is(':checked');
+        saveOptions('irr-agent-phone', t);
+
         t = $('#formExportIrr [name="email"]:input').val();
-        console.log(t);
         saveOptions('irr-email', t);
         
         t = $('#formExportIrr [name="url"]:input').val();
-        console.log(t);
         saveOptions('irr-url', t);
       });
       
@@ -149,13 +159,21 @@
     <div class="tab-pane active" id="export-vnh">
         <form class="" role="form" id="formExportVnh">
           <div class="row" style="padding-top: 15px;">
-            <label class="col-lg-2 control-label">Phones</label>
+            <label class="col-lg-2 control-label">Телефоны</label>
             <div class="col-lg-5">
               <input type="text" class="form-control" name="phones" placeholder="Phone1, Phone2">
             </div>
           </div>
+
           <div class="row" style="padding-top: 15px;">
-            <label class="col-lg-2 control-label">Company</label>
+            <label class="col-lg-2 control-label">Телефон агента</label>
+            <div class="col-lg-5">
+              <input type="checkbox" name="agent-phone">
+            </div>
+          </div>
+
+          <div class="row" style="padding-top: 15px;">
+            <label class="col-lg-2 control-label">Название компании</label>
             <div class="col-lg-5">
               <input type="text" class="form-control" name="company" placeholder="Company">
             </div>
@@ -169,11 +187,17 @@
     <div class="tab-pane" id="export-farpost">
         <form class="" role="form" id="formExportFarpost">
           <div class="row" style="padding-top: 15px;">
-            <label class="col-lg-2 control-label">Phones</label>
+            <label class="col-lg-2 control-label">Телефоны</label>
             <div class="col-lg-5">
               <input type="text" class="form-control" name="phones" placeholder="Phone1, Phone2">
             </div>
           </div>
+          <div class="row" style="padding-top: 15px;">
+            <label class="col-lg-2 control-label">Телефон агента</label>
+            <div class="col-lg-5">
+              <input type="checkbox" name="agent-phone">
+            </div>
+          </div>          
         </form>
         <div class="form-group">
           <button type="" class="btn btn-primary btn-save" style="margin-top: 64px">Сохранить</button>
@@ -183,17 +207,23 @@
     <div class="tab-pane" id="export-present">
       <form class="" role="form" id="formExportPresent">
         <div class="row" style="padding-top: 15px;">
-          <label class="col-lg-2 control-label">Desc words</label>
-          <div class="col-lg-5">
-            <input type="number" class="form-control" name="add_description_words" style="width: 100px;" placeholder="# of words">
-          </div>
-        </div>
-        <div class="row" style="padding-top: 15px;">
-          <label class="col-lg-2 control-label">Phones</label>
+          <label class="col-lg-2 control-label">Телефоны</label>
           <div class="col-lg-5">
             <input type="text" class="form-control" name="phones" placeholder="Phone1, Phone2">
           </div>
         </div>
+        <div class="row" style="padding-top: 15px;">
+          <label class="col-lg-2 control-label">Телефон агента</label>
+          <div class="col-lg-5">
+            <input type="checkbox" name="agent-phone">
+          </div>
+        </div>
+        <div class="row" style="padding-top: 15px;">
+          <label class="col-lg-2 control-label">Количество слов в описании</label>
+          <div class="col-lg-5">
+            <input type="number" class="form-control" name="add_description_words" style="width: 100px;" placeholder="# of words">
+          </div>
+        </div>          
       </form>
       <div class="form-group">
         <button type="" class="btn btn-primary btn-save" style="margin-top: 15px">Сохранить</button>
@@ -203,11 +233,17 @@
     <div class="tab-pane" id="export-irr">
         <form class="" role="form" id="formExportIrr">
           <div class="row" style="padding-top: 15px;">
-            <label class="col-lg-2 control-label">Телефон</label>
+            <label class="col-lg-2 control-label">Телефоны</label>
             <div class="col-lg-5">
               <input type="text" class="form-control" name="phones" placeholder="Phone1, Phone2">
             </div>
           </div>
+          <div class="row" style="padding-top: 15px;">
+            <label class="col-lg-2 control-label">Телефон агента</label>
+            <div class="col-lg-5">
+              <input type="checkbox" name="agent-phone">
+            </div>
+          </div>          
           <div class="row" style="padding-top: 15px;">
             <label class="col-lg-2 control-label">e-mail</label>
             <div class="col-lg-5">

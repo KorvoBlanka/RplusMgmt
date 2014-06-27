@@ -130,13 +130,11 @@ sub save {
         my $found_phones = Mojo::Collection->new();
         my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(query => [delete_date => undef, \("owner_phones && '{".$phone_num."}'")], db => $db);
         while (my $realty = $realty_iter->next) {
-            push @$found_phones, ($realty->owner_phones);
-            say $realty->id;
             $realty->agent_id(10000);
-            if($realty->state_code eq 'work') {
-                $realty->state_code('raw');
-            }
+            $realty->state_code('raw') if $realty->state_code eq 'work';
+            $realty->mediator_company_id($mediator->company->id);
             $realty->save(changes_only => 1);
+            push @$found_phones, ($realty->owner_phones);
         }
         $found_phones = $found_phones->uniq;
 
@@ -149,15 +147,6 @@ sub save {
                     Rplus::Model::Mediator->new(db => $db, name => $name, phone_num => $_, company => $company)->save;
                 }
             }
-
-            #$num_realty_deleted = Rplus::Model::Realty::Manager->update_objects(
-            #    set => {state_code => 'deleted', change_date => \'now()'},
-            #    where => [
-            #        '!state_code' => 'deleted',
-            #        \("owner_phones && '{".$found_phones->join(',')."}'")
-            #    ],
-            #    db => $db,
-            #);
         }
 
         $db->commit;
@@ -185,15 +174,16 @@ sub delete {
     my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(query => [delete_date => undef, \("owner_phones && '{".$mediator->phone_num."}'")]);
     while (my $realty = $realty_iter->next) {
         $realty->agent_id(undef);
+        $realty->mediator_company_id(undef);
         $realty->save(changes_only => 1);
     }
-    
+
     my $num_rows_updated = Rplus::Model::Mediator::Manager->update_objects(
         set => {delete_date => \'now()'},
         where => [id => $id, delete_date => undef],
     );
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $num_rows_updated;    
-    
+
     $self->render(json => {status => 'success'});
 }
 

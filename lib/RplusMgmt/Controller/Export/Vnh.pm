@@ -31,12 +31,14 @@ sub index {
     my $realty_types = $self->param('realty_types');
 
     my $company = '';
-    my $n_phones = '';
+    my $conf_phones = '';
+    my $agent_phone = 0;
 
     my $rt_param = Rplus::Model::RuntimeParam->new(key => 'export')->load();
     if ($rt_param) {
         my $config = from_json($rt_param->{value});
-        $n_phones = $config->{'vnh-phones'} ? trim($config->{'vnh-phones'}) : '';
+        $conf_phones = $config->{'vnh-phones'} ? trim($config->{'vnh-phones'}) : '';
+        $agent_phone = 1 if $config->{'vnh-agent-phone'} eq 'true';
         $company = $config->{'vnh-company'} ? trim($config->{'vnh-company'}) : '';
     }
 
@@ -123,10 +125,11 @@ sub index {
                     $area = Rplus::Model::Landmark::Manager->get_objects(query => [id => scalar($realty->landmarks), type => 'vnh_area', delete_date => undef], limit => 1)->[0];
                     $subarea = Rplus::Model::Landmark::Manager->get_objects(query => [id => scalar($realty->landmarks), type => 'vnh_subarea', delete_date => undef], limit => 1)->[0];
                 }
-                my $phones = $n_phones;
-                if ($phones =~ /%agent\.phone_num%/ && $realty->agent_id) {
-                    my $x = from_json($realty->agent->metadata)->{'public_phone_num'} || $realty->agent->phone_num;
-                    $phones =~ s/%agent\.phone_num%/$x/;
+
+                my $phones = $conf_phones;
+                if ($agent_phone == 1 && $realty->agent) {
+                    my $x = $realty->agent->public_phone_num || $realty->agent->phone_num;
+                    $phones =  $x . ', ' . $phones;
                 }
 
                 my $row = [
@@ -224,12 +227,11 @@ sub index {
                     $area = Rplus::Model::Landmark::Manager->get_objects(query => [id => scalar($realty->landmarks), type => 'vnh_area', delete_date => undef], limit => 1)->[0];
                     $subarea = Rplus::Model::Landmark::Manager->get_objects(query => [id => scalar($realty->landmarks), type => 'vnh_subarea', delete_date => undef], limit => 1)->[0];
                 }
-                my $phones = $n_phones;
-                if ($phones =~ /%agent\.phone_num%/ && $realty->agent_id) {
-                    my $x = from_json($realty->agent->metadata)->{'public_phone_num'} || $realty->agent->phone_num;
-                    $phones =~ s/%agent\.phone_num%/$x/;
+                my $phones = $conf_phones;
+                if ($agent_phone == 1 && $realty->agent) {
+                    my $x = $realty->agent->public_phone_num || $realty->agent->phone_num;
+                    $phones =  $x . ', ' . $phones;
                 }
-
                 my $row = [
                     $area ? $area->name : '',
                     $subarea ? $subarea->name : '',

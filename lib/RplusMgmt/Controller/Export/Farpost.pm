@@ -32,12 +32,14 @@ sub index {
     my $offer_type_code = $self->param('offer_type_code');
     my $realty_types = $self->param('realty_types');
 
-    my $n_phones = '';
+    my $conf_phones = '';
+    my $agent_phone = 0;
 
     my $rt_param = Rplus::Model::RuntimeParam->new(key => 'export')->load();
     if ($rt_param) {
         my $config = from_json($rt_param->{value});
-        $n_phones = $config->{'farpost-phones'} ? trim($config->{'farpost-phones'}) : '';
+        $conf_phones = $config->{'farpost-phones'} ? trim($config->{'farpost-phones'}) : '';
+        $agent_phone = 1 if $config->{'present-agent-phone'} eq 'true';
     }
 
     unlink($meta->{'prev_file'}) if $meta->{'prev_file'};
@@ -103,10 +105,10 @@ sub index {
             my $row_num = 1;
             while(my $realty = $realty_iter->next) {
                 my $area = Rplus::Model::Landmark::Manager->get_objects(query => [id => scalar($realty->landmarks), type => 'farpost', delete_date => undef], limit => 1)->[0] if @{$realty->landmarks};
-                my $phones = $P->{'phones'} || '';
-                if ($phones =~ /%agent\.phone_num%/ && $realty->agent_id) {
-                    my $x = from_json($realty->agent->metadata)->{'public_phone_num'} || $realty->agent->phone_num;
-                    $phones =~ s/%agent\.phone_num%/$x/;
+                my $phones = $conf_phones;
+                if ($agent_phone == 1 && $realty->agent) {
+                    my $x = $realty->agent->public_phone_num || $realty->agent->phone_num;
+                    $phones =  $x . ', ' . $phones;
                 }
                 my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $realty->id, delete_date => undef])};
 

@@ -25,7 +25,6 @@ run(Rplus::Util::Config::get_config());
 sub run {
     my $config = shift;
 
-    sleep int(rand(10));
     while(get_load_average() > 2) {
         say 'go to sleep';
         sleep int(rand(60));
@@ -40,6 +39,7 @@ sub run {
                 id => $x->id,
                 name => $x->name,
                 company => $x->company->name,
+                company_id => $x->company->id,
             };
         }
     }
@@ -101,8 +101,13 @@ NEXT:       for my $data (@$realty_data) {
                         if ($data->{offer_type_code} eq 'rent') {
                           next NEXT;
                         }
-                        my $mediator = Rplus::Model::Mediator::Manager->get_objects(query => [phone_num => $_, delete_date => undef], require_objects => ['company'])->[0];
                         $data->{agent_id} = 10000;
+                        $data->{mediator_company_id} = $MEDIATOR_PHONES{$_}->{company_id};
+                        # добавить все телефоны в посредники
+                        my $company = $MEDIATOR_PHONES{$_}->{company};
+                        for (@{$data->{'owner_phones'}}) {
+                            add_mediator($company, $_);
+                        }
                         last;
                     }
                 }
@@ -116,6 +121,15 @@ NEXT:       for my $data (@$realty_data) {
                     $o_realty->source_media_text($data->{source_media_text});
                     $o_realty->last_seen_date($data->{add_date});
                     $o_realty->owner_price($data->{owner_price});
+
+                    my $history = $o_realty->work_info;
+                    $history = '' unless $history;
+                    if ($data->{work_info}) {
+                        $history = $history . "\n" . $data->{work_info};
+                    }
+                    say $history;
+                    $o_realty->work_info($history);
+
                     $o_realty->save(changes_only => 1);
                     say "updated realty: $id";
 
@@ -178,6 +192,51 @@ sub get_load_average {
     close LOAD;
     my ( $one_min_avg ) = split /\s/, $load_avg;
     return $one_min_avg;
+}
+
+sub add_mediator {
+    #my $self = shift;
+    my $mediator = Rplus::Model::Mediator->new;
+
+    # Prepare data
+    my $company_name = shift;
+    my $phone_num = shift;
+
+    $mediator->phone_num($phone_num);
+
+    eval {
+        my $company = Rplus::Model::MediatorCompany::Manager->get_objects(query => [[\'lower(name) = ?' => lc($company_name)], delete_date => undef])->[0];
+        if (!$company) {
+            $company = Rplus::Model::MediatorCompany->new(name => $company_name);
+            $company->save;
+        }
+        $mediator->company($company);
+        $mediator->save;
+
+        # Search for additional mediator phones
+        my $found_phones = Mojo::Collection->new();
+        my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(query => [delete_date => undef, \("owner_phones && '{".$phone_num."}'")]);
+        while (my $realty = $realty_iter->next) {
+            $realty->agent_id(10000);
+            $realty->state_code('raw') if $realty->state_code eq 'work';
+            $realty->mediator_company_id($mediator->company->id);
+            $realty->save(changes_only => 1);
+            push @$found_phones, ($realty->owner_phones);
+        }
+        $found_phones = $found_phones->uniq;
+
+        if ($found_phones->size) {
+            # Add additional mediators from realty owner phones
+            for (@$found_phones) {
+                if ($_ ne $phone_num && !Rplus::Model::Mediator::Manager->get_objects_count(query => [phone_num => $_, delete_date => undef])) {
+                    my $nm = Rplus::Model::Mediator->new(phone_num => $_, company => $company);
+                    $nm->save;
+                }
+            }
+        }
+    }  or do {
+        say 'unable to add mediator';
+    }
 }
 
 1;

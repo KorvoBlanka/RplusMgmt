@@ -35,33 +35,8 @@ my $_serialize = sub {
 
     my (@serialized, %realty_h);
     for my $realty (@realty_objs) {
-      
-        # check owner phones for mediators
-        my $mediator_str = undef;
-        my $owner_phones = $realty->owner_phones;
-
-        if(scalar @$owner_phones > 0) {
-            my $mediator_iter = Rplus::Model::Mediator::Manager->get_objects_iterator(query => [phone_num => \@$owner_phones, delete_date => undef], require_objects => ['company']);
-            my $changed = 0;
-            if ($realty->agent_id == 10000) {
-                $realty->agent_id(undef);
-                $changed = 1;
-            }
-            while (my $mediator = $mediator_iter->next) {
-                $mediator_str = $mediator->company->name;
-                if($realty->agent_id != 10000) {
-                    $changed = 1;
-                    $realty->agent_id(10000);
-                    if ($realty->state_code eq 'work') {
-                      $realty->state_code('raw');
-                    }
-                }
-            }
-            if($changed) {
-                $realty->save(changes_only => 1);
-            }
-        }
         
+        my $meta = from_json($realty->metadata);
         my $x = {
             (map { $_ => ($_ =~ /_date$/ ? $self->format_datetime($realty->$_) : scalar($realty->$_)) } grep { !($_ ~~ [qw(delete_date geocoords landmarks metadata fts)]) } $realty->meta->column_names),
 
@@ -76,7 +51,7 @@ my $_serialize = sub {
             sublandmark => $realty->sublandmark ? {id => $realty->sublandmark->id, name => $realty->sublandmark->name} : undef,
             main_photo_thumbnail => undef,
             color_tag_id => undef,            
-            mediator => $mediator_str,
+            mediator_company => $realty->mediator_company ? $realty->mediator_company->name : '',
         };
         
         if($realty->color_tags) {
@@ -89,7 +64,7 @@ my $_serialize = sub {
         }
 
         # Exclude fields for read permission "2"
-        if ($realty->agent_id != 10000 && $self->has_permission(realty => read => $realty->agent_id) == 2) {
+        if ($realty->agent_id && $realty->agent_id != 10000 && $self->has_permission(realty => read => $realty->agent_id) == 2) {
             $x->{$_} = undef for @exclude_fields;
             
             my $user = Rplus::Model::User::Manager->get_objects(query => [id => $realty->agent_id, delete_date => undef])->[0];
@@ -97,7 +72,7 @@ my $_serialize = sub {
         }
 
         # Exclude fields for read permission "3"
-        if ($realty->agent_id != 10000 && $self->has_permission(realty => read => $realty->agent_id) == 3) {
+        if ($realty->agent_id && $realty->agent_id != 10000 && $self->has_permission(realty => read => $realty->agent_id) == 3) {
             $x->{$_} = undef for @exclude_fields_agent_plus;
             
             my $user = Rplus::Model::User::Manager->get_objects(query => [id => $realty->agent_id, delete_date => undef])->[0];
@@ -324,7 +299,7 @@ sub list {
         sort_by => [@sort_by, 'realty.last_seen_date desc'],
         page => $page,
         per_page => $per_page,
-        with_objects => ['address_object', 'sublandmark', 'color_tags', @with_objects],
+        with_objects => ['address_object', 'sublandmark', 'color_tags', 'mediator_company', @with_objects],
     );
     
     $res->{list} = [$_serialize->($self, $realty_objs)];
@@ -352,14 +327,10 @@ sub save {
 
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => 'write');
     
-    my $action = '';
-    
     my $realty;
     if (my $id = $self->param('id')) {
-        $action = 'm';
         $realty = Rplus::Model::Realty::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
     } else {
-        $action = 'c';
         $realty = Rplus::Model::Realty->new(
             creator_id => $self->stash('user')->{id},
             agent_id => scalar $self->param('agent_id'),
@@ -441,12 +412,37 @@ sub save {
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => write => $data{agent_id});
 
     # Find similar realty
-    my $similar_realty_id = Rplus::Util::Realty->find_similar(%data, state_code => ['raw', 'work', 'suspended']);
+    #my $similar_realty_id = Rplus::Util::Realty->find_similar(%data, state_code => ['raw', 'work', 'suspended']);
     #my $similar_realty = Rplus::Model::Realty->new(id => $similar_realty_id)->load(with => ['address_object']) if $similar_realty_id;
 
+    # if agent_id changed - set 'assign_date'
+    $realty->assign_date('now()') if $realty->agent_id != $data{agent_id};
     # Save data
     $realty->$_($data{$_}) for keys %data;
     $realty->change_date('now()');
+
+    # check owner phones for mediators
+    my @owner_phones = $realty->owner_phones;
+    if(scalar @owner_phones > 0) {
+        if (Rplus::Model::Mediator::Manager->get_objects_count(query => [phone_num => \@owner_phones, delete_date => undef])) {
+            $realty->agent_id(10000);
+            if ($realty->state_code eq 'work') {
+                $realty->state_code('raw');
+            }
+            my $mediator = Rplus::Model::Mediator::Manager->get_objects(query => [phone_num => \@owner_phones, delete_date => undef], require_objects => ['company'])->[0];
+            $realty->mediator_company_id($mediator->company->id);
+
+            # добавить все телефоны в посредники
+            for (@owner_phones) {
+                add_mediator($mediator->company->name, $_);
+            }
+        } else {
+            if ($realty->agent_id == 10000) {
+                $realty->agent_id(undef);
+                $realty->mediator_company_id(undef);
+            }
+        }
+    }
 
     eval {
         $realty->save($realty->id ? (changes_only => 1) : (insert => 1));
@@ -479,10 +475,11 @@ sub save {
         status => 'success',
         id => $realty->id,
         realty => $_serialize->($self, $realty),
-        similar_realty_id => $similar_realty_id,
+        #similar_realty_id => $similar_realty_id,
         #($similar_realty ? (similar_realty => $_serialize->($self, $similar_realty)) : ()),
     };
 
+    # назначения планировки для объектов в том же доме
     if(($self->stash('user')->{id} == 2 || $self->stash('user')->{id} == 1) && !($self->param('address_object_id') eq '') && !($self->param('house_num') eq '')) {
         if(!($self->param('ap_scheme_id') eq '')) {
           my $num_realty_updated = Rplus::Model::Realty::Manager->update_objects(
@@ -554,59 +551,6 @@ sub update_color_tag {
     return $self->render(json => $res);
 }
 
-sub add_mediator {
-    #my $self = shift;
-    my $mediator = Rplus::Model::Mediator->new;
-
-    # Prepare data
-    my $company_name = shift;
-    my $phone_num = shift;
-
-    $mediator->phone_num($phone_num);
-
-    eval {
-        my $company = Rplus::Model::MediatorCompany::Manager->get_objects(query => [[\'lower(name) = ?' => lc($company_name)], delete_date => undef])->[0];
-        if (!$company) {
-            $company = Rplus::Model::MediatorCompany->new(name => $company_name);
-            $company->save;
-        }
-        $mediator->company($company);
-        $mediator->save;
-
-        # Search for additional mediator phones
-        my $found_phones = Mojo::Collection->new();
-        my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(query => [delete_date => undef, \("owner_phones && '{".$phone_num."}'")]);
-        while (my $realty = $realty_iter->next) {
-            $realty->agent_id(10000);
-            $realty->state_code('raw');
-            $realty->save(changes_only => 1);
-            push @$found_phones, ($realty->owner_phones);
-        }
-        $found_phones = $found_phones->uniq;
-
-        if ($found_phones->size) {
-            # Add additional mediators from realty owner phones
-            for (@$found_phones) {
-                if ($_ ne $phone_num && !Rplus::Model::Mediator::Manager->get_objects_count(query => [phone_num => $_, delete_date => undef])) {
-                    my $nm = Rplus::Model::Mediator->new(phone_num => $_, company => $company);
-                    $nm->save;
-                }
-            }
-
-            #$num_realty_deleted = Rplus::Model::Realty::Manager->update_objects(
-            #    set => {state_code => 'deleted', change_date => \'now()'},
-            #    where => [
-            #        '!state_code' => 'deleted',
-            #        \("owner_phones && '{".$found_phones->join(',')."}'")
-            #    ],
-            #    db => $db,
-            #);
-        }
-    }  or do {
-        say 'error ' . $@;
-    }
-}
-
 sub update {
     my $self = shift;
 
@@ -621,16 +565,18 @@ sub update {
     # Available fields to set: agent_id, state_code
     for ($self->param) {
         if ($_ eq 'agent_id') {
+            # if agent_id changed - set 'assign_date'
+            $realty->assign_date('now()') if $realty->agent_id != $self->param_n('agent_id');
             if ($self->param('agent_id') eq '') {
                 $realty->agent_id(undef);
             } else {
-                my $agent_id = $self->param('agent_id');
+                my $agent_id = $self->param_n('agent_id');
                 $realty->agent_id(scalar $self->param('agent_id'));
                 if ($agent_id == 10000) {
                     my $company = 'ПОСРЕДНИК В НЕДВИЖИМОСТИ';
                     add_mediator($company, $realty->owner_phones->[0]);
                 }
-            }
+            }            
         } elsif ($_ eq 'state_code') {
             $realty->state_code(scalar $self->param('state_code'));
         } elsif ($_ eq 'color_tag_id') {
@@ -668,6 +614,51 @@ sub update {
     };
     
     return $self->render(json => $res);
+}
+
+sub add_mediator {
+    #my $self = shift;
+    my $mediator = Rplus::Model::Mediator->new;
+
+    # Prepare data
+    my $company_name = shift;
+    my $phone_num = shift;
+
+    $mediator->phone_num($phone_num);
+
+    eval {
+        my $company = Rplus::Model::MediatorCompany::Manager->get_objects(query => [[\'lower(name) = ?' => lc($company_name)], delete_date => undef])->[0];
+        if (!$company) {
+            $company = Rplus::Model::MediatorCompany->new(name => $company_name);
+            $company->save;
+        }
+        $mediator->company($company);
+        $mediator->save;
+
+        # Search for additional mediator phones
+        my $found_phones = Mojo::Collection->new();
+        my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(query => [delete_date => undef, \("owner_phones && '{".$phone_num."}'")]);
+        while (my $realty = $realty_iter->next) {
+            $realty->agent_id(10000);
+            $realty->state_code('raw') if $realty->state_code eq 'work';
+            $realty->mediator_company_id($mediator->company->id);
+            $realty->save(changes_only => 1);
+            push @$found_phones, ($realty->owner_phones);
+        }
+        $found_phones = $found_phones->uniq;
+
+        if ($found_phones->size) {
+            # Add additional mediators from realty owner phones
+            for (@$found_phones) {
+                if ($_ ne $phone_num && !Rplus::Model::Mediator::Manager->get_objects_count(query => [phone_num => $_, delete_date => undef])) {
+                    my $nm = Rplus::Model::Mediator->new(phone_num => $_, company => $company);
+                    $nm->save;
+                }
+            }
+        }
+    }  or do {
+        say 'unable to add mediator';
+    }
 }
 
 1;

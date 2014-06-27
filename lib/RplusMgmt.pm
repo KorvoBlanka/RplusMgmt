@@ -29,12 +29,13 @@ use POSIX;
 use Data::Dumper;
 
 my $fmap = Cache::FastMmap->new();
-
+my $ua = Mojo::UserAgent->new;
 # This method will run once at server start
 sub startup {
     my $self = shift;
 
     $fmap->set('logins', {});
+    $fmap->set('acc_data', {ts => 0, data => {}});
 
     # Plugins
     my $config = $self->plugin('Config' => {file => 'app.conf'});
@@ -55,9 +56,35 @@ sub startup {
         assets_url => $config->{assets}->{url} || '/assets',
     );
 
+    $self->helper(get_acc_data => sub {
+        my ($self) = @_;
+        my $acc_data_str = $fmap->get('acc_data');
+
+        if (time - $acc_data_str->{'ts'} > 10) {
+            my $acc_data = {blocked => 1};
+            my $tx = $ua->get('http://rplusmgmt.com/api/account/get_by_domain?subdomain=' . $self->config->{'subdomain'});
+            if (my $res = $tx->success) {
+                $acc_data = $res->json;
+                $acc_data_str->{'ts'} = time;
+            }
+
+            $acc_data_str->{'data'} = $acc_data;
+            $fmap->set('acc_data', $acc_data_str);
+
+            print Dumper $acc_data_str;
+        }
+
+        return $acc_data_str->{'data'};;
+    });
+
     $self->helper(session_check => sub {
-        my ($self, $login, $max_users) = @_;
+        my ($self, $login) = @_;
+
+        my $acc_data = $self->get_acc_data();
+        my $max_users = $acc_data->{user_count} * 1;
+
         my $login_struct = $fmap->get('logins');
+        return 0 if $acc_data->{blocked};
         return 0 unless exists $login_struct->{$login};
         return 0 if scalar keys $login_struct > $max_users;
         return 0 if $self->session->{sid} != $login_struct->{$login};
@@ -279,7 +306,8 @@ sub startup {
     # API namespace
     $r->route('/api/:controller')->bridge->to(cb => sub {
         my $self = shift;
-        return 1 if $self->stash('user') && $self->session_check($self->session->{'user'}->{login}, 10000);
+
+        return 1 if $self->stash('user') && $self->session_check($self->session->{'user'}->{login});
         $self->render(json => {error => 'Unauthorized'}, status => 401);
         return undef;
     })->route('/:action')->to(namespace => 'RplusMgmt::Controller::API');

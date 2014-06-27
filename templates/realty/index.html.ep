@@ -271,7 +271,7 @@
         }},
         
         {id: "mediator", name: "Предложение", visible: true, style: "width: 120px; font-size: 12px; white-space: normal;", val: function (r) {
-          return r.mediator ? r.mediator : 'Собственник';
+          return r.mediator_company ? r.mediator_company : 'Собственник';
         }},        
         
         {id: "owner", name: "Контакты", visible: true, style: "white-space: nowrap;", val: function (r) {
@@ -286,12 +286,15 @@
         {id: "added", name: "<%= ucfloc 'added' %>", sortName: "add_date", visible: true, val: function (r) {
           return moment(r.add_date).format("DD.MM.YYYY HH:mm");
         }},
+        {id: "assigned", name: "Назначено", sortName: "assign_date", visible: false, val: function (r) {
+          return r.assign_date ? moment(r.assign_date).format("DD.MM.YYYY HH:mm") : '';
+        }},        
         {id: "changed", name: "<%= ucfloc 'changed' %>", sortName: "change_date", visible: false, val: function (r) {
           return moment(r.change_date).format("DD.MM.YYYY HH:mm");
         }},
         {id: "topicality", name: "Актуально", sortName: "last_seen_date", visible: true, val: function (r) {
           return moment(r.last_seen_date).format("DD.MM.YYYY HH:mm");
-        }},        
+        }},
       ],
     };
     var confVer = '1.0';

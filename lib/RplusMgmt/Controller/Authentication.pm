@@ -16,7 +16,7 @@ sub auth {
       $acc_data = $res->json;
     }
 
-    return 1 if !$acc_data->{blocked} && $self->stash('user') && $self->stash('user')->{'id'} && $self->session_check($self->session->{'user'}->{login}, $acc_data->{user_count} * 1);
+    return 1 if $self->stash('user') && $self->stash('user')->{'id'} && $self->session_check($self->session->{'user'}->{login});
 
     $self->render(template => 'authentication/signin');
     return undef;
@@ -29,11 +29,7 @@ sub signin {
     my $password = $self->param('password');
     my $remember_me = $self->param_b('remember_me');
 
-    my $tx = $ua->get('http://rplusmgmt.com/api/account/get_by_domain?subdomain=' . $self->config->{'subdomain'});
-    my $acc_data;
-    if (my $res = $tx->success) {
-      $acc_data = $res->json;
-    }
+    my $acc_data = $self->get_acc_data();
 
     return $self->render(json => {status => 'failed', reason => 'no_data'}) unless $login && defined $password;
 

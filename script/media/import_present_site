@@ -134,8 +134,7 @@ sub process_url_list {
                 # Пропустим уже обработанные объявления
                 my $item_id = $item_url;
                 $item_id =~s/.*\///s;
-                my $media_num =  $item_id . '_present';
-                if (Rplus::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $media_num, media_text => $text])) {
+                if (Rplus::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $item_id, media_text => $text])) {
                     say 'was processed already';
                     next;
                 }
@@ -147,7 +146,7 @@ sub process_url_list {
                     eval {
                         my $realty = Rplus::Model::Realty->new((map { $_ => $data->{$_} } grep { $_ ne 'category_code' } keys %$data), state_code => 'raw');
                         $realty->save;
-                        my $id = $realty->id;
+                        $id = $realty->id;
                         say "Saved new realty: $id";
                         # вытащим фото
                         
@@ -163,7 +162,7 @@ sub process_url_list {
                     }
                 }
                 # Сохраним историю
-                if ($id && !Rplus::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $media_num, realty_id => $id])) {
+                if ($id && !Rplus::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $media_num)) {
                     Rplus::Model::MediaImportHistory->new(media_id => $MEDIA->id, media_num => $media_num, media_text => $data->{'source_media_text'}, realty_id => $id)->save;
                 }
             }

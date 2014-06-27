@@ -19,6 +19,7 @@ use Tie::IxHash;
 use Data::Dumper;
 
 my $contact_phones = '';
+my $agent_phone = 0;
 my $contact_name = '';
 my $contact_email = '';
 my $site_url = '';
@@ -169,12 +170,13 @@ my %templates_hash = (
                 },
             "Контактный телефон" => sub {
                     my $d = shift;
-                    my $t_phones = $contact_phones;
-                    if ($t_phones =~ /%agent\.phone_num%/ && $d->agent_id) {
+                    my $phones = $contact_phones;
+                    if ($agent_phone == 1 && $d->agent) {
                         my $x = $d->agent->public_phone_num || $d->agent->phone_num;
-                        $t_phones =~ s/%agent\.phone_num%/$x/;
+                        $phones =  $x . ', ' . $phones;
                     }
-                    return $t_phones;
+
+                    return $phones;
                 },
             "e-mail" => sub {
                     return $contact_email;
@@ -314,12 +316,13 @@ my %templates_hash = (
                 },
             "Контактный телефон" => sub {
                     my $d = shift;
-                    my $t_phones = $contact_phones;
-                    if ($t_phones =~ /%agent\.phone_num%/ && $d->agent_id) {
+                    my $phones = $contact_phones;
+                    if ($agent_phone == 1 && $d->agent) {
                         my $x = $d->agent->public_phone_num || $d->agent->phone_num;
-                        $t_phones =~ s/%agent\.phone_num%/$x/;
+                        $phones =  $x . ', ' . $phones;
                     }
-                    return $t_phones;
+
+                    return $phones;
                 },
             "" => sub {
                     return '';
@@ -460,12 +463,13 @@ my %templates_hash = (
                 },
             "Контактный телефон" => sub {
                     my $d = shift;
-                    my $t_phones = $contact_phones;
-                    if ($t_phones =~ /%agent\.phone_num%/ && $d->agent_id) {
+                    my $phones = $contact_phones;
+                    if ($agent_phone == 1 && $d->agent) {
                         my $x = $d->agent->public_phone_num || $d->agent->phone_num;
-                        $t_phones =~ s/%agent\.phone_num%/$x/;
+                        $phones =  $x . ', ' . $phones;
                     }
-                    return $t_phones;
+
+                    return $phones;
                 },
 
         ),
@@ -622,12 +626,13 @@ my %templates_hash = (
                 },
             "Контактный телефон" => sub {
                     my $d = shift;
-                    my $t_phones = $contact_phones;
-                    if ($t_phones =~ /%agent\.phone_num%/ && $d->agent_id) {
+                    my $phones = $contact_phones;
+                    if ($agent_phone == 1 && $d->agent) {
                         my $x = $d->agent->public_phone_num || $d->agent->phone_num;
-                        $t_phones =~ s/%agent\.phone_num%/$x/;
+                        $phones =  $x . ', ' . $phones;
                     }
-                    return $t_phones;
+
+                    return $phones;
                 },
             "" => sub {
                     return '';
@@ -770,12 +775,13 @@ my %templates_hash = (
                 },
             "Контактный телефон" => sub {
                     my $d = shift;
-                    my $t_phones = $contact_phones;
-                    if ($t_phones =~ /%agent\.phone_num%/ && $d->agent_id) {
+                    my $phones = $contact_phones;
+                    if ($agent_phone == 1 && $d->agent) {
                         my $x = $d->agent->public_phone_num || $d->agent->phone_num;
-                        $t_phones =~ s/%agent\.phone_num%/$x/;
+                        $phones =  $x . ', ' . $phones;
                     }
-                    return $t_phones;
+
+                    return $phones;
                 },
             "" => sub {
                     return '';
@@ -925,12 +931,14 @@ my %templates_hash = (
                 },
             "Контактный телефон" => sub {
                     my $d = shift;
-                    my $t_phones = $contact_phones;
-                    if ($t_phones =~ /%agent\.phone_num%/ && $d->agent_id) {
+
+                    my $phones = $contact_phones;
+                    if ($agent_phone == 1 && $d->agent) {
                         my $x = $d->agent->public_phone_num || $d->agent->phone_num;
-                        $t_phones =~ s/%agent\.phone_num%/$x/;
+                        $phones =  $x . ', ' . $phones;
                     }
-                    return $t_phones;
+
+                    return $phones;
                 },
             "" => sub {
                     return '';
@@ -956,11 +964,11 @@ sub index {
 
     my $meta = from_json($media->metadata);
 
-
     my $rt_param = Rplus::Model::RuntimeParam->new(key => 'export')->load();
     if ($rt_param) {
         my $config = from_json($rt_param->{value});
         $contact_phones = $config->{'irr-phones'} ? trim($config->{'irr-phones'}) : '';
+        $agent_phone = 1 if $config->{'irr-agent-phone'} eq 'true';
         $contact_name = '';
         $contact_email = $config->{'irr-email'} ? $config->{'irr-email'} : '';
         $site_url = $config->{'irr-url'} ? $config->{'irr-url'} : '';        

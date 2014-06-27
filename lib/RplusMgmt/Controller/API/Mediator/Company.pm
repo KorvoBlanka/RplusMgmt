@@ -155,6 +155,13 @@ sub delete {
     );
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $num_rows_updated;
 
+    my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(query => [delete_date => undef, mediator_company_id => $id]);
+    while (my $realty = $realty_iter->next) {
+        $realty->agent_id(undef);
+        $realty->mediator_company_id(undef);
+        $realty->save(changes_only => 1);
+    }
+
     # Delete mediators from the deleted company
     my $num_rows_updated2 = Rplus::Model::Mediator::Manager->update_objects(
         set => {delete_date => \'now()'},
