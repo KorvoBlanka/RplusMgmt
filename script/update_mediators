@@ -1,0 +1,33 @@
+#!/usr/bin/env perl
+
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+
+use Rplus::Modern;
+
+use Rplus::Model::Realty;
+use Rplus::Model::Realty::Manager;
+use Rplus::Model::Mediator;
+use Rplus::Model::Mediator::Manager;
+use Rplus::Model::MediatorCompany;
+use Rplus::Model::MediatorCompany::Manager;
+
+say 'updating mediators';
+update_mediators();
+
+sub update_mediators {
+    my $mediator_iter = Rplus::Model::Mediator::Manager->get_objects_iterator(query => [delete_date => undef], require_objects => ['company']);
+    while (my $x = $mediator_iter->next) {
+        # Search for additional mediator phones
+        my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(query => [delete_date => undef, \("owner_phones && '{".$x->phone_num."}'")]);
+        while (my $realty = $realty_iter->next) {
+            $realty->mediator_company_id($x->company->id);
+            $realty->agent_id(10000);
+            if($realty->state_code eq 'work') {
+                $realty->state_code('raw');    
+            }
+            $realty->save(changes_only => 1);
+            say $realty->id;
+        }
+    }
+}

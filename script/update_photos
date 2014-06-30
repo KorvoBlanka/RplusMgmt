@@ -1,0 +1,30 @@
+#!/usr/bin/env perl
+
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+
+use Rplus::Modern;
+
+use Rplus::Model::Photo;
+use Rplus::Model::Photo::Manager;
+
+use Rplus::Util::Config;
+
+say 'updating photos';
+update_photos();
+
+sub update_photos {
+    my $config = Rplus::Util::Config::get_config();
+    my $subdomain = $config->{'subdomain'};
+
+    my $photo_iter = Rplus::Model::Photo::Manager->get_objects_iterator(query => [delete_date => undef]);
+    while (my $p = $photo_iter->next) {
+        if($p->filename !~ '^http') {
+            my $file_name = $p->filename;
+            my $realty_id = $p->realty_id;
+            say "http://tstorage.maklerdv.ru/clients/$subdomain/photos/$realty_id/$file_name";
+            $p->filename("http://tstorage.maklerdv.ru/clients/$subdomain/photos/$realty_id/$file_name");
+            $p->save;
+        }
+    }
+}
