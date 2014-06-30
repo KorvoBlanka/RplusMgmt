@@ -30,7 +30,7 @@ if (1) {
         $dbh->do(q{INSERT INTO public.media (id, name, code, type, metadata, keywords) VALUES (8, 'ВНХ', 'vnh', 'import', '{}', 'импорт внх, внх импорт');});
     } or do {
         say 'unable to insert VNH';
-    }
+    };
     $dbh->do(q{INSERT INTO public.media (id, name, code, type, metadata, keywords) VALUES (9, 'Из рук в руки', 'irr', 'import', '{}', 'импорт из_рук_в_руки, из_рук_в_руки импорт');});
     $dbh->do(q{INSERT INTO public.media (id, name, code, type, metadata, keywords) VALUES (10, 'Из рук в руки', 'irr', 'export', '{}', '');});
 
