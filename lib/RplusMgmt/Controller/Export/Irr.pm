@@ -1060,18 +1060,22 @@ sub index {
             my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $realty->id, delete_date => undef], limit => 3)};
 
             foreach (@photos) {
-                say 'loading image ' . $_->filename;
-                my $img_zipname = (URI->new($_->filename)->path_segments)[-2] . '_' . (URI->new($_->filename)->path_segments)[-1];
-                my $image = $ua->get($_->filename)->res->content->asset;
-                $image->move_to('/tmp/' . $img_zipname);
-                $zip->addFile('/tmp/' . $img_zipname, $img_zipname);
+                eval {
+                    say 'loading image ' . $_->filename;
+                    my $img_zipname = (URI->new($_->filename)->path_segments)[-2] . '_' . (URI->new($_->filename)->path_segments)[-1];
+                    my $image = $ua->get($_->filename)->res->content->asset;
+                    $image->move_to('/tmp/' . $img_zipname);
+                    $zip->addFile('/tmp/' . $img_zipname, $img_zipname);
+                } or do {
+                    say 'oops';
+                }
             }
             # Save the Zip file
             unless ( $zip->writeToFileNamed('/tmp/pictures.zip') == AZ_OK ) {
                 
             }
             $self->res->headers->content_disposition("attachment; filename=pictures.zip;");
-            $self->res->content->asset(Mojo::Asset::File->new(path => '/tmp/pictures.zip'));            
+            $self->res->content->asset(Mojo::Asset::File->new(path => '/tmp/pictures.zip'));
         }
     } else {
     
