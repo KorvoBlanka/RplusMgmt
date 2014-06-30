@@ -168,7 +168,7 @@ my %templates_hash = (
                 },
             "Фото" => sub {
                     my $d = shift;
-                    my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $d->id, delete_date => undef])};
+                    my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $d->id, delete_date => undef, limit => 3])};
                     return join(", ", map {
                         (URI->new($_->filename)->path_segments)[-2] . '_' . (URI->new($_->filename)->path_segments)[-1];
                     } @photos);
@@ -310,7 +310,7 @@ my %templates_hash = (
                 },
             "Фото" => sub {
                     my $d = shift;
-                    my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $d->id, delete_date => undef])};
+                    my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $d->id, delete_date => undef, limit => 3])};
                     return join(", ", map {
                         (URI->new($_->filename)->path_segments)[-2] . '_' . (URI->new($_->filename)->path_segments)[-1];
                     } @photos);
@@ -459,7 +459,7 @@ my %templates_hash = (
                 },
             "Фото" => sub {
                     my $d = shift;
-                    my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $d->id, delete_date => undef])};
+                    my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $d->id, delete_date => undef, limit => 3])};
                     return join(", ", map {
                         (URI->new($_->filename)->path_segments)[-2] . '_' . (URI->new($_->filename)->path_segments)[-1];
                     } @photos);
@@ -624,7 +624,7 @@ my %templates_hash = (
                 },
             "Фото" => sub {
                     my $d = shift;
-                    my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $d->id, delete_date => undef])};
+                    my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $d->id, delete_date => undef, limit => 3])};
                     return join(", ", map {
                         (URI->new($_->filename)->path_segments)[-2] . '_' . (URI->new($_->filename)->path_segments)[-1];
                     } @photos);
@@ -775,7 +775,7 @@ my %templates_hash = (
                 },
             "Фото" => sub {
                     my $d = shift;
-                    my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $d->id, delete_date => undef])};
+                    my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $d->id, delete_date => undef, limit => 3])};
                     return join(", ", map {
                         (URI->new($_->filename)->path_segments)[-2] . '_' . (URI->new($_->filename)->path_segments)[-1];
                     } @photos);
@@ -933,7 +933,7 @@ my %templates_hash = (
                 },
             "Фото" => sub {
                     my $d = shift;
-                    my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $d->id, delete_date => undef])};
+                    my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $d->id, delete_date => undef, limit => 3])};
                     return join(", ", map {
                         (URI->new($_->filename)->path_segments)[-2] . '_' . (URI->new($_->filename)->path_segments)[-1];
                     } @photos);
@@ -1057,7 +1057,7 @@ sub index {
         my $zip = Archive::Zip->new();
         while(my $realty = $realty_iter->next) {
 
-            my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $realty->id, delete_date => undef])};
+            my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $d->id, delete_date => undef, limit => 3])};
 
             foreach (@photos) {
                 say 'loading image ' . $_->filename;
