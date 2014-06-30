@@ -64,10 +64,11 @@
 
     $('[data-action="export-irr"]').on('click', function (e) {
       var offer_type = $('#formExportIrr [name="offer_type_code"]:input').val();
-
+      var realty_types = [];
       var i = 1;
       $('#formExportIrr [type="checkbox"]:input').each( function () {
         if(this.checked) {
+          realty_types.push(this.id);
           setTimeout( function (realty_type) {
             $('<form action="/export/irr" method="POST">' + 
                 '<input type="hidden" name="offer_type_code" value="' + offer_type + '">' +
@@ -77,6 +78,14 @@
           i ++;
         }
       });
+
+      setTimeout( function (realty_types_str) {
+        $('<form action="/export/irr" method="POST">' + 
+            '<input type="hidden" name="offer_type_code" value="' + offer_type + '">' +
+            '<input type="hidden" name="realty_type" value="' + realty_types_str + '">' +
+            '<input type="hidden" name="pictures" value="1">' +
+            '</form>').submit();
+      }, 1000 * i, realty_types.join());
 
     });
 

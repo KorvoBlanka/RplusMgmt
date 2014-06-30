@@ -34,3 +34,5 @@ for ($version_old..($version_new - 1)) {
         system($upgrade_script) or die "upgrade from $version1 to $version2 failed";
     }
 }
+
+exit 1;
