@@ -1,0 +1,37 @@
+#!/usr/bin/env perl
+
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+
+use Rplus::Modern;
+
+use Rplus::DB;
+
+my $dbh = Rplus::DB->new_or_cached->dbh;
+
+# Database scruct changes
+if (1) {
+    # Realty table changes
+    $dbh->do(q{ALTER TABLE public.realty ADD COLUMN mediator_company_id int4;});
+    $dbh->do(q{ALTER TABLE public.realty ADD COLUMN assign_date timestamptz;});
+
+    $dbh->do(q{COMMENT ON COLUMN public.realty.mediator_company_id IS 'id компании посредника';});
+    $dbh->do(q{COMMENT ON COLUMN public.realty.assign_date IS 'дата назначения объекта агенту';});
+
+    $dbh->do(q{ALTER TABLE public.realty ADD CONSTRAINT realty_mediator_company_fk FOREIGN KEY (mediator_company_id) REFERENCES public.mediator_companies (id) ON UPDATE NO ACTION ON DELETE NO ACTION;});
+
+    # make changes in _runtime_params
+    $dbh->do(q{ALTER TABLE public._runtime_params RENAME COLUMN not_var TO notifications;});
+    $dbh->do(q{ALTER TABLE public._runtime_params RENAME COLUMN opt_var TO import;});
+    $dbh->do(q{ALTER TABLE public._runtime_params RENAME COLUMN exp_var TO export;});
+
+    # Insert records in media table
+    $dbh->do(q{INSERT INTO public.media (id, name, code, type, metadata, keywords) VALUES (8, 'ВНХ', 'vnh', 'import', '{}', 'импорт внх, внх импорт');});
+    $dbh->do(q{INSERT INTO public.media (id, name, code, type, metadata, keywords) VALUES (9, 'Из рук в руки', 'irr', 'import', '{}', 'импорт из_рук_в_руки, из_рук_в_руки импорт');});
+    $dbh->do(q{INSERT INTO public.media (id, name, code, type, metadata, keywords) VALUES (10, 'Из рук в руки', 'irr', 'export', '{}', '');});
+}
+
+# Update models
+system("$FindBin::Bin/../script/make_models");
+
+exit 0;

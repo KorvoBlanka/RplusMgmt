@@ -185,23 +185,26 @@
     </div>
 
     <div class="tab-pane" id="export-farpost">
-        <form class="" role="form" id="formExportFarpost">
-          <div class="row" style="padding-top: 15px;">
-            <label class="col-lg-2 control-label">Телефоны</label>
-            <div class="col-lg-5">
-              <input type="text" class="form-control" name="phones" placeholder="Phone1, Phone2">
-            </div>
+      <div class="row" style="padding-top: 15px;">
+        <p>Нет настраиваемых параметров</p>
+      </div>
+      <form class="hidden" role="form" id="formExportFarpost">
+        <div class="row" style="padding-top: 15px;">
+          <label class="col-lg-2 control-label">Телефоны</label>
+          <div class="col-lg-5">
+            <input type="text" class="form-control" name="phones" placeholder="Phone1, Phone2">
           </div>
-          <div class="row" style="padding-top: 15px;">
-            <label class="col-lg-2 control-label">Телефон агента</label>
-            <div class="col-lg-5">
-              <input type="checkbox" name="agent-phone">
-            </div>
-          </div>          
-        </form>
-        <div class="form-group">
-          <button type="" class="btn btn-primary btn-save" style="margin-top: 64px">Сохранить</button>
-        </div>        
+        </div>
+        <div class="row" style="padding-top: 15px;">
+          <label class="col-lg-2 control-label">Телефон агента</label>
+          <div class="col-lg-5">
+            <input type="checkbox" name="agent-phone">
+          </div>
+        </div>          
+      </form>
+      <div class="form-group">
+        <button type="" class="btn btn-primary btn-save" style="margin-top: 64px">Сохранить</button>
+      </div>
     </div>
 
     <div class="tab-pane" id="export-present">
