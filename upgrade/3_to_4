@@ -42,4 +42,4 @@ system("$FindBin::Bin/../script/make_models");
 system("$FindBin::Bin/../script/update_mediators");
 system("$FindBin::Bin/../script/update_photos");
 
-exit 0;
+exit 1;
