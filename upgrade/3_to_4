@@ -22,8 +22,10 @@ if (1) {
 
     # make changes in _runtime_params
     $dbh->do(q{ALTER TABLE public._runtime_params RENAME COLUMN not_var TO notifications;});
-    $dbh->do(q{ALTER TABLE public._runtime_params RENAME COLUMN opt_var TO import;});
-    $dbh->do(q{ALTER TABLE public._runtime_params RENAME COLUMN exp_var TO export;});
+
+    $dbh->do(q{UPDATE TABLE public._runtime_params SET key = 'notifications' WHERE key =  'not_var';});
+    $dbh->do(q{UPDATE TABLE public._runtime_params SET key = 'import' WHERE key =  'opt_var';});
+    $dbh->do(q{UPDATE TABLE public._runtime_params SET key = 'export' WHERE key =  'exp_var';});
 
     # Insert records in media table
     $dbh->do(q{INSERT INTO public.media (id, name, code, type, metadata, keywords) VALUES (8, 'ВНХ', 'vnh', 'import', '{}', 'импорт внх, внх импорт');});
