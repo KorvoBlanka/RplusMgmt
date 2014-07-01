@@ -65,7 +65,8 @@
     $('[data-action="export-irr"]').on('click', function (e) {
       var offer_type = $('#formExportIrr [name="offer_type_code"]:input').val();
       var realty_types = [];
-      var i = 1;
+      var i = 0;
+
       $('#formExportIrr [type="checkbox"]:input').each( function () {
         if(this.checked) {
           realty_types.push(this.id);

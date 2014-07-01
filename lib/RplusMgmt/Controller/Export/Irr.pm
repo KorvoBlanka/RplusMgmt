@@ -170,7 +170,7 @@ my %templates_hash = (
                 },
             "Фото" => sub {
                     my $d = shift;
-                    my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $d->id, delete_date => undef], limit => 3)};
+                    my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $d->id, delete_date => undef], sort_by => 'id ASC', limit => 2)};
                     return join(", ", map {
                         (URI->new($_->filename)->path_segments)[-2] . '_' . (URI->new($_->filename)->path_segments)[-1];
                     } @photos);
@@ -312,7 +312,7 @@ my %templates_hash = (
                 },
             "Фото" => sub {
                     my $d = shift;
-                    my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $d->id, delete_date => undef], limit => 3)};
+                    my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $d->id, delete_date => undef], sort_by => 'id ASC', limit => 2)};
                     return join(", ", map {
                         (URI->new($_->filename)->path_segments)[-2] . '_' . (URI->new($_->filename)->path_segments)[-1];
                     } @photos);
@@ -461,7 +461,7 @@ my %templates_hash = (
                 },
             "Фото" => sub {
                     my $d = shift;
-                    my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $d->id, delete_date => undef], limit => 3)};
+                    my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $d->id, delete_date => undef], sort_by => 'id ASC', limit => 2)};
                     return join(", ", map {
                         (URI->new($_->filename)->path_segments)[-2] . '_' . (URI->new($_->filename)->path_segments)[-1];
                     } @photos);
@@ -626,7 +626,7 @@ my %templates_hash = (
                 },
             "Фото" => sub {
                     my $d = shift;
-                    my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $d->id, delete_date => undef], limit => 3)};
+                    my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $d->id, delete_date => undef], sort_by => 'id ASC', limit => 2)};
                     return join(", ", map {
                         (URI->new($_->filename)->path_segments)[-2] . '_' . (URI->new($_->filename)->path_segments)[-1];
                     } @photos);
@@ -777,7 +777,7 @@ my %templates_hash = (
                 },
             "Фото" => sub {
                     my $d = shift;
-                    my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $d->id, delete_date => undef], limit => 3)};
+                    my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $d->id, delete_date => undef], sort_by => 'id ASC', limit => 2)};
                     return join(", ", map {
                         (URI->new($_->filename)->path_segments)[-2] . '_' . (URI->new($_->filename)->path_segments)[-1];
                     } @photos);
@@ -935,7 +935,7 @@ my %templates_hash = (
                 },
             "Фото" => sub {
                     my $d = shift;
-                    my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $d->id, delete_date => undef], limit => 3)};
+                    my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $d->id, delete_date => undef], sort_by => 'id ASC', limit => 2)};
                     return join(", ", map {
                         (URI->new($_->filename)->path_segments)[-2] . '_' . (URI->new($_->filename)->path_segments)[-1];
                     } @photos);
@@ -1000,7 +1000,7 @@ sub index {
         $site_url = $config->{'irr-url'} ? $config->{'irr-url'} : '';        
     }
 
-    unlink($meta->{'prev_file'}) if $meta->{'prev_file'};
+    #unlink($meta->{'prev_file'}) if $meta->{'prev_file'};
     my ($fh, $file) = tmpnam();
     $meta->{'prev_file'} = $file;
 
@@ -1059,7 +1059,7 @@ sub index {
         my $zip = Archive::Zip->new();
         while(my $realty = $realty_iter->next) {
 
-            my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $realty->id, delete_date => undef], limit => 3)};
+            my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $realty->id, delete_date => undef], sort_by => 'id ASC', limit => 2)};
 
             foreach (@photos) {
                 #say 'loading image ' . $_->filename;
