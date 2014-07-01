@@ -83,6 +83,15 @@
     right: 0px;
     padding: 6px 12px;
     pointer-events: none;
+  }
+
+  #speech-button {
+    position: absolute;
+    z-index: 10;
+    top: 4px;
+    right: 78px;    
+    background: none;
+    border: none;
   }  
 </style>
 % end
@@ -92,6 +101,7 @@
 %= js_once "$assets_url/leaflet.fullscreen/$leafletjs_fullscreen_ver/Control.FullScreen.js";
 %= js_once "/js/leaflet/layer-2gis.js";
 %= js_once "$assets_url/typeahead.js/$typeaheadjs_ver/js/typeahead.js";
+%= js_once "$assets_url/jquery.webSpeech/jquery.webSpeech-1.0.1.js";
 % end
 
 % content_for javascript => begin
@@ -104,6 +114,22 @@
 
   (function () {
     var geoMap;
+
+
+    function initSpeech() {
+      $('#searchQuery').webSpeech({ 
+        button      : 'speech-button', //id of the initiating button
+        lang        : 'ru-RU',
+        format      : 'input',            //input, textarea, html
+        build       : 'overwrite',           //append, overwrite
+        startImg    : 'http://assets.maklerdv.ru/jquery.webSpeech/sm-mic.png',
+        animateImg  : 'http://assets.maklerdv.ru/jquery.webSpeech/sm-mic-on.png',
+        errorImg    : 'http://assets.maklerdv.ru/jquery.webSpeech/sm-mic-off.png',
+        showHelp    : false,
+        showInterim : false,
+        continuous  : false,
+      });
+    }
 
     var _listRealty_started  = 0, _listRealty_finished = 0;
     function listRealty(page) {
@@ -276,6 +302,7 @@
         }).findOrCreate(phoneNum);
       });
 
+      initSpeech();
       listRealty(1);
     });
   })();
@@ -296,6 +323,7 @@
         </div>
       </div>
     </form>
+    <button id="speech-button" style="z-index: 100;"></button>    
   </div>
 
   <div class="col-md-2 margin-bottom-20">

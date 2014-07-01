@@ -16,6 +16,7 @@
 %= css_once "$assets_url/leaflet/$leafletjs_ver/leaflet.css";
 %= css_once "$assets_url/leaflet.fullscreen/$leafletjs_fullscreen_ver/Control.FullScreen.css";
 %= css_once "$assets_url/typeahead.js/$typeaheadjs_ver/css/typeahead.js-bootstrap.css";
+%= css_once "$assets_url/jquery.webSpeech/jquery.webSpeech-1.0.1.css";
 %= css_once "/css/context.css";
 <style tyle="text/css">
   .export-check-hidden {
@@ -185,14 +186,24 @@
     padding: 6px 12px;
     pointer-events: none;
   }
+
+  #speech-button {
+    position: absolute;
+    z-index: 10;
+    top: 4px;
+    right: 18px;    
+    background: none;
+    border: none;
+  }
 </style>
 % end
 
 % content_for after_bootstrap => begin
 %= js_once "$assets_url/leaflet/$leafletjs_ver/leaflet.js";
 %= js_once "$assets_url/leaflet.fullscreen/$leafletjs_fullscreen_ver/Control.FullScreen.js";
-%= js_once "/js/leaflet/layer-2gis.js";
 %= js_once "$assets_url/typeahead.js/$typeaheadjs_ver/js/typeahead.js";
+%= js_once "$assets_url/jquery.webSpeech/jquery.webSpeech-1.0.1.js";
+%= js_once "/js/leaflet/layer-2gis.js";
 %= js_once "/js/contextmenu/context.js";
 %= js_once "/js/modernizr/modernizr.js";
 
@@ -312,6 +323,20 @@
       }
     }
 
+    function initSpeech() {
+      $('#searchQuery').webSpeech({ 
+        button      : 'speech-button', //id of the initiating button
+        lang        : 'ru-RU',
+        format      : 'input',            //input, textarea, html
+        build       : 'overwrite',           //append, overwrite
+        startImg    : 'http://assets.maklerdv.ru/jquery.webSpeech/sm-mic.png',
+        animateImg  : 'http://assets.maklerdv.ru/jquery.webSpeech/sm-mic-on.png',
+        errorImg    : 'http://assets.maklerdv.ru/jquery.webSpeech/sm-mic-off.png',
+        showHelp    : false,
+        showInterim : false,
+        continuous  : false,
+      });
+    }
     // Save realty table conf to localStorage
     function saveRealtyTableConf() {
       var localConf = {ver: confVer, fields: {}};
@@ -729,6 +754,7 @@
         loadRealtyTableConf();
         loadHistory();
         createContextMenu();
+        initSpeech();
         var xhtml = '<tr>',
             xhtml2 = '';
         for (var i = 0; i < realtyTableConf.fields.length; i++) {
@@ -1424,15 +1450,13 @@
 -->
 
 <div class="tab-content" id="navTabContent">
-  <div class="tab-pane active" id="search">
-    <div class="row">
+  <div class="tab-pane active" id="search" >
+    <div class="row" style="padding-bottom: 20px;">
       <div class="col-md-12 col-lg-12">
         <form role="search">
-          <div class="form-group right-inner-addon">
-            <i style="z-index: 100;"><span class="glyphicon glyphicon-search"></span></i>
-            <input type="text" class="form-control input-sm" id="searchQuery" name="q" placeholder="введите запрос, например: 2 комнатная квартира центр новая планировка до 5000 тыс. руб. 60 кв. м." autocomplete="off" x-webkit-speech>
-          </div>
+          <input type="text" class="form-control input-sm" id="searchQuery" name="q" placeholder="введите запрос, например: 2 комнатная квартира центр новая планировка до 5000 тыс. руб. 60 кв. м." autocomplete="off">
         </form>
+        <button id="speech-button" style="z-index: 100;"></button>        
       </div>
     </div>
 

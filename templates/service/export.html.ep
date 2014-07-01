@@ -12,8 +12,6 @@
 
 % content_for javascript => begin
 
-%= js_once "/js/jquery.multiDownload.js";
-
 <script type="application/javascript">
 
   function readCookie(name) {
