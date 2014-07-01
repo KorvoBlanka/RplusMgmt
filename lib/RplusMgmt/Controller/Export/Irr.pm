@@ -984,6 +984,8 @@ sub index {
     my $media = Rplus::Model::Media::Manager->get_objects(query => [code => 'irr', type => 'export', delete_date => undef])->[0];
     return $self->render_not_found unless $media;
 
+    Mojo::IOLoop->stream($self->tx->connection)->timeout(900);
+
     my $pictures = $self->param_b('pictures');
     my $offer_type_code = $self->param('offer_type_code');
     my $realty_type = $self->param('realty_type');
@@ -1062,7 +1064,6 @@ sub index {
             my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $realty->id, delete_date => undef], sort_by => 'id ASC', limit => 2)};
 
             foreach (@photos) {
-                #say 'loading image ' . $_->filename;
                 my $img_realty_id = (URI->new($_->filename)->path_segments)[-2];
                 my $img_name = (URI->new($_->filename)->path_segments)[-1];
                 my $img_zipname = $img_realty_id . '_' . $img_name;
@@ -1073,10 +1074,7 @@ sub index {
                 } else {                            # http://tstorage.maklerdv.ru/clients/makler/photos/99018/140417050218249.jpg
                     $img_path = $self->config->{'storage'}->{'path'} . '/photos/' . $img_realty_id . '/' . $img_name
                 }
-
-                say $img_path;
                 if (-e $img_path) {
-                    say 'ok';
                     my $member = $zip->addFile($img_path, $img_zipname);
                     $member->desiredCompressionLevel(COMPRESSION_LEVEL_NONE);
                 }
@@ -1086,6 +1084,7 @@ sub index {
                 
             }
             $self->res->headers->content_disposition("attachment; filename=pictures.zip;");
+            $self->res->headers->set_cookie('download=start; path=/');
             $self->res->content->asset(Mojo::Asset::File->new(path => $file));
         }
     } else {

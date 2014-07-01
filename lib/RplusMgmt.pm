@@ -67,11 +67,8 @@ sub startup {
                 $acc_data = $res->json;
                 $acc_data_str->{'ts'} = time;
             }
-
             $acc_data_str->{'data'} = $acc_data;
             $fmap->set('acc_data', $acc_data_str);
-
-            print Dumper $acc_data_str;
         }
 
         return $acc_data_str->{'data'};;
