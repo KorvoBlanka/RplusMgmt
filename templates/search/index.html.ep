@@ -92,7 +92,7 @@
     right: 78px;    
     background: none;
     border: none;
-  }  
+  }
 </style>
 % end
 
@@ -114,7 +114,6 @@
 
   (function () {
     var geoMap;
-
 
     function initSpeech() {
       $('#searchQuery').webSpeech({ 
