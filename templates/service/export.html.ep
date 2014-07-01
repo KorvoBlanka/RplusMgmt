@@ -89,7 +89,7 @@
                 '<input type="hidden" name="offer_type_code" value="' + offer_type + '">' +
                 '<input type="hidden" name="realty_type" value="' + realty_type + '">' +
                 '</form>').submit();
-          }, 1000 * i, this.id);
+          }, 1500 * i, this.id);
           i ++;
         }
       });
@@ -100,7 +100,7 @@
           '<input type="hidden" name="realty_type" value="' + realty_types_str + '">' +
           '<input type="hidden" name="pictures" value="1">' +
           '</form>').submit();
-      }, 1000 * i, realty_types.join());
+      }, 1500 * i, realty_types.join());
 
       var iid = setInterval(function(realty_types_str) {
         console.log('!');

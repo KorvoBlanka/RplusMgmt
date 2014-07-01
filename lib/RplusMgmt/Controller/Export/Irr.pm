@@ -1009,7 +1009,7 @@ sub index {
     $media->metadata(encode_json($meta));
     $media->save(changes_only => 1);
 
-    my $csv = Text::CSV->new ( { binary => 1, sep_char=> ";", eol => $/, } ) or return $self->render(json => {error => 'Server error'}, status => 500);
+    my $csv = Text::CSV->new ( { binary => 1, quote_binary => 0, quote_space => 0, sep_char=> ";", eol => $/, } ) or return $self->render(json => {error => 'Server error'}, status => 500);
 
     my $template = $templates_hash{$offer_type_code}->{$realty_type};
 
