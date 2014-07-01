@@ -20,6 +20,8 @@ use Data::Dumper;
 use URI;
 use Archive::Zip qw( :ERROR_CODES :CONSTANTS );
 
+my $import_storage_path = '/var/data/storage/import/photos/';
+
 my $contact_phones = '';
 my $agent_phone = 0;
 my $contact_name = '';
@@ -1050,7 +1052,7 @@ sub index {
         with_objects => ['address_object', 'house_type', 'balcony', 'bathroom', 'condition', 'agent'],
     );
 
-    if ($pictures == 1) {
+    if ($pictures && $pictures == 1) {
         my $ua = Mojo::UserAgent->new;
 
         my $arch_name = "pictures";
@@ -1060,22 +1062,31 @@ sub index {
             my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $realty->id, delete_date => undef], limit => 3)};
 
             foreach (@photos) {
-                eval {
-                    say 'loading image ' . $_->filename;
-                    my $img_zipname = (URI->new($_->filename)->path_segments)[-2] . '_' . (URI->new($_->filename)->path_segments)[-1];
-                    my $image = $ua->get($_->filename)->res->content->asset;
-                    $image->move_to('/tmp/' . $img_zipname);
-                    $zip->addFile('/tmp/' . $img_zipname, $img_zipname);
-                } or do {
-                    say 'oops';
+                #say 'loading image ' . $_->filename;
+                my $img_realty_id = (URI->new($_->filename)->path_segments)[-2];
+                my $img_name = (URI->new($_->filename)->path_segments)[-1];
+                my $img_zipname = $img_realty_id . '_' . $img_name;
+                #my $image = $ua->get($_->filename)->res->content->asset;
+                my $img_path = '';
+                if ($_->filename =~ /import/) {     # http://tstorage.rplusmgmt.com/import/photos/287752/140416998258953.jpg
+                    $img_path = $import_storage_path . $img_realty_id . '/' . $img_name
+                } else {                            # http://tstorage.maklerdv.ru/clients/makler/photos/99018/140417050218249.jpg
+                    $img_path = $self->config->{'storage'}->{'path'} . '/photos/' . $img_realty_id . '/' . $img_name
+                }
+
+                say $img_path;
+                if (-e $img_path) {
+                    say 'ok';
+                    my $member = $zip->addFile($img_path, $img_zipname);
+                    $member->desiredCompressionLevel(COMPRESSION_LEVEL_NONE);
                 }
             }
             # Save the Zip file
-            unless ( $zip->writeToFileNamed('/tmp/pictures.zip') == AZ_OK ) {
+            unless ( $zip->writeToFileNamed($file) == AZ_OK ) {
                 
             }
             $self->res->headers->content_disposition("attachment; filename=pictures.zip;");
-            $self->res->content->asset(Mojo::Asset::File->new(path => '/tmp/pictures.zip'));
+            $self->res->content->asset(Mojo::Asset::File->new(path => $file));
         }
     } else {
     
