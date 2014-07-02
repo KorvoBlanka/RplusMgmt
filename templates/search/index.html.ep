@@ -85,6 +85,10 @@
     pointer-events: none;
   }
 
+  #searchQuery {
+    width: 99.7%;
+  }
+
   #speech-button {
     position: absolute;
     z-index: 10;
