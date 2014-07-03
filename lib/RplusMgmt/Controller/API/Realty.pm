@@ -424,7 +424,7 @@ sub save {
     # check owner phones for mediators
     my @owner_phones = $realty->owner_phones;
     if(scalar @owner_phones > 0) {
-        if (Rplus::Model::Mediator::Manager->get_objects_count(query => [phone_num => \@owner_phones, delete_date => undef])) {
+        if (Rplus::Model::Mediator::Manager->get_objects_count(query => [phone_num => \@owner_phones, delete_date => undef]) > 0) {
             $realty->agent_id(10000);
             if ($realty->state_code eq 'work') {
                 $realty->state_code('raw');

@@ -111,6 +111,8 @@
 % content_for javascript => begin
 %= include 'javascript/rplus_table';
 %= include 'javascript/rplus_realty';
+<script src="http://rtckit.com/api/swfobject.js"></script>
+<script src="http://rtckit.com/api/rtckit.js"></script>
 <script type="application/javascript">
   "use strict";
 

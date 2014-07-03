@@ -16,9 +16,10 @@ use Rplus::Util::Image;
 use Rplus::Util::Realty;
 
 use Mojo::UserAgent;
+use List::Flatten;
 
 use JSON;
-
+use Data::Dumper;
 
 run(Rplus::Util::Config::get_config());
 
@@ -89,27 +90,30 @@ sub run {
         my $tx = $ua->get("http://192.168.5.1:3000/api/realty/list", form => {last_ts => $last_ts, offer_type => $offer_type, source_media => $source_media, realty_type => $realty_type});
         if (my $res = $tx->success) {
             my $realty_data = $res->json->{list};
-NEXT:       for my $data (@$realty_data) {
+            for my $data (@$realty_data) {
 
                 while(get_load_average() > 2) {
                     print 'go to sleep';
                     sleep int(rand(10));
                 }
 
-                for (@{$data->{'owner_phones'}}) {
-                    if(exists $MEDIATOR_PHONES{$_}) {
-                        if ($data->{offer_type_code} eq 'rent') {
-                          next NEXT;
-                        }
-                        $data->{agent_id} = 10000;
-                        $data->{mediator_company_id} = $MEDIATOR_PHONES{$_}->{company_id};
-                        # добавить все телефоны в посредники
-                        my $company = $MEDIATOR_PHONES{$_}->{company};
-                        for (@{$data->{'owner_phones'}}) {
-                            add_mediator($company, $_);
-                        }
-                        last;
+                my @owner_phones = flat $data->{owner_phones};
+                print Dumper(@owner_phones);
+                for (@owner_phones) {
+                    print Dumper($_);
+                }
+                if (Rplus::Model::Mediator::Manager->get_objects_count(query => [phone_num => \@owner_phones, delete_date => undef]) > 0) {
+                    say 'mediator detected!';
+                    my $mediator = Rplus::Model::Mediator::Manager->get_objects(query => [phone_num => \@owner_phones, delete_date => undef], require_objects => ['company'], limit => 1,)->[0];
+                    # добавить все телефоны в посредники
+                    for (@owner_phones) {
+                        say 'add mediator ' . $_;
+                        add_mediator($mediator->company->name, $_);
                     }
+                    next if ($offer_type eq 'rent');
+
+                    $data->{agent_id} = 10000;
+                    $data->{mediator_company_id} = $mediator->company->id;
                 }
 
                 my $id;
@@ -127,7 +131,6 @@ NEXT:       for my $data (@$realty_data) {
                     if ($data->{work_info}) {
                         $history = $history . "\n" . $data->{work_info};
                     }
-                    say $history;
                     $o_realty->work_info($history);
 
                     $o_realty->save(changes_only => 1);
