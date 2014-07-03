@@ -35,4 +35,4 @@ for ($version_old..($version_new - 1)) {
     }
 }
 
-exit 1;
+1;

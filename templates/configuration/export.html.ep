@@ -60,14 +60,14 @@
       ;
     }
 
-    function saveOptions(name, val) {
+    function saveOptions(opt_hash) {
+      var opts = JSON.stringify(opt_hash);
       $.ajax({
         type: "POST",
-        url: "/api/options/set",
+        url: "/api/options/set_multiple",
         data: {
           category: "export",
-          name: name, 
-          value: val,
+          opt_string: opts, 
         }
       })
         .done(function (data, textStatus, jqXHR) {
@@ -85,45 +85,48 @@
       $( ".btn-save" ).click(function(e) {
         
         var t;
-        
+        var opt_hash ={};
+
         t = $('#formExportVnh [name="phones"]:input').val();
-        saveOptions('vnh-phones', t);
+        opt_hash['vnh-phones'] = t;
 
         t = $('#formExportVnh [name="agent-phone"]:input').is(':checked');
-        saveOptions('vnh-agent-phone', t);
+        opt_hash['vnh-agent-phone'] = t;
 
         t = $('#formExportVnh [name="company"]:input').val();
-        saveOptions('vnh-company', t);
+        opt_hash['vnh-company'] = t;
 
         
         t = $('#formExportFarpost [name="phones"]:input').val();
-        saveOptions('farpost-phones', t);
+        opt_hash['farpost-phones'] = t;
 
         t = $('#formExportFarpost [name="agent-phone"]:input').is(':checked');
-        saveOptions('farpost-agent-phone', t);
+        opt_hash['farpost-agent-phone'] = t;
 
 
         t = $('#formExportPresent [name="add_description_words"]:input').val();
-        saveOptions('present-descr', t);
+        opt_hash['present-descr'] = t;
 
         t = $('#formExportPresent [name="agent-phone"]:input').is(':checked');
-        saveOptions('present-agent-phone', t);
-        
+        opt_hash['present-agent-phone'] = t;
+
         t = $('#formExportPresent [name="phones"]:input').val();
-        saveOptions('present-phones', t);
+        opt_hash['present-phones'] = t;
 
 
         t = $('#formExportIrr [name="phones"]:input').val();
-        saveOptions('irr-phones', t);
+        opt_hash['irr-phones'] = t;
         
         t = $('#formExportIrr [name="agent-phone"]:input').is(':checked');
-        saveOptions('irr-agent-phone', t);
+        opt_hash['irr-agent-phone'] = t;
 
         t = $('#formExportIrr [name="email"]:input').val();
-        saveOptions('irr-email', t);
+        opt_hash['irr-email'] = t;
         
         t = $('#formExportIrr [name="url"]:input').val();
-        saveOptions('irr-url', t);
+        opt_hash['irr-url'] = t;
+
+        saveOptions(opt_hash);
       });
       
       listOptions();   

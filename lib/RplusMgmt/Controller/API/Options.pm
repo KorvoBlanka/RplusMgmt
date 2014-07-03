@@ -28,6 +28,28 @@ sub list {
     return $self->render(json => $res);    
 }
 
+sub set_multiple {
+    my $self = shift;
+
+    my $category = $self->param('category');    
+    my $opt_string = $self->param('opt_string');
+    my $opt_hash = from_json($opt_string);
+
+    my $rt_param = Rplus::Model::RuntimeParam->new(key => $category)->load();
+    
+    return $self->render(json => {error => 'Not Found'}, status => 404) unless $rt_param;
+
+    my $vals = from_json($rt_param->{value});
+    while (my ($key, $value) = each %$opt_hash) {
+        $vals->{$key} = $value;
+    }
+
+    $rt_param->value(encode_json($vals));
+    $rt_param->save;
+    
+    return $self->render(json => {status => 'success'});    
+}
+
 sub set {
     my $self = shift;
 
