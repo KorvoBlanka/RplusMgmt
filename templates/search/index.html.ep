@@ -97,6 +97,47 @@
     background: none;
     border: none;
   }
+
+  .quarter-circle-top-left {
+      width: 75px;
+      height: 75px;
+      background: #006600;
+       border-radius: 75px 0 0 0;
+       -moz-border-radius: 75px 0 0 0;
+       -webkit-border-radius: 75px 0 0 0;
+      opacity: 0.5;
+  }
+  .quarter-circle-top-right {
+       width: 75px;
+       height: 75px;
+       background: #660000;
+       border-radius: 0 75px 0 0;
+       -moz-border-radius: 0 75px 0 0;
+       -webkit-border-radius: 0 75px 0 0;
+       z-index: 500;
+       opacity: 0.5;
+  }
+  .quarter-circle-bottom-left {
+       width: 75px;
+       height: 75px;
+       background: #aaa;
+       border-radius: 0 0 0 75px;
+       -moz-border-radius: 0 0 0 75px;
+       -webkit-border-radius: 0 0 0 75px;       
+       z-index: 500;
+       opacity: 0.5;
+  }
+  .quarter-circle-bottom-right {
+       width: 75px;
+       height: 75px;
+       background: #aaa;
+    border-radius: 0 0 75px 0;
+    -moz-border-radius: 0 0 75px 0;
+    -webkit-border-radius: 0 0 75px 0;       
+       z-index: 500;
+       opacity: 0.5;
+  }
+
 </style>
 % end
 
@@ -115,7 +156,63 @@
 <script src="http://rtckit.com/api/rtckit.js"></script>
 <script type="application/javascript">
   "use strict";
+/*
+  window.addEventListener('load', function() {
+    var authToken = {
+        // публичный ключ (не путать с приватным!)
+        key: 'hzp915OzlIeuIqLqWW5d',
+        
+        // куда можно звонить: * - любая последовательность, запятая - ИЛИ
+        mask: '*',
+        
+        // время до которого дествует токен в формате UNIX
+        expires: 1922646919,
+        
+        // подпись: SHA1(mask + expires + private_key) в шеснадцатеричном
+        // представлении
+        signature: 'b5bcb68e78dcbdb08e6555fae8a5f7194439e5d5'
+    }
 
+
+    RTCKit.webPhone.onConnectStateChanged = function(connectInfo) {
+      console.log(connectInfo);
+      if (connectInfo.connected) {
+        RTCKit.webPhone.register({
+          registrar: 'msk4.sipuni.com',
+          username: '069220103',
+          password: 'VBjpiPcZ',
+          auth: authToken,
+        });
+      }
+    }
+
+    RTCKit.webPhone.onRegStateChanged = function(regInfo) {
+      console.log(regInfo);
+      if (regInfo.registered) {
+        //RTCKit.webPhone.call({'uri': 'sip:89294121474@msk4.sipuni.com'});
+        //RTCKit.webPhone.answer({video: false});
+      }
+    }
+
+    // обработчик состояния звонка
+    RTCKit.webPhone.onCallStateChanged = function(callInfo) {
+      console.log(callInfo);
+        //console.log(callInfo.uri);        // SIP URI или Jingle ID
+        //console.log(callInfo.state);      // состояние звонка ('IDLE', 'INCOMING',
+                                          // 'OUTGOING', 'CONNECTED')
+        //console.log(callInfo.display);    // имя звонящего (если есть)
+        //console.log(callInfo.info);       // причина завершения вызова (если есть)
+        //console.log(callInfo.video);      // тип звонка (голос или видео)
+
+      if (callInfo.state == 'INCOMING') {
+          RTCKit.webPhone.answer({video: false});
+      }
+    }    
+
+    RTCKit.webPhone.embed({container: 'container'});
+    RTCKit.webPhone.connect()
+  }, false);
+*/
   registerGlobalAjaxEvents();
 
   (function () {
@@ -314,11 +411,42 @@
 </script>
 % end
 
+<!--
+<div style='display: none;'>
+  <div id='container' style='width: 217px; height: 140px'></div>
+</div>
+
+<div class="screen" style="height:100%; width:100%; overflow:hidden; position: absolute; display: none;">
+  <table style="width:156px; position: fixed; top: 50%; left: 50%; margin-top: -75px; margin-left: -75px; z-index: 500;">
+    <tr>
+      <td>
+        <div class="quarter-circle-top-left" style="">
+        </div>
+      </td>
+      <td>
+        <div class="quarter-circle-top-right" style="">
+        </div>
+      </td>
+    </tr>
+    </tr>
+      <td>
+        <div class="quarter-circle-bottom-left" style="">
+        </div>
+      </td>
+      <td>
+        <div class="quarter-circle-bottom-right" style="">
+        </div>
+      </td>
+    </tr>
+  </table>
+</div>
+-->
+
 <div class="row">
   <div class="col-md-10 margin-bottom-20">
     <form role="search">
       <div class="input-group input-group-sm">
-        <input type="text" class="form-control input-sm" id="searchQuery" name="q" placeholder="<%= ucfloc 'search' %>" autocomplete="off" x-webkit-speech>
+        <input type="text" class="form-control input-sm" id="searchQuery" name="q" placeholder="<%= ucfloc 'search' %>" autocomplete="off">
         <div class="input-group-btn">
           <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown"><%= loc 'SMS' %> <span class="caret"></span></button>
           <ul class="dropdown-menu pull-right" role="menu">
