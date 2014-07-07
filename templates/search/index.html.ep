@@ -99,43 +99,158 @@
   }
 
   .quarter-circle-top-left {
-      width: 75px;
-      height: 75px;
-      background: #006600;
-       border-radius: 75px 0 0 0;
-       -moz-border-radius: 75px 0 0 0;
-       -webkit-border-radius: 75px 0 0 0;
-      opacity: 0.5;
+    width: 65px;
+    height: 65px;
+    border-radius: 65px 0 0 0;
+    -moz-border-radius: 65px 0 0 0;
+    -webkit-border-radius: 65px 0 0 0;
   }
   .quarter-circle-top-right {
-       width: 75px;
-       height: 75px;
-       background: #660000;
-       border-radius: 0 75px 0 0;
-       -moz-border-radius: 0 75px 0 0;
-       -webkit-border-radius: 0 75px 0 0;
-       z-index: 500;
-       opacity: 0.5;
+    width: 65px;
+    height: 65px;
+    border-radius: 0 65px 0 0;
+    -moz-border-radius: 0 65px 0 0;
+    -webkit-border-radius: 0 65px 0 0;
   }
   .quarter-circle-bottom-left {
-       width: 75px;
-       height: 75px;
-       background: #aaa;
-       border-radius: 0 0 0 75px;
-       -moz-border-radius: 0 0 0 75px;
-       -webkit-border-radius: 0 0 0 75px;       
-       z-index: 500;
-       opacity: 0.5;
+    width: 65px;
+    height: 65px;
+    border-radius: 0 0 0 65px;
+    -moz-border-radius: 0 0 0 65px;
+    -webkit-border-radius: 0 0 0 65px;       
   }
   .quarter-circle-bottom-right {
-       width: 75px;
-       height: 75px;
-       background: #aaa;
-    border-radius: 0 0 75px 0;
-    -moz-border-radius: 0 0 75px 0;
-    -webkit-border-radius: 0 0 75px 0;       
-       z-index: 500;
-       opacity: 0.5;
+    width: 65px;
+    height: 65px;
+    border-radius: 0 0 65px 0;
+    -moz-border-radius: 0 0 65px 0;
+    -webkit-border-radius: 0 0 65px 0;       
+  }
+
+  .phone-button {
+    background: #aaa;
+    text-align: center;
+    -webkit-transition: all .1s ease-in-out;
+  }
+
+  .phone-button:hover {
+    -webkit-transform: scale(1.02);
+  }
+
+  .phone-button:active {
+    -webkit-transform: scale(0.92);
+  }
+
+  .answer-button {
+    background-color: rgba(1, 199, 1, 0.55);
+  }
+
+  .showphone-button {
+    background-color: rgba(165, 165, 165, 0.55)
+  }  
+
+  .reject-button {
+    background-color: rgba(214, 0, 0, 0.55);
+  }
+
+  .disabled-button {
+    background-color: rgba(165, 165, 165, 0.55)
+  }
+
+  @-webkit-keyframes ring0 {
+    0%, 100% { 
+      -webkit-transform: rotate(0deg);
+    }
+    20% {
+      -webkit-transform: rotate(12deg);
+    }
+    40% { 
+      -webkit-transform: rotate(-12deg);
+    }
+    60% {
+      -webkit-transform: rotate(12deg);
+    }
+    80% {
+      -webkit-transform: rotate(-12deg);
+    }    
+  }
+
+  @-webkit-keyframes ring1 {
+    0%, 100% { 
+      -webkit-transform: scale(1);
+    }
+    50% {
+      -webkit-transform: scale(1.1);
+    }
+  }
+
+  .callin {
+    -webkit-animation: ring0 0.5s infinite;
+  }
+
+  .phone-screen {
+    height: 600px;
+    width: 900px;
+    overflow: hidden;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin-top: -300px;
+    margin-left: -450px;
+    background-color: rgba(0,0,0, 0.7);
+    z-index: 499;    
+  }
+
+  .incoming {
+    color: rgba(1, 199, 1, 1.0) !important;
+  }
+
+  .outgoing-answer {
+    color: rgba(1, 199, 1, 1.0) !important;
+  }
+
+  .outgoing-reject {
+    color: rgba(214, 0, 0, 0.55) !important;
+  }
+
+  .numpad {
+    padding: 0px;
+    margin: 0px;
+    color: #fff;
+    text-align: center;
+    font-size: 28px;
+    font-weight: 100;
+  }
+
+  .numpad tr > td {
+    padding: 0px;
+    margin: 0px;
+    width: 64px;
+    height: 32px;
+  }
+
+  .numpad tr > td > div {
+    padding: 0px;
+    margin: 2px;
+    margin-left: 0px;
+    margin-bottom: 0px;
+    background-color: rgba(255,255,255,0.10);
+  }
+
+  .numpad-key {
+    -webkit-transition: all .05s ease-in-out;
+    cursor: pointer;
+
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+
+  .numpad-key:active {
+    -webkit-transform: scale(0.92);
   }
 
 </style>
@@ -156,31 +271,32 @@
 <script src="http://rtckit.com/api/rtckit.js"></script>
 <script type="application/javascript">
   "use strict";
-/*
-  window.addEventListener('load', function() {
+
+  function sipSetup() {
+    var phone_num = "";
+
+    console.log('sip setup');
+    //var call_sound = new buzz.sound("/sounds/mysound.ogg");
+
     var authToken = {
         // публичный ключ (не путать с приватным!)
         key: 'hzp915OzlIeuIqLqWW5d',
-        
         // куда можно звонить: * - любая последовательность, запятая - ИЛИ
         mask: '*',
-        
         // время до которого дествует токен в формате UNIX
         expires: 1922646919,
-        
         // подпись: SHA1(mask + expires + private_key) в шеснадцатеричном
         // представлении
         signature: 'b5bcb68e78dcbdb08e6555fae8a5f7194439e5d5'
     }
 
-
     RTCKit.webPhone.onConnectStateChanged = function(connectInfo) {
       console.log(connectInfo);
       if (connectInfo.connected) {
         RTCKit.webPhone.register({
-          registrar: 'msk4.sipuni.com',
-          username: '069220103',
-          password: 'VBjpiPcZ',
+          registrar: 'rplusmgmt.com',
+          username: '1002',
+          password: 'pass1002',
           auth: authToken,
         });
       }
@@ -189,30 +305,120 @@
     RTCKit.webPhone.onRegStateChanged = function(regInfo) {
       console.log(regInfo);
       if (regInfo.registered) {
-        //RTCKit.webPhone.call({'uri': 'sip:89294121474@msk4.sipuni.com'});
-        //RTCKit.webPhone.answer({video: false});
+        $('#show-phone-button > span').removeClass('hidden');
       }
     }
 
     // обработчик состояния звонка
     RTCKit.webPhone.onCallStateChanged = function(callInfo) {
-      console.log(callInfo);
-        //console.log(callInfo.uri);        // SIP URI или Jingle ID
-        //console.log(callInfo.state);      // состояние звонка ('IDLE', 'INCOMING',
-                                          // 'OUTGOING', 'CONNECTED')
-        //console.log(callInfo.display);    // имя звонящего (если есть)
-        //console.log(callInfo.info);       // причина завершения вызова (если есть)
-        //console.log(callInfo.video);      // тип звонка (голос или видео)
 
+      // 'IDLE', 'INCOMING', 'OUTGOING', 'CONNECTED'
+
+      console.log(callInfo);
       if (callInfo.state == 'INCOMING') {
-          RTCKit.webPhone.answer({video: false});
+        $('.phone-screen').removeClass('hidden');
+        //$('#answer-button').removeClass('disabled-button');
+        //$('#reject-button').removeClass('disabled-button');
+
+        $('#answer-button > span').addClass('callin');
+        $('#answer-button > span').addClass('incoming');
+        $('#reject-button > span').addClass('outgoing-reject');
+
+        phone_num = callInfo.display;
+        $('#callerNumber').html(phone_num);
+        $('#callerName').html('');        
+      }
+
+      if (callInfo.state == 'CONNECTED') {
+        $('.phone-screen').removeClass('hidden');
+        $('#answer-button').removeClass('disabled-button');
+        $('#reject-button').removeClass('disabled-button');
+
+        $('#answer-button > span').removeClass('callin');
+        $('#answer-button > span').removeClass('incoming');
+
+        $('#answer-button > span').removeClass('outgoing-answer');
+        $('#reject-button > span').removeClass('outgoing-reject');
+
+        $('#sfPhoneNum').val(phone_num);
+      }
+
+      if (callInfo.state == 'IDLE') {
+        $('.phone-screen').addClass('hidden');
+        $('#answer-button').addClass('disabled-button');
+        $('#reject-button').addClass('disabled-button');
+
+        $('#answer-button > span').removeClass('callin');
+        $('#answer-button > span').removeClass('incoming');
+
+        $('#answer-button > span').removeClass('outgoing-answer');
+        $('#reject-button > span').removeClass('outgoing-reject');        
+      }
+
+      if (callInfo.state == 'OUTGOING') {
+        $('.phone-screen').removeClass('hidden');
+        $('#answer-button').addClass('disabled-button');
+        $('#reject-button').addClass('disabled-button');
+
+        $('#answer-button > span').removeClass('callin');
+        $('#answer-button > span').addClass('outgoing-answer');
+        $('#reject-button > span').addClass('outgoing-reject');
       }
     }    
 
+    $('[data-action="call-answer"]').click(function (e) {
+      if (RTCKit.webPhone.callState() == 'INCOMING') {
+        RTCKit.webPhone.answer({video: false});
+      }
+
+      if(RTCKit.webPhone.callState() == 'IDLE') {
+        var uri = 'sip:' + phone_num + '@rplusmgmt.com'
+        RTCKit.webPhone.call({'uri': uri});
+      }
+    });
+
+    $('[data-action="call-reject"]').click(function (e) {
+      //if (RTCKit.webPhone.callState() == '') {
+        RTCKit.webPhone.hangup();
+      //}
+    });
+
+    $('[data-action="phone-show"]').click(function (e) {
+      $('.phone-screen').toggleClass('hidden');
+    });
+
+    $('[data-action="numpad-click"]').click(function (e) {
+      var key = $(this).data('key');
+      phone_num += key;
+      console.log(phone_num);
+      $('#callerNumber').html(phone_num);
+    });
+
+    $('[data-action="backspace"]').click(function (e) {
+      phone_num = phone_num.slice(0, - 1);
+      $('#callerNumber').html(phone_num);
+    });
+
+    function format_phone (raw_phone_str) {
+      var phone_str = "";
+
+      /*
+      if ((/^8$/).test(number)) {
+        number += ' (';
+      }
+
+      if ((/^8 \(\d{3}$/).test(number)) {
+        number += ') ';
+      }
+      */
+
+      return phone_str;
+    }
+
     RTCKit.webPhone.embed({container: 'container'});
     RTCKit.webPhone.connect()
-  }, false);
-*/
+  };
+
   registerGlobalAjaxEvents();
 
   (function () {
@@ -404,6 +610,11 @@
         }).findOrCreate(phoneNum);
       });
 
+      var height = $(window).height() - $('#searchTable').get(0).getBoundingClientRect().top - 50/*$('.navbar-fixed-bottom').height()*/
+      $('#searchTableWrapper').height(height);
+      $('#geoMap').height(height);
+
+      sipSetup();
       initSpeech();
       listRealty(1);
     });
@@ -411,36 +622,130 @@
 </script>
 % end
 
-<!--
-<div style='display: none;'>
+<div class="" style="position: absolute; top:75px; left: 25px;">
   <div id='container' style='width: 217px; height: 140px'></div>
 </div>
 
-<div class="screen" style="height:100%; width:100%; overflow:hidden; position: absolute; display: none;">
-  <table style="width:156px; position: fixed; top: 50%; left: 50%; margin-top: -75px; margin-left: -75px; z-index: 500;">
+<table style="width:127px; position: fixed; top: 50%; left: 50%; margin-top: -67px; margin-left: -67px; z-index: 500;">
+  <tr>
+    <td>
+      <div id="answer-button" class="quarter-circle-top-left phone-button answer-button disabled-button" data-action="call-answer">
+        <span class="glyphicon glyphicon glyphicon-earphone" style="line-height: 65px; font-size: 24px; color: #fff; margin-top: 5px; margin-left: 15px;"></span>
+      </div>
+    </td>
+    <td>
+      <div id="reject-button" class="quarter-circle-top-right phone-button reject-button disabled-button" data-action="call-reject">
+        <span class="glyphicon glyphicon glyphicon-phone-alt" style="line-height: 65px; font-size: 24px; color: #fff; margin-top: 5px; margin-right: 15px;"></span>
+      </div>
+    </td>
+  </tr>
+  </tr>
+    <td>
+      <div class="quarter-circle-bottom-left phone-button disabled-button" style="">
+      </div>
+    </td>
+    <td>
+      <div id="show-phone-button" class="quarter-circle-bottom-right phone-button showphone-button" data-action="phone-show" style="">
+        <span class="glyphicon glyphicon glyphicon-th-list hidden" style="line-height: 65px; font-size: 24px; color: #fff; margin-top: -5px; margin-left: -15px;"></span>
+      </div>
+    </td>
+  </tr>
+</table>
+<div class="phone-screen hidden" style="-webkit-box-shadow: 10px 10px 20px rgba(20, 20, 20, 0.5);">
+  <div id="" style="width: 500px;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      margin-top: -215px;
+      margin-left: -250px;
+      z-index: 500;
+      text-align: center;">
+    <p style="font-size: 36px; color: #fff; font-weight: 100;letter-spacing: 1px;">
+      <span id="callerNumber"></span>
+      <span id="callerNumberBackspace" class="numpad-key" data-action="backspace" style="float: right"><</span>
+    </p>
+  </div>
+  <div id="" style="width: 700px;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      margin-top: -155px;
+      margin-left: -350px;
+      z-index: 500;
+      text-align: center;">
+    <p id="callerName" style="font-size: 36px; color: #fff; font-weight: 100;letter-spacing: 1px;"></p>
+  </div>
+  <table class="numpad" style="width:274px; position: fixed; top: 50%; left: 50%; margin-left: 135px; z-index: 500;">
     <tr>
       <td>
-        <div class="quarter-circle-top-left" style="">
+        <div class="numpad-key" data-action="numpad-click" data-key="1">
+          1
         </div>
       </td>
       <td>
-        <div class="quarter-circle-top-right" style="">
-        </div>
-      </td>
-    </tr>
-    </tr>
-      <td>
-        <div class="quarter-circle-bottom-left" style="">
+        <div class="numpad-key" data-action="numpad-click" data-key="2">
+          2
         </div>
       </td>
       <td>
-        <div class="quarter-circle-bottom-right" style="">
+        <div class="numpad-key" data-action="numpad-click" data-key="3">
+          3
+        </div>
+      </td>      
+    </tr>
+    </tr>
+      <td>
+        <div class="numpad-key" data-action="numpad-click" data-key="4">
+          4
+        </div>          
+      </td>
+      <td>
+        <div class="numpad-key" data-action="numpad-click" data-key="5">
+          5
         </div>
       </td>
+      <td>
+        <div class="numpad-key" data-action="numpad-click" data-key="6">
+          6
+        </div>
+      </td>      
     </tr>
-  </table>
+    </tr>
+      <td>
+        <div class="numpad-key" data-action="numpad-click" data-key="7">
+          7
+        </div>
+      </td>
+      <td>
+        <div class="numpad-key" data-action="numpad-click" data-key="8">
+          8
+        </div>
+      </td>
+      <td>
+        <div class="numpad-key" data-action="numpad-click" data-key="9">
+          9
+        </div>
+      </td>      
+    </tr>
+    </tr>
+      <td>
+        <div class="numpad-key" data-action="numpad-click" data-key="*">
+          *
+        </div>
+      </td>
+      <td>
+        <div class="numpad-key" data-action="numpad-click" data-key="0">
+          0
+        </div>
+      </td>
+      <td>
+        <div class="numpad-key" data-action="numpad-click" data-key="#">
+          #
+        </div>          
+      </td>
+    </tr>
+  </table>  
 </div>
--->
 
 <div class="row">
   <div class="col-md-10 margin-bottom-20">
