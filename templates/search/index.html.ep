@@ -882,7 +882,7 @@
 
   <div class="col-md-2 margin-bottom-20">
     <div class="input-group input-group-sm">
-      <input type="text" class="form-control" id="sfPhoneNum" name="phoneNum" placeholder="<%= ucfloc 'phone' %>" autocomplete="off">
+      <input type="text" class="form-control" id="sfPhoneNum" name="phoneNum" style="width: 98.0%;" placeholder="<%= ucfloc 'phone' %>" autocomplete="off">
       <div class="input-group-btn">
         <button type="button" class="btn btn-default" data-action="client-open"><span class="glyphicon glyphicon-user"></span></button>
       </div>

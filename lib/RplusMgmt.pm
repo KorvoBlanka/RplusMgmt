@@ -77,8 +77,6 @@ sub startup {
     $self->helper(session_check => sub {
         my ($self, $login) = @_;
 
-        return 1;
-
         my $acc_data = $self->get_acc_data();
         my $max_users = $acc_data->{user_count} * 1;
 
