@@ -1,12 +1,89 @@
 % layout 'default';
 
 % content_for header => begin
+%= css_once "$assets_url/jquery-file-upload/8.8.5/css/jquery.fileupload-ui.css";
 <style type="text/css">
   #userCard_modal .modal-dialog {
     width: 720px;
   }
+
+  #userCard_modal .modal-body {
+    height: 290px;
+  }
+
+  .img-holder {
+    height: 200px;
+    width: 200px;
+
+    position: relative;
+  }
+
+  .img-overlay {
+    height: 200px;
+    width: 200px;
+
+    position: absolute;
+    top: 0px;
+    left: 0px;
+
+    background-color: rgba(0, 0, 0, 0.5);
+    opacity: 0;
+
+    -webkit-transition: all .1s ease-in-out;
+  }
+
+  .img-overlay-hover {
+    opacity: 1 !important;
+  }
+
+  .img-overlay-caption {
+    position: absolute;
+    width: 100px;
+    height: 20px;
+    top: 50%;
+    left: 50%;
+    margin-left: -50px;
+    margin-top: 30px;
+
+    color: #fff;
+    cursor: pointer;
+  }
+
+  .img-overlay-del-button {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: 50%;
+    left: 50%;
+    margin-left: 75px;
+    margin-top: -95px;
+
+    color: #fff;
+    cursor: pointer;
+  }
+
 </style>
 % end
+
+% content_for after_bootstrap => begin
+<!-- The jQuery UI widget factory, can be omitted if jQuery UI is already included -->
+%= js_once "$assets_url/jquery-file-upload/8.8.5/js/vendor/jquery.ui.widget.js";
+<!-- The Load Image plugin is included for the preview images and image resizing functionality -->
+%= js_once "$assets_url/javascript-load-image/1.9.1/js/load-image.min.js";
+<!-- The Canvas to Blob plugin is included for image resizing functionality -->
+%= js_once "$assets_url/javascript-canvas-to-blob/2.0.7/js/canvas-to-blob.min.js";
+<!-- The Iframe Transport is required for browsers without support for XHR file uploads -->
+%= js_once "$assets_url/jquery-file-upload/8.8.5/js/jquery.iframe-transport.js";
+<!-- The basic File Upload plugin -->
+%= js_once "$assets_url/jquery-file-upload/8.8.5/js/jquery.fileupload.js";
+<!-- The File Upload processing plugin -->
+%= js_once "$assets_url/jquery-file-upload/8.8.5/js/jquery.fileupload-process.js";
+<!-- The File Upload image preview & resize plugin -->
+%= js_once "$assets_url/jquery-file-upload/8.8.5/js/jquery.fileupload-image.js";
+<!-- The File Upload validation plugin -->
+%= js_once "$assets_url/jquery-file-upload/8.8.5/js/jquery.fileupload-validate.js";
+% end
+
 
 % content_for javascript => begin
 <script type="text/javascript">
@@ -59,7 +136,11 @@
             xhtml += '<div class="col-lg-4 user-preview margin-bottom-15" data-id="' + x.id + '">';
             xhtml += '<div class="media">';
             xhtml += '<a class="pull-left" href="#">';
-            xhtml += '<img data-src="holder.js/110x110/text:<%= ucfloc q{no photo} %>" class="img-thumbnail">';
+            if (x.photo_url.length > 0) {
+              xhtml += '<img src="' + x.photo_url + '" style="height: 110px; width: 110px;" class="img-thumbnail">';
+            } else {
+              xhtml += '<img data-src="holder.js/110x110/text:<%= ucfloc q{no photo} %>" class="img-thumbnail">';
+            }
             xhtml += '</a>';
             xhtml += '<div class="media-body">';
             xhtml += '<h4 class="media-heading">' + Rplus.Util.escape(x.name) + '</h4>';
@@ -102,6 +183,13 @@
           $('#userCard_addDate').text(moment(data.add_date).format('DD.MM.YYYY'));
           $('#userCard_modalLabel').text(data.name);
           $('#userCard_modal').modal('show');
+
+          if (data.photo_url.length > 0) {
+            $('#user-photo').attr('src', data.photo_url);
+          } else {
+            $('#user-photo').attr('data-src', 'holder.js/200x200/text:<%= ucfloc q{no photo} %>');
+            Holder.run({images: "#user-photo"});
+          }
         })
         .fail(function (jqXHR, textStatus, errorThrown) {
           alert('Cannot open user card');
@@ -202,6 +290,87 @@
           alert('Cannot check user');
         });
     });
+
+    $('.img-overlay').hover(function (e) {
+      var uid = $("#userCard_userForm_userId").val();
+      var uname = $("#userCard_userForm_inputName").val();
+
+      var src = $('#user-photo').attr('src');
+      if (/^data/.test(src)) {  // disable 'remove' enable 'add'
+        $('#photo-upload-button').removeClass('hidden');
+        $('#photo-remove-button').addClass('hidden');
+      } else {
+        $('#photo-upload-button').addClass('hidden');
+        $('#photo-remove-button').removeClass('hidden');
+      }
+      $('.img-overlay').addClass('img-overlay-hover');
+    });
+
+    $('.img-overlay').mouseleave(function (e) {
+      var uid = $("#userCard_userForm_userId").val();
+      var uname = $("#userCard_userForm_inputName").val();
+      $('.img-overlay').removeClass('img-overlay-hover');
+    });
+
+    $('#fileupload').fileupload({
+      url: '/api/user/upload_photo',
+      dataType: 'json',
+      formData: function () { 
+        var uid = $("#userCard_userForm_userId").val();
+        var uname = $("#userCard_userForm_inputName").val();
+        var formData = [{ name: 'user_id', value: uid }]; return formData; 
+      },
+      autoUpload: true,
+      singleFileUploads: true,
+      acceptFileTypes: /(\.|\/)(gif|jpe?g|png)$/i,
+      maxFileSize: 10000000, // 10 MB
+      disableImageResize: /Android(?!.*Chrome)|Opera/.test(window.navigator.userAgent),
+      imageMaxWidth: 200,
+      imageMaxHeight: 200,
+      previewMaxWidth: 200,
+      previewMaxHeight: 200,
+      previewCrop: true,
+      previewOrientation: false,
+      progressall: function (e, data) {
+        var progress = parseInt(data.loaded / data.total * 100, 10);
+      },
+      done: function (e, data) {
+        var x = data.result;
+        var uid = $("#userCard_userForm_userId").val();
+        $('#user-photo').attr('src', x.photo_url);
+        $('.user-preview[data-id=' + uid + '] .img-thumbnail').attr('src', x.photo_url);
+        $('.img-overlay').removeClass('img-overlay-hover');
+      }
+    });
+
+    $('[data-action="photo-add"]').click(function (e) {
+      var uid = $("#userCard_userForm_userId").val();
+      var uname = $("#userCard_userForm_inputName").val();
+    });
+
+    $('[data-action="photo-remove"]').click(function (e) {
+      var uid = $("#userCard_userForm_userId").val();
+      var uname = $("#userCard_userForm_inputName").val();
+
+      $.ajax({
+        type: "POST",
+        url: "/api/user/remove_photo",
+        data: {user_id: uid},
+      })
+        .done(function (data, textStatus, jqXHR) {
+          $('#user-photo').attr('data-src', 'holder.js/200x200/text:<%= ucfloc q{no photo} %>');
+          Holder.run({images: "#user-photo"});
+          console.log(uid);
+          $('.user-preview[data-id=' + uid + '] .img-thumbnail').attr('data-src', 'holder.js/110x110/text:<%= ucfloc q{no photo} %>');
+          Holder.run({images: ".img-thumbnail"});
+          $('#photo-upload-button').removeClass('hidden');
+          $('#photo-remove-button').addClass('hidden');
+        })
+        .fail(function (jqXHR, textStatus, errorThrown) {
+          alert('Не удалось выполнить операцию, попробуйте позже или обратитесь в тех. поддержку');
+        });
+    });
+
   })();
 </script>
 % end
@@ -215,19 +384,32 @@
         <h4 class="modal-title" id="userCard_modalLabel"><%= ucfloc 'user' %></h4>
       </div>
       <div class="modal-body">
-        <h4 class="pull-right"><span class="label label-info" id="userCard_addDate"><%= ucfloc 'new' %></span></h4>
+        <h4 class="pull-right"><span class="" id="userCard_addDate" style="font-weight: 200;"><%= ucfloc 'new' %></span></h4>
         <ul class="nav nav-pills nav-sm margin-bottom-15" id="userCard_pills">
           <li class="active"><a href="#userCard_profileTab" data-toggle="pill"><%= ucfloc 'profile' %></a></li>
           <li><a href="#userCard_addTab" data-toggle="pill"><%= ucfloc 'additional' %></a></li>
+          <li><a href="#userCard_telephonyTab" data-toggle="pill"><%= ucfloc 'telephony' %></a></li>
         </ul>
 
         <div class="tab-content">
           <div class="tab-pane active" id="userCard_profileTab">
             <div class="row">
               <div class="col-md-4">
-                <p>
-                  <img data-src="holder.js/200x200/text:<%= ucfloc q{no photo} %>" class="img-responsive img-thumbnail">
-                </p>
+                  <div class="img-holder">
+                    <div class="img-overlay">
+                      <div class="img-overlay-caption">
+                        <div id="photo-upload-button" class="fileinput-button">
+                          <p>Добавить фото</p>
+                          <!-- The file input field used as target for the file upload widget -->
+                          <input id="fileupload" type="file" name="files[]" multiple>
+                        </div>
+                      </div>
+                      <div id="photo-remove-button" class="img-overlay-del-button" data-action="photo-remove">
+                        <span class="glyphicon glyphicon-remove"></span>
+                      </div>
+                    </div>
+                    <img id="user-photo" data-src="holder.js/200x200/text:<%= ucfloc q{no photo} %>" class="img-responsive img-thumbnail">
+                  </div>
               </div>
               <div class="col-md-8">
                 <form class="form-horizontal" role="form" id="userCard_userForm">
@@ -294,7 +476,7 @@
                   </div>
                 </div>
               </div>
-              <div class="row">
+              <div class="row hidden">
                 <div class="col-md-12">
                   <div class="form-group form-group-sm">
                     <label for="userCard_userForm_inputDescription"><%= ucfloc 'description' %></label>
@@ -304,11 +486,39 @@
               </div>
             </form>
           </div>
+          <div class="tab-pane" id="userCard_telephonyTab">
+            <form role="form">
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="form-group form-group-sm">
+                    <label for="userCard_userForm_inputSipHost"><%= loc q{sip host} %></label>
+                    <input type="text" class="form-control input-sm" name="sip_host" id="userCard_userForm_inputSipHost" form="userCard_userForm" placeholder="<%= ucfloc q{sip host} %>">
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="form-group form-group-sm">
+                    <label for="userCard_userForm_inputSipLogin"><%= loc q{sip login} %></label>
+                    <input type="text" class="form-control input-sm" name="sip_login" id="userCard_userForm_inputSipLogin" form="userCard_userForm" placeholder="<%= ucfloc q{sip login} %>">
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="form-group form-group-sm">
+                    <label for="userCard_userForm_inputSipPassword"><%= loc q{sip password} %></label>
+                    <input type="password" class="form-control input-sm" name="sip_password" id="userCard_userForm_inputSipPassword" form="userCard_userForm" placeholder="<%= ucfloc q{sip password} %>">
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>          
         </div>
 
       </div><!-- /.modal-body -->
       <div class="modal-footer">
-        <button type="button" class="btn btn-link btn-sm pull-left" disabled><span class="glyphicon glyphicon-open"></span> <%= ucfloc 'change photo' %></button>
+        <!--<button type="button" class="btn btn-link btn-sm pull-left" disabled><span class="glyphicon glyphicon-open"></span> <%= ucfloc 'change photo' %></button>-->
         <!--button type="button" class="btn btn-danger btn-sm" data-action="delete" disabled><span class="glyphicon glyphicon-trash"></span> Delete</button-->
         <button type="button" class="btn btn-warning btn-sm" data-action="user-delete"><span class="glyphicon glyphicon-trash"></span> <%= ucfloc 'delete' %></button>
         <button type="submit" class="btn btn-primary btn-sm" form="userCard_userForm" data-action="save"><span class="glyphicon glyphicon-ok"></span> <%= ucfloc 'save' %></button>

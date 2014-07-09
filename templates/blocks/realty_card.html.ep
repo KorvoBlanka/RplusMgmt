@@ -1103,16 +1103,16 @@
             <div class="input-group ccard-input-group">
               <span class="rcard-input-group-addon glyphicon glyphicon-camera"></span>
               <p>Фотографии</p>
-                <span class="fileinput-button ccard-input-group-addon input-group-addon emode-btn hidden">
-                  <i class="glyphicon glyphicon-plus"></i>
-                  <!-- The file input field used as target for the file upload widget -->
-                  <input id="fileupload" type="file" name="files[]" multiple>
-                </span>
+              <span class="fileinput-button ccard-input-group-addon input-group-addon emode-btn hidden">
+                <i class="glyphicon glyphicon-plus"></i>
+                <!-- The file input field used as target for the file upload widget -->
+                <input id="fileupload" type="file" name="files[]" multiple>
+              </span>
             </div>
           </div>
 
           <div id="progress">
-              <div class="bar" style="width: 0%;"></div>
+            <div class="bar" style="width: 0%;"></div>
           </div>
           
           <div class="slider_block" style="position: relative; margin-bottom: 15px">

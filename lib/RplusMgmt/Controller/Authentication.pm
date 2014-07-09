@@ -5,16 +5,10 @@ use Mojo::Base 'Mojolicious::Controller';
 use Rplus::Model::User;
 use Rplus::Model::User::Manager;
 
-my $ua = Mojo::UserAgent->new;
+use JSON;
 
 sub auth {
     my $self = shift;
-
-    my $tx = $ua->get('http://rplusmgmt.com/api/account/get_by_domain?subdomain=' . $self->config->{'subdomain'});
-    my $acc_data;
-    if (my $res = $tx->success) {
-      $acc_data = $res->json;
-    }
 
     return 1 if $self->stash('user') && $self->stash('user')->{'id'} && $self->session_check($self->session->{'user'}->{login});
 
@@ -41,11 +35,16 @@ sub signin {
 
     return $self->render(json => {status => 'failed', reason => 'user_limit'}) if $self->log_in_check($acc_data->{user_count} * 1, $login) == 0;
 
+    my $sip = from_json($user->ip_telephony);
     $self->session->{'user'} = {
         id => $user->id,
         login => $user->login,
         role => $user->role,
         mode => $acc_data->{mode},
+
+        sip_host => $sip->{sip_host} ? $sip->{sip_host} : '',
+        sip_login => $sip->{sip_login} ? $sip->{sip_login} : '',
+        sip_password => $sip->{sip_password} ? $sip->{sip_password} : '',
     };
 
     $self->session(sid => int(rand(100000)));

@@ -631,17 +631,17 @@
             var xhtml = '<tr data-page="' + data.page + '" data-id="' + r.id + '" data-lat="' + r.latitude + '" data-lng="' + r.longitude +  '"';
             xhtml += ' class="';
             var h = getHistory(r.id);
-			if(h) {
-				if (h.selected > 0) {
-				  xhtml += 'selected ';
-				}            
-				if (h.modified > 0) {
-				  xhtml += 'modified ';
-				} 
-				if (h.shown > 0) {
-				  xhtml += 'shown ';
-				}
-			}
+      			if(h) {
+      				if (h.selected > 0) {
+      				  xhtml += 'selected ';
+      				}            
+      				if (h.modified > 0) {
+      				  xhtml += 'modified ';
+      				} 
+      				if (h.shown > 0) {
+      				  xhtml += 'shown ';
+      				}
+      			}
             xhtml += '">';
             
             for (var j = 0; j < realtyTableConf.fields.length; j++) {
@@ -662,27 +662,21 @@
     }    
     
     // Open realty object card
-    function openRealtyCard(id, background) {
-      if (!id) return;
-
-      // Check that the card doesn't  opened
-      if ($('#navTab > li > a[data-id="' + id + '"]').length) {
-        if (!background) {
-          $('#navTab > li > a[data-id="' + id + '"]').tab('show');
-        }
-        return;
-      }
-      
+    function openRealtyCard(id) {      
       var card = RealtyCard({
         loaded: function (r) {
           // Mark opened realty object in the table
-          $('tr[data-id="' + r.id + '"]', '#realtyTable').addClass('opened');
+          var $tr = $('#realtyTable > tbody > tr[data-id="' + r.id + '"]');
+          if ($tr) {
+            $tr.addClass('opened');
+          }
           card_opened = true;
         },
         saved: function (r) {
           // Update object row in the table
+          console.log(r);
           var $tr = $('#realtyTable > tbody > tr[data-id="' + r.id + '"]');
-          if ($tr.length) {
+          if ($tr) {
             for (var j = 0; j < realtyTableConf.fields.length; j++) {
               var f = realtyTableConf.fields[j];
               $('td:nth-child(' + (j + 1) + ')', $tr).html(f.val(r));
@@ -697,22 +691,36 @@
             putToHistory(id, "modified", 1);
             $tr.data('lat', r.latitude);
             $tr.data('lng', r.longitude);
+          } else {
+
           }
         },
         addr_changed: function (r) {
           var $tr = $('#realtyTable > tbody > tr[data-id="' + r.id + '"]');
-          $tr.data('lat', r.latitude);
-          $tr.data('lng', r.longitude);
+          if ($tr) {
+            $tr.data('lat', r.latitude);
+            $tr.data('lng', r.longitude);
+          }
         },
         close: function (r) {
-          console.log(r);
           var $tr = $('#realtyTable > tbody > tr[data-id="' + r.id + '"]');
-          $tr.removeClass('opened').addClass('shown');
-          putToHistory(id, "shown", 1);
+          if ($tr) {
+            $tr.removeClass('opened').addClass('shown');
+            putToHistory(id, "shown", 1);
+          }
           card_opened = false;
         },
       });
-      card.open(id);
+      if (id != null) {
+        card.open(id);
+      } else {
+        card.create({
+          type_code: 'apartment',
+          state_code: 'raw',
+          agent_id: '<%= $self->stash('user')->{id} %>',
+          offer_type_code: $('[data-filter="offer_type_code"]').data('val'),
+        });
+      }
     }
 
     $(function () {
@@ -884,7 +892,7 @@
               ];
             } else {
               clearTimeout(_dblclick_timer[1]);
-              openRealtyCard(_dblclick_timer[0], false);
+              openRealtyCard(_dblclick_timer[0]);
               _dblclick_timer = null;
             }
           }
@@ -1002,7 +1010,7 @@
               $this.addClass('selected')
             }, select_delay);
             open_timer = window.setTimeout(function() {
-                openRealtyCard(id, false);
+                openRealtyCard(id);
             }, open_delay);
           }
         });
@@ -1056,60 +1064,15 @@
       
       // Create realty object card
       $('[data-action="realty-create"]').click(function (e) {
-        var card = RealtyCard({
-          loaded: function (r) {
-            card_opened = true;
-          },
-          saved: function (r) {
-            // TODO: Insert object to top of the table           
-              media_export[r.id] = r.export_media;
-              agents_ids[r.id] = r.agent_id;
-              var xhtml = '<tr data-page="' + 1 + '" data-id="' + r.id + '" data-lat="' + r.latitude + '" data-lng="' + r.longitude +  '"';
-              xhtml += ' class="';
-              var h = getHistory(r.id);
-              if (h) {
-                if (h.selected > 0) {
-                  xhtml += 'selected ';
-                }
-                if (h.modified > 0) {
-                  xhtml += 'modified ';
-                }
-                if (h.shown > 0) {
-                  xhtml += 'shown ';
-                }
-              }
-              if (r.lock != -1) {
-                xhtml += 'opened ';
-              }
-              xhtml += '">';
-    
-              for (var j = 0; j < realtyTableConf.fields.length; j++) {
-                var f = realtyTableConf.fields[j];
-                xhtml += '<td class="' + (!f.visible ? 'hidden' : '') + '"' + (f.style ? ' style="' + f.style + '"' : '') + '>' + f.val(r) + '</td>';
-              }
-              xhtml += '</tr>';
-              $('#realtyTable > tbody').prepend(xhtml);
-              $('#realtyTable > tbody > tr[data-id="' + r.id + '"]').data('obj', r);
-              $('#realtyTable > tbody > tr[data-id="' + r.id + '"]').addClass('selected');
-          },
-          close: function (r) {
-            card_opened = false;
-          }
-        });
-        card.create({
-          type_code: 'apartment',
-          state_code: 'raw',
-          agent_id: '<%= $self->stash('user')->{id} %>',
-          offer_type_code: $('[data-filter="offer_type_code"]').data('val'),
-        });
+        openRealtyCard(null);
+
       });
 
       // Open realty object card
       $('[data-action="realty-open"]').click(function (e) {
         var $selected = $('#realtyTable > tbody > tr.selected');
-        
         $selected.each(function () {
-          openRealtyCard($(this).data('id'), $selected.length > 1);
+          openRealtyCard($(this).data('id'));
         });
       });
 

@@ -15,9 +15,7 @@ sub list {
 
     my $rt_param = Rplus::Model::RuntimeParam->new(key => $category)->load();
     my $val = {};
-    if (!$rt_param) {
-        Rplus::Model::RuntimeParam->new(key => $category, value => "{}")->save; # Create record
-    } else {
+    if ($rt_param) {
         $val = from_json($rt_param->{value});
     }
 

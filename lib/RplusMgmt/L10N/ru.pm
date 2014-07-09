@@ -81,6 +81,8 @@ our %Lexicon = (
     # H
     q{house} => 'дом',
     q{hectare} => 'га',
+    q{host} => 'хост',
+    q{host address} => 'адрес хоста',
 
     # I
     q{inactive} => 'неактивно',
@@ -188,11 +190,15 @@ our %Lexicon = (
     q{square} => 'площадь',
     q{source} => 'источник',
     q{start upload} => 'начать загрузку',
+    q{sip host} => 'Хост',
+    q{sip login} => 'Логин',
+    q{sip password} => 'Пароль',
 
     # T
     q{type} => 'тип',
     q{to} => 'до',
     q{total} => 'всего',
+    q{telephony} => 'IP телефония',
 
     # U
     q{user} => 'пользователь',

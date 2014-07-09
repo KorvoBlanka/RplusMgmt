@@ -7,6 +7,11 @@ use Rplus::Model::User::Manager;
 use Rplus::Model::Realty;
 use Rplus::Model::Realty::Manager;
 
+use File::Path qw(make_path);
+use Image::Magick;
+
+use JSON;
+
 sub list {
     my $self = shift;
 
@@ -29,6 +34,7 @@ sub list {
                 phone_num => $user->phone_num,
                 description => $user->description,
                 add_date => $self->format_datetime($user->add_date),
+                photo_url => $user->photo_url ? $user->photo_url . '?ts=' . time : '',
             };
             push @{$res->{list}}, $x;
         }
@@ -49,6 +55,7 @@ sub get {
     my $user = Rplus::Model::User::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $user;
 
+    my $sip = from_json($user->ip_telephony);
     my $res = {
         id => $user->id,
         login => $user->login,
@@ -60,6 +67,10 @@ sub get {
         add_date => $self->format_datetime($user->add_date),
         public_name => $user->public_name,
         public_phone_num => $user->public_phone_num,
+        sip_host => $sip->{sip_host} ? $sip->{sip_host} : '',
+        sip_login => $sip->{sip_login} ? $sip->{sip_login} : '',
+        sip_password => $sip->{sip_password} ? $sip->{sip_password} : '',
+        photo_url => $user->photo_url ? $user->photo_url . '?ts=' . time : '',
     };
 
     return $self->render(json => $res);
@@ -118,6 +129,11 @@ sub save {
     my $public_name = $self->param_n('public_name');
     my $public_phone_num = $self->param_n('public_phone_num');
 
+    my $sip = {};
+    $sip->{sip_host} = $self->param_n('sip_host');
+    $sip->{sip_login} = $self->param_n('sip_login');
+    $sip->{sip_password} = $self->param_n('sip_password');
+
     # Save
     $user->login($login);
     $user->password($password) if $password;
@@ -127,6 +143,7 @@ sub save {
     $user->description($description);
     $user->public_name($public_name);
     $user->public_phone_num($public_phone_num);
+    $user->ip_telephony(encode_json($sip));
 
     eval {
         $user->save($user->id ? (changes_only => 1) : (insert => 1));
@@ -136,6 +153,58 @@ sub save {
     };
 
     return $self->render(json => {status => 'success', });
+}
+
+sub upload_photo {
+    my $self = shift;
+
+    #return $self->render(json => {error => 'Limit is exceeded'}, status => 500) if $self->req->is_limit_exceeded;
+    my $photo_url = '';
+    my $user_id = $self->param('user_id');
+    my $user = Rplus::Model::User::Manager->get_objects(query => [id => $user_id, delete_date => undef])->[0];
+    return $self->render(json => {error => 'Not Found'}, status => 404) unless $user;
+
+    if (my $file = $self->param('files[]')) {
+        my $path = $self->config->{'storage'}->{'path'}.'/users/'.$user_id;
+        #my $name = Time::HiRes::time =~ s/\.//r; # Unique name
+        my $name = "user_photo";
+
+        eval {
+            make_path($path);
+            $file->move_to($path.'/'.$name.'.jpg');
+
+            # Convert image to jpeg
+            my $image = Image::Magick->new;
+            $image->Read($path.'/'.$name.'.jpg');
+            $image->Resize(geometry => '200x200');
+            $image->Extent(geometry => '200x200', gravity => 'Center', background => 'white');
+            $image->Write($path.'/'.$name.'.jpg');
+
+            # Save
+            $photo_url = $self->config->{'storage'}->{'url'}.'/users/'.$user_id.'/'.$name.'.jpg';
+            $user->photo_url($photo_url);
+            $user->save;
+        } or do {
+            return $self->render(json => {error => $@}, status => 500);
+        };
+
+        return $self->render(json => {status => 'success', photo_url => $photo_url,});
+    }
+
+    return $self->render(json => {error => 'Bad Request'}, status => 400);
+}
+
+sub remove_photo {
+    my $self = shift;
+
+    my $user_id = $self->param('user_id');
+    my $user = Rplus::Model::User::Manager->get_objects(query => [id => $user_id, delete_date => undef])->[0];
+    return $self->render(json => {error => 'Not Found'}, status => 404) unless $user;    
+
+    $user->photo_url(undef);
+    $user->save;
+
+    return $self->render(json => {status => 'success'});
 }
 
 sub delete {
