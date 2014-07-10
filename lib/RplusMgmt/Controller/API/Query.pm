@@ -54,13 +54,13 @@ sub complete {
             $vals{$x->{fval}} = 1;
         }
 
+        my $city_guid = $self->session('user')->{city_guid};
         my $addrobj_iter = Rplus::Model::AddressObject::Manager->get_objects_iterator(
             query => [
                 [\'lower(name) LIKE ?' => lc($term =~ s/([%_])/\\$1/gr).'%'],
                 level => 7,
                 curr_status => 0,
-                ($self->config->{'default_city_guid'} ? (parent_guid => $self->config->{'default_city_guid'}) : ()),
-                #parent_guid => $self->config->{'default_city_guid'},
+                parent_guid => $city_guid,
                 '!fts' => undef,
             ],
             sort_by => 'code ASC',

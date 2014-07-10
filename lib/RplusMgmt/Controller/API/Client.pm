@@ -14,6 +14,8 @@ use Rplus::Model::Realty;
 use Rplus::Model::Realty::Manager;
 use Rplus::Model::SmsMessage;
 use Rplus::Model::SmsMessage::Manager;
+use Rplus::Model::RuntimeParam;
+use Rplus::Model::RuntimeParam::Manager;
 
 use JSON;
 use Mojo::Util qw(trim);
@@ -385,6 +387,12 @@ sub subscribe {
     $client->subscription_offer_types($subscription_offer_types);
     $client->save();    
     
+    my $rt_param = Rplus::Model::RuntimeParam->new(key => 'notifications')->load();
+    my $contact_info = '';
+    if ($rt_param) {
+        my $config = from_json($rt_param->{value});
+        $contact_info = $config->{'contact_info'} ? $config->{'contact_info'} : '';
+    }
     # Add realty to subscription & generate SMS
     for my $realty_id (@$realty_ids) {
         my $realty = Rplus::Model::Realty::Manager->get_objects(
@@ -409,7 +417,7 @@ sub subscribe {
                     push @parts, $realty->agent->public_phone_num || $realty->agent->phone_num if $realty->agent;
                 }
                 my $sms_body = join(', ', @parts);
-                my $sms_text = 'Вы интересовались: '.$sms_body.($sms_body =~ /\.$/ ? '' : '.').($self->config->{subscriptions}->{contact_info} ? ' '.$self->config->{subscriptions}->{contact_info} : '');
+                my $sms_text = 'Вы интересовались: '.$sms_body.($sms_body =~ /\.$/ ? '' : '.').$contact_info;
                 Rplus::Model::SmsMessage->new(phone_num => $phone_num, text => $sms_text, db => $db)->save;
             }
 

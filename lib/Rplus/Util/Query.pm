@@ -289,10 +289,14 @@ sub parse {
             # Second processing - streets
             {
                 my @xfound;
+
+                my $acc_data = $c->get_acc_data();       # запросим гуид с сервера
+                my $city_guid = $acc_data->{city_guid};
+
                 my $sql = "
                     SELECT AO.id, AO.name, AO.full_type, AO.fts2, ts_rank(AO.fts2, '".join('|', @tsv)."'::tsquery) rank
                     FROM address_objects AO
-                    WHERE AO.fts @@ '".join('|', @tsv)."'::tsquery AND AO.level = 7 AND AO.curr_status = 0".($c && $c->config->{default_city_guid} ? " AND AO.parent_guid = '".$c->config->{default_city_guid}."'" : '')."
+                    WHERE AO.fts @@ '".join('|', @tsv)."'::tsquery AND AO.level = 7 AND AO.curr_status = 0 AND AO.parent_guid = '" . $city_guid . "'
                     ORDER BY rank DESC
                     LIMIT 30
                 ";

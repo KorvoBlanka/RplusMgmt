@@ -2,16 +2,11 @@
 
 % content_for header => begin
 <style type="text/css">
-  #companyList, #mediatorList {
-    max-height: 600px;
-    overflow-y: auto;
+  .form-group {
+    height: 30px;
   }
 
-  #mediatorList a.active {
-    background-color: #428bca;
-    border-color: #428bca;
-    color: #fff;
-  }
+
 </style>
 % end
 
@@ -34,10 +29,14 @@
         },
       })
         .done(function (data, textStatus, jqXHR) {
-          
+          if (data.val['active'] == '1' || data.val['active'] == 'true') {
+            $('[name="active"]:input').prop('checked', true);
+          } else {
+            $('[name="active"]:input').prop('checked', false);
+          }
           $('[name="msg-count"]:input').val(data.val['msg-count']);
-          
           $('[name="company"]:input').val(data.val['company']);
+          $('[name="contact_info"]:input').val(data.val['contact_info']);
           $('[name="login"]:input').val(data.val['login']);
           $('[name="password"]:input').val(data.val['password']);
           
@@ -47,14 +46,14 @@
       ;
     }
 
-    function saveOptions(name, val) {
+    function saveOptions(opt_hash) {
+      var opts = JSON.stringify(opt_hash);
       $.ajax({
         type: "POST",
-        url: "/api/options/set",
+        url: "/api/options/set_multiple",
         data: {
-          category: 'notifications',
-          name: name,
-          value: val,
+          category: "notifications",
+          opt_string: opts, 
         }
       })
         .done(function (data, textStatus, jqXHR) {
@@ -72,19 +71,27 @@
       $( ".btn-save" ).click(function(e) {
         
         var t;
-        
+        var opt_hash = {};
+
+        t = $('[name="active"]:input').prop('checked');
+        opt_hash['active'] = t;
+
         t = $('[name="msg-count"]:input').val();
-        saveOptions('msg-count', t)
+        opt_hash['msg-count'] = t;
         
         t = $('[name="company"]:input').val();
-        saveOptions('company', t)
+        opt_hash['company'] = t;
         
+        t = $('[name="contact_info"]:input').val();
+        opt_hash['contact_info'] = t;
+
         t = $('[name="login"]:input').val();
-        saveOptions('login', t)
+        opt_hash['login'] = t;
         
         t = $('[name="password"]:input').val();
-        saveOptions('password', t)
+        opt_hash['password'] = t;
         
+        saveOptions(opt_hash);
       });
       
       listOptions();   
@@ -105,19 +112,33 @@
 
 <div class="row">
   <h3 class="page-header">SMS уведомления</h3>
-  
+
   <div class="form-group">
-    <label class="col-lg-3 control-label">Количество сообщений</label>
+    <label class="col-lg-3 control-label">Использоваьт СМС</label>
     <div class="col-lg-9">
+      <input type="checkbox" class="" name="active">
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label class="col-lg-3 control-label" style="padding-top: 15px;">Количество сообщений</label>
+    <div class="col-lg-9" style="padding-top: 15px;">
       <input type="number" class="form-control" name="msg-count" style="width: 60px;" placeholder="# of messages">
     </div>
   </div>
+
   <div class="form-group">
     <label class="col-lg-3 control-label" style="padding-top: 15px;">Название компании</label>
     <div class="col-lg-9" style="padding-top: 15px;">
       <input type="text" class="form-control" name="company" style="width: 200px;" placeholder="название компании">
     </div>
-  </div>  
+  </div>
+  <div class="form-group">
+    <label class="col-lg-3 control-label" style="padding-top: 15px;">Контактные данные</label>
+    <div class="col-lg-9" style="padding-top: 15px;">
+      <input type="text" class="form-control" name="contact_info" style="width: 200px;" placeholder="контактные данные">
+    </div>
+  </div> 
   <div class="form-group">
     <label class="col-lg-3 control-label" style="padding-top: 15px;">Логин</label>
     <div class="col-lg-9" style="padding-top: 15px;">
@@ -127,7 +148,7 @@
   <div class="form-group">
     <label class="col-lg-3 control-label" style="padding-top: 15px;">Пароль</label>
     <div class="col-lg-9" style="padding-top: 15px;">
-      <input type="text" class="form-control" name="password" style="width: 200px;" placeholder="пароль">
+      <input type="password" class="form-control" name="password" style="width: 200px;" placeholder="пароль">
     </div>
   </div>
   <div class="form-group">

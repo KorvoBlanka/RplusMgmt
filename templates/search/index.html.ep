@@ -465,7 +465,7 @@
       */
       var code = '';
       var number = '';
-      if (phone_number.match(/^(4212|4265)/)) {
+      if (phone_number.match(/^(4212|4217)/)) {
         code = phone_number.substring(0, 4);
         number = phone_number.substring(4);
         return '(' + code +') ' + phone_blocks(number);
@@ -629,8 +629,10 @@
       });
 
       // Geo
+      var c_lat = <%= $self->session('user')->{map_lat} %>;
+      var c_lng = <%= $self->session('user')->{map_lng} %>;
       geoMap = L.map('geoMap', {
-        center: [48.480232846617845, 135.07203340530396],
+        center: [c_lat, c_lng],
         zoom: 16,
         fullscreenControl: true,
       });

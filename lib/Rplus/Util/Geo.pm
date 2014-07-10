@@ -55,12 +55,12 @@ sub get_coords_by_addr {
 
 # Геокодирование
 sub get_coords_by_addr_ex {
-    my ($addr, $house_num) = @_;
+    my ($city, $addr, $house_num) = @_;
 
     state $_geocache;
 
     my ($latitude, $longitude);    
-    my $q = 'Хабароск, ' . ', '.$addr.', '.$house_num;
+    my $q = $city . ', ' . $addr . ', ' . $house_num;
 
     my $ua = LWP::UserAgent->new;
     my $response = $ua->post(

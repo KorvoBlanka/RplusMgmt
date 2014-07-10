@@ -35,16 +35,16 @@ sub signin {
 
     return $self->render(json => {status => 'failed', reason => 'user_limit'}) if $self->log_in_check($acc_data->{user_count} * 1, $login) == 0;
 
-    my $sip = from_json($user->ip_telephony);
     $self->session->{'user'} = {
         id => $user->id,
         login => $user->login,
         role => $user->role,
         mode => $acc_data->{mode},
 
-        sip_host => $sip->{sip_host} ? $sip->{sip_host} : '',
-        sip_login => $sip->{sip_login} ? $sip->{sip_login} : '',
-        sip_password => $sip->{sip_password} ? $sip->{sip_password} : '',
+        city_guid => $acc_data->{city_guid},
+        phone_prefix => $acc_data->{phone_prefix},
+        map_lat => $acc_data->{map_lat},
+        map_lng => $acc_data->{map_lng},
     };
 
     $self->session(sid => int(rand(100000)));

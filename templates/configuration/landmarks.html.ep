@@ -161,8 +161,10 @@
     $(function () {
       // Geo
       (function () {
+        var c_lat = <%= $self->session('user')->{map_lat} %>;
+        var c_lng = <%= $self->session('user')->{map_lng} %>;
         geoMap = L.map('geoMap', {
-          center: [48.480232846617845, 135.07203340530396],
+          center: [c_lat, c_lng],
           zoom: 16,
         });
 

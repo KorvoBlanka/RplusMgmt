@@ -5,16 +5,7 @@
 
 % content_for header => begin
 <style type="text/css">
-  #companyList, #mediatorList {
-    max-height: 600px;
-    overflow-y: auto;
-  }
 
-  #mediatorList a.active {
-    background-color: #428bca;
-    border-color: #428bca;
-    color: #fff;
-  }
 </style>
 % end
 
@@ -85,7 +76,7 @@
       $( ".btn-save" ).click(function(e) {
         
         var t;
-        var opt_hash ={};
+        var opt_hash = {};
 
         t = $('#formExportVnh [name="phones"]:input').val();
         opt_hash['vnh-phones'] = t;
@@ -203,7 +194,7 @@
           <div class="col-lg-5">
             <input type="checkbox" name="agent-phone">
           </div>
-        </div>          
+        </div>
       </form>
       <div class="form-group">
         <button type="" class="btn btn-primary btn-save" style="margin-top: 64px">Сохранить</button>

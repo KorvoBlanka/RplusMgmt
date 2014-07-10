@@ -8,8 +8,9 @@ use Rplus::Model::User;
 use Rplus::Model::User::Manager;
 use Rplus::Model::Realty;
 use Rplus::Model::Realty::Manager;
-
 use Rplus::DB;
+
+use RplusMgmt::L10N;
 
 use JSON;
 use Hash::Merge;
@@ -19,14 +20,8 @@ use DateTime::Format::Pg qw();
 use DateTime::Format::Strptime qw();
 
 use Time::HiRes qw( time usleep );
-
-use RplusMgmt::L10N;
-
 use Cache::FastMmap;
-
 use POSIX;
-
-use Data::Dumper;
 
 my $fmap = Cache::FastMmap->new();
 my $ua = Mojo::UserAgent->new;
@@ -60,7 +55,7 @@ sub startup {
         my ($self) = @_;
         my $acc_data_str = $fmap->get('acc_data');
 
-        if (time - $acc_data_str->{'ts'} > 10) {
+        if (time - $acc_data_str->{'ts'} > 15) {
             my $acc_data = {blocked => 1};
             my $tx = $ua->get('http://rplusmgmt.com/api/account/get_by_domain?subdomain=' . $self->config->{'subdomain'});
             if (my $res = $tx->success) {
@@ -71,7 +66,7 @@ sub startup {
             $fmap->set('acc_data', $acc_data_str);
         }
 
-        return $acc_data_str->{'data'};;
+        return $acc_data_str->{'data'};
     });
 
     $self->helper(session_check => sub {
@@ -181,7 +176,11 @@ sub startup {
     $self->helper(format_phone_num => sub {
         my ($self, $phone_num, $phone_prefix) = @_;
         return undef unless $phone_num;
-        $phone_prefix //= $self->config->{default_phone_prefix};
+
+        my $acc_data = $self->get_acc_data();
+        my $c_phone_prefix = $acc_data->{phone_prefix};
+        $phone_prefix //= $c_phone_prefix;
+
         return $phone_num =~ s/^(\Q$phone_prefix\E)(\d+)$/($1)$2/r if $phone_prefix && $phone_num =~ /^\Q$phone_prefix\E/;
         return $phone_num =~ s/^(\d{3})(\d{3})(\d{4})/($1)$2$3/r;
     });
@@ -190,7 +189,11 @@ sub startup {
     $self->helper(parse_phone_num => sub {
         my ($self, $phone_num, $phone_prefix) = @_;
         return undef unless $phone_num;
-        $phone_prefix //= $self->config->{default_phone_prefix};
+
+        my $acc_data = $self->get_acc_data();
+        my $c_phone_prefix = $acc_data->{phone_prefix};
+        $phone_prefix //= $c_phone_prefix;
+
         if ($phone_num !~ /^\d{10}$/) {
             $phone_num =~ s/\D//g;
             $phone_num =~ s/^(7|8)(\d{10})$/$2/;

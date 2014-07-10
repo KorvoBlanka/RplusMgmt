@@ -9,7 +9,7 @@
     },
 
     formatPhoneNum: function (phoneNum) {
-      var defaultPhonePrefix = "<%= config->{default_phone_prefix} %>";
+      var defaultPhonePrefix = "<%= $self->session('user')->{phone_prefix} %>";
       if (!phoneNum) return;
       if (defaultPhonePrefix && phoneNum.indexOf(defaultPhonePrefix) == 0) {
         return "(" + defaultPhonePrefix + ")" + phoneNum.substring(defaultPhonePrefix.length, phoneNum.length);

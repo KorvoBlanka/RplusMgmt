@@ -4,14 +4,25 @@ use Rplus::Modern;
 
 use Rplus::Model::SmsMessage;
 use Rplus::Model::SmsMessage::Manager;
+use Rplus::Model::RuntimeParam;
+use Rplus::Model::RuntimeParam::Manager;
 
 use Mojo::UserAgent;
+use JSON;
 
 sub run {
     my $class = shift;
     my $c = shift;
 
-    return unless $c->config->{smsc} && $c->config->{smsc}->{active};
+    my $rt_param = Rplus::Model::RuntimeParam->new(key => 'notifications')->load();
+    my $config;
+    if ($rt_param) {
+        $config = from_json($rt_param->{value});
+    } else {
+        return;
+    }
+
+    return unless $config->{active};
 
     my $sm_iter = Rplus::Model::SmsMessage::Manager->get_objects_iterator(query => [status => 'queued'], sort_by => 'id');
     while (my $sm = $sm_iter->next) {
@@ -21,10 +32,10 @@ sub run {
 
         my $ua = Mojo::UserAgent->new;
         my $tx = $ua->post('https://smsc.ru/sys/send.php' => form => {
-            login => $c->config->{smsc}->{login},
-            psw => $c->config->{smsc}->{psw},
-            ($c->config->{smsc}->{tz} ? (tz => $c->config->{smsc}->{tz}) : ()),
-            ($c->config->{smsc}->{sender} ? (sender => $c->config->{smsc}->{sender}) : ()),
+            login => $config->{login},
+            psw => $config->{password},
+            ($config->{tz} ? (tz => $config->{tz}) : ()),
+            ($config->{company} ? (sender => $config->{company}) : ()),
             phones => '+7'.$sm->phone_num,
             mes => $sm->text,
             id => $sm->id,
