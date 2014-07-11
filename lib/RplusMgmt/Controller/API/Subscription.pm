@@ -468,18 +468,14 @@ sub save {
             Rplus::Model::SubscriptionRealty->new(subscription_id => $subscription->id, realty_id => $realty->id, state_code => 'attention')->save;
         }
     }
-    
-        my $conf_phones = '';
-    my $agent_phone = 0;
 
     my $rt_param = Rplus::Model::RuntimeParam->new(key => 'notifications')->load();
     my $contact_info = '';
     if ($rt_param) {
         my $config = from_json($rt_param->{value});
         $contact_info = $config->{'contact_info'} ? $config->{'contact_info'} : '';
-        say '!';
     }
-    say $contact_info;
+
     # Add realty to subscription & generate SMS
     for my $realty_id (@$realty_ids) {
         my $realty = Rplus::Model::Realty::Manager->get_objects(

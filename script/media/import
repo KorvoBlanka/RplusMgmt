@@ -86,8 +86,8 @@ sub run {
             say 'skip';
             next;
         }
-
-        my $tx = $ua->get("http://192.168.5.1:3000/api/realty/list", form => {last_ts => $last_ts, offer_type => $offer_type, source_media => $source_media, realty_type => $realty_type});
+        say $acc_data->{realty_buffer_url} . '/api/realty/list';
+        my $tx = $ua->get($acc_data->{realty_buffer_url} . '/api/realty/list', form => {last_ts => $last_ts, offer_type => $offer_type, source_media => $source_media, realty_type => $realty_type});
         if (my $res = $tx->success) {
             my $realty_data = $res->json->{list};
             for my $data (@$realty_data) {

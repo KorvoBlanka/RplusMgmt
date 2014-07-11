@@ -290,7 +290,7 @@ sub parse {
             {
                 my @xfound;
 
-                my $acc_data = $c->get_acc_data();       # запросим гуид с сервера
+                my $acc_data = $c->get_acc_data();
                 my $city_guid = $acc_data->{city_guid};
 
                 my $sql = "
