@@ -126,6 +126,11 @@ sub run {
                     $o_realty->last_seen_date($data->{add_date});
                     $o_realty->owner_price($data->{owner_price});
 
+                    if ($o_realty->{address_object_id} && !$data->{address_object_id}) {
+                        $o_realty->address_object_id($data->{address_object_id});
+                        $o_realty->house_num($data->{house_num});
+                    }
+
                     my $history = $o_realty->work_info;
                     $history = '' unless $history;
                     if ($data->{work_info}) {
