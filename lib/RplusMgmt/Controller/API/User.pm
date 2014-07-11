@@ -34,7 +34,7 @@ sub list {
                 phone_num => $user->phone_num,
                 description => $user->description,
                 add_date => $self->format_datetime($user->add_date),
-                photo_url => $user->photo_url ? $user->photo_url . '?ts=' . time : '',
+                photo_url => $user->photo_url ? $self->config->{'storage'}->{'url'} . $user->photo_url . '?ts=' . time : '',
             };
             push @{$res->{list}}, $x;
         }
@@ -70,7 +70,7 @@ sub get {
         sip_host => $sip->{sip_host} ? $sip->{sip_host} : '',
         sip_login => $sip->{sip_login} ? $sip->{sip_login} : '',
         sip_password => $sip->{sip_password} ? $sip->{sip_password} : '',
-        photo_url => $user->photo_url ? $user->photo_url . '?ts=' . time : '',
+        photo_url => $user->photo_url ? $self->config->{'storage'}->{'url'} . $user->photo_url . '?ts=' . time : '',
     };
 
     return $self->render(json => $res);
@@ -181,14 +181,14 @@ sub upload_photo {
             $image->Write($path.'/'.$name.'.jpg');
 
             # Save
-            $photo_url = $self->config->{'storage'}->{'url'}.'/users/'.$user_id.'/'.$name.'.jpg';
+            $photo_url = '/users/'.$user_id.'/'.$name.'.jpg';
             $user->photo_url($photo_url);
             $user->save;
         } or do {
             return $self->render(json => {error => $@}, status => 500);
         };
 
-        return $self->render(json => {status => 'success', photo_url => $photo_url,});
+        return $self->render(json => {status => 'success', photo_url => $self->config->{'storage'}->{'url'} . $photo_url,});
     }
 
     return $self->render(json => {error => 'Bad Request'}, status => 400);

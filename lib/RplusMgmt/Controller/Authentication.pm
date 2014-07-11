@@ -41,6 +41,7 @@ sub signin {
         role => $user->role,
         mode => $acc_data->{mode},
 
+        location_id => $acc_data->{location_id},
         city_guid => $acc_data->{city_guid},
         phone_prefix => $acc_data->{phone_prefix},
         map_lat => $acc_data->{map_lat},

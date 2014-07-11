@@ -125,6 +125,12 @@
   <h3 class="page-header">Импорт</h3>
   <ul class="nav nav-tabs">
     % for my $x (@{Rplus::Model::Media::Manager->get_objects(query => [type => 'import'], sort_by => 'id')}) {
+    %     my $loc_id = $self->session('user')->{mode};      # костыль, сделать получение списка доступных источников с сервера!
+    %     if ($loc_id == 1) {
+    %         next if $x->id > 10;
+    %     } else {
+    %         next if $x->id == 1 || $x->id == 7 || $x->id == 8;
+    %     }      
       <li class="<%= $x->id == 1 ? 'active': '' %>"><a href="#import-<%= $x->code %>" data-toggle="tab"> <%= $x->name %></a></li>
     % }
   </ul>
@@ -132,6 +138,12 @@
   <!-- Tab panes -->
   <div class="tab-content">
     % for my $x (@{Rplus::Model::Media::Manager->get_objects(query => [type => 'import'], sort_by => 'id')}) {
+    %     my $loc_id = $self->session('user')->{mode};    # костыль, сделать получение списка доступных источников с сервера!
+    %     if ($loc_id == 1) {
+    %         next if $x->id > 10;
+    %     } else {
+    %         next if $x->id == 1 || $x->id == 7 || $x->id == 8;
+    %     }
       <div class="tab-pane <%= $x->id == 1 ? 'active': '' %> " id="import-<%= $x->code %>">
         <div class="col-lg-4 sale-column">
           <div class="checkbox" id="sale-<%= $x->code %>">
