@@ -33,7 +33,7 @@ sub run {
             $c->app->log->debug("Query: $q");
 
             # Skip FTS data
-            my @query = map { ref($_) eq 'SCALAR' && $$_ =~ /^t1\.fts/ ? () : $_ } (Rplus::Util::Query->parse($q));
+            my @query = map { ref($_) eq 'SCALAR' && $$_ =~ /^t1\.fts/ ? () : $_ } (Rplus::Util::Query->parse($q, $c));
 
             my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
                 query => [
