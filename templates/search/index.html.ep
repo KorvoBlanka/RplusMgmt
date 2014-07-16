@@ -316,7 +316,21 @@
       console.log(regInfo);
       if (regInfo.registered) {
         $('#show-phone-button > span').removeClass('hidden');
+
+        if (RTCKit.webPhone.getMicState().allowed) {
+          $('#rtckit-container').zIndex(1);
+        } else {
+          $('#rtckit-container').zIndex(9000);
+        }
       }
+    }
+
+    RTCKit.webPhone.onMicStateChanged = function(micInfo) {
+        if (micInfo.allowed) {
+          $('#rtckit-container').zIndex(1);
+        } else {
+          $('#rtckit-container').zIndex(9000);
+        }
     }
 
     // обработчик состояния звонка
@@ -407,7 +421,7 @@
       $('#callerName').html('');
     });
 
-    $(document).keydown(function(e){      
+    $(document).keydown(function(e) {      
       if (e.keyCode == 8 && e.target.tagName != 'INPUT' && e.target.tagName != 'TEXTAREA') {
         e.preventDefault();
         phone_num = phone_num.slice(0, - 1);
@@ -422,6 +436,7 @@
           $('#callerNumber').html(format_phone(phone_num));
         }
       }
+
     });
 
     function isNumber(n) {
@@ -730,10 +745,6 @@
 </script>
 % end
 
-<div class="" style="position: absolute; top:75px; left: 25px; z-index: 9000;">
-  <div id='container' style='width: 217px; height: 140px'></div>
-</div>
-
 <table style="width:127px; position: fixed; top: 50%; left: 50%; margin-top: -67px; margin-left: -67px; z-index: 500;">
   <tr>
     <td>
@@ -904,7 +915,10 @@
       </table>
     </div>
   </div>
-  <div class="col-md-6" style="padding-left: 0;">
+  <div class="col-md-6" style="padding-left: 0; position: relative;">
+    <div id="rtckit-container" style="position: absolute; top: 25px; right: 25px;">
+      <div id='container' style='width: 217px; height: 140px;'></div>
+    </div>
     <div class="geo-map" id="geoMap"></div>
   </div>
 </div>
