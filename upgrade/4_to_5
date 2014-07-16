@@ -1,0 +1,27 @@
+#!/usr/bin/env perl
+
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+
+use Rplus::Modern;
+
+use Rplus::DB;
+
+my $dbh = Rplus::DB->new_or_cached->dbh;
+
+# Database scruct changes
+if (1) {
+    # table changes
+    $dbh->do(q{ALTER TABLE public.users ADD COLUMN ip_telephony JSON NOT NULL DEFAULT '{}'::json;});
+    $dbh->do(q{ALTER TABLE public.users ADD COLUMN photo_url VARCHAR;});
+    $dbh->do(q{ALTER TABLE public.mediators ADD COLUMN added_by VARCHAR;});
+
+    # Insert records in media table
+    $dbh->do(q{INSERT INTO public.media (id, name, code, type, metadata, keywords) VALUES (11, 'Kominfo', 'kominfo', 'import', '{}', 'импорт kominfo, kominfo импорт');});
+    $dbh->do(q{INSERT INTO public.media (id, name, code, type, metadata, keywords) VALUES (12, 'Komcity', 'komcity', 'import', '{}', 'импорт komcity, komcity импорт');});
+}
+
+# Update models
+system("$FindBin::Bin/../script/make_models");
+
+exit 1;

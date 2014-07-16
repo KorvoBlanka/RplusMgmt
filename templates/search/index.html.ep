@@ -233,16 +233,19 @@
     background-color: rgba(255,255,255,0.10);
   }
 
-  .numpad tr > td > div:hover {
-    -webkit-transform: scale(1.02);
-  }
+  % if ($self->req->headers->user_agent !~ /Android/) {
+    .numpad tr > td > div:hover {
+      -webkit-transform: scale(1.02);
+      background-color: rgba(255,255,255,0.20);
+    }
+  % }
 
   .numpad tr > td > div:active {
     -webkit-transform: scale(0.96);
   }  
 
   .numpad-key {
-    -webkit-transition: all .05s ease-in-out;
+    /*-webkit-transition: all .05s ease-in-out;*/
     cursor: pointer;
 
     -webkit-touch-callout: none;
@@ -255,6 +258,7 @@
 
   .numpad-key:active {
     -webkit-transform: scale(0.92);
+    background-color: rgba(255,255,255,0.40) !important;
   }
 
   .leaflet-bottom {

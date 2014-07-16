@@ -3,6 +3,10 @@ package Rplus::Util::Config;
 use Cwd qw/abs_path/;
 use Mojo::Asset::File;
 
+use Exporter qw(import);
+ 
+our @EXPORT_OK = qw(get_config);
+
 sub get_config {
     # get path to Config.pm, then build a path to app.conf
     my $module = __PACKAGE__;

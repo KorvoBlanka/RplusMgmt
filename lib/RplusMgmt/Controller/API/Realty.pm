@@ -18,6 +18,7 @@ use Rplus::Model::ColorTag::Manager;
 use Rplus::Util::PhoneNum;
 use Rplus::Util::Query;
 use Rplus::Util::Realty;
+use Rplus::Util::Mediator qw(add_mediator);
 
 use JSON;
 use Mojo::Collection;
@@ -434,7 +435,7 @@ sub save {
 
             # добавить все телефоны в посредники
             for (@owner_phones) {
-                add_mediator($mediator->company->name, $_);
+                add_mediator($mediator->company->name, $_, 'user_' . $self->stash('user')->{id});
             }
         } else {
             if ($realty->agent_id == 10000) {
@@ -574,7 +575,7 @@ sub update {
                 $realty->agent_id(scalar $self->param('agent_id'));
                 if ($agent_id == 10000) {
                     my $company = 'ПОСРЕДНИК В НЕДВИЖИМОСТИ';
-                    add_mediator($company, $realty->owner_phones->[0]);
+                    add_mediator($company, $realty->owner_phones->[0], 'user_' . $self->stash('user')->{id});
                 }
             }            
         } elsif ($_ eq 'state_code') {
@@ -608,7 +609,7 @@ sub update {
 
             # добавить все телефоны в посредники
             for (@owner_phones) {
-                add_mediator($mediator->company->name, $_);
+                add_mediator($mediator->company->name, $_, 'user_' . $self->stash('user')->{id});
             }
         } else {
             if ($realty->agent_id == 10000) {
@@ -636,51 +637,6 @@ sub update {
     };
     
     return $self->render(json => $res);
-}
-
-sub add_mediator {
-    #my $self = shift;
-    my $mediator = Rplus::Model::Mediator->new;
-
-    # Prepare data
-    my $company_name = shift;
-    my $phone_num = shift;
-
-    $mediator->phone_num($phone_num);
-
-    eval {
-        my $company = Rplus::Model::MediatorCompany::Manager->get_objects(query => [[\'lower(name) = ?' => lc($company_name)], delete_date => undef])->[0];
-        if (!$company) {
-            $company = Rplus::Model::MediatorCompany->new(name => $company_name);
-            $company->save;
-        }
-        $mediator->company($company);
-        $mediator->save;
-
-        # Search for additional mediator phones
-        my $found_phones = Mojo::Collection->new();
-        my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(query => [delete_date => undef, \("owner_phones && '{".$phone_num."}'")]);
-        while (my $realty = $realty_iter->next) {
-            $realty->agent_id(10000);
-            $realty->state_code('raw') if $realty->state_code eq 'work';
-            $realty->mediator_company_id($mediator->company->id);
-            $realty->save(changes_only => 1);
-            push @$found_phones, ($realty->owner_phones);
-        }
-        $found_phones = $found_phones->uniq;
-
-        if ($found_phones->size) {
-            # Add additional mediators from realty owner phones
-            for (@$found_phones) {
-                if ($_ ne $phone_num && !Rplus::Model::Mediator::Manager->get_objects_count(query => [phone_num => $_, delete_date => undef])) {
-                    my $nm = Rplus::Model::Mediator->new(phone_num => $_, company => $company);
-                    $nm->save;
-                }
-            }
-        }
-    }  or do {
-        say 'unable to add mediator';
-    }
 }
 
 1;

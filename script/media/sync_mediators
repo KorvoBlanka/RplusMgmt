@@ -1,0 +1,103 @@
+#!/usr/bin/env perl
+
+use FindBin;
+use lib "$FindBin::Bin/../../lib";
+
+use Rplus::Modern;
+
+use Rplus::Model::Realty;
+use Rplus::Model::Realty::Manager;
+use Rplus::Model::Mediator;
+use Rplus::Model::Mediator::Manager;
+use Rplus::Model::MediatorCompany;
+use Rplus::Model::MediatorCompany::Manager;
+
+use Rplus::Util::Config qw(get_config);
+use Rplus::Util::Mediator qw(delete_mediator add_mediator);
+
+use Mojo::UserAgent;
+use List::Flatten;
+
+use JSON;
+use Data::Dumper;
+
+
+# синхронизация базы посредниклв клиента и буффера
+
+run(get_config());
+
+sub run {
+    my $config = shift;
+
+    while(get_load_average() > 2) {
+        say 'go to sleep';
+        sleep int(rand(60));
+    }
+
+    # Загрузим базу телефонов посредников
+    my %MEDIATOR_PHONES;
+    {
+        my $mediator_iter = Rplus::Model::Mediator::Manager->get_objects_iterator(query => [added_by => 'buffer', delete_date => undef], require_objects => ['company']);
+        while (my $x = $mediator_iter->next) {
+            $MEDIATOR_PHONES{$x->phone_num} = {
+                id => $x->id,
+                name => $x->name,
+                company => $x->company->name,
+                company_id => $x->company->id,
+            };
+        }
+    }
+
+	my %BUFFER_MEDIATOR_PHONES;
+
+    my $ua = Mojo::UserAgent->new;    
+
+    my $tx = $ua->get('http://rplusmgmt.com/api/account/get_by_domain?subdomain=' . $config->{'subdomain'});
+    my $acc_data;
+    if (my $res = $tx->success) {
+      $acc_data = $res->json;
+    }
+
+    #if ($acc_data->{use_mediators_buffer}) {
+    if (1 == 1) {
+        my $tx = $ua->get($acc_data->{realty_buffer_url} . '/api/mediator/list_companies');
+        if (my $res = $tx->success) {
+            my $companies_data = $res->json->{list};
+            for my $company (@$companies_data) {
+                my $tx_mc = $ua->get($acc_data->{realty_buffer_url} . '/api/mediator/list_mediators', form => {company_id => $company->{id}});
+                if (my $res_mc = $tx_mc->success) {
+                    my $mediators_data = $res_mc->json->{list};
+                    for my $mediator (@$mediators_data) {
+
+			            $BUFFER_MEDIATOR_PHONES{$mediator->{phone_num}} = {
+			                id => $mediator->{id},
+			            };
+
+                        if (!$MEDIATOR_PHONES{$mediator->{phone_num}}) {		# добавим посредника
+                        	say 'new mediator ' . $mediator->{phone_num};
+                        	add_mediator($company->{name}, $mediator->{phone_num}, 'buffer');
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+	while (my ($phone, $attributes) = each %MEDIATOR_PHONES) {
+	    # удалим посредников, которых нет в буффере
+	    unless ($BUFFER_MEDIATOR_PHONES{$phone}) {	# посредника нет в буффере, удаляем
+	    	say 'deleting id ' . $attributes->{id};
+	    	delete_mediator($attributes->{id});
+	    }
+	}
+}
+
+sub get_load_average {
+    open(LOAD, "/proc/loadavg") or die "Unable to get server load \n";
+    my $load_avg = <LOAD>;
+    close LOAD;
+    my ( $one_min_avg ) = split /\s/, $load_avg;
+    return $one_min_avg;
+}
+
+1;
