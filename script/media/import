@@ -14,7 +14,6 @@ use Rplus::Model::RuntimeParam::Manager;
 
 use Rplus::Util::Image;
 use Rplus::Util::Realty;
-use Rplus::Util::Config qw(get_config);
 use Rplus::Util::Mediator qw(add_mediator);
 
 use Mojo::UserAgent;
@@ -23,14 +22,23 @@ use List::Flatten;
 use JSON;
 use Data::Dumper;
 
-run(get_config());
+run(Rplus::Util::Config::get_config());
 
 sub run {
     my $config = shift;
 
-    while(get_load_average() > 2) {
-        say 'go to sleep';
-        sleep int(rand(60));
+    # Загрузим базу телефонов посредников
+    my %MEDIATOR_PHONES;
+    {
+        my $mediator_iter = Rplus::Model::Mediator::Manager->get_objects_iterator(query => [delete_date => undef], require_objects => ['company']);
+        while (my $x = $mediator_iter->next) {
+            $MEDIATOR_PHONES{$x->phone_num} = {
+                id => $x->id,
+                name => $x->name,
+                company => $x->company->name,
+                company_id => $x->company->id,
+            };
+        }
     }
 
     my $ua = Mojo::UserAgent->new;    
@@ -65,25 +73,15 @@ sub run {
 
         say $source_media . ' - ' . $offer_type . ' - ' . $realty_type;
 
-        while(get_load_average() > 2) {
-            say 'go to sleep';
-            sleep int(rand(30));
-        }
-
         if ($acc_data->{mode} ne 'all' && $acc_data->{mode} ne $offer_type) {
             say 'skip';
             next;
         }
-        say $acc_data->{realty_buffer_url} . '/api/realty/list';
-        my $tx = $ua->get($acc_data->{realty_buffer_url} . '/api/realty/list', form => {last_ts => $last_ts, offer_type => $offer_type, source_media => $source_media, realty_type => $realty_type});
+
+        my $tx = $ua->get("http://192.168.5.1:3000/api/realty/list", form => {last_ts => $last_ts, offer_type => $offer_type, source_media => $source_media, realty_type => $realty_type});
         if (my $res = $tx->success) {
             my $realty_data = $res->json->{list};
             for my $data (@$realty_data) {
-
-                while(get_load_average() > 2) {
-                    print 'go to sleep';
-                    sleep int(rand(10));
-                }
 
                 my @owner_phones = flat $data->{owner_phones};
                 if (Rplus::Model::Mediator::Manager->get_objects_count(query => [phone_num => \@owner_phones, delete_date => undef]) > 0) {
@@ -92,7 +90,7 @@ sub run {
                     # добавить все телефоны в посредники
                     for (@owner_phones) {
                         say 'add mediator ' . $_;
-                        add_mediator($mediator->company->name, $_, 'import');
+                        add_mediator($mediator->company->name, $_);
                     }
                     next if ($offer_type eq 'rent');
 
@@ -110,11 +108,6 @@ sub run {
                     $o_realty->last_seen_date($data->{add_date});
                     $o_realty->owner_price($data->{owner_price});
 
-                    if ($o_realty->{address_object_id} && !$data->{address_object_id}) {
-                        $o_realty->address_object_id($data->{address_object_id});
-                        $o_realty->house_num($data->{house_num});
-                    }
-
                     my $history = $o_realty->work_info;
                     $history = '' unless $history;
                     if ($data->{work_info}) {
@@ -126,7 +119,7 @@ sub run {
                     say "updated realty: $id";
 
                     Rplus::Util::Image::remove_images($id);
-                    my $tx = $ua->get($acc_data->{realty_buffer_url} . "/api/realty/get_photos?realty_id=$data_id");
+                    my $tx = $ua->get("http://192.168.5.1:3000/api/realty/get_photos?realty_id=$data_id");
                     if (my $res = $tx->success) {
                         my $photo_data = $res->json->{list};
                         for my $photo (@$photo_data) {
@@ -148,7 +141,7 @@ sub run {
                         my $id = $realty->id;
                         say "Saved new realty: $id";
                         
-                        my $tx = $ua->get($acc_data->{realty_buffer_url} .  "/api/realty/get_photos?realty_id=$data_id");
+                        my $tx = $ua->get("http://192.168.5.1:3000/api/realty/get_photos?realty_id=$data_id");
                         if (my $res = $tx->success) {
                             my $photo_data = $res->json->{list};
                             for my $photo (@$photo_data) {
