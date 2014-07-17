@@ -78,7 +78,7 @@ sub run {
             next;
         }
 
-        my $tx = $ua->get("http://192.168.5.1:3000/api/realty/list", form => {last_ts => $last_ts, offer_type => $offer_type, source_media => $source_media, realty_type => $realty_type});
+        my $tx = $ua->get($acc_data->{realty_buffer_url}. "/api/realty/list", form => {last_ts => $last_ts, offer_type => $offer_type, source_media => $source_media, realty_type => $realty_type});
         if (my $res = $tx->success) {
             my $realty_data = $res->json->{list};
             for my $data (@$realty_data) {
@@ -119,7 +119,7 @@ sub run {
                     say "updated realty: $id";
 
                     Rplus::Util::Image::remove_images($id);
-                    my $tx = $ua->get("http://192.168.5.1:3000/api/realty/get_photos?realty_id=$data_id");
+                    my $tx = $ua->get($acc_data->{realty_buffer_url} . "/api/realty/get_photos?realty_id=$data_id");
                     if (my $res = $tx->success) {
                         my $photo_data = $res->json->{list};
                         for my $photo (@$photo_data) {
@@ -141,7 +141,7 @@ sub run {
                         my $id = $realty->id;
                         say "Saved new realty: $id";
                         
-                        my $tx = $ua->get("http://192.168.5.1:3000/api/realty/get_photos?realty_id=$data_id");
+                        my $tx = $ua->get($acc_data->{realty_buffer_url} . "/api/realty/get_photos?realty_id=$data_id");
                         if (my $res = $tx->success) {
                             my $photo_data = $res->json->{list};
                             for my $photo (@$photo_data) {
