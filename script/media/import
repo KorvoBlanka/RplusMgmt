@@ -108,12 +108,14 @@ sub run {
                     $o_realty->last_seen_date($data->{add_date});
                     $o_realty->owner_price($data->{owner_price});
 
-                    my $history = $o_realty->work_info;
-                    $history = '' unless $history;
-                    if ($data->{work_info}) {
-                        $history = $history . "\n" . $data->{work_info};
+                    if (0) {
+                        my $history = $o_realty->work_info;
+                        $history = '' unless $history;
+                        if ($data->{work_info}) {
+                            $history = $history . "\n" . $data->{work_info};
+                        }
+                        $o_realty->work_info($history);
                     }
-                    $o_realty->work_info($history);
 
                     $o_realty->save(changes_only => 1);
                     say "updated realty: $id";

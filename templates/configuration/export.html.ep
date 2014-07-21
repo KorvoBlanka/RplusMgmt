@@ -140,42 +140,54 @@
 <div class="row">
   <h3 class="page-header">Экспорт</h3>
   <ul class="nav nav-tabs">
-    <li class="active"><a href="#export-vnh" data-toggle="tab">ВНХ</a></li>
-    <li><a href="#export-farpost" data-toggle="tab">Farpost</a></li>
+    % my $loc_id = $self->session('user')->{location_id};      # костыль!
+    % if ($loc_id == 1) {
+    <li class="active"><a href="#export-irr" data-toggle="tab">Из рук в руки</a></li>      
+    <li><a href="#export-farpost" data-toggle="tab">Farpost</a></li>      
     <li><a href="#export-present" data-toggle="tab">Презент</a></li>
-    <li><a href="#export-irr" data-toggle="tab">Из рук в руки</a></li>
+    <li><a href="#export-vnh" data-toggle="tab">ВНХ</a></li>
+    % } else {
+    <li class="active"><a href="#export-irr" data-toggle="tab">Из рук в руки</a></li>      
+    <li><a href="#export-farpost" data-toggle="tab">Farpost</a></li>
+    <li class="hidden"><a href="#export-vnh" data-toggle="tab">ВНХ</a></li>
+    <li class="hidden"><a href="#export-present" data-toggle="tab">Презент</a></li>
+    % }
   </ul>  
 </div>
 
   <!-- Tab panes -->
   <div class="tab-content">
 
-    <div class="tab-pane active" id="export-vnh">
-        <form class="" role="form" id="formExportVnh">
-          <div class="row" style="padding-top: 15px;">
-            <label class="col-lg-2 control-label">Телефоны</label>
-            <div class="col-lg-5">
-              <input type="text" class="form-control" name="phones" placeholder="Phone1, Phone2">
-            </div>
+    <div class="tab-pane active" id="export-irr">
+      <form class="" role="form" id="formExportIrr">
+        <div class="row" style="padding-top: 15px;">
+          <label class="col-lg-2 control-label">Телефоны</label>
+          <div class="col-lg-5">
+            <input type="text" class="form-control" name="phones" placeholder="Phone1, Phone2">
           </div>
-
-          <div class="row" style="padding-top: 15px;">
-            <label class="col-lg-2 control-label">Телефон агента</label>
-            <div class="col-lg-5">
-              <input type="checkbox" name="agent-phone">
-            </div>
-          </div>
-
-          <div class="row" style="padding-top: 15px;">
-            <label class="col-lg-2 control-label">Название компании</label>
-            <div class="col-lg-5">
-              <input type="text" class="form-control" name="company" placeholder="Company">
-            </div>
-          </div>
-        </form>
-        <div class="form-group">
-          <button type="" class="btn btn-primary btn-save" style="margin-top: 15px">Сохранить</button>
         </div>
+        <div class="row" style="padding-top: 15px;">
+          <label class="col-lg-2 control-label">Телефон агента</label>
+          <div class="col-lg-5">
+            <input type="checkbox" name="agent-phone">
+          </div>
+        </div>          
+        <div class="row" style="padding-top: 15px;">
+          <label class="col-lg-2 control-label">e-mail</label>
+          <div class="col-lg-5">
+            <input type="text" class="form-control" name="email" placeholder="somemail@mail.com">
+          </div>
+        </div>
+        <div class="row" style="padding-top: 15px;">
+          <label class="col-lg-2 control-label">Адрес сайта</label>
+          <div class="col-lg-5">
+            <input type="text" class="form-control" name="url" placeholder="mysiteurl.com">
+          </div>
+        </div>
+      </form>
+      <div class="form-group">
+        <button type="" class="btn btn-primary btn-save" style="margin-top: 15px">Сохранить</button>
+      </div>
     </div>
 
     <div class="tab-pane" id="export-farpost">
@@ -198,6 +210,34 @@
       </form>
       <div class="form-group">
         <button type="" class="btn btn-primary btn-save" style="margin-top: 64px">Сохранить</button>
+      </div>
+    </div>
+
+    <div class="tab-pane" id="export-vnh">
+      <form class="" role="form" id="formExportVnh">
+        <div class="row" style="padding-top: 15px;">
+          <label class="col-lg-2 control-label">Телефоны</label>
+          <div class="col-lg-5">
+            <input type="text" class="form-control" name="phones" placeholder="Phone1, Phone2">
+          </div>
+        </div>
+
+        <div class="row" style="padding-top: 15px;">
+          <label class="col-lg-2 control-label">Телефон агента</label>
+          <div class="col-lg-5">
+            <input type="checkbox" name="agent-phone">
+          </div>
+        </div>
+
+        <div class="row" style="padding-top: 15px;">
+          <label class="col-lg-2 control-label">Название компании</label>
+          <div class="col-lg-5">
+            <input type="text" class="form-control" name="company" placeholder="Company">
+          </div>
+        </div>
+      </form>
+      <div class="form-group">
+        <button type="" class="btn btn-primary btn-save" style="margin-top: 15px">Сохранить</button>
       </div>
     </div>
 
@@ -225,38 +265,6 @@
       <div class="form-group">
         <button type="" class="btn btn-primary btn-save" style="margin-top: 15px">Сохранить</button>
       </div>
-    </div>
-
-    <div class="tab-pane" id="export-irr">
-        <form class="" role="form" id="formExportIrr">
-          <div class="row" style="padding-top: 15px;">
-            <label class="col-lg-2 control-label">Телефоны</label>
-            <div class="col-lg-5">
-              <input type="text" class="form-control" name="phones" placeholder="Phone1, Phone2">
-            </div>
-          </div>
-          <div class="row" style="padding-top: 15px;">
-            <label class="col-lg-2 control-label">Телефон агента</label>
-            <div class="col-lg-5">
-              <input type="checkbox" name="agent-phone">
-            </div>
-          </div>          
-          <div class="row" style="padding-top: 15px;">
-            <label class="col-lg-2 control-label">e-mail</label>
-            <div class="col-lg-5">
-              <input type="text" class="form-control" name="email" placeholder="somemail@mail.com">
-            </div>
-          </div>
-                              <div class="row" style="padding-top: 15px;">
-            <label class="col-lg-2 control-label">Адрес сайта</label>
-            <div class="col-lg-5">
-              <input type="text" class="form-control" name="url" placeholder="mysiteurl.com">
-            </div>
-          </div>
-        </form>
-        <div class="form-group">
-          <button type="" class="btn btn-primary btn-save" style="margin-top: 15px">Сохранить</button>
-        </div>        
     </div>
 
   </div>

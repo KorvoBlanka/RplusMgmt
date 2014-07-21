@@ -118,17 +118,26 @@
 <div class="row">
   <h3 class="page-header">Экспорт</h3>
   <ul class="nav nav-tabs">
-    <li class="active"><a href="#export-vnh" data-toggle="tab">ВНХ</a></li>
+    % my $loc_id = $self->session('user')->{location_id};      # костыль!
+    % if ($loc_id == 1) {
+    <li class="active"><a href="#export-irr" data-toggle="tab">Из рук в руки</a></li>      
     <li><a href="#export-farpost" data-toggle="tab">Farpost</a></li>
+    <li><a href="#export-vnh" data-toggle="tab">ВНХ</a></li>
     <li><a href="#export-present" data-toggle="tab">Презент</a></li>
-    <li><a href="#export-irr" data-toggle="tab">Из рук в руки</a></li>
+    % } else {
+    <li class="active"><a href="#export-irr" data-toggle="tab">Из рук в руки</a></li>      
+    <li><a href="#export-farpost" data-toggle="tab">Farpost</a></li>
+    <li class="hidden"><a href="#export-vnh" data-toggle="tab">ВНХ</a></li>
+    <li class="hidden"><a href="#export-present" data-toggle="tab">Презент</a></li>
+    % }
   </ul>  
 </div>
 
 <!-- Tab panes -->
 <div class="tab-content">
-  <div class="tab-pane active" id="export-vnh">
-    <div class="" role="form" id="formExportVnh">
+
+  <div class="tab-pane active" id="export-irr">
+    <div class="" role="form" id="formExportIrr">
       <div class="row" style="padding-top: 15px;">
         <div class="col-lg-2">
           <select class="form-control" name="offer_type_code">
@@ -137,21 +146,31 @@
           </select>
         </div>
       </div>
-
       <div class="checkbox">
         <label>
-          <input type="checkbox" id="apartments_rooms" checked="checked"> Квартиры, комнаты
+          <input type="checkbox" checked="checked" id="rooms"> Комнаты
         </label>
       </div>
       <div class="checkbox">
         <label>
-          <input type="checkbox" id="houses" checked="checked"> Дома, коттеджи
+          <input type="checkbox" checked="checked" id="apartments"> Квартиры
         </label>
       </div>
-
+      <div class="checkbox">
+        <label>
+          <input type="checkbox" checked="checked" id="houses"> Дома, коттеджи
+        </label>
+      </div>          
+      <div class="row hidden" style="padding-top: 15px;">
+        <label class="col-lg-2 control-label">Телефоны</label>
+        <div class="col-lg-5">
+          <input type="text" class="form-control" name="phones" placeholder="">
+        </div>
+      </div>
       <div class="form-group">
-        <button type="submit" class="btn btn-primary btn-save" data-action="export-vnh" style="margin-top: 15px">Экспорт</button>
-      </div>
+        <button type="" class="btn btn-primary btn-save" data-action="export-irr" style="margin-top: 15px">Экспорт</button>
+        <span class="glyphicon glyphicon-refresh animation-rotate indicator-download invisible" style="top: 10px; left: 10px;"></span>
+      </div>          
     </div>
   </div>
 
@@ -217,8 +236,8 @@
     </div>
   </div>
 
-  <div class="tab-pane" id="export-irr">
-    <div class="" role="form" id="formExportIrr">
+  <div class="tab-pane" id="export-vnh">
+    <div class="" role="form" id="formExportVnh">
       <div class="row" style="padding-top: 15px;">
         <div class="col-lg-2">
           <select class="form-control" name="offer_type_code">
@@ -227,31 +246,21 @@
           </select>
         </div>
       </div>
+
       <div class="checkbox">
         <label>
-          <input type="checkbox" checked="checked" id="rooms"> Комнаты
+          <input type="checkbox" id="apartments_rooms" checked="checked"> Квартиры, комнаты
         </label>
       </div>
       <div class="checkbox">
         <label>
-          <input type="checkbox" checked="checked" id="apartments"> Квартиры
+          <input type="checkbox" id="houses" checked="checked"> Дома, коттеджи
         </label>
       </div>
-      <div class="checkbox">
-        <label>
-          <input type="checkbox" checked="checked" id="houses"> Дома, коттеджи
-        </label>
-      </div>          
-      <div class="row hidden" style="padding-top: 15px;">
-        <label class="col-lg-2 control-label">Телефоны</label>
-        <div class="col-lg-5">
-          <input type="text" class="form-control" name="phones" placeholder="">
-        </div>
-      </div>
+
       <div class="form-group">
-        <button type="" class="btn btn-primary btn-save" data-action="export-irr" style="margin-top: 15px">Экспорт</button>
-        <span class="glyphicon glyphicon-refresh animation-rotate indicator-download invisible" style="top: 10px; left: 10px;"></span>
-      </div>          
+        <button type="submit" class="btn btn-primary btn-save" data-action="export-vnh" style="margin-top: 15px">Экспорт</button>
+      </div>
     </div>
   </div>
 

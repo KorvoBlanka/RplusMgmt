@@ -1069,7 +1069,9 @@
 
           <div class="form-group edit-group">
             <div class="col-md-4 col-lg-4">
+            % my $loc_id = $self->session('user')->{location_id};      # костыль!
             % for my $x (@{Rplus::Model::Media::Manager->get_objects(query => [type => 'export', delete_date => undef], page => 1, per_page => 3)}) {
+            % next if $loc_id == 2 && ($x->id == 2 || $x->id == 3);
               <div class="checkbox">
                 <input type="checkbox" name="export_media" value="<%= $x->id %>" form="realty-form"> <small><%= $x->name %></small>
               </div>
@@ -1077,6 +1079,7 @@
             </div>
             <div class="col-md-4 col-lg-4">
             % for my $x (@{Rplus::Model::Media::Manager->get_objects(query => [type => 'export', delete_date => undef], page => 2, per_page => 3)}) {
+            % next if $loc_id == 2 && ($x->id == 2 || $x->id == 3);
               <div class="checkbox">
                 <input type="checkbox" name="export_media" value="<%= $x->id %>" form="realty-form"> <small><%= $x->name %></small>
               </div>
