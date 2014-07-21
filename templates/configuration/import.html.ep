@@ -46,7 +46,6 @@
 
 
     function listOptions() {
-
       $.ajax({
         type: "POST",
         url: "/api/options/list",
@@ -57,9 +56,29 @@
         .done(function (data, textStatus, jqXHR) {
           for (var key in data.val) {
             var r = data.val[key];
-
             $('input', $('#' + key)).attr('checked', r == 'true' || r == '1' ? true : false);
           }
+          //var set_hash = {};
+          //for (var key in data.val) {
+            //set_hash
+            //console.log(key.match( /^(.+?)-(.+?)-(.+?)$/gm ));
+          //}
+
+          $(".group-checkbox").each(function(e) {
+            var name = $(this).attr('id');
+            var checked = true;
+            $("div[id^=" + name + "]").each(function(e) {
+              var cb_name = $(this).attr('id');
+              if (cb_name != name) {
+                if (!$('input', $(this)).is(':checked')) {
+                  checked = false;
+                  return false;
+                }
+              }
+            });
+            $('input', $(this)).prop('checked', checked);
+          });
+
         }).fail(function (jqXHR, textStatus, errorThrown) {
           alert('<%= loc q{An error occurred while fetching options} %>');
         })
@@ -109,15 +128,14 @@
     }
 
     $(function () {
-      $( ".checkbox" ).change(function(e) {
+      $(".checkbox").change(function(e) {
         var name = $(this).attr('id');
         var val = $('input', $(this)).is(':checked');
-
-        if(/^(sale|rent)-\w+$/.test(name)) {
+        if (/^(sale|rent)-\w+$/.test(name)) {
           var opt_hash = {};
-          $( ".checkbox" ).each(function(e) {
+          $(".checkbox").each(function(e) {
             var cb_name = $(this).attr('id');
-            if( (new RegExp('^' + name + '-\\w+$')).test(cb_name) ) {
+            if ((new RegExp('^' + name + '-\\w+$')).test(cb_name)) {
               if (val) {
                 $('input', $(this)).prop('checked', true);
               } else {
@@ -131,7 +149,9 @@
           saveOption(name, val);
         }
       });
+
       listOptions();
+
     });
   })();
 </script>
@@ -169,7 +189,7 @@
     %     }
       <div class="tab-pane <%= $x->id == 1 ? 'active': '' %> " id="import-<%= $x->code %>">
         <div class="col-lg-4 sale-column">
-          <div class="checkbox" id="sale-<%= $x->code %>">
+          <div class="checkbox group-checkbox" id="sale-<%= $x->code %>">
             <label>
               <input type="checkbox" class="sale-checkbox"><b> Продажа</b>
             </label>
@@ -184,7 +204,7 @@
     % }
         </div>
         <div class="col-lg-4 rent-column">
-          <div class="checkbox" id="rent-<%= $x->code %>">
+          <div class="checkbox group-checkbox" id="rent-<%= $x->code %>">
             <label>
               <input type="checkbox" class="rent-checkbox"><b> Аренда</b>
             </label>
