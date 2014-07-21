@@ -85,6 +85,14 @@ sub run {
 	    	delete_mediator($attributes->{id});
 	    }
 	}
+
+    my $mediator_company_iter = Rplus::Model::MediatorCompany::Manager->get_objects_iterator(query => [delete_date => undef]);
+    while (my $x = $mediator_company_iter->next) {
+        if (Rplus::Model::Mediator::Manager->get_objects_count(query => [company_id => $x->id, delete_date => undef]) == 0) {
+            $x->delete_date('now()');
+            $x->save;
+        }
+    }
 }
 
 1;
