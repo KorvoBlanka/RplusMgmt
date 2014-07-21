@@ -8,7 +8,6 @@ use Rplus::Model::RuntimeParam::Manager;
 use RplusMgmt::Task::SMS;
 use RplusMgmt::Task::Subscriptions;
 use RplusMgmt::Task::Landmarks;
-use RplusMgmt::Task::Import;
 
 use Mojo::IOLoop;
 

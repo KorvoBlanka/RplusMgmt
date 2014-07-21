@@ -58,12 +58,6 @@
             var r = data.val[key];
             $('input', $('#' + key)).attr('checked', r == 'true' || r == '1' ? true : false);
           }
-          //var set_hash = {};
-          //for (var key in data.val) {
-            //set_hash
-            //console.log(key.match( /^(.+?)-(.+?)-(.+?)$/gm ));
-          //}
-
           $(".group-checkbox").each(function(e) {
             var name = $(this).attr('id');
             var checked = true;
