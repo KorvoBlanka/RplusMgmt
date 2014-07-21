@@ -70,7 +70,7 @@ sub add_mediator {
         # Add additional mediators from realty owner phones
         for (@$found_phones) {
             if ($_ ne $phone_num && !Rplus::Model::Mediator::Manager->get_objects_count(query => [phone_num => $_, delete_date => undef])) {
-                my $nm = Rplus::Model::Mediator->new(phone_num => $_, company => $company);
+                my $nm = Rplus::Model::Mediator->new(phone_num => $_, company => $company, added_by => $added_by);
                 $nm->save;
             }
         }

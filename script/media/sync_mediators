@@ -29,15 +29,10 @@ run(get_config());
 sub run {
     my $config = shift;
 
-    while(get_load_average() > 2) {
-        say 'go to sleep';
-        sleep int(rand(60));
-    }
-
     # Загрузим базу телефонов посредников
     my %MEDIATOR_PHONES;
     {
-        my $mediator_iter = Rplus::Model::Mediator::Manager->get_objects_iterator(query => [added_by => 'buffer', delete_date => undef], require_objects => ['company']);
+        my $mediator_iter = Rplus::Model::Mediator::Manager->get_objects_iterator(query => [added_by => [undef, 'buffer', 'import'], delete_date => undef], require_objects => ['company']);
         while (my $x = $mediator_iter->next) {
             $MEDIATOR_PHONES{$x->phone_num} = {
                 id => $x->id,
@@ -90,14 +85,6 @@ sub run {
 	    	delete_mediator($attributes->{id});
 	    }
 	}
-}
-
-sub get_load_average {
-    open(LOAD, "/proc/loadavg") or die "Unable to get server load \n";
-    my $load_avg = <LOAD>;
-    close LOAD;
-    my ( $one_min_avg ) = split /\s/, $load_avg;
-    return $one_min_avg;
 }
 
 1;
