@@ -291,6 +291,13 @@
         {id: "price", name: "<%= ucfloc 'price' %>", sortName: "price", visible: true, val: function (r) {
           return r.price || '';
         }},
+        {id: "price_per_meter", name: "Цена кв.м", sortName: "CASE WHEN price IS NULL THEN 1 ELSE price END / CASE WHEN square_total IS NULL THEN 10000000 ELSE square_total END", visible: true, val: function (r) {
+          if (r.square_total && r.price) {
+            return (r.price / r.square_total).toFixed(3);
+          } else {
+            return '';
+          }
+        }},
         {id: "agent", name: "<%= ucfloc 'agent' %>", sortName: "agent.name", visible: true, val: function (r) {
           return r.agent_id ? Rplus.Table['users'][r.agent_id].name : '';
         }},

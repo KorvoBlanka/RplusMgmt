@@ -256,6 +256,11 @@ sub list {
       push @sort_by, $sort_by;
     }
 
+    if  ($sort_by) {
+      #push @with_objects, $1 if $1 && $2;
+      push @sort_by, $sort_by;
+    }
+
     # Recognize phone numbers from query
     my @owner_phones;
     if ($q) {

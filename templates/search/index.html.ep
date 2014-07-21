@@ -134,6 +134,7 @@
   }
 
   .phone-button:hover {
+    background: #999;
     -webkit-transform: scale(1.02);
   }
 
