@@ -66,7 +66,7 @@
       ;
     }
 
-    function saveOptions(name, val) {
+    function saveOption(name, val) {
       $.ajax({
         type: "POST",
         url: "/api/options/set",
@@ -87,12 +87,34 @@
       ;
     }
 
+    function saveOptions(opt_hash) {
+      var opts = JSON.stringify(opt_hash);
+      $.ajax({
+        type: "POST",
+        url: "/api/options/set_multiple",
+        data: {
+          category: "import",
+          opt_string: opts, 
+        }
+      })
+        .done(function (data, textStatus, jqXHR) {
+          if (data.status == 'success') {
+
+          }
+        })
+        .fail(function (jqXHR, textStatus, errorThrown) {
+          alert('<%= loc q{An error occurred while saving options} %>');
+        })
+      ;
+    }
+
     $(function () {
       $( ".checkbox" ).change(function(e) {
         var name = $(this).attr('id');
         var val = $('input', $(this)).is(':checked');
 
         if(/^(sale|rent)-\w+$/.test(name)) {
+          var opt_hash = {};
           $( ".checkbox" ).each(function(e) {
             var cb_name = $(this).attr('id');
             if( (new RegExp('^' + name + '-\\w+$')).test(cb_name) ) {
@@ -101,11 +123,12 @@
               } else {
                 $('input', $(this)).prop('checked', false);
               }
-              saveOptions(cb_name, val);
+              opt_hash[cb_name] = val;
             }
           });
+          saveOptions(opt_hash);
         } else {
-          saveOptions(name, val);
+          saveOption(name, val);
         }
       });
       listOptions();
