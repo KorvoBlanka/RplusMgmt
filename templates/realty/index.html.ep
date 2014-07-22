@@ -288,7 +288,7 @@
         {id: "owner", name: "Контакты", visible: true, style: "white-space: nowrap;", val: function (r) {
           return r.owner_phones ? r.owner_phones.map(function (x) { return Rplus.Util.formatPhoneNum(x) }).join('<br>') : '';
         }},
-        {id: "price", name: "<%= ucfloc 'price' %>", sortName: "price", visible: true, val: function (r) {
+        {id: "price", name: "<%= ucfloc 'price' %>", sortName: "price", visible: false, val: function (r) {
           return r.price || '';
         }},
         {id: "price_per_meter", name: "Цена кв.м", sortName: "CASE WHEN price IS NULL THEN 1 ELSE price END / CASE WHEN square_total IS NULL THEN 10000000 ELSE square_total END", visible: true, val: function (r) {

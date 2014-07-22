@@ -32,7 +32,7 @@ sub run {
     # Загрузим базу телефонов посредников
     my %MEDIATOR_PHONES;
     {
-        my $mediator_iter = Rplus::Model::Mediator::Manager->get_objects_iterator(query => [added_by => [undef, 'buffer', 'import'], delete_date => undef], require_objects => ['company']);
+        my $mediator_iter = Rplus::Model::Mediator::Manager->get_objects_iterator(query => [delete_date => undef], require_objects => ['company']);
         while (my $x = $mediator_iter->next) {
             $MEDIATOR_PHONES{$x->phone_num} = {
                 id => $x->id,
@@ -75,6 +75,18 @@ sub run {
                     }
                 }
             }
+        }
+    }
+
+    # Загрузим базу телефонов посредников
+    %MEDIATOR_PHONES = ();
+    {
+        my $mediator_iter = Rplus::Model::Mediator::Manager->get_objects_iterator(query => [added_by => [undef, 'buffer'], delete_date => undef], require_objects => ['company']);
+        while (my $x = $mediator_iter->next) {
+            $MEDIATOR_PHONES{$x->phone_num} = {
+                id => $x->id,
+                company_id => $x->company->id,
+            };
         }
     }
 

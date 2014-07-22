@@ -572,7 +572,7 @@ sub update {
     for ($self->param) {
         if ($_ eq 'agent_id') {
             # if agent_id changed - set 'assign_date'
-            $realty->assign_date('now()') if $realty->agent_id != $self->param_n('agent_id');
+            $realty->assign_date('now()');
             if ($self->param('agent_id') eq '') {
                 $realty->agent_id(undef);
             } else {
@@ -617,7 +617,7 @@ sub update {
                 add_mediator($mediator->company->name, $_, 'user_' . $self->stash('user')->{id});
             }
         } else {
-            if ($realty->agent_id == 10000) {
+            if ($realty->agent_id && $realty->agent_id == 10000) {
                 $realty->agent_id(undef);
                 $realty->mediator_company_id(undef);
             }

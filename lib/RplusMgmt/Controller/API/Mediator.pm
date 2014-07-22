@@ -137,8 +137,6 @@ sub save {
             push @$found_phones, ($realty->owner_phones);
         }
         $found_phones = $found_phones->uniq;
-
-        my $realty_iter;
         
         if ($found_phones->size) {
             # Add additional mediators from realty owner phones
