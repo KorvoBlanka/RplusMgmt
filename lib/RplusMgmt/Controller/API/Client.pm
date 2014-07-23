@@ -90,7 +90,7 @@ sub list {
                 offer_type_code => $subscription_offer_types,
                 delete_date => undef,
                 #'!end_date' => undef,
-                'subscription_realty.delete_date' => undef,
+                #'subscription_realty.delete_date' => undef,
             ],
         );
         
