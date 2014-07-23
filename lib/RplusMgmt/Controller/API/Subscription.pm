@@ -296,7 +296,7 @@ sub realty_list {
     my $subscription_realty_state_code = $self->param("state_code") || 'any';
     
     my $subscription = Rplus::Model::Subscription::Manager->get_objects(query => [id => $subscription_id, delete_date => undef])->[0];
-    update_subscription_realty($subscription);
+    #update_subscription_realty($subscription, $self);
 
     my $res = {
         count => Rplus::Model::SubscriptionRealty::Manager->get_objects_count(
@@ -356,10 +356,11 @@ sub realty_list {
 
 sub update_subscription_realty {
     my $subscr = shift;
+    my $c = shift;
 
     for my $q (@{$subscr->queries}) {
         # Skip FTS data
-        my @query = map { ref($_) eq 'SCALAR' && $$_ =~ /^t1\.fts/ ? () : $_ } (Rplus::Util::Query->parse($q));
+        my @query = map { ref($_) eq 'SCALAR' && $$_ =~ /^t1\.fts/ ? () : $_ } (Rplus::Util::Query->parse($q, $c));
 
         my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
             query => [

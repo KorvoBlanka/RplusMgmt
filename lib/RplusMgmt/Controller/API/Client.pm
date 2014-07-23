@@ -88,9 +88,9 @@ sub list {
             query => [
                 client_id => $client->id,
                 offer_type_code => $subscription_offer_types,
-                delete_date => undef,                
-                '!end_date' => undef,
-                #'subscription_realty.delete_date' => undef,
+                delete_date => undef,
+                #'!end_date' => undef,
+                'subscription_realty.delete_date' => undef,
             ],
         );
         
@@ -164,7 +164,7 @@ sub get {
             query => [
                 client_id => $client->id,
                 delete_date => undef,                
-                '!end_date' => undef,
+                #'!end_date' => undef,
                 'subscription_realty.delete_date' => undef,
             ],
             require_objects => ['client'],
@@ -401,7 +401,7 @@ sub subscribe {
             db => $db,
         )->[0];
         if ($realty) {
-            Rplus::Model::SubscriptionRealty->new(subscription_id => $subscription->id, realty_id => $realty->id, db => $db)->save;
+            Rplus::Model::SubscriptionRealty->new(subscription_id => $subscription->id, realty_id => $realty->id, state_code => 'offered', db => $db)->save;
 
             # Prepare SMS for client
             if ($phone_num =~ /^9\d{9}$/) {
