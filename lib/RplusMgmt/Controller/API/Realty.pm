@@ -602,28 +602,6 @@ sub update {
     # Check that we can rewrite agent
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => write => $realty->agent_id);
 
-    my @owner_phones = $realty->owner_phones;
-    if(scalar @owner_phones > 0) {
-        if (Rplus::Model::Mediator::Manager->get_objects_count(query => [phone_num => \@owner_phones, delete_date => undef]) > 0) {
-            $realty->agent_id(10000);
-            if ($realty->state_code eq 'work') {
-                $realty->state_code('raw');
-            }
-            my $mediator = Rplus::Model::Mediator::Manager->get_objects(query => [phone_num => \@owner_phones, delete_date => undef], require_objects => ['company'])->[0];
-            $realty->mediator_company_id($mediator->company->id);
-
-            # добавить все телефоны в посредники
-            for (@owner_phones) {
-                add_mediator($mediator->company->name, $_, 'user_' . $self->stash('user')->{id});
-            }
-        } else {
-            if ($realty->agent_id && $realty->agent_id == 10000) {
-                $realty->agent_id(undef);
-                $realty->mediator_company_id(undef);
-            }
-        }
-    }
-
     # Save data
     $realty->change_date('now()');
     eval {

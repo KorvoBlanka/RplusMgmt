@@ -1108,10 +1108,10 @@
           var id = $this.data('id');
           $.ajax({
             type: "POST",
+            async: false,
             url: "/api/realty/update",
-            data: {id: id, agent_id: agentId}
-          })
-            .done(function (data, textStatus, jqXHR) {
+            data: {id: id, agent_id: agentId},
+            success: function (data, textStatus, jqXHR) {
               if (data.status == 'success') {
                 var r = data.realty;
                 // Update row data in realty table
@@ -1125,8 +1125,9 @@
                 putToHistory(id, "modified", 1);
                 last_event_id.push(data.event_id);
               }
-            })
-          ;
+            },
+            error: function (jqXHR, textStatus, errorThrown) {},
+          });
         });
 
       });
