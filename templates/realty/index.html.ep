@@ -494,7 +494,9 @@
         % }
         {text: '<span class="glyphicon glyphicon-cog"></span> Задача'},
         {text: '<span class="glyphicon glyphicon-comment"></span>  <%= ucfloc 'export' %>', element_id: 'el_export', subMenu: [
+          % my $loc_id = $self->session('user')->{location_id};      # костыль!
           % for my $x (@{Rplus::Model::Media::Manager->get_objects(query => [type => 'export', delete_date => undef])}) {
+          % next if $loc_id == 2 && ($x->id == 2 || $x->id == 3);
             {text: '<span class="export-check export-check<%= $x->id %> glyphicon glyphicon-ok"></span>&nbsp&nbsp<%= $x->name %>', data_action: 'realty-set-export', data_val: '<%= $x->id %>', },
           % }
         ]},
@@ -955,30 +957,30 @@
           var $this = $(this);
           var id = $this.data('id');
           if(e.which == 1) {  // lmb pressed
-                  var sel_idx = $this.index();
-                  clearHistorySelected();
-                  var $selected = $('#realtyTable > tbody > tr.selected');
-                  $selected.each(function () {
-                    var $this = $(this);
-                    var id = $this.data('id');
-                    $this.removeClass('selected');
-                    putToHistory(id, "selected", 0);
-                  });
-                  
-                  var $rows;
-                  if(last_sel_idx < sel_idx) {
-                    $rows = $('#realtyTable > tbody > tr').slice(last_sel_idx, sel_idx + 1);
-                  } else {
-                    $rows = $('#realtyTable > tbody > tr').slice(sel_idx, last_sel_idx + 1);
-                  }
-                  $rows.each(function () {
-                    var $this = $(this);
-                    var id = $this.data('id');
-                    if (!$this.hasClass('opened')) {
-                      $this.addClass('selected');
-                      putToHistory(id, "selected", 1);
-                    }
-                  });
+            var sel_idx = $this.index();
+            clearHistorySelected();
+            var $selected = $('#realtyTable > tbody > tr.selected');
+            $selected.each(function () {
+              var $this = $(this);
+              var id = $this.data('id');
+              $this.removeClass('selected');
+              putToHistory(id, "selected", 0);
+            });
+            
+            var $rows;
+            if(last_sel_idx < sel_idx) {
+              $rows = $('#realtyTable > tbody > tr').slice(last_sel_idx, sel_idx + 1);
+            } else {
+              $rows = $('#realtyTable > tbody > tr').slice(sel_idx, last_sel_idx + 1);
+            }
+            $rows.each(function () {
+              var $this = $(this);
+              var id = $this.data('id');
+              if (!$this.hasClass('opened')) {
+                $this.addClass('selected');
+                putToHistory(id, "selected", 1);
+              }
+            });
           }
         });
 
@@ -1064,6 +1066,43 @@
       $('[data-action="realty-set-agent"]').click(function (e) {
         var agentId = $(this).data('val');
         var $selected = $('#realtyTable > tbody > tr.selected');
+
+/*
+        var ids = [];
+        $selected.each(function () {
+          var $this = $(this);
+          ids.push($this.data('id'));
+
+        });
+
+          $.ajax({
+            type: "POST",
+            url: "/api/realty/update_multiple",
+            data: {param_name: 'agent_id', ids: ids}
+          })
+            .done(function (data, textStatus, jqXHR) {
+              if (data.status == 'success') {
+                for (var i = 0; i < data.list.length; i++) {
+                  var r = data.list[i];
+
+                  // Update row data in realty table
+                  for (var j = 0; j < realtyTableConf.fields.length; j++) {
+                    var f = realtyTableConf.fields[j];
+                    $('#realtyTable > tbody > tr[data-id="' + r.id + '"] > td:nth-child(' + (j + 1) + ')').html(f.val(r));
+                  }
+                  agents_ids[r.id] = agentId;
+                  $('#realtyTable > tbody > tr[data-id="' + r.id + '"]').removeClass('selected').addClass('modified');
+                  putToHistory(r.id, "selected", 0);
+                  putToHistory(r.id, "modified", 1);
+                  //last_event_id.push(data.event_id);
+                }
+              }
+            }).fail(function (jqXHR, textStatus, errorThrown) {
+               
+            });
+*/
+
+
         $selected.each(function () {
           var $this = $(this);
           var id = $this.data('id');
@@ -1089,6 +1128,7 @@
             })
           ;
         });
+
       });
 
       // Change state

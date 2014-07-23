@@ -644,4 +644,57 @@ sub update {
     return $self->render(json => $res);
 }
 
+sub update_multiple {
+    my $self = shift;
+
+    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => 'write');
+
+    my $param_name = $self->param('param_name');
+    my @ids = $self->param('ids[]');
+
+    my $res = {
+        status => 'success',
+        list => [],
+    };
+
+    for (@ids) {
+        my $id = $_;
+
+        my $realty = Rplus::Model::Realty::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
+        return $self->render(json => {error => 'Not Found'}, status => 404) unless $realty;
+        return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => write => $realty->agent_id) || $self->has_permission(realty => 'write')->{can_assign} && $realty->agent_id == undef;        
+
+        if ($param_name eq 'agent_id') {
+            # if agent_id changed - set 'assign_date'
+            $realty->assign_date('now()');
+            if ($self->param('agent_id') eq '') {
+                $realty->agent_id(undef);
+            } else {
+                my $agent_id = $self->param_n('agent_id');
+                $realty->agent_id(scalar $self->param('agent_id'));
+                if ($agent_id == 10000) {
+                    my $company = 'ПОСРЕДНИК В НЕДВИЖИМОСТИ';
+                    add_mediator($company, $realty->owner_phones->[0], 'user_' . $self->stash('user')->{id});
+                }
+            }            
+        }
+
+        # Save data
+        $realty->change_date('now()');
+        eval {
+            $realty->save(changes_only => 1);
+            1;
+        } or do {
+            return $self->render(json => {error => $@}, status => 500) unless $realty;
+        };
+
+        $realty->load;
+
+        push $res->{list}, $_serialize->($self, $realty);
+    }
+
+    return $self->render(json => $res);
+
+}
+
 1;
