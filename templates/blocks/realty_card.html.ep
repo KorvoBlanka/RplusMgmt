@@ -342,7 +342,9 @@
       }
       
       if (realty.agent_id == 10000) {   // посредник
-        $('span[data-name="dg_p9"]', $realty_modal).html(realty.mediator);
+        console.log(realty);
+        console.log(realty.mediator);
+        $('span[data-name="dg_p9"]', $realty_modal).html(realty.mediator_company);
         $('#dg_p9_label', $realty_modal).html('Агенство');
       } else {
         $('#dg_p9_label', $realty_modal).html('Агент');

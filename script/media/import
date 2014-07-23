@@ -86,14 +86,14 @@ sub run {
                 my @owner_phones = flat $data->{owner_phones};
                 if (Rplus::Model::Mediator::Manager->get_objects_count(query => [phone_num => \@owner_phones, delete_date => undef]) > 0) {
                     say 'mediator detected!';
-                    my $mediator = Rplus::Model::Mediator::Manager->get_objects(query => [phone_num => \@owner_phones, delete_date => undef], require_objects => ['company'], limit => 1,)->[0];
                     # добавить все телефоны в посредники
                     #for (@owner_phones) {
                     #    say 'add mediator ' . $_;
                     #    add_mediator($mediator->company->name, $_, 'import');
                     #}
                     next if ($offer_type eq 'rent');
-
+                    
+                    my $mediator = Rplus::Model::Mediator::Manager->get_objects(query => [phone_num => \@owner_phones, delete_date => undef], require_objects => ['company'], limit => 1,)->[0];
                     $data->{agent_id} = 10000;
                     $data->{mediator_company_id} = $mediator->company->id;
                 }

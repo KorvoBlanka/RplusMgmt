@@ -130,13 +130,15 @@
   .phone-button {
     background: #aaa;
     text-align: center;
-    -webkit-transition: all .1s ease-in-out;
+    -webkit-transition: all .2s ease-in-out;
   }
 
+  % if ($self->req->headers->user_agent !~ /Android/) {
   .phone-button:hover {
     background: #999;
     -webkit-transform: scale(1.02);
   }
+  % }
 
   .phone-button:active {
     -webkit-transform: scale(0.92);
@@ -199,7 +201,8 @@
     margin-top: -300px;
     margin-left: -450px;
     background-color: rgba(0,0,0, 0.7);
-    z-index: 499;    
+    z-index: 499;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.6), 0 22px 70px 4px rgba(0,0,0,.6), 0 0 0 1px rgba(0, 0, 0, 0.1);
   }
 
   .lightup-answer {
@@ -217,21 +220,29 @@
     text-align: center;
     font-size: 28px;
     font-weight: 100;
+
+    width: 260px; 
+    position: fixed; 
+    top: 50%; 
+    left: 50%; 
+    margin-top: -30px; 
+    margin-left: 155px; 
+    z-index: 500;    
   }
 
   .numpad tr > td {
     padding: 0px;
     margin: 0px;
-    width: 64px;
-    height: 32px;
+    /*width: 64px;
+    height: 32px;*/
   }
 
   .numpad tr > td > div {
     padding: 0px;
-    margin: 2px;
+    margin: 12px 18px;
     margin-left: 0px;
     margin-bottom: 0px;
-    background-color: rgba(255,255,255,0.10);
+    background-color: rgba(255,255,255,0.05);
   }
 
   % if ($self->req->headers->user_agent !~ /Android/) {
@@ -246,8 +257,20 @@
   }  
 
   .numpad-key {
-    /*-webkit-transition: all .05s ease-in-out;*/
+    -webkit-transition: all .08s;
     cursor: pointer;
+
+    border-radius: 50% !important;
+    border: 1px double #888;
+
+    height: 60px;
+    width: 60px;
+    line-height: 60px;
+
+    padding: 0px;
+    margin: 0px;
+
+    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif !important;
 
     -webkit-touch-callout: none;
     -webkit-user-select: none;
@@ -264,6 +287,12 @@
 
   .leaflet-bottom {
     z-index: -1;
+  }
+
+  #user-pic {
+    position: absolute;
+    top: 20px;
+    left: 20px;
   }
 </style>
 % end
@@ -310,6 +339,7 @@
           password: '<%= $sip->{sip_password} %>',
           auth: authToken,
         });
+        RTCKit.webPhone.showSettings();
       }
     }
 
@@ -317,21 +347,17 @@
       console.log(regInfo);
       if (regInfo.registered) {
         $('#show-phone-button > span').removeClass('hidden');
-
-        if (RTCKit.webPhone.getMicState().allowed) {
-          $('#rtckit-container').zIndex(1);
-        } else {
-          $('#rtckit-container').zIndex(9000);
-        }
       }
     }
 
     RTCKit.webPhone.onMicStateChanged = function(micInfo) {
-        if (micInfo.allowed) {
-          $('#rtckit-container').zIndex(1);
-        } else {
-          $('#rtckit-container').zIndex(9000);
-        }
+      console.log(micInfo);
+      if (micInfo.allowed) {
+        $('#rtckit-container').css('z-index', 0);
+      } else {
+        $('#rtckit-container').css('z-index', 1000);
+        //RTCKit.webPhone.showMicDialog();
+      }
     }
 
     // обработчик состояния звонка
@@ -348,8 +374,17 @@
         $('#reject-button > span').addClass('lightup-reject');
 
         phone_num = callInfo.display;
+        var caller = get_caller(phone_num);
         $('#callerNumber').html(format_phone(phone_num));
-        $('#callerName').html(get_caller_name(phone_num));
+        $('#callerName').html(caller.name);
+        if(caller.photo_url != '') {
+          console.log(caller.photo_url);
+          $('#user-pic > img').attr('src', caller.photo_url);
+          $('#user-pic').removeClass('hidden');
+        } else {
+          $('#user-pic > img').attr('src', '');
+          $('#user-pic').addClass('hidden');
+        }
       }
 
       if (callInfo.state == 'CONNECTED') {
@@ -383,7 +418,8 @@
         $('#answer-button > span').addClass('lightup-answer');
         $('#reject-button > span').addClass('lightup-reject');
 
-        $('#callerName').html(get_caller_name(phone_num));
+        var caller = get_caller(phone_num);
+        $('#callerName').html(caller.name);
       }
     }    
 
@@ -420,6 +456,7 @@
       phone_num = phone_num.slice(0, - 1);
       $('#callerNumber').html(format_phone(phone_num));
       $('#callerName').html('');
+      $('#user-pic').addClass('hidden');
     });
 
     $(document).keydown(function(e) {      
@@ -446,7 +483,7 @@
 
     function format_phone(phone_str) {
       if (phone_str.length < 5) {                     // внутренний номер? 100X ?
-        return phone_blocks(phone_str);
+        return phone_str; //phone_blocks(phone_str);
       }
       if (phone_str.length < 8) {              // городской или короткий номер => XXX-XX-XX, XX-XX-XX, X-XX-XX ...
         return phone_blocks(phone_str);
@@ -508,33 +545,49 @@
         return reverse(t);
     }
 
-    function get_caller_name(phone_num) {
-        var name = '';
-        $.ajax({
-          type: "GET",
-          url: "/api/client/get",
-          data: {phone_num: phone_num},
-          async: false, // (!)
-          success: function (data, textStatus, jqXHR) {
-            console.log(data);
-            name = data.name;
-          },
-          error: function (jqXHR, textStatus, errorThrown) {},
-        });
+    function get_caller(phone_num) {
+      var r = {name: '', photo_url: '',}
 
-        $.ajax({
-          type: "GET",
-          url: "/api/mediator/get",
-          data: {phone_num: phone_num},
-          async: false, // (!)
-          success: function (data, textStatus, jqXHR) {
-            console.log(data);
-            name = data.company.name;
-          },
-          error: function (jqXHR, textStatus, errorThrown) {},
-        });
+      console.log(phone_num);
 
-      return name;
+      $.ajax({
+        type: "GET",
+        url: "/api/client/get",
+        data: {phone_num: phone_num},
+        async: false, // (!)
+        success: function (data, textStatus, jqXHR) {
+          console.log(data);
+          r.name = data.name;
+        },
+        error: function (jqXHR, textStatus, errorThrown) {},
+      });
+
+      $.ajax({
+        type: "GET",
+        url: "/api/mediator/get",
+        data: {phone_num: phone_num},
+        async: false, // (!)
+        success: function (data, textStatus, jqXHR) {
+          console.log(data);
+          r.name = data.company.name;
+        },
+        error: function (jqXHR, textStatus, errorThrown) {},
+      });
+
+      $.ajax({
+        type: "GET",
+        url: "/api/user/find",
+        data: {phone_num: phone_num},
+        async: false, // (!)
+        success: function (data, textStatus, jqXHR) {
+          console.log(data);
+          r.name = data.name;
+          r.photo_url = data.photo_url;
+        },
+        error: function (jqXHR, textStatus, errorThrown) {},
+      });
+
+      return r;
     }
 
     RTCKit.webPhone.embed({container: 'container'});
@@ -771,13 +824,16 @@
     </td>
   </tr>
 </table>
-<div class="phone-screen hidden" style="-webkit-box-shadow: 10px 10px 20px rgba(20, 20, 20, 0.5);">
+<div class="phone-screen hidden" style="">
+  <div class="hidden" id="user-pic">
+    <img src="" style="width: 160px; height: 160px;">
+  </div>
   <div id="" style="width: 200px;
       position: fixed;
       top: 50%;
       left: 50%;
-      margin-top: 250px;
-      margin-left: 250px;
+      margin-top: 270px;
+      margin-left: 260px;
       z-index: 500;
       text-align: center;">
     <p style="font-size: 14px; color: #bbb; font-weight: 100;letter-spacing: 1px;">
@@ -796,7 +852,7 @@
       text-align: center;">
     <p style="font-size: 36px; color: #fff; font-weight: 100;letter-spacing: 1px;">
       <span id="callerNumber"></span>
-      <span id="callerNumberBackspace" class="numpad-key" data-action="backspace" style="position: absolute; right: 0px;"><</span>
+      <span id="callerNumberBackspace" class="numpad-key" data-action="backspace" style="position: absolute; right: 0px; top: 0px; line-height: 52px;"><</span>
     </p>
   </div>
   <div id="" style="width: 700px;
@@ -809,7 +865,7 @@
       text-align: center;">
     <p id="callerName" style="font-size: 28px; color: #fff; font-weight: 100;letter-spacing: 1px;"></p>
   </div>
-  <table class="numpad" style="width:274px; position: fixed; top: 50%; left: 50%; margin-left: 135px; z-index: 500;">
+  <table class="numpad" style="">
     <tr>
       <td>
         <div class="numpad-key" data-action="numpad-click" data-key="1">

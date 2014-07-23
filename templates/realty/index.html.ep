@@ -604,8 +604,6 @@
               });
             }
           }
-          //var $table = $('#realtyTable');
-          //$table.floatThead('reflow');
         })
       ;
     }
@@ -662,9 +660,6 @@
             $('#realtyTableWrapper').scrollTop($('#realtyTableWrapper').scrollTop() + $tr.height() );            
           }
           _listRealty_finished = false;
-          
-          //var $table = $('#realtyTable');
-          //$table.floatThead('reflow');
         });
     }    
     
@@ -782,16 +777,6 @@
         xhtml += '</tr>';
         $('#realtyTable > thead').html(xhtml);
         $('#realtyTableMenu').html(xhtml2);
-        
-        /*var $table = $('#realtyTable');
-        $table.floatThead({
-          copyTableClass: true,
-          useAbsolutePositioning: true,
-          zIndex: 10,
-          scrollContainer: function($table){
-            return $('#realtyTableWrapper');
-          }
-        });*/
       })();
 
       // Sorting
@@ -835,14 +820,6 @@
           realtyTableConf.fields[i].visible = true;
         }
         saveRealtyTableConf();
-        /*var $table = $('#realtyTable');
-        $table.floatThead('destroy');
-        $table.floatThead({
-          zIndex: 10,
-          scrollContainer: function($table){
-            return $('#realtyTableWrapper');
-          }
-        });*/
       });
 
       // Infinite scroll
@@ -1410,16 +1387,6 @@
   </div><!-- /.modal-dialog -->
 </div><!-- /.modal -->
 % end
-
-<!--
-<div class="row margin-bottom-15">
-  <div class="col-md-12 col-lg-12">
-    <ul class="nav nav-tabs" id="navTab">
-      <li class="active"><a href="#search" data-toggle="tab"><strong><%= ucfloc 'search' %></strong></a></li>
-    </ul>
-  </div>
-</div>
--->
 
 <div class="tab-content" id="navTabContent">
   <div class="tab-pane active" id="search" >

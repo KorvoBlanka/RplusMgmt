@@ -76,6 +76,35 @@ sub get {
     return $self->render(json => $res);
 }
 
+sub find {
+    my $self = shift;
+
+    my $phone_num = $self->parse_phone_num(scalar $self->param('phone_num'));
+    my $user = Rplus::Model::User::Manager->get_objects(query => [phone_num => $phone_num, delete_date => undef])->[0];
+
+    return $self->render(json => {error => 'Not Found'}, status => 404) unless $user;
+
+    my $sip = from_json($user->ip_telephony);
+    my $res = {
+        id => $user->id,
+        login => $user->login,
+        role => $user->role,
+        role_loc => $self->ucfloc($user->role),
+        name => $user->name,
+        phone_num => $user->phone_num,
+        description => $user->description,
+        add_date => $self->format_datetime($user->add_date),
+        public_name => $user->public_name,
+        public_phone_num => $user->public_phone_num,
+        sip_host => $sip->{sip_host} ? $sip->{sip_host} : '',
+        sip_login => $sip->{sip_login} ? $sip->{sip_login} : '',
+        sip_password => $sip->{sip_password} ? $sip->{sip_password} : '',
+        photo_url => $user->photo_url ? $self->config->{'storage'}->{'url'} . $user->photo_url . '?ts=' . time : '',
+    };
+
+    return $self->render(json => $res);
+}
+
 sub get_realty_count {
     my $self = shift;
 
@@ -171,17 +200,17 @@ sub upload_photo {
 
         eval {
             make_path($path);
-            $file->move_to($path.'/'.$name.'.jpg');
+            $file->move_to($path.'/'.$name.'.png');
 
             # Convert image to jpeg
             my $image = Image::Magick->new;
-            $image->Read($path.'/'.$name.'.jpg');
-            $image->Resize(geometry => '200x200');
-            $image->Extent(geometry => '200x200', gravity => 'Center', background => 'white');
-            $image->Write($path.'/'.$name.'.jpg');
+            $image->Read($path.'/'.$name.'.png');
+            $image->Resize(geometry => '800x800');
+            $image->Extent(geometry => '800x800', gravity => 'Center', background => 'transparent');
+            $image->Write($path.'/'.$name.'.png');
 
             # Save
-            $photo_url = '/users/'.$user_id.'/'.$name.'.jpg';
+            $photo_url = '/users/'.$user_id.'/'.$name.'.png';
             $user->photo_url($photo_url);
             $user->save;
         } or do {
