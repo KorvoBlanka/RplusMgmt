@@ -371,7 +371,7 @@ sub subscribe {
         query => [
             client_id => $client->id,
             delete_date => undef,                
-            '!end_date' => undef,
+            #'!end_date' => undef,
             #'subscription_realty.delete_date' => undef,
         ],
     );
