@@ -771,7 +771,7 @@
             xhtml2 = '';
         for (var i = 0; i < realtyTableConf.fields.length; i++) {
           var f = realtyTableConf.fields[i];
-          xhtml += '<th class="' + (!f.visible ? 'hidden' : '') + '" data-index="' + i + '" data-sortable="' + (f.sortName ? 'true' : 'false') + '">' +
+          xhtml += '<th class="' + (!f.visible ? 'hidden' : '') + '" data-index="' + i + '" data-sortable="' + (f.sortName ? 'true' : 'false') + '" style="white-space: nowrap;">' +
                       f.name + (f.sortName ? '&nbsp;<span class="pull-right hidden glyphicon glyphicon-arrow-down" data-order="asc"></span><span class="pull-right hidden glyphicon glyphicon-arrow-up" data-order="desc"></span>' : '') +
                    '</th>';
           xhtml2 += '<li><a href="#" data-index="' + i + '"><span class="glyphicon glyphicon-ok" style="visibility: ' + (f.visible ? 'visible' : 'hidden') + '"></span> ' + (f.menuName || f.name) + '</a></li>';

@@ -253,7 +253,7 @@
   var ClientCard = (function () {
     // Global variables
 
-    var $modal, cmode = 0, events = {}, subs = {}, client = {};
+    var $modal, cmode = 1, events = {}, subs = {}, client = {};
     var selected_tag_id = 0;
 
     // Init here
@@ -266,7 +266,7 @@
       
       $modal.on('click', '[data-action="client-cancel"]', function (e) {
         setMode(0);
-        setClientView(cached_client, 0, false);
+        setClientView(cached_client, 1, false);
       });
       
       $modal.on('click', '[data-action="subscription-type-change"]', function (e) {
@@ -335,12 +335,11 @@
       // Action: save client & his subscriptions
       $modal.on('click', '[data-action="client-save"]', function (e) {
         save();
-        setMode(0);
+        setMode(1);
       });
     });
 
     function showProposedRealty(show) {
-      
       if (show) {
         $('.emode-btn').addClass("hidden");
         $('.smode-btn').addClass("hidden");
@@ -472,7 +471,7 @@
               data: {id: client.id, with_subscriptions: true},
             })
               .done(function (data, textStatus, jqXHR) {
-                setClientView(data, 0, true);
+                setClientView(data, 1, true);
                 //$modal.modal({show: true, backdrop: false});
                 // Emit event
                 if ($.isFunction(events.saved)) {
@@ -516,6 +515,8 @@
       if (cache_it) {
         cached_client = jQuery.extend(true, {}, client);
       }
+      $('#phone-num-alert', $modal).addClass('hidden');
+      $('#query-alert', $modal).addClass('nodispaly');
       $('#clientCard_clientForm [name="id"]:input', $modal).val(client.id);
       $('#clientCard_clientForm [name="name"]:input', $modal).val(client.name);
       $('#clientCard_clientForm [name="phone_num"]:input', $modal).val(Rplus.Util.formatPhoneNum(client.phone_num));
@@ -633,34 +634,6 @@
             $('tbody', $modal).append(dummy);
           }
         });
-      
-      /*
-      $('tbody', $modal).html('');
-      if (realtyId) {
-        var left_count = realtyId.length;
-        row_count -= left_count;
-        for (var i = 0; i < realtyId.length; i++) {
-          var realty_id = realtyId[i];
-            $.ajax({
-              type: "POST",
-              url: "/api/realty/get",
-              data: {id: realty_id},
-            })
-            .done(function (data, textStatus, jqXHR) {
-              left_count --;
-              var xhtml = '<tr data-id="' + realty_id + '">';
-  
-              var classes = [Rplus.Table['realty_states'][data.state_code].metadata['icon-class']];
-              xhtml += '<td><span class="glyphicon ' + classes.join(' ') + '"></span></td>';
-              xhtml += '<td>' + Rplus.Realty.getDigest(data, true) + '</td>';
-              xhtml += '</tr>';
-              $('tbody', $modal).prepend(xhtml);
-              if (left_count == 0) {
-  
-              }
-            }).fail(function (jqXHR, textStatus, errorThrown) {});
-        }
-        */
     }
     
     return function (options) {
@@ -677,7 +650,7 @@
         create: function (skel) {
           if (!skel) skel = {};
           skel.id = null;
-          setClientView(skel, 0, true);
+          setClientView(skel, 1, true);
           $modal.modal({show: true, backdrop: false});
           return $this;
         },
@@ -689,7 +662,7 @@
             data: {id: id, with_subscriptions: true},
           })
             .done(function (data, textStatus, jqXHR) {
-              setClientView(data, 0, true);
+              setClientView(data, 1, true);
               $modal.modal({show: true, backdrop: false});
             })
             .fail(function (jqXHR, textStatus, errorThrown) {
@@ -705,11 +678,11 @@
             url: "/api/client/get",
             data: {phone_num: phoneNum, with_subscriptions: true},
             success: function (data, textStatus, jqXHR) {
-              setClientView(data, 0, true);
+              setClientView(data, 1, true);
               $modal.modal({show: true, backdrop: false});
             },
             error: function (jqXHR, textStatus, errorThrown) {
-              setClientView({phone_num: phoneNum}, 0, true);
+              setClientView({phone_num: phoneNum}, 1, true);
               $modal.modal({show: true, backdrop: false});
             },
           });
@@ -742,7 +715,7 @@
           
           skel.subscriptions.push(subscription);
           
-          setClientView(skel, 0, true);
+          setClientView(skel, 1, true);
 
           $modal.modal({show: true, backdrop: false});
           //$modal.modal('show');
@@ -750,7 +723,7 @@
         },
 
         close: function () {
-          $modal.modal({show: false});
+          $modal.modal('toggle');
           return $this;
         }
       };
@@ -767,8 +740,8 @@
   <div class="modal-dialog">
     <div class="modal-content flipbox">
       <div class="modal-header" id="client-card-header">
-        <a href="#" class="ctrl-button smode-btn" data-dismiss="modal">Закрыть</a>
-        <a href="#" class="ctrl-button emode-btn hidden" data-action="client-cancel">Отменить</a>
+        <a href="#" class="ctrl-button emode-btn" data-dismiss="modal">Отменить</a>
+        <a href="#" class="ctrl-button smode-btn hidden" data-action="client-cancel">Отменить</a>
         <a href="#" class="ctrl-button rmode-btn hidden" data-action="close-proposed"><span class="glyphicon glyphicon-arrow-left"></span>  Назад</a>
         <a href="#" class="ctrl-button pull-right smode-btn" data-action="client-unlock">Изменить</a>
         <a href="#" class="ctrl-button pull-right emode-btn hidden" data-action="client-save">Готово</a>

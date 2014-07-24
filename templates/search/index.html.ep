@@ -378,7 +378,6 @@
         $('#callerNumber').html(format_phone(phone_num));
         $('#callerName').html(caller.name);
         if(caller.photo_url != '') {
-          console.log(caller.photo_url);
           $('#user-pic > img').attr('src', caller.photo_url);
           $('#user-pic').removeClass('hidden');
         } else {
@@ -467,7 +466,6 @@
         $('#callerName').html('');
       }
       var key = String.fromCharCode(e.keyCode)
-      console.log(key);
       if (isNumber(key) || key == '#' || key == '*') {
         if (phone_num.length < 11) {
           phone_num += key;
@@ -547,16 +545,12 @@
 
     function get_caller(phone_num) {
       var r = {name: '', photo_url: '',}
-
-      console.log(phone_num);
-
       $.ajax({
         type: "GET",
         url: "/api/client/get",
         data: {phone_num: phone_num},
         async: false,
         success: function (data, textStatus, jqXHR) {
-          console.log(data);
           r.name = data.name;
         },
         error: function (jqXHR, textStatus, errorThrown) {},
@@ -568,7 +562,6 @@
         data: {phone_num: phone_num},
         async: false,
         success: function (data, textStatus, jqXHR) {
-          console.log(data);
           r.name = data.company.name;
         },
         error: function (jqXHR, textStatus, errorThrown) {},
@@ -580,7 +573,6 @@
         data: {phone_num: phone_num},
         async: false,
         success: function (data, textStatus, jqXHR) {
-          console.log(data);
           r.name = data.name;
           r.photo_url = data.photo_url;
         },
