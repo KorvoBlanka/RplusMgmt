@@ -9,6 +9,7 @@
 %= css_once "$assets_url/leaflet/$leafletjs_ver/leaflet.css";
 %= css_once "$assets_url/leaflet.fullscreen/$leafletjs_fullscreen_ver/Control.FullScreen.css";
 %= css_once "$assets_url/typeahead.js/$typeaheadjs_ver/css/typeahead.js-bootstrap.css";
+%= css_once "/css/context.css";
 <style type="text/css">
   #searchTableWrapper {
     height: 600px;
@@ -70,6 +71,11 @@
     color: #fff;
   }
   
+  #searchTable > tbody > tr.selected > td > a {
+    /*background-color: #0082c7 !important;*/
+    color: #fff;
+  }
+
   .right-inner-addon {
     position: relative;
   }
@@ -294,6 +300,23 @@
     top: 20px;
     left: 20px;
   }
+
+  #geoModal .modal-body {
+    padding: 5px;
+  }
+
+  #photosModal .modal-dialog {
+    width: auto;
+  }
+
+  #photosModal .modal-body {
+    padding: 5px;
+  }
+
+  #photosModal .carousel-inner img {
+    margin-left: auto;
+    margin-right: auto;
+  }  
 </style>
 % end
 
@@ -607,6 +630,30 @@
     }
 
     var _listRealty_started  = 0, _listRealty_finished = 0;
+    var rtm_hash = {};
+
+    var unselectedIcon = L.icon({
+        iconUrl: '<%= "$assets_url/leaflet/$leafletjs_ver/images/marker-icon-gray.png" %>',
+        iconRetinaUrl: '<%= "$assets_url/leaflet/$leafletjs_ver/images/marker-icon-2x-gray.png" %>',
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+        shadowUrl: '<%= "$assets_url/leaflet/$leafletjs_ver/images/marker-shadow.png" %>',
+        shadowRetinaUrl: '<%= "$assets_url/leaflet/$leafletjs_ver/images/marker-shadow.png" %>',
+        shadowSize: [41, 41],
+    });
+
+    var selectedIcon = L.icon({
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+        shadowSize: [41, 41],
+        iconUrl: '<%= "$assets_url/leaflet/$leafletjs_ver/images/marker-icon.png" %>',
+        iconRetinaUrl: '<%= "$assets_url/leaflet/$leafletjs_ver/images/marker-icon-2x.png" %>',
+        shadowUrl: '<%= "$assets_url/leaflet/$leafletjs_ver/images/marker-shadow.png" %>',
+        shadowRetinaUrl: '<%= "$assets_url/leaflet/$leafletjs_ver/images/marker-shadow.png" %>',        
+    });
+
     function listRealty(page) {
       var q = $('#searchQuery').val();
       var offerTypeCode = $('[data-filter="offer_type_code"]').data('val');
@@ -636,11 +683,31 @@
 
           for (var i = 0; i < data.list.length; i++) {
             var r = data.list[i];
-            var $obj = $('<tr data-id="' + r.id + '" data-page="' + data.page + '" data-lat="' + r.latitude + '" data-lng="' + r.longitude + '"><td>' + Rplus.Realty.getDigest(r, true) + '</td></tr>');
+            var $obj = $('<tr data-id="' + r.id + '" data-page="' + data.page + '" data-lat="' + r.latitude + '" data-lng="' + r.longitude + '"><td>' + Rplus.Realty.getDigest(r, true) + (r.main_photo_thumbnail ? '&nbsp;&nbsp;&nbsp;<a href="#" data-action="photos-show"><span class="glyphicon glyphicon-camera"></span></a>' : '') + '</td></tr>');
 
             // Display realty object on the map
+            var marker_id = -1;
             if (r.latitude && r.longitude) {
-              var marker = L.marker([r.latitude, r.longitude]).addTo(geoMap).bindPopup(Rplus.Realty.getDigest(r));
+              var marker = L.marker([r.latitude, r.longitude], {icon: unselectedIcon}).addTo(geoMap).bindPopup(Rplus.Realty.getDigest(r));
+              rtm_hash[marker._leaflet_id] = r.id;
+              marker.on('click', function(e) {
+                $('tr[data-id=' + rtm_hash[this._leaflet_id] + ']').toggleClass('selected');
+                if ($('tr[data-id=' + rtm_hash[this._leaflet_id] + ']').hasClass('selected')) {
+                  this.setIcon(selectedIcon);
+
+                  var scroll_pos = $('#searchTableWrapper').scrollTop() + $('tr[data-id=' + rtm_hash[this._leaflet_id] + ']').position().top;
+
+                  console.log(scroll_pos);
+
+
+                  $('#searchTableWrapper').animate({
+                      scrollTop: scroll_pos
+                   }, 500);
+
+                } else {
+                  this.setIcon(unselectedIcon);
+                }
+              });
               $obj.data('marker', marker);
             }
 
@@ -667,6 +734,7 @@
         .bind('input', function (e) {
           if ($(this).val() == '') {
             // clear Geo markers
+            rtm_hash = {};
             $('#searchTable > tbody > tr').each(function () {
               if ($(this).data('marker')) {
                 geoMap.removeLayer($(this).data('marker'));
@@ -715,9 +783,11 @@
             // Display marker popup
             geoMap.panTo(marker.getLatLng());
             marker.openPopup();
+            marker.setIcon(selectedIcon);
           }
         } else if (marker) {
           marker.closePopup();
+          marker.setIcon(unselectedIcon);
         }
       });
 
@@ -785,10 +855,86 @@
 
       initSpeech();
       listRealty(1);
-      sipSetup();      
+      sipSetup();
+
+      
+        var guid;
+        var template = $('#photosCarouselTemplate').remove().html();
+
+        $('#photosModal')
+          .modal({show: false})
+          .on('show.bs.modal', function (e) {
+            $('#photosModal .modal-dialog').css('max-width', $(window).width()*0.7);
+            $('#photosModal .carousel-inner > .item > img').css('max-height', $(window).height()*0.8);
+
+            // Init carousel
+            $('#photosCarousel-' + guid).carousel({
+              interval: false,
+            });
+          })
+        ;
+
+        // Load photos
+        $('#searchTable > tbody').on('click', '[data-action="photos-show"]', function (e) {
+
+          var realtyId = $(this).closest('tr').data('id');
+
+          console.log(realtyId);
+
+          $.ajax({
+            type: 'POST',
+            url: '/api/photo/list',
+            data: {realty_id: realtyId}
+          })
+            .done(function (data, textStatus, jqXHR) {
+              guid = Rplus.Util.guid();
+              $('#photosModal .modal-body').html(template.replace(/{guid}/g, guid));
+
+              for (var i = 0; i < data.list.length; i++) {
+                var x = data.list[i];
+                $('#photosCarousel-' + guid + ' > .carousel-indicators').append('<li data-target="#photosCarousel-' + guid + '" data-slide-to="' + i + '" class="' + (i == 0 ? 'active' : '') + '"></li>');
+                $('#photosCarousel-' + guid + ' > .carousel-inner').append('<div class="item' + (i == 0 ? ' active' : '') + '"><img src="' + x.photo_url + '"></div>');
+              }
+
+              if (data.list.length) { $('#photosModal').modal('show'); };
+            })
+          ;
+          return false;
+        });
+
     });
   })();
 </script>
+% end
+
+% content_for modals => begin
+
+<!-- Modal:Photos -->
+<div class="modal" id="photosModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-body">
+        <div id="photosCarouselTemplate">
+          <div id="photosCarousel-{guid}" class="carousel slide">
+            <!-- Indicators -->
+            <ol class="carousel-indicators"></ol>
+
+            <!-- Wrapper for slides -->
+            <div class="carousel-inner"></div>
+
+            <!-- Controls -->
+            <a class="left carousel-control" href="#photosCarousel-{guid}" data-slide="prev">
+              <span class="glyphicon glyphicon-chevron-left"></span>
+            </a>
+            <a class="right carousel-control" href="#photosCarousel-{guid}" data-slide="next">
+              <span class="glyphicon glyphicon-chevron-right"></span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
 % end
 
 <table style="width:127px; position: fixed; top: 50%; left: 50%; margin-top: -67px; margin-left: -67px; z-index: 500;">
