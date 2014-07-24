@@ -10,12 +10,22 @@ use Rplus::Model::SmsMessage;
 use Rplus::Model::SmsMessage::Manager;
 use Rplus::Model::Realty;
 use Rplus::Model::Realty::Manager;
+use Rplus::Model::RuntimeParam;
+use Rplus::Model::RuntimeParam::Manager;
 
 use Rplus::Util::Query;
+use JSON;
 
 sub run {
     my $class = shift;
     my $c = shift;
+
+    my $rt_param = Rplus::Model::RuntimeParam->new(key => 'notifications')->load();
+    my $contact_info = '';
+    if ($rt_param) {
+        my $config = from_json($rt_param->{value});
+        $contact_info = $config->{'contact_info'} ? $config->{'contact_info'} : '';
+    }
 
     # Select active subscriptions
     my $subscr_iter = Rplus::Model::Subscription::Manager->get_objects_iterator(query => [end_date => {gt => \'now()'}, delete_date => undef], with_objects => ['client'], sort_by => 'id');
@@ -77,7 +87,7 @@ sub run {
                         }
                     }
                     my $sms_body = join(', ', @parts);
-                    my $sms_text = 'По вашему запросу поступило: '.$sms_body.($sms_body =~ /\.$/ ? '' : '.').($c->config->{subscriptions}->{contact_info} ? ' '.$c->config->{subscriptions}->{contact_info} : '');
+                    my $sms_text = 'По вашему запросу поступило: '.$sms_body.($sms_body =~ /\.$/ ? '' : '.') . ' ' . $contact_info;
                     Rplus::Model::SmsMessage->new(phone_num => $subscr->client->phone_num, text => $sms_text)->save;
                 }
 

@@ -203,7 +203,7 @@ sub update_offer_types {
         query => [
             client_id => $client->id,
             delete_date => undef,                
-            '!end_date' => undef,
+            #'!end_date' => undef,
             #'subscription_realty.delete_date' => undef,
         ],
     );
@@ -396,7 +396,7 @@ sub subscribe {
     # Add realty to subscription & generate SMS
     for my $realty_id (@$realty_ids) {
         my $realty = Rplus::Model::Realty::Manager->get_objects(
-            query => [id => $realty_id, state_code => ['raw', 'work'], offer_type_code => $offer_type_code],
+            query => [id => $realty_id, state_code => ['work',], offer_type_code => $offer_type_code],
             with_objects => ['address_object', 'agent', 'type', 'sublandmark'],
             db => $db,
         )->[0];

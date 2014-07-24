@@ -84,16 +84,10 @@ sub run {
             for my $data (@$realty_data) {
 
                 my @owner_phones = flat $data->{owner_phones};
-                if (Rplus::Model::Mediator::Manager->get_objects_count(query => [phone_num => \@owner_phones, delete_date => undef]) > 0) {
+                my $mediator = Rplus::Model::Mediator::Manager->get_objects(query => [phone_num => \@owner_phones, delete_date => undef], require_objects => ['company'], limit => 1,)->[0];
+                if ($mediator) {
                     say 'mediator detected!';
-                    # добавить все телефоны в посредники
-                    #for (@owner_phones) {
-                    #    say 'add mediator ' . $_;
-                    #    add_mediator($mediator->company->name, $_, 'import');
-                    #}
                     next if ($offer_type eq 'rent');
-                    
-                    my $mediator = Rplus::Model::Mediator::Manager->get_objects(query => [phone_num => \@owner_phones, delete_date => undef], require_objects => ['company'], limit => 1,)->[0];
                     $data->{agent_id} = 10000;
                     $data->{mediator_company_id} = $mediator->company->id;
                 }
@@ -106,7 +100,10 @@ sub run {
                     $o_realty->source_media_id($data->{source_media_id});
                     $o_realty->source_media_text($data->{source_media_text});
                     $o_realty->last_seen_date($data->{add_date});
-                    $o_realty->owner_price($data->{owner_price});
+
+                    if ($data->{state_code} eq 'work') {
+                        $o_realty->owner_price($data->{owner_price});
+                    }
 
                     #my $history = $o_realty->work_info;
                     #$history = '' unless $history;
@@ -135,6 +132,7 @@ sub run {
                     }
                 } else {
                     eval {
+                        $data->{work_info} = '';
                         my $realty = Rplus::Model::Realty->new((map { $_ => $data->{$_} } grep { $_ ne 'category_code' && $_ ne 'id' } keys %$data), state_code => 'raw');
                         $realty->save;
                         my $data_id = $data->{id};

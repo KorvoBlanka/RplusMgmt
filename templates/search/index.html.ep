@@ -554,7 +554,7 @@
         type: "GET",
         url: "/api/client/get",
         data: {phone_num: phone_num},
-        async: false, // (!)
+        async: false,
         success: function (data, textStatus, jqXHR) {
           console.log(data);
           r.name = data.name;
@@ -566,7 +566,7 @@
         type: "GET",
         url: "/api/mediator/get",
         data: {phone_num: phone_num},
-        async: false, // (!)
+        async: false,
         success: function (data, textStatus, jqXHR) {
           console.log(data);
           r.name = data.company.name;
@@ -578,7 +578,7 @@
         type: "GET",
         url: "/api/user/find",
         data: {phone_num: phone_num},
-        async: false, // (!)
+        async: false,
         success: function (data, textStatus, jqXHR) {
           console.log(data);
           r.name = data.name;

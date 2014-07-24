@@ -296,7 +296,6 @@ sub realty_list {
     my $subscription_realty_state_code = $self->param("state_code") || 'any';
     
     my $subscription = Rplus::Model::Subscription::Manager->get_objects(query => [id => $subscription_id, delete_date => undef])->[0];
-    #update_subscription_realty($subscription, $self);
 
     my $res = {
         count => Rplus::Model::SubscriptionRealty::Manager->get_objects_count(
@@ -355,16 +354,18 @@ sub realty_list {
 }
 
 sub update_subscription_realty {
-    my $subscr = shift;
-    my $c = shift;
+    my $self = shift;
+    
+    my $subscription_id = $self->param('subscription_id');
+    my $subscription = Rplus::Model::Subscription::Manager->get_objects(query => [id => $subscription_id, delete_date => undef])->[0];
 
-    for my $q (@{$subscr->queries}) {
+    for my $q (@{$subscription->queries}) {
         # Skip FTS data
-        my @query = map { ref($_) eq 'SCALAR' && $$_ =~ /^t1\.fts/ ? () : $_ } (Rplus::Util::Query->parse($q, $c));
+        my @query = map { ref($_) eq 'SCALAR' && $$_ =~ /^t1\.fts/ ? () : $_ } (Rplus::Util::Query->parse($q, $self));
 
         my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
             query => [
-                offer_type_code => $subscr->offer_type_code,
+                offer_type_code => $subscription->offer_type_code,
                 or => [
                   state_code => 'work',
                   state_code => 'suspended',
@@ -374,7 +375,7 @@ sub update_subscription_realty {
                 #    state_change_date => {gt => $subscr->add_date},
                 #    price_change_date => {gt => ($subscr->last_check_date || $subscr->add_date)},
                 #],
-                [\"t1.id NOT IN (SELECT SR.realty_id FROM subscription_realty SR WHERE SR.subscription_id = ? AND SR.delete_date IS NULL)" => $subscr->id],
+                [\"t1.id NOT IN (SELECT SR.realty_id FROM subscription_realty SR WHERE SR.subscription_id = ? AND SR.delete_date IS NULL)" => $subscription->id],
                 delete_date => undef,
                 @query
             ],
@@ -383,12 +384,12 @@ sub update_subscription_realty {
         my $found = 0;
         while (my $realty = $realty_iter->next) {
             $found++;
-            Rplus::Model::SubscriptionRealty->new(subscription_id => $subscr->id, realty_id => $realty->id)->save;
+            Rplus::Model::SubscriptionRealty->new(subscription_id => $subscription->id, realty_id => $realty->id)->save;
         }
     }
 
-    $subscr->last_check_date('now()');
-    $subscr->save(chages_only => 1);
+    $subscription->last_check_date('now()');
+    $subscription->save(chages_only => 1);
 }
 
 sub save {
@@ -500,7 +501,7 @@ sub save {
                     push @parts, $realty->agent->public_phone_num || $realty->agent->phone_num if $realty->agent;
                 }
                 my $sms_body = join(', ', @parts);
-                my $sms_text = 'Вы интересовались: '.$sms_body.($sms_body =~ /\.$/ ? '' : '.') . $contact_info;
+                my $sms_text = 'Вы интересовались: '.$sms_body.($sms_body =~ /\.$/ ? '' : '.') . ' ' . $contact_info;
                 Rplus::Model::SmsMessage->new(phone_num => $client->phone_num, text => $sms_text)->save;
             }
 
