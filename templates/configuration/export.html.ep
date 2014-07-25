@@ -29,19 +29,24 @@
       })
         .done(function (data, textStatus, jqXHR) {
 
+          $('#formExportAvito [name="company"]:input').val(data.val['avito-company']);
+          $('#formExportAvito [name="phone"]:input').val(data.val['avito-phone']);
+          $('#formExportAvito [name="agent-phone"]:input').attr('checked', (data.val['avito-agent-phone'] == 'true' || data.val['avito-agent-phone'] == '1') ? true : false);
+          $('#formExportAvito [name="email"]:input').val(data.val['avito-email']);
+
           $('#formExportVnh [name="phones"]:input').val(data.val['vnh-phones']);
-          $('#formExportVnh [name="agent-phone"]:input').attr('checked', data.val['vnh-agent-phone'] == 'true' ? true : false);
+          $('#formExportVnh [name="agent-phone"]:input').attr('checked', (data.val['vnh-agent-phone'] == 'true' || data.val['vnh-agent-phone'] == '1') ? true : false);
           $('#formExportVnh [name="company"]:input').val(data.val['vnh-company']);
 
           $('#formExportFarpost [name="phones"]:input').val(data.val['farpost-phones']);
-          $('#formExportFarpost [name="agent-phone"]:input').attr('checked', data.val['farpost-agent-phone'] == 'true' ? true : false);
+          $('#formExportFarpost [name="agent-phone"]:input').attr('checked', (data.val['farpost-agent-phone'] == 'true' || data.val['farpost-agent-phone'] == '1') ? true : false);
 
           $('#formExportPresent [name="phones"]:input').val(data.val['present-phones']);
-          $('#formExportPresent [name="agent-phone"]:input').attr('checked', data.val['present-agent-phone'] == 'true' ? true : false);
+          $('#formExportPresent [name="agent-phone"]:input').attr('checked', (data.val['present-agent-phone'] == 'true' || data.val['present-agent-phone'] == '1') ? true : false);
           $('#formExportPresent [name="add_description_words"]:input').val(data.val['present-descr']);
 
           $('#formExportIrr [name="phones"]:input').val(data.val['irr-phones']);
-          $('#formExportIrr [name="agent-phone"]:input').attr('checked', data.val['irr-agent-phone'] == 'true' ? true : false);
+          $('#formExportIrr [name="agent-phone"]:input').attr('checked', (data.val['irr-agent-phone'] == 'true' || data.val['irr-agent-phone'] == '1') ? true : false);
           $('#formExportIrr [name="email"]:input').val(data.val['irr-email']);
           $('#formExportIrr [name="url"]:input').val(data.val['irr-url']);
 
@@ -78,14 +83,27 @@
         var t;
         var opt_hash = {};
 
+        t = $('#formExportAvito [name="company"]:input').val();
+        opt_hash['avito-company'] = t;
+
+        t = $('#formExportAvito [name="phone"]:input').val();
+        opt_hash['avito-phone'] = t;
+        
+        t = $('#formExportAvito [name="agent-phone"]:input').is(':checked');
+        opt_hash['avito-agent-phone'] = t;
+        
+        t = $('#formExportAvito [name="email"]:input').val();
+        opt_hash['avito-email'] = t;
+
+
+        t = $('#formExportVnh [name="company"]:input').val();
+        opt_hash['vnh-company'] = t;
+
         t = $('#formExportVnh [name="phones"]:input').val();
         opt_hash['vnh-phones'] = t;
 
         t = $('#formExportVnh [name="agent-phone"]:input').is(':checked');
         opt_hash['vnh-agent-phone'] = t;
-
-        t = $('#formExportVnh [name="company"]:input').val();
-        opt_hash['vnh-company'] = t;
 
         
         t = $('#formExportFarpost [name="phones"]:input').val();
@@ -142,12 +160,14 @@
   <ul class="nav nav-tabs">
     % my $loc_id = $self->session('user')->{location_id};      # костыль!
     % if ($loc_id == 1) {
-    <li class="active"><a href="#export-irr" data-toggle="tab">Из рук в руки</a></li>      
-    <li><a href="#export-farpost" data-toggle="tab">Farpost</a></li>      
+    <li class="active"><a href="#export-avito" data-toggle="tab">Avito</a></li>
+    <li><a href="#export-irr" data-toggle="tab">Из рук в руки</a></li>
+    <li><a href="#export-farpost" data-toggle="tab">Farpost</a></li>
     <li><a href="#export-present" data-toggle="tab">Презент</a></li>
     <li><a href="#export-vnh" data-toggle="tab">ВНХ</a></li>
     % } else {
-    <li class="active"><a href="#export-irr" data-toggle="tab">Из рук в руки</a></li>      
+    <li class="active"><a href="#export-avito" data-toggle="tab">Avito</a></li>
+    <li><a href="#export-irr" data-toggle="tab">Из рук в руки</a></li>
     <li><a href="#export-farpost" data-toggle="tab">Farpost</a></li>
     <li class="hidden"><a href="#export-vnh" data-toggle="tab">ВНХ</a></li>
     <li class="hidden"><a href="#export-present" data-toggle="tab">Презент</a></li>
@@ -158,7 +178,39 @@
   <!-- Tab panes -->
   <div class="tab-content">
 
-    <div class="tab-pane active" id="export-irr">
+    <div class="tab-pane active" id="export-avito">
+      <form class="" role="form" id="formExportAvito">
+        <div class="row" style="padding-top: 15px;">
+          <label class="col-lg-2 control-label">Название компании</label>
+          <div class="col-lg-5">
+            <input type="text" class="form-control" name="company" placeholder="Название компании">
+          </div>
+        </div>      
+        <div class="row" style="padding-top: 15px;">
+          <label class="col-lg-2 control-label">Контактный телефон</label>
+          <div class="col-lg-5">
+            <input type="text" class="form-control" name="phone" placeholder="телефон">
+          </div>
+        </div>
+        <div class="row" style="padding-top: 15px;">
+          <label class="col-lg-2 control-label">Телефон агента</label>
+          <div class="col-lg-5">
+            <input type="checkbox" name="agent-phone">
+          </div>
+        </div>        
+        <div class="row" style="padding-top: 15px;">
+          <label class="col-lg-2 control-label">e-mail</label>
+          <div class="col-lg-5">
+            <input type="text" class="form-control" name="email" placeholder="somemail@mail.com">
+          </div>
+        </div>
+      </form>
+      <div class="form-group">
+        <button type="" class="btn btn-primary btn-save" style="margin-top: 15px">Сохранить</button>
+      </div>
+    </div>
+
+    <div class="tab-pane" id="export-irr">
       <form class="" role="form" id="formExportIrr">
         <div class="row" style="padding-top: 15px;">
           <label class="col-lg-2 control-label">Телефоны</label>
@@ -171,7 +223,7 @@
           <div class="col-lg-5">
             <input type="checkbox" name="agent-phone">
           </div>
-        </div>          
+        </div>
         <div class="row" style="padding-top: 15px;">
           <label class="col-lg-2 control-label">e-mail</label>
           <div class="col-lg-5">
@@ -216,23 +268,21 @@
     <div class="tab-pane" id="export-vnh">
       <form class="" role="form" id="formExportVnh">
         <div class="row" style="padding-top: 15px;">
+          <label class="col-lg-2 control-label">Название компании</label>
+          <div class="col-lg-5">
+            <input type="text" class="form-control" name="company" placeholder="Company">
+          </div>
+        </div>      
+        <div class="row" style="padding-top: 15px;">
           <label class="col-lg-2 control-label">Телефоны</label>
           <div class="col-lg-5">
             <input type="text" class="form-control" name="phones" placeholder="Phone1, Phone2">
           </div>
         </div>
-
         <div class="row" style="padding-top: 15px;">
           <label class="col-lg-2 control-label">Телефон агента</label>
           <div class="col-lg-5">
             <input type="checkbox" name="agent-phone">
-          </div>
-        </div>
-
-        <div class="row" style="padding-top: 15px;">
-          <label class="col-lg-2 control-label">Название компании</label>
-          <div class="col-lg-5">
-            <input type="text" class="form-control" name="company" placeholder="Company">
           </div>
         </div>
       </form>

@@ -168,7 +168,7 @@
     %     } else {
     %         next if $x->id == 1 || $x->id == 7 || $x->id == 8;
     %     }
-      <li data-loc="<%= $self->session('user')->{location_id} %>" data-id="<%= $x->id %>" class="<%= $x->id == 1 || $x->id == 5 ? 'active': '' %>"><a href="#import-<%= $x->code %>" data-toggle="tab"> <%= $x->name %></a></li>
+      <li data-loc="<%= $self->session('user')->{location_id} %>" data-id="<%= $x->id %>" class="<%= $loc_id == 1 && $x->id == 1 || $loc_id == 2 && $x->id == 5 ? 'active': '' %>"><a href="#import-<%= $x->code %>" data-toggle="tab"> <%= $x->name %></a></li>
     % }
   </ul>
   
@@ -181,7 +181,7 @@
     %     } else {
     %         next if $x->id == 1 || $x->id == 7 || $x->id == 8;
     %     }
-      <div class="tab-pane <%= $x->id == 1 || $x->id == 5 ? 'active': '' %> " id="import-<%= $x->code %>">
+      <div class="tab-pane <%= $loc_id == 1 && $x->id == 1 || $loc_id == 2 && $x->id == 5 ? 'active': '' %>" id="import-<%= $x->code %>">
         <div class="col-lg-4 sale-column">
           <div class="checkbox group-checkbox" id="sale-<%= $x->code %>">
             <label>

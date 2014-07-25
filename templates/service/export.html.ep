@@ -120,12 +120,14 @@
   <ul class="nav nav-tabs">
     % my $loc_id = $self->session('user')->{location_id};      # костыль!
     % if ($loc_id == 1) {
-    <li class="active"><a href="#export-irr" data-toggle="tab">Из рук в руки</a></li>      
+    <li class="active"><a href="#export-avito" data-toggle="tab">Avito</a></li>      
+    <li><a href="#export-irr" data-toggle="tab">Из рук в руки</a></li>
     <li><a href="#export-farpost" data-toggle="tab">Farpost</a></li>
     <li><a href="#export-vnh" data-toggle="tab">ВНХ</a></li>
     <li><a href="#export-present" data-toggle="tab">Презент</a></li>
     % } else {
-    <li class="active"><a href="#export-irr" data-toggle="tab">Из рук в руки</a></li>      
+    <li class="active"><a href="#export-avito" data-toggle="tab">Avito</a></li>      
+    <li><a href="#export-irr" data-toggle="tab">Из рук в руки</a></li>
     <li><a href="#export-farpost" data-toggle="tab">Farpost</a></li>
     <li class="hidden"><a href="#export-vnh" data-toggle="tab">ВНХ</a></li>
     <li class="hidden"><a href="#export-present" data-toggle="tab">Презент</a></li>
@@ -136,7 +138,64 @@
 <!-- Tab panes -->
 <div class="tab-content">
 
-  <div class="tab-pane active" id="export-irr">
+  <div class="tab-pane active" id="export-avito">
+    <div class="" role="form" id="formExportAvito">
+      <div class="row">
+      <div class="col-lg-4 sale-column">
+        <div class="checkbox">
+          <label>
+            <input type="checkbox" checked="checked" id="rooms"> Комнаты
+          </label>
+        </div>
+        <div class="checkbox">
+          <label>
+            <input type="checkbox" checked="checked" id="apartments"> Квартиры
+          </label>
+        </div>
+        <div class="checkbox">
+          <label>
+            <input type="checkbox" checked="checked" id="houses"> Дома, коттеджи
+          </label>
+        </div>          
+        <div class="row hidden" style="padding-top: 15px;">
+          <label class="col-lg-2 control-label">Телефоны</label>
+          <div class="col-lg-5">
+            <input type="text" class="form-control" name="phones" placeholder="">
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-4 rent-column">
+        <div class="checkbox">
+          <label>
+            <input type="checkbox" checked="checked" id="rooms"> Комнаты
+          </label>
+        </div>
+        <div class="checkbox">
+          <label>
+            <input type="checkbox" checked="checked" id="apartments"> Квартиры
+          </label>
+        </div>
+        <div class="checkbox">
+          <label>
+            <input type="checkbox" checked="checked" id="houses"> Дома, коттеджи
+          </label>
+        </div>          
+        <div class="row hidden" style="padding-top: 15px;">
+          <label class="col-lg-2 control-label">Телефоны</label>
+          <div class="col-lg-5">
+            <input type="text" class="form-control" name="phones" placeholder="">
+          </div>
+        </div>
+      </div>
+      </div>
+      <div class="form-group">
+        <button type="" class="btn btn-primary btn-save" data-action="export-avito" style="margin-top: 15px">Экспорт</button>
+        <span class="glyphicon glyphicon-refresh animation-rotate indicator-download invisible" style="top: 10px; left: 10px;"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-pane" id="export-irr">
     <div class="" role="form" id="formExportIrr">
       <div class="row" style="padding-top: 15px;">
         <div class="col-lg-2">
