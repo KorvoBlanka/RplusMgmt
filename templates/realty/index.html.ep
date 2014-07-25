@@ -86,12 +86,12 @@
   }
 
   #realtyTable > tbody > tr.selected > td {
-    background-color: #0088cc !important;
+    background-color: #00669C !important;
     color: #fff;
   }
 
   #realtyTable > tbody > tr.selected:hover > td {
-    background-color: #0082c7 !important;
+    background-color: #006087 !important;
     color: #fff;
   }
 

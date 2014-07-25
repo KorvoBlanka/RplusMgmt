@@ -52,7 +52,7 @@
   }
   
   #searchTable > tbody > tr.selected > td {
-    background-color: #0088cc !important;
+    background-color: #00669C !important;
     color: #fff;
   }
 
@@ -62,7 +62,7 @@
   }
   
   #searchTable > tbody > tr.selected:hover > td {
-    background-color: #0082c7 !important;
+    background-color: #006087 !important;
     color: #fff;
   }
 
@@ -841,7 +841,9 @@
       // Open ClientCard
       $('[data-action="client-open"]').click(function (e) {
         var phoneNum = $('#sfPhoneNum').val();
+        var offer_type_code = $('[data-filter="offer_type_code"]').data('val');
         var card = ClientCard({
+          subscription_mode: offer_type_code,
           saved: function (client) {
             $('#sfPhoneNum').val(client.phone_num);
             card.close();

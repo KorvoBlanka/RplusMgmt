@@ -109,12 +109,12 @@
   }
 
   .tree > tbody > tr.cselected > td {
-    background-color: #0088cc !important;
+    background-color: #00669C !important;
     color: #fff;
   }
 
   .tree > tbody > tr.cselected:hover > td {
-    background-color: #0082c7 !important;
+    background-color: #006087 !important;
     color: #fff;
   }
 
@@ -128,7 +128,7 @@
   }
 
   .tree > tbody > tr.subselected:hover > td {
-    background-color: #CaD9E3 !important;
+    background-color: #CAD9E3 !important;
     color: #fff;
   }
   
@@ -138,7 +138,7 @@
   }
 
   #realtyTable > tbody > tr.selected:hover > td {
-    background-color: #0082c7 !important;
+    background-color: #0082C7 !important;
     color: #fff;
   }
 

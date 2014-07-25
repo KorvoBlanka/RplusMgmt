@@ -253,7 +253,7 @@
   var ClientCard = (function () {
     // Global variables
 
-    var $modal, cmode = 1, events = {}, subs = {}, client = {};
+    var $modal, cmode = 1, events = {}, subs = {}, client = {}, subscription_mode = 'sale';
     var selected_tag_id = 0;
 
     // Init here
@@ -270,10 +270,11 @@
       });
       
       $modal.on('click', '[data-action="subscription-type-change"]', function (e) {
-        var sub_type = $( "#subscription-type" ).html();    // fixme
-        if (sub_type == 'Продажа') {
+        if (subscription_mode == 'sale') {
+          subscription_mode = 'rent';
           $("#subscription-type").html('Аренда');
         } else {
+          subscription_mode = 'sale';
           $("#subscription-type").html('Продажа');
         }
       });
@@ -312,16 +313,8 @@
 
       // Action: create subscription
       $modal. on('click', '[data-action="subscription-create"]', function (e) {
-        var sub_type = '';
-        var sub_type = $( "#subscription-type" ).html();
-        if (sub_type == 'Продажа') {
-          sub_type = 'sale';
-        } else {
-          sub_type = 'rent';
-        }
-
         var subscription = new Object;
-        subscription.offer_type_code = sub_type;
+        subscription.offer_type_code = subscription_mode;
         subscription.add_date = moment().format('YYYY-MM-DDTHH:mm:ssZZ');
         subscription.end_date = moment().add('days', 14).format('YYYY-MM-DDTHH:mm:ssZZ');
         subscription.realty_limit = 20;
@@ -526,6 +519,12 @@
       //$('#clientCard_addDate', $modal).text(moment(client.add_date).format('DD.MM.YYYY'));
       $('#clientCard_clientForm [name="send_owner_phone"]', $modal).prop('checked', client.send_owner_phone);
       
+      if (subscription_mode == 'rent') {
+        $("#subscription-type").html('Аренда');
+      } else {
+        $("#subscription-type").html('Продажа');
+      }
+
       $('.round-button').each(function(){
         $(this).removeClass('tag-selected');
       });
@@ -639,10 +638,13 @@
     return function (options) {
       if (!options) options = {};
 
+      if (options.subscription_mode) {
+        subscription_mode = options.subscription_mode;
+      }
       // Set events
       events = {
-        //loaded: options.loaded,
         saved: options.saved,
+        //loaded: options.loaded,
       };
 
       var $this = {
