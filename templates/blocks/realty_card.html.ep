@@ -342,8 +342,6 @@
       }
       
       if (realty.agent_id == 10000) {   // посредник
-        console.log(realty);
-        console.log(realty.mediator);
         $('span[data-name="dg_p9"]', $realty_modal).html(realty.mediator_company);
         $('#dg_p9_label', $realty_modal).html('Агенство');
       } else {
@@ -418,6 +416,9 @@
         } else if (f == 'source_media_text' && v) {
           $('div[data-name="' + f + '"]', $realty_modal).text(v);
           $('#sourceBlock-' + 0, $realty_modal).show();
+        } else if (f == 'reference' && v) {
+          $('a[data-name="reference"]', $realty_modal).attr('href', v);
+          $('a[data-name="reference"]', $realty_modal).text(v);
         } else if (el.length) {
           el.val(v);
         }
@@ -823,6 +824,10 @@
                   <small>
                     <strong><%= ucfloc 'source' %>: </strong> <span data-name="source_media_name">?</span><br>
                     <div data-name="source_media_text" style="padding-left: 15px;"></div>
+                    <strong>Ссылка: </strong><br>
+                    <div style="padding-left: 15px;">
+                      <a data-name="reference" target="_blank"></a>
+                    </div>
                   </small>
                 </div>
               </div>

@@ -53,8 +53,12 @@ my $_serialize = sub {
             main_photo_thumbnail => undef,
             color_tag_id => undef,            
             mediator_company => $realty->mediator_company ? $realty->mediator_company->name : '',
+            reference => '',
         };
         
+        my $vals = from_json($realty->metadata);
+        $x->{reference} = $vals->{'reference'};
+
         if($realty->color_tags) {
             foreach ($realty->color_tags) {
                 if ($_->user_id == $self->stash('user')->{id}) {

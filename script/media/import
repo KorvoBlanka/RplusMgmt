@@ -101,16 +101,19 @@ sub run {
                     $o_realty->source_media_text($data->{source_media_text});
                     $o_realty->last_seen_date($data->{add_date});
 
-                    if ($data->{state_code} eq 'work') {
-                        $o_realty->owner_price($data->{owner_price});
+                    if ($data->{work_info}) {
+                        my $vals = from_json($o_realty->metadata);
+                        my $ref = $data->{work_info};
+                        if ($ref !~ /http/) {
+                            $ref =~ s/^.*?(http.*?$)/$1/;
+                        }
+                        $vals->{'reference'} = $ref;
+                        $o_realty->metadata(encode_json($vals));
                     }
 
-                    #my $history = $o_realty->work_info;
-                    #$history = '' unless $history;
-                    #if ($data->{work_info}) {
-                    #    $history = $history . "\n" . $data->{work_info};
-                    #}
-                    #$o_realty->work_info($history);
+                    if ($data->{state_code} ne 'work') {
+                        $o_realty->owner_price($data->{owner_price});
+                    }
 
                     $o_realty->save(changes_only => 1);
                     say "updated realty: $id";
@@ -132,8 +135,17 @@ sub run {
                     }
                 } else {
                     eval {
-                        $data->{work_info} = '';
                         my $realty = Rplus::Model::Realty->new((map { $_ => $data->{$_} } grep { $_ ne 'category_code' && $_ ne 'id' } keys %$data), state_code => 'raw');
+                        if ($data->{work_info}) {
+                            my $vals = from_json($realty->metadata);
+                            my $ref = $data->{work_info};
+                            if ($ref !~ /http/) {
+                                $ref =~ s/^.*?(http.*?$)/$1/;
+                            }
+                            $vals->{'reference'} = $ref;
+                            $realty->metadata(encode_json($vals));
+                            $realty->{work_info} = '';
+                        }
                         $realty->save;
                         my $data_id = $data->{id};
                         my $id = $realty->id;
