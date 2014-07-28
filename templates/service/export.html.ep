@@ -27,10 +27,30 @@
 
   !function () {
 
+    $('[data-action="export-avito"]').on('click', function (e) {
+
+        var sale_realty_types = [];
+        var rent_realty_types = [];
+        $('#formExportAvito #sale-column [type="checkbox"]:input').each( function () {
+          if(this.checked) {
+            sale_realty_types.push(this.id);
+          }
+        });
+        $('#formExportAvito #rent-column [type="checkbox"]:input').each( function () {
+          if(this.checked) {
+            rent_realty_types.push(this.id);
+          }
+        });
+
+        $('<form action="/export/avito" method="POST">' + 
+          '<input type="hidden" name="sale_realty_types" value="' + sale_realty_types.join() + '">' +
+          '<input type="hidden" name="rent_realty_types" value="' + rent_realty_types.join() + '">' +
+          '</form>').submit();
+    });
+
     $('[data-action="export-vnh"]').on('click', function (e) {
         var offer_type = $('#formExportVnh [name="offer_type_code"]:input').val();
         var realty_types = [];
-        var i = 1;
         $('#formExportVnh [type="checkbox"]:input').each( function () {
           if(this.checked) {
             realty_types.push(this.id);
@@ -45,7 +65,6 @@
     $('[data-action="export-farpost"]').on('click', function (e) {
         var offer_type = $('#formExportFarpost [name="offer_type_code"]:input').val();
         var realty_types = [];
-        var i = 1;
         $('#formExportFarpost [type="checkbox"]:input').each( function () {
           if(this.checked) {
             realty_types.push(this.id);
@@ -60,7 +79,6 @@
     $('[data-action="export-present"]').on('click', function (e) {
         var offer_type = $('#formExportPresent [name="offer_type_code"]:input').val();
         var realty_types = [];
-        var i = 1;
         $('#formExportPresent [type="checkbox"]:input').each( function () {
           if(this.checked) {
             realty_types.push(this.id);
@@ -76,9 +94,7 @@
       var offer_type = $('#formExportIrr [name="offer_type_code"]:input').val();
       var realty_types = [];
       var i = 0;
-
       $(".indicator-download").removeClass('invisible');
-
       $('#formExportIrr [type="checkbox"]:input').each( function () {
         if(this.checked) {
           realty_types.push(this.id);
@@ -141,7 +157,7 @@
   <div class="tab-pane active" id="export-avito">
     <div class="" role="form" id="formExportAvito">
       <div class="row">
-      <div class="col-lg-4 sale-column">
+      <div class="col-lg-4" id="sale-column">
         <div class="checkbox">
           <label>
             <input type="checkbox" checked="checked" id="rooms"> Комнаты
@@ -157,14 +173,8 @@
             <input type="checkbox" checked="checked" id="houses"> Дома, коттеджи
           </label>
         </div>          
-        <div class="row hidden" style="padding-top: 15px;">
-          <label class="col-lg-2 control-label">Телефоны</label>
-          <div class="col-lg-5">
-            <input type="text" class="form-control" name="phones" placeholder="">
-          </div>
-        </div>
       </div>
-      <div class="col-lg-4 rent-column">
+      <div class="col-lg-4" id="rent-column">
         <div class="checkbox">
           <label>
             <input type="checkbox" checked="checked" id="rooms"> Комнаты
@@ -180,12 +190,6 @@
             <input type="checkbox" checked="checked" id="houses"> Дома, коттеджи
           </label>
         </div>          
-        <div class="row hidden" style="padding-top: 15px;">
-          <label class="col-lg-2 control-label">Телефоны</label>
-          <div class="col-lg-5">
-            <input type="text" class="form-control" name="phones" placeholder="">
-          </div>
-        </div>
       </div>
       </div>
       <div class="form-group">

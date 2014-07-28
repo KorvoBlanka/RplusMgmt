@@ -16,7 +16,6 @@ use File::Temp qw(tmpnam);
 use JSON;
 use Text::CSV;
 use Tie::IxHash;
-use Data::Dumper;
 use URI;
 use Archive::Zip qw( :ERROR_CODES :CONSTANTS );
 
@@ -1038,7 +1037,6 @@ sub index {
         push @tc, (type_code => 'dacha');
         push @tc, (type_code => 'land');
     }
-    print Dumper(@tc);
 
     my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
         query => [
