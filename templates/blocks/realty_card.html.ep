@@ -418,7 +418,7 @@
           $('#sourceBlock-' + 0, $realty_modal).show();
         } else if (f == 'reference' && v) {
           $('a[data-name="reference"]', $realty_modal).attr('href', v);
-          $('a[data-name="reference"]', $realty_modal).text(v);
+          $('a[data-name="reference"]', $realty_modal).text('Ссылка на объявление...');
         } else if (el.length) {
           el.val(v);
         }
@@ -824,8 +824,7 @@
                   <small>
                     <strong><%= ucfloc 'source' %>: </strong> <span data-name="source_media_name">?</span><br>
                     <div data-name="source_media_text" style="padding-left: 15px;"></div>
-                    <strong>Ссылка: </strong><br>
-                    <div style="padding-left: 15px;">
+                    <div style="padding-top: 5px; padding-left: 15px;">
                       <a data-name="reference" target="_blank"></a>
                     </div>
                   </small>
