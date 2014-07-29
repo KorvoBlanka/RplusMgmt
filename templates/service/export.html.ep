@@ -7,6 +7,9 @@
 
 % content_for header => begin
 <style type="text/css">
+  .type-column-header {
+    padding-top: 15px;
+  }
 </style>
 % end
 
@@ -158,6 +161,9 @@
     <div class="" role="form" id="formExportAvito">
       <div class="row">
       <div class="col-lg-4" id="sale-column">
+        <label class="type-column-header">
+          <span>Продажа</span>
+        </label>
         <div class="checkbox">
           <label>
             <input type="checkbox" checked="checked" id="rooms"> Комнаты
@@ -175,6 +181,9 @@
         </div>          
       </div>
       <div class="col-lg-4" id="rent-column">
+        <label class="type-column-header">
+          <span>Аренда</span>
+        </label>      
         <div class="checkbox">
           <label>
             <input type="checkbox" checked="checked" id="rooms"> Комнаты
