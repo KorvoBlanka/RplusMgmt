@@ -139,31 +139,52 @@
     -webkit-transition: all .2s ease-in-out;
   }
 
+  .answer-button {
+    background-color: rgba(0, 170, 0, 0.70);
+  }
+
   % if ($self->req->headers->user_agent !~ /Android/) {
-  .phone-button:hover {
-    background: #999;
-    -webkit-transform: scale(1.02);
+  .answer-button:hover {
+    background-color: rgba(25, 214, 25, 0.70);
+    -webkit-transform: scale(1.01);
+  }
+  % }
+
+  .showphone-button {
+    background-color: rgba(165, 165, 165, 0.55)
+  }
+
+  % if ($self->req->headers->user_agent !~ /Android/) {
+  .showphone-button:hover {
+    background-color: rgba(190, 190, 190, 0.55);
+    -webkit-transform: scale(1.01);
+  }
+  % }
+
+  .reject-button {
+    background-color: rgba(190, 20, 20, 0.70);
+  }
+
+  % if ($self->req->headers->user_agent !~ /Android/) {
+  .reject-button:hover {
+    background-color: rgba(210, 70, 70, 0.70);
+    -webkit-transform: scale(1.01);
+  }
+  % }
+
+  .disabled-button {
+    background-color: rgba(165, 165, 165, 0.55);
+  }
+
+  % if ($self->req->headers->user_agent !~ /Android/) {
+  .disabled-button:hover {
+    background-color: rgba(190, 190, 190, 0.55);
+    -webkit-transform: scale(1.01);
   }
   % }
 
   .phone-button:active {
     -webkit-transform: scale(0.92);
-  }
-
-  .answer-button {
-    background-color: rgba(0, 170, 0, 0.70);
-  }
-
-  .showphone-button {
-    background-color: rgba(165, 165, 165, 0.55)
-  }  
-
-  .reject-button {
-    background-color: rgba(214, 0, 0, 0.55);
-  }
-
-  .disabled-button {
-    background-color: rgba(165, 165, 165, 0.55)
   }
 
   @-webkit-keyframes ring0 {
