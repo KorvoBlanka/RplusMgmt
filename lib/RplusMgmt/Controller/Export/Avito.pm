@@ -160,7 +160,9 @@ my %templates_hash = (
                 my $addr = '';
                 if ($r->address_object) {
                     $addr = $r->address_object ? $r->address_object->name . ($r->address_object->short_type ne 'ул' ? ' ' . $r->address_object->short_type : '') : '',
-                    $addr .= $r->house_num || '',
+                    if ($r->house_num) {
+                        $addr .= ' ' . $r->house_num;
+                    }
                 }
                 return $addr;
             },
@@ -264,7 +266,9 @@ my %templates_hash = (
                 my $addr = '';
                 if ($r->address_object) {
                     $addr = $r->address_object ? $r->address_object->name . ($r->address_object->short_type ne 'ул' ? ' ' . $r->address_object->short_type : '') : '',
-                    $addr .= $r->house_num || '',
+                    if ($r->house_num) {
+                        $addr .= ' ' . $r->house_num;
+                    }
                 }
                 return $addr;
             },
