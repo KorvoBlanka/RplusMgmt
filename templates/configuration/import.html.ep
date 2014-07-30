@@ -177,7 +177,7 @@
     % for my $x (@{Rplus::Model::Media::Manager->get_objects(query => [type => 'import'], sort_by => 'id')}) {
     %     my $loc_id = $self->session('user')->{location_id};    # костыль, сделать получение списка доступных источников с сервера!
     %     if ($loc_id == 1) {
-    %         next if $x->id > 10;
+    %         next if $x->id == 11 || $x->id == 12;
     %     } else {
     %         next if $x->id == 1 || $x->id == 7 || $x->id == 8;
     %     }
