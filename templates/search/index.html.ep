@@ -316,6 +316,8 @@
     z-index: -1;
   }
 
+
+
   #user-pic {
     position: absolute;
     top: 20px;
@@ -360,6 +362,9 @@
   function sipSetup() {
     console.log('sip setup');
     var phone_num = '';
+    var call_time = 0;
+    var call_timer_id;
+
     var authToken = {
         // публичный ключ (не путать с приватным!)
         key: 'hzp915OzlIeuIqLqWW5d',
@@ -440,6 +445,8 @@
         $('#reject-button > span').removeClass('lightup-reject');
 
         $('#sfPhoneNum').val(phone_num);
+
+        call_timer_id = setInterval(callTimerTick, 1000);
       }
 
       if (callInfo.state == 'IDLE') {
@@ -449,7 +456,9 @@
 
         $('#answer-button > span').removeClass('callin');
         $('#answer-button > span').removeClass('lightup-answer');
-        $('#reject-button > span').removeClass('lightup-reject');        
+        $('#reject-button > span').removeClass('lightup-reject');
+
+        clearCallTimer();
       }
 
       if (callInfo.state == 'OUTGOING') {
@@ -518,6 +527,20 @@
       }
 
     });
+
+    function clearCallTimer() {
+      call_time = 0;
+      clearInterval(call_timer_id);
+      $('#call-time').html('');
+    }
+
+    function callTimerTick() {
+      call_time ++;
+      var minutes = ((call_time / 60) > 9 ? '' : '0') + (call_time / 60 | 0);
+      var seconds = ((call_time % 60) > 9 ? '' : '0') + (call_time % 60);
+      var call_time_str = minutes + ':' + seconds;
+      $('#call-time').html(call_time_str);
+    }
 
     function isNumber(n) {
       return !isNaN(parseFloat(n)) && isFinite(n);
@@ -1026,6 +1049,16 @@
       text-align: center;">
     <p id="callerName" style="font-size: 28px; color: #fff; font-weight: 100;letter-spacing: 1px;"></p>
   </div>
+  <div id="" style="width: 700px;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      margin-top: -110px;
+      margin-left: -350px;
+      z-index: 500;
+      text-align: center;">
+    <p id="call-time" style="font-size: 22px; color: #fff; font-weight: 100;letter-spacing: 1px;"></p>
+  </div>  
   <table class="numpad" style="">
     <tr>
       <td>
