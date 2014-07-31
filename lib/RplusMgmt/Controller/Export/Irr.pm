@@ -995,7 +995,7 @@ sub index {
     if ($rt_param) {
         my $config = from_json($rt_param->{value});
         $contact_phones = $config->{'irr-phones'} ? trim($config->{'irr-phones'}) : '';
-        $agent_phone = 1 if $config->{'irr-agent-phone'} eq 'true';
+        $agent_phone = 1 if $config->{'irr-agent-phone'};
         $contact_name = '';
         $contact_email = $config->{'irr-email'} ? $config->{'irr-email'} : '';
         $site_url = $config->{'irr-url'} ? $config->{'irr-url'} : '';        

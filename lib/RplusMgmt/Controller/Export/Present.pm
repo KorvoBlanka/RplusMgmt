@@ -38,7 +38,7 @@ sub index {
     if ($rt_param) {
         my $config = from_json($rt_param->{value});
         $conf_phones = $config->{'present-phones'} ? trim($config->{'present-phones'}) : '';
-        $agent_phone = 1 if $config->{'present-agent-phone'} eq 'true';
+        $agent_phone = 1 if $config->{'present-agent-phone'};
         $add_description_words = $config->{'present-descr'} ? $config->{'present-descr'} * 1 : 5;
     }
 

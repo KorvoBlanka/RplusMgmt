@@ -39,7 +39,7 @@ sub index {
     if ($rt_param) {
         my $config = from_json($rt_param->{value});
         $conf_phones = $config->{'farpost-phones'} ? trim($config->{'farpost-phones'}) : '';
-        $agent_phone = 1 if $config->{'present-agent-phone'} eq 'true';
+        $agent_phone = 1 if $config->{'present-agent-phone'};
     }
 
     unlink($meta->{'prev_file'}) if $meta->{'prev_file'};

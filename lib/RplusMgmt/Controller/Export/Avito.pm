@@ -364,7 +364,7 @@ sub index {
         my $config = from_json($rt_param->{value});
         $company_name = $config->{'avito-company'} ? $config->{'avito-company'} : '';                
         $contact_phone = $config->{'avito-phone'} ? trim($config->{'avito-phone'}) : '';
-        $agent_phone = 1 if $config->{'avito-agent-phone'} eq 'true';
+        $agent_phone = 1 if $config->{'avito-agent-phone'};
         $contact_name = '';
         $contact_email = $config->{'irr-email'} ? $config->{'irr-email'} : '';
     }

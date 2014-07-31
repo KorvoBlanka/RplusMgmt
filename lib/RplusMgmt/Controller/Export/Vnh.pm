@@ -38,7 +38,7 @@ sub index {
     if ($rt_param) {
         my $config = from_json($rt_param->{value});
         $conf_phones = $config->{'vnh-phones'} ? trim($config->{'vnh-phones'}) : '';
-        $agent_phone = 1 if $config->{'vnh-agent-phone'} eq 'true';
+        $agent_phone = 1 if $config->{'vnh-agent-phone'};
         $company = $config->{'vnh-company'} ? trim($config->{'vnh-company'}) : '';
     }
 
