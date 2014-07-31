@@ -14,7 +14,7 @@ if (1) {
     # Insert records in media table
     $dbh->do(q{INSERT INTO public.media (id, name, code, type, metadata, keywords) VALUES (13, 'Avito', 'avito', 'export', '{}', 'экспорт avito, avito экспорт');});
     $dbh->do(q{INSERT INTO public.media (id, name, code, type, metadata, keywords) VALUES (14, 'Barahla.net', 'barahlo', 'import', '{}', 'импорт barahlo, barahlo импорт');});
-	$dbh->do(q{INSERT INTO public.media (id, name, code, type, metadata, keywords) VALUES (15, 'Мир квартир', 'mir_kvartir', 'import', '{}', 'импорт мир_квартир, мир_квартир импорт');});
+    $dbh->do(q{INSERT INTO public.media (id, name, code, type, metadata, keywords) VALUES (15, 'Мир квартир', 'mir_kvartir', 'import', '{}', 'импорт мир_квартир, мир_квартир импорт');});
 }
 
 exit 1;
