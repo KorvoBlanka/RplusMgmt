@@ -24,6 +24,11 @@
   (function () {
     var $modal, $form;
 
+    if (!localStorage.obsoletion_period) {
+      localStorage.obsoletion_period = 30;
+    }
+    $('#obsoletion-period').val(localStorage.obsoletion_period);
+
     function listCompanies(events) {
       if (!events) events = {};
       var filter = $('form[role="search"] [name="filter"]:input').val();
@@ -288,6 +293,10 @@
         }
       });
 
+      $('button[data-action="obsoletion-period-save"]').click(function (e) {
+        localStorage.obsoletion_period = $('#obsoletion-period').val();
+      });
+
       $form.submit(function (e) {
         e.preventDefault();
         var target = $(this).data('target');
@@ -376,6 +385,10 @@
     <button type="button" class="btn btn-primary btn-sm navbar-btn" data-action="mediator-create"><span class="glyphicon glyphicon-plus"></span> <%= ucfloc 'add' %></button>
     <button type="button" class="btn btn-warning btn-sm navbar-btn" data-action="mediator-edit" disabled="disabled"><span class="glyphicon glyphicon-pencil"></span> <%= ucfloc 'edit' %></button>
     <button type="button" class="btn btn-danger btn-sm navbar-btn"  data-action="mediator-delete" disabled="disabled"><span class="glyphicon glyphicon-trash"></span> <%= ucfloc 'delete' %></button>
+
+    <input id="obsoletion-period" type="number" class="" style="margin-left: 100px; width: 100px;" placeholder="дней">
+    <button type="button" class="btn btn-primary btn-sm navbar-btn" data-action="obsoletion-period-save"><span class="glyphicon glyphicon-save"></span> <%= ucfloc 'save' %></button>
+
     <p class="navbar-text navbar-right"><span class="glyphicon glyphicon-refresh animation-rotate invisible indicator-ajax"></span></p>
   </div>
 </nav>

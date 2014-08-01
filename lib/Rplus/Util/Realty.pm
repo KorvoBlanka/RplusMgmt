@@ -194,8 +194,16 @@ sub find_similar {
                 state_code => $data{'state_code'},
                 ($data{'id'} ? ('!id' => $data{'id'}) : ()),
 
-                ($data{'address_object_id'} ? (OR => [address_object_id => $data{'address_object_id'}, address_object_id => undef]) : ()),
-                ($data{'house_num'} ? (OR => [house_num => $data{'house_num'}, house_num => undef]) : ()),
+                ($data{'latitude'} && $data{'longitude'} ? (
+                    or => [
+                        and => [latitude => $data{'latitude'}, longitude => $data{'longitude'}],
+                        and => [address_object_id => $data{'address_object_id'}, house_num => $data{'house_num'}],
+                    ],
+                ) : (
+                    address_object_id => $data{'address_object_id'}, house_num => $data{'house_num'},
+                )),
+
+
                 ($data{'ap_num'} ? (OR => [ap_num => $data{'ap_num'}, ap_num => undef]) : ()),
                 ($data{'rooms_count'} ? (OR => [rooms_count => $data{'rooms_count'}, rooms_count => undef]) : ()),
                 ($data{'rooms_offer_count'} ? (OR => [rooms_offer_count => $data{'rooms_offer_count'}, rooms_offer_count => undef]) : ()),

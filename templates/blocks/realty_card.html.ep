@@ -363,6 +363,9 @@
       $('[data-name="source_media_text"]', $realty_modal).html('');
       $('[data-name="source_media_name"]', $realty_modal).html('?');
       
+      $('a[data-name="reference"]', $realty_modal).attr('href', '');
+      $('a[data-name="reference"]', $realty_modal).text('');
+
       $('[name="address_object_name"]', $realty_modal)
         .typeahead({
           name: 'address_object',

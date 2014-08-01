@@ -87,6 +87,10 @@ sub run {
                 my $mediator = Rplus::Model::Mediator::Manager->get_objects(query => [phone_num => \@owner_phones, delete_date => undef], require_objects => ['company'], limit => 1,)->[0];
                 if ($mediator) {
                     say 'mediator detected!';
+
+                    $mediator->last_seen_date('now()');
+                    $mediator->save(changes_only => 1);
+
                     next if ($offer_type eq 'rent');
                     $data->{agent_id} = 10000;
                     $data->{mediator_company_id} = $mediator->company->id;
@@ -101,14 +105,17 @@ sub run {
                     $o_realty->source_media_text($data->{source_media_text});
                     $o_realty->last_seen_date($data->{add_date});
 
+                    my $meta = from_json($o_realty->metadata);
                     if ($data->{work_info}) {
-                        my $vals = from_json($o_realty->metadata);
                         my $ref = $data->{work_info};
                         if ($ref !~ /http/) {
                             $ref =~ s/^.*?(http.*?$)/$1/;
                         }
-                        $vals->{'reference'} = $ref;
-                        $o_realty->metadata(encode_json($vals));
+                        $meta->{'reference'} = $ref;
+                        $o_realty->metadata(encode_json($meta));
+                    } else {
+                        delete $meta->{'reference'};
+                        $o_realty->metadata(encode_json($meta));
                     }
 
                     if ($data->{state_code} ne 'work') {
@@ -123,13 +130,11 @@ sub run {
                     if (my $res = $tx->success) {
                         my $photo_data = $res->json->{list};
                         for my $photo (@$photo_data) {
-
                             my $new_photo = Rplus::Model::Photo->new;
                             # Save
                             $new_photo->realty_id($id);
                             $new_photo->filename($photo->{photo_url});
                             $new_photo->thumbnail_filename($photo->{thumbnail_url});
-
                             $new_photo->save;
                         }
                     }

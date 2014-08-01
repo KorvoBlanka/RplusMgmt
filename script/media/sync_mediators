@@ -13,7 +13,7 @@ use Rplus::Model::MediatorCompany;
 use Rplus::Model::MediatorCompany::Manager;
 
 use Rplus::Util::Config qw(get_config);
-use Rplus::Util::Mediator qw(delete_mediator add_mediator);
+use Rplus::Util::Mediator qw(delete_mediator add_mediator remove_obsolete_mediators);
 
 use Mojo::UserAgent;
 use List::Flatten;
@@ -21,7 +21,7 @@ use List::Flatten;
 use JSON;
 use Data::Dumper;
 
-
+my $obs_period = 30;
 # синхронизация базы посредниклв клиента и буффера
 
 run(get_config());
@@ -43,8 +43,6 @@ sub run {
         }
     }
 
-	my %BUFFER_MEDIATOR_PHONES;
-
     my $ua = Mojo::UserAgent->new;    
 
     my $tx = $ua->get('http://rplusmgmt.com/api/account/get_by_domain?subdomain=' . $config->{'subdomain'});
@@ -53,6 +51,7 @@ sub run {
       $acc_data = $res->json;
     }
 
+    my %BUFFER_MEDIATOR_PHONES;
     #if ($acc_data->{use_mediators_buffer}) {
     if (1 == 1) {
         my $tx = $ua->get($acc_data->{realty_buffer_url} . '/api/mediator/list_companies');
@@ -90,13 +89,16 @@ sub run {
         }
     }
 
+    # удалим посредников, которых нет в буффере
 	while (my ($phone, $attributes) = each %MEDIATOR_PHONES) {
-	    # удалим посредников, которых нет в буффере
 	    unless ($BUFFER_MEDIATOR_PHONES{$phone}) {	# посредника нет в буффере, удаляем
 	    	say 'deleting id ' . $attributes->{id};
 	    	delete_mediator($attributes->{id});
 	    }
 	}
+
+    # удалим "устаревших" пользовательских посредников (от которых не поступало объектов в течении obs_period)
+    say remove_obsolete_mediators($obs_period) . ' obsolete mediators removed';
 
     my $mediator_company_iter = Rplus::Model::MediatorCompany::Manager->get_objects_iterator(query => [delete_date => undef]);
     while (my $x = $mediator_company_iter->next) {

@@ -1739,7 +1739,6 @@
 
           <p class="navbar-text">
             <span class="text-primary"><%= ucfloc 'found' %></span> <span class="text-primary" id="objectsCount">0</span>
-            <span class="glyphicon glyphicon-refresh animation-rotate invisible indicator-ajax"></span>
           </p>
         </div>
       </div>

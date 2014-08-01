@@ -79,8 +79,23 @@ sub get {
 sub find {
     my $self = shift;
 
-    my $phone_num = $self->parse_phone_num(scalar $self->param('phone_num'));
-    my $user = Rplus::Model::User::Manager->get_objects(query => [phone_num => $phone_num, delete_date => undef])->[0];
+    my $raw_phone_num = $self->param('phone_num');
+    my $phone_num = $self->parse_phone_num($raw_phone_num);
+
+    my $user;
+    if ($phone_num) {
+        $user = Rplus::Model::User::Manager->get_objects(query => [phone_num => $phone_num, delete_date => undef])->[0];
+    }
+    unless ($user) {
+        my $user_iter = Rplus::Model::User::Manager->get_objects_iterator(query => [delete_date => undef], sort_by => 'name');
+        while (my $x = $user_iter->next) {
+            my $sip = from_json($x->ip_telephony);
+            if ($sip->{sip_login} && $sip->{sip_login} eq $raw_phone_num) {
+                $user = $x;
+                last;
+            }
+        }
+    }
 
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $user;
 

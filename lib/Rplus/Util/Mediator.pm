@@ -11,7 +11,20 @@ use Rplus::Model::MediatorCompany::Manager;
 
 use Exporter qw(import);
  
-our @EXPORT_OK = qw(delete_mediator add_mediator);
+our @EXPORT_OK = qw(delete_mediator add_mediator remove_obsolete_mediators);
+
+sub remove_obsolete_mediators {
+    my $obs_period = shift;
+    my $num_rows_updated = Rplus::Model::Mediator::Manager->update_objects(
+        set => {delete_date => \'now()'},
+        where => [
+            '!added_by' => 'buffer',
+            [\"last_seen_date < (NOW() - INTERVAL '$obs_period day')"],
+            delete_date => undef],
+    );
+
+    return $num_rows_updated;
+}
 
 sub delete_mediator {
     my $id = shift;

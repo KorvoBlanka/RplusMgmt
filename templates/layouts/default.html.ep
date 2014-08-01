@@ -156,6 +156,11 @@
     <%= content_for 'header' %>
   </head>
   <body>
+  <div class="indicator-ajax" style="position: absolute; top: 66%; left: 50%; margin-top: -20px; margin-left: -20px; z-index: 1000;">
+    <div style="background-color: #fff; border-radius: 50%;">
+      <img style="width: 40px;" src="<%= $assets_url%>/loading-blue.gif">
+    </div>
+  </div>  
     <!-- Navbar -->
     <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
       <div class="container">
@@ -254,10 +259,12 @@
         if (globalAjaxEventsRegistered) return;
         $(document)
           .ajaxStart(function () {
-            $('.disable-on-ajax').addClass('disabled'); $('.indicator-ajax').removeClass('invisible');
+            $('.disable-on-ajax').addClass('disabled'); 
+            $('.indicator-ajax').removeClass('invisible');
           })
           .ajaxStop(function () {
-            $('.disable-on-ajax').removeClass('disabled'); $('.indicator-ajax').addClass('invisible');
+            $('.disable-on-ajax').removeClass('disabled'); 
+            $('.indicator-ajax').addClass('invisible');
           })
         ;
         globalAjaxEventsRegistered = 1;
