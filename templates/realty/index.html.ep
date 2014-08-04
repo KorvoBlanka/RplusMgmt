@@ -612,8 +612,6 @@
                   addclass: "stack-bottomright custom-notify",
                   stack: stackBottomRight,
                   type: "error",
-                  opacity: 0.8,
-                  hide: false,
                   cornerclass: "ui-pnotify-sharp",
               });
             }
