@@ -44,10 +44,9 @@ my $_serialize = sub {
             } : undef,
 
             color_tag_id => undef,
-            
             sublandmark => $realty->sublandmark ? {id => $realty->sublandmark->id, name => $realty->sublandmark->name} : undef,
-
             main_photo_thumbnail => undef,
+            mediator_company => ($realty->mediator_company && $realty->agent_id == 10000) ? $realty->mediator_company->name : '',
         };
 
         if($realty->color_tags) {
@@ -170,6 +169,7 @@ sub list {
         with_objects => ['subscription_realty'],
         sort_by => 'id',
     );
+
     my %realty_h;
     while (my $subscription = $subscription_iter->next) {
         my $x = {
@@ -196,39 +196,6 @@ sub list {
         }
 
         push @{$res->{list}}, $x;
-    }
-
-    # Load realty data for subscriptions
-    if ($with_realty && keys %realty_h) {
-        my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
-            query => [id => [keys %realty_h]],
-            with_objects => ['address_object', 'sublandmark'],
-            sort_by => 'id',
-        );
-        while (my $realty = $realty_iter->next) {
-            # TODO: Fix this (use serialize method)
-            my $x = {
-                id => $realty->id,
-                type_code => $realty->type_code,
-                offer_type_code => $realty->offer_type_code,
-                house_num => $realty->house_num,
-                rooms_count => $realty->rooms_count,
-                rooms_offer_count => $realty->rooms_offer_count,
-                price => $realty->price,
-                agent_id => $realty->agent_id,
-
-                address_object => $realty->address_object_id ? {
-                    id => $realty->address_object->id,
-                    name => $realty->address_object->name,
-                    short_type => $realty->address_object->short_type,
-                    expanded_name => $realty->address_object->expanded_name,
-                    addr_parts => from_json($realty->address_object->metadata)->{'addr_parts'},
-                } : undef,
-
-                sublandmark => $realty->sublandmark ? {map { $_ => $realty->sublandmark->$_ } qw(id name)} : undef,
-            };
-            push @{$_->{realty}}, $x for @{$realty_h{$realty->id}};
-        }
     }
 
     $res->{count} = scalar @{$res->{list}};
@@ -294,8 +261,12 @@ sub realty_list {
     my $subscription_id = $self->param('subscription_id');
     my $color_tag_id = $self->param("color_tag_id") || 'any';
     my $subscription_realty_state_code = $self->param("state_code") || 'any';
-    
+    my $update_subscription_realty = $self->param("update_realty") || '0';
+
     my $subscription = Rplus::Model::Subscription::Manager->get_objects(query => [id => $subscription_id, delete_date => undef])->[0];
+    if ($update_subscription_realty eq '1') {
+        update_subscription_realty($self, $subscription->id);
+    }
 
     my $res = {
         count => Rplus::Model::SubscriptionRealty::Manager->get_objects_count(
@@ -354,9 +325,7 @@ sub realty_list {
 }
 
 sub update_subscription_realty {
-    my $self = shift;
-    
-    my $subscription_id = $self->param('subscription_id');
+    my ($self, $subscription_id) = @_;
     my $subscription = Rplus::Model::Subscription::Manager->get_objects(query => [id => $subscription_id, delete_date => undef])->[0];
 
     for my $q (@{$subscription->queries}) {
@@ -372,24 +341,27 @@ sub update_subscription_realty {
                   state_code => 'raw',
                 ],
                 #or => [
-                #    state_change_date => {gt => $subscr->add_date},
-                #    price_change_date => {gt => ($subscr->last_check_date || $subscr->add_date)},
+                #    state_change_date => {gt => $subscription->add_date},
+                #    price_change_date => {gt => ($subscription->last_check_date || $subscription->add_date)},
                 #],
                 [\"t1.id NOT IN (SELECT SR.realty_id FROM subscription_realty SR WHERE SR.subscription_id = ? AND SR.delete_date IS NULL)" => $subscription->id],
                 delete_date => undef,
                 @query
             ],
-            with_objects => ['address_object', 'agent', 'type', 'sublandmark'],
         );
-        my $found = 0;
+
+        my $values_str = '';
+        my $sid = $subscription->id;
         while (my $realty = $realty_iter->next) {
-            $found++;
-            Rplus::Model::SubscriptionRealty->new(subscription_id => $subscription->id, realty_id => $realty->id)->save;
+            #Rplus::Model::SubscriptionRealty->new(subscription_id => $subscription->id, realty_id => $realty->id)->save;
+            my $realty_id = $realty->id; 
+            $values_str .= "($sid, $realty_id),";
+        }
+        if (length $values_str > 0) {
+            chop $values_str;
+            Rplus::DB->new_or_cached->dbh->do("INSERT INTO subscription_realty (subscription_id, realty_id) VALUES $values_str;");
         }
     }
-
-    $subscription->last_check_date('now()');
-    $subscription->save(chages_only => 1);
 }
 
 sub save {

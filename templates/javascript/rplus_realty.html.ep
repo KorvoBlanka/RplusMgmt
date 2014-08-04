@@ -46,8 +46,12 @@
       if (withDescription && r.description) digest.push(Rplus.Util.escape(r.description));
       if (r.price) digest.push('<span class="text-primary">' + r.price + ' тыс. руб.' + '</span>');
       if (r.agent_id) {
-        var agent = Rplus.Table.users[r.agent_id];
-        digest.push('<br><span>Агент: ' + (agent.public_name || agent.name) + ', ' + (agent.public_phone_num || Rplus.Util.formatPhoneNum(Rplus.Table.users[r.agent_id].phone_num)) + '</span>');
+        if (r.agent_id == 10000) {
+          digest.push('<br><span>Посредник: ' + r.mediator_company.name + '</span>');
+        } else {
+          var agent = Rplus.Table.users[r.agent_id];
+          digest.push('<br><span>Агент: ' + (agent.public_name || agent.name) + ', ' + (agent.public_phone_num || Rplus.Util.formatPhoneNum(Rplus.Table.users[r.agent_id].phone_num)) + '</span>');
+        }
       } else {
       }
       return digest.join(', ');
@@ -83,8 +87,12 @@
       if (withDescription && r.description) digest.push(Rplus.Util.escape(r.description));
       if (r.price) digest.push('<br><span class="text-primary">' + r.price + ' тыс. руб.' + '</span>');
       if (r.agent_id) {
-        var agent = Rplus.Table.users[r.agent_id];
-        digest.push('<br><span>Агент: ' + (agent.public_name || agent.name) + ', ' + (agent.public_phone_num || Rplus.Util.formatPhoneNum(Rplus.Table.users[r.agent_id].phone_num)) + '</span>');
+        if (r.agent_id == 10000) {
+          digest.push('<br><span>Посредник: ' + r.mediator_company + '</span>');
+        } else {
+          var agent = Rplus.Table.users[r.agent_id];
+          digest.push('<br><span>Агент: ' + (agent.public_name || agent.name) + ', ' + (agent.public_phone_num || Rplus.Util.formatPhoneNum(Rplus.Table.users[r.agent_id].phone_num)) + '</span>');
+        }
       } else {
         digest.push('<br><span>Агент:</span>');
       }

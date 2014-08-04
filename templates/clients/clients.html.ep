@@ -244,12 +244,12 @@
     border-bottom:1px solid #e5e5e5;
   }
   
-  .client-node:nth-of-type(even) {
+  .client-node {
     background-color: #fafafa;
   }
   
   .subscription-node {
-    background-color: #f0f0f0;
+    background-color: #dadada;
   }
 
   .subscription-node > td {
@@ -458,7 +458,12 @@
       $.ajax({
         type: "POST",
         url: "/api/subscription/realty_list",
-        data: {subscription_id: subscription_id, page: page, per_page: 34},
+        data: {
+          subscription_id: subscription_id, 
+          page: page, 
+          per_page: 34,
+          update_realty: 1,
+        },
         complete: function () { _listRealty_started = false; }
       })
         .done(function (data, textStatus, jqXHR) {
@@ -609,7 +614,12 @@
     }    
     
     var node_id = 0;
-    var tree_options = {initialState: "collapsed"};
+    var tree_options = {
+      initialState: "collapsed",
+      /*onExpand: function () {
+        console.log('!');
+      },*/
+    };
     var settings = {};
     function listClients(page) {
       var offer_type = $('[data-filter="offer_type_code"]').data('val');
@@ -721,6 +731,35 @@
 
     $(function () {
       // Query completion
+      $('#clientSearchQuery')
+        .bind('keydown', function (e) {
+          if (e.which == 13) {
+            var q = $(this).val();
+            $.ajax({
+              type: "GET",
+              url: "/api/client/get",
+              data: {phone_num: q},
+              async: false,
+              success: function (data, textStatus, jqXHR) {
+                console.log(data.id);                
+                var $row = $('#clientTreeWrapper tr[data-id=' + data.id + ']');
+                if ($row) {
+                  $row.mousedown();
+                  $row.mouseup();
+                  $row.click();
+                  var scroll_pos = $('#clientTreeWrapper').scrollTop() + $row.top;
+                  $('#clientTreeWrapper').animate({
+                      scrollTop: scroll_pos
+                   }, 500);
+                }
+              },
+              error: function (jqXHR, textStatus, errorThrown) {},
+          });
+          }
+        });
+      $('form[role="client-search"]').submit(function (e) { e.preventDefault(); });
+
+
       $('#searchQuery')
         .typeahead({
           name: 'searchQuery',
@@ -900,7 +939,7 @@
           }
         });
         
-        $('.tree').on('mousedown', 'tr.client-node', function (e) {
+        $('.tree').on('mouseup', 'tr.client-node', function (e) {
           if (hasTouch()) return;
           var $this = $(this);
           var $selected = $('.tree > tbody > tr.cselected');
@@ -910,6 +949,7 @@
           $selected.each(function () {
             var $this = $(this);
               $this.removeClass('cselected');
+              $this.treegrid('collapse');
           });
           clearRealty();
           $this.addClass('cselected');
@@ -1619,10 +1659,8 @@
           <div id="photosCarousel-{guid}" class="carousel slide">
             <!-- Indicators -->
             <ol class="carousel-indicators"></ol>
-
             <!-- Wrapper for slides -->
             <div class="carousel-inner"></div>
-
             <!-- Controls -->
             <a class="left carousel-control" href="#photosCarousel-{guid}" data-slide="prev">
               <span class="glyphicon glyphicon-chevron-left"></span>
@@ -1638,111 +1676,96 @@
 </div><!-- /.modal -->
 % end
 
-<div class="row margin-bottom-15">
-  <div class="col-md-12 col-lg-12" style="display: none;">
-    <ul class="nav nav-tabs" id="navTab">
-      <li class="active"><a href="#search" data-toggle="tab"><strong><%= ucfloc 'search' %></strong></a></li>
-    </ul>
-  </div>
-</div>
-
-<div class="tab-content" id="navTabContent">
-  <div class="tab-pane active" id="search">
-    <div class="row">
-      <div class="col-md-12 col-lg-12">
-        <form role="search">
-          <div class="form-group">
-            <!--<i style="z-index: 100;"><span class="glyphicon glyphicon-search"></span></i>-->
-            <input type="text" class="form-control input-sm" id="searchQuery" name="q" placeholder="введите запрос, например: 1 комнатная квартира 1 микрорайон улучшенная планировка от 3 этаж." autocomplete="off" x-webkit-speech>
-          </div>
-        </form>
-        <button id="speech-button" style="z-index: 100;"></button>        
-      </div>
+  <div class="row">
+    <div class="col-md-12 col-lg-12">
+      <form role="search">
+        <div class="form-group">
+          <!--<i style="z-index: 100;"><span class="glyphicon glyphicon-search"></span></i>-->
+          <input type="text" class="form-control input-sm" id="searchQuery" name="q" placeholder="введите запрос, например: 1 комнатная квартира 1 микрорайон улучшенная планировка от 3 этаж." autocomplete="off" x-webkit-speech>
+        </div>
+      </form>
+      <button id="speech-button" style="z-index: 100;"></button>        
     </div>
+  </div>
 
-    <div class="row">
-      <div class="col-md-5 col-lg-4" style="padding-right: 0px;">
-                
+  <div class="row">
+    <div class="col-md-5 col-lg-4" style="padding-right: 0px;">
+      <form role="client-search">
         <div class="form-group" style="margin-bottom: 0px; margin-top: 0px;">
-          <input type="text" name="filter" class="form-control input-sm" placeholder="Поиск">
+          <input type="text" name="cq" id="clientSearchQuery" class="form-control input-sm" placeholder="Поиск">
         </div>
-        
-        <div id="clientTreeWrapper">
-
-        <table class="tree">
-        </table>
-          
-        </div>
-      </div>
-      <div class="col-md-7 col-lg-8" style="padding-left: 4px;">
-        <div  class="table-responsive" id="realtyTableWrapper">
-          <table style="overflow: hidden;" class="table table-condensed table-striped table-hover" id="realtyTable" data-toggle="context">
-            <thead></thead>
-            <tbody></tbody>
-          </table>
-        </div>
+      </form>
+      <div id="clientTreeWrapper">
+      <table class="tree">
+      </table>
       </div>
     </div>
-
-    <nav class="navbar navbar-default navbar-fixed-bottom">
-      <div class="container">
-        <ul class="nav navbar-nav">
-          <li><a href="#" data-action="client-create"><span class="glyphicon glyphicon-plus"></span>&nbsp&nbspДобавить</a></li>
-          <li><a href="#" data-action="client-open"><span class="glyphicon glyphicon-folder-open"></span> <%= ucfloc 'open' %></a></li>
-
-            <!-- Offer type filter -->
-            <li class="dropdown" data-filter="offer_type_code" data-val="sale">
-              <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span role="display"><%= ucfloc 'sale' %></span> <b class="caret"></b></a>
-              <ul class="dropdown-menu">
-                % for my $x (@{Rplus::Model::RealtyOfferType::Manager->get_objects(sort_by => 'id')}) {
-                  <li><a href="#" data-val="<%= $x->code %>"><%= $x->name %></a></li>
-                % }
-              </ul>
-            </li>
-
-        </ul>
-
-        <div class="navbar-right">
-          <ul class="nav navbar-nav">
-            <li><a href="#" data-action="realty-geo"><span class="glyphicon glyphicon-globe"></span> <%= ucfloc 'geo' %></a></li>
-            <!-- Color tag filter -->
-            <li class="dropdown" data-filter="color_tag_id" data-val="">
-              <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span role="display"><span class="glyphicon glyphicon-tags"></span>&nbsp&nbspВсе</span> <b class="caret"></b></a>
-              <ul class="dropdown-menu">
-                <li><a href="#" data-val=""><span class="glyphicon glyphicon-tags"></span>&nbsp&nbspВсе</a></li>
-                % for my $x (@{Rplus::Model::DictColorTag::Manager->get_objects(query => [delete_date => undef], sort_by => 'id')}) {
-                  <li><a href="#" data-val="<%= $x->id %>"><span class="tag-button color-tag-<%= $x->id %> pull-left"></span>&nbsp<%= $x->name %></a></li>
-                % }
-              </ul>
-            </li>
-
-            <!-- Agent filter -->
-            <li class="dropdown" data-filter="agent_id" data-val="">
-              <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-user"></span> <span role="display"><%= ucfloc 'any' %> <b class="caret"></b></span></a>
-              <ul class="dropdown-menu">
-                % if (has_permission(realty => 'read')->{nobody} || has_permission(realty => 'read')->{others}) {
-                <li><a href="#" data-val="" data-type="text"><strong><%= ucfloc 'any' %></strong></a></li>
-                % }
-                % if (has_permission(realty => 'read')->{nobody}) {
-                <li><a href="#" data-val="nobody" data-type="text"><strong><%= ucfloc 'nobody' %></strong></a></li>
-                % }
-                % if (has_permission(realty => 'read')->{others}) {
-                <li><a href="#" data-val="all" data-type="text"><strong><%= ucfloc 'all agents' %></strong></a></li>
-                % }
-                % for my $x (@{Rplus::Model::User::Manager->get_objects(query => [role => ['agent', 'agent_ext', 'manager'], delete_date => undef], sort_by => 'name')}) {
-                  % if (has_permission(realty => read => $x->id)) {
-                  <li><a href="#" data-val="<%= $x->id %>" data-type="text"><%= $x->name %></a></li>
-                  % }
-                % }
-              </ul>
-            </li>
-
-          <p class="navbar-text">
-            <span class="text-primary"><%= ucfloc 'found' %></span> <span class="text-primary" id="objectsCount">0</span>
-          </p>
-        </div>
+    <div class="col-md-7 col-lg-8" style="padding-left: 4px;">
+      <div class="table-responsive" id="realtyTableWrapper">
+        <table style="overflow: hidden;" class="table table-condensed table-striped table-hover" id="realtyTable" data-toggle="context">
+          <thead></thead>
+          <tbody></tbody>
+        </table>
       </div>
-    </nav> <!-- /.navbar -->
-
+    </div>
   </div>
-</div>
+
+  <nav class="navbar navbar-default navbar-fixed-bottom">
+    <div class="container">
+      <ul class="nav navbar-nav">
+        <li><a href="#" data-action="client-create"><span class="glyphicon glyphicon-plus"></span>&nbsp&nbspДобавить</a></li>
+        <li><a href="#" data-action="client-open"><span class="glyphicon glyphicon-folder-open"></span> <%= ucfloc 'open' %></a></li>
+
+          <!-- Offer type filter -->
+          <li class="dropdown" data-filter="offer_type_code" data-val="sale">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span role="display"><%= ucfloc 'sale' %></span> <b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              % for my $x (@{Rplus::Model::RealtyOfferType::Manager->get_objects(sort_by => 'id')}) {
+                <li><a href="#" data-val="<%= $x->code %>"><%= $x->name %></a></li>
+              % }
+            </ul>
+          </li>
+
+      </ul>
+
+      <div class="navbar-right">
+        <ul class="nav navbar-nav">
+          <li><a href="#" data-action="realty-geo"><span class="glyphicon glyphicon-globe"></span> <%= ucfloc 'geo' %></a></li>
+          <!-- Color tag filter -->
+          <li class="dropdown" data-filter="color_tag_id" data-val="">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span role="display"><span class="glyphicon glyphicon-tags"></span>&nbsp&nbspВсе</span> <b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li><a href="#" data-val=""><span class="glyphicon glyphicon-tags"></span>&nbsp&nbspВсе</a></li>
+              % for my $x (@{Rplus::Model::DictColorTag::Manager->get_objects(query => [delete_date => undef], sort_by => 'id')}) {
+                <li><a href="#" data-val="<%= $x->id %>"><span class="tag-button color-tag-<%= $x->id %> pull-left"></span>&nbsp<%= $x->name %></a></li>
+              % }
+            </ul>
+          </li>
+
+          <!-- Agent filter -->
+          <li class="dropdown" data-filter="agent_id" data-val="">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-user"></span> <span role="display"><%= ucfloc 'any' %> <b class="caret"></b></span></a>
+            <ul class="dropdown-menu">
+              % if (has_permission(realty => 'read')->{nobody} || has_permission(realty => 'read')->{others}) {
+              <li><a href="#" data-val="" data-type="text"><strong><%= ucfloc 'any' %></strong></a></li>
+              % }
+              % if (has_permission(realty => 'read')->{nobody}) {
+              <li><a href="#" data-val="nobody" data-type="text"><strong><%= ucfloc 'nobody' %></strong></a></li>
+              % }
+              % if (has_permission(realty => 'read')->{others}) {
+              <li><a href="#" data-val="all" data-type="text"><strong><%= ucfloc 'all agents' %></strong></a></li>
+              % }
+              % for my $x (@{Rplus::Model::User::Manager->get_objects(query => [role => ['agent', 'agent_ext', 'manager'], delete_date => undef], sort_by => 'name')}) {
+                % if (has_permission(realty => read => $x->id)) {
+                <li><a href="#" data-val="<%= $x->id %>" data-type="text"><%= $x->name %></a></li>
+                % }
+              % }
+            </ul>
+          </li>
+
+        <p class="navbar-text">
+          <span class="text-primary"><%= ucfloc 'found' %></span> <span class="text-primary" id="objectsCount">0</span>
+        </p>
+      </div>
+    </div>
+  </nav> <!-- /.navbar -->
