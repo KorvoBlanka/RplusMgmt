@@ -52,7 +52,7 @@ my $_serialize = sub {
             sublandmark => $realty->sublandmark ? {id => $realty->sublandmark->id, name => $realty->sublandmark->name} : undef,
             main_photo_thumbnail => undef,
             color_tag_id => undef,            
-            mediator_company => $realty->mediator_company ? $realty->mediator_company->name : '',
+            mediator_company => ($realty->mediator_company && $realty->agent_id == 10000) ? $realty->mediator_company->name : '',
             reference => '',
         };
         

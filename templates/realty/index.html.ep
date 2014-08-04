@@ -630,9 +630,9 @@
         }
       })
         .done(function (data, textStatus, jqXHR) {
-          
+
           _tid = setTimeout(function(){updateRealty()},10000);
-          
+
           var inserted = 0;
           for (var i = 0; i < data.list.length; i++) {
             var r = data.list[i];
@@ -645,10 +645,10 @@
       			if(h) {
       				if (h.selected > 0) {
       				  xhtml += 'selected ';
-      				}            
+      				}
       				if (h.modified > 0) {
       				  xhtml += 'modified ';
-      				} 
+      				}
       				if (h.shown > 0) {
       				  xhtml += 'shown ';
       				}
@@ -663,12 +663,12 @@
             $('#realtyTable > tbody').prepend(xhtml);
             var $tr = $('#realtyTable > tbody > tr[data-id="' + r.id + '"]');
             $tr.data('obj', r);
-            $('#realtyTableWrapper').scrollTop($('#realtyTableWrapper').scrollTop() + $tr.height() );            
+            $('#realtyTableWrapper').scrollTop($('#realtyTableWrapper').scrollTop() + $tr.height());
           }
           _listRealty_finished = false;
         });
-    }    
-    
+    }
+
     // Open realty object card
     function openRealtyCard(id) {      
       var card = RealtyCard({
