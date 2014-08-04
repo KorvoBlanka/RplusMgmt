@@ -747,7 +747,7 @@
                   $row.mousedown();
                   $row.mouseup();
                   $row.click();
-                  var scroll_pos = $('#clientTreeWrapper').scrollTop() + $row.position().top;
+                  var scroll_pos = $('#clientTreeWrapper').scrollTop() + $row.position().top - 30;
                   $('#clientTreeWrapper').animate({
                       scrollTop: scroll_pos
                    }, 500);
