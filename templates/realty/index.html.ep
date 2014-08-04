@@ -195,6 +195,17 @@
     background: none;
     border: none;
   }
+
+  .custom-notify > .ui-pnotify-container {
+    background-color: #f8f8f8;
+    color: #666;
+    border-color: #e7e7e7;
+  }
+
+  .custom-notify > .ui-pnotify-container > .ui-pnotify-icon {
+    color: rgba(190, 20, 20, 0.70);
+  }
+
 </style>
 % end
 
@@ -597,12 +608,13 @@
               $.pnotify({
                   title: "<%= ucfloc 'mediator' %>",
                   text: x.company + ' ' + Rplus.Util.formatPhoneNum(x.phone_num),
-                  sticker: false,
-                  addclass: "stack-bottomright",
+                  sticker: true,
+                  addclass: "stack-bottomright custom-notify",
                   stack: stackBottomRight,
                   type: "error",
                   opacity: 0.8,
-                  //cornerclass: "ui-pnotify-custom",
+                  hide: false,
+                  cornerclass: "ui-pnotify-sharp",
               });
             }
           }
