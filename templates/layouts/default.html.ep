@@ -255,12 +255,16 @@
       "use strict";
 
       var globalAjaxEventsRegistered = 0;
+      var show_ajax_indicator = 1;
+
       function registerGlobalAjaxEvents() {
         if (globalAjaxEventsRegistered) return;
         $(document)
           .ajaxStart(function () {
-            $('.disable-on-ajax').addClass('disabled'); 
-            $('.indicator-ajax').removeClass('invisible');
+            if (show_ajax_indicator == 1) {
+              $('.disable-on-ajax').addClass('disabled'); 
+              $('.indicator-ajax').removeClass('invisible');
+            }
           })
           .ajaxStop(function () {
             $('.disable-on-ajax').removeClass('disabled'); 
@@ -268,6 +272,15 @@
           })
         ;
         globalAjaxEventsRegistered = 1;
+      }
+
+      function supressAjaxIndicator(supress) {
+        if (supress == 1) {
+          show_ajax_indicator = 0;
+        } else {
+          show_ajax_indicator = 1;
+        }
+        console.log(show_ajax_indicator);
       }
     </script>
     <%= content_for 'javascript' %>

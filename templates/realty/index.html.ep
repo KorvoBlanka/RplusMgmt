@@ -619,11 +619,15 @@
       var colorTagId = $('[data-filter="color_tag_id"]').data('val');
       _listRealty_started = true;
 
+      supressAjaxIndicator(1);
       $.ajax({
         type: "POST",
         url: "/api/realty/list",
         data: {q: q, state_code: stateCode, offer_type_code: offerTypeCode, agent_id: agentId, color_tag_id: colorTagId, sort_by: sortBy, page: 1, per_page: 30},
-        complete: function () { _listRealty_started = false; }
+        complete: function () { 
+          _listRealty_started = false;
+          supressAjaxIndicator(0);
+        }
       })
         .done(function (data, textStatus, jqXHR) {
           
