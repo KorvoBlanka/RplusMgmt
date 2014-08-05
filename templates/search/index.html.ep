@@ -740,10 +740,6 @@
                   this.setIcon(selectedIcon);
 
                   var scroll_pos = $('#searchTableWrapper').scrollTop() + $('tr[data-id=' + rtm_hash[this._leaflet_id] + ']').position().top;
-
-                  console.log(scroll_pos);
-
-
                   $('#searchTableWrapper').animate({
                       scrollTop: scroll_pos
                    }, 500);

@@ -156,7 +156,7 @@
     <%= content_for 'header' %>
   </head>
   <body>
-  <div class="indicator-ajax" style="position: absolute; top: 66%; left: 50%; margin-top: -20px; margin-left: -20px; z-index: 1000;">
+  <div class="indicator-ajax invisible" style="position: absolute; top: 66%; left: 50%; margin-top: -20px; margin-left: -20px; z-index: 1000;">
     <div style="background-color: #fff; border-radius: 50%;">
       <img style="width: 40px;" src="<%= $assets_url%>/loading-blue.gif">
     </div>
