@@ -484,7 +484,7 @@
             var label = '';
             if (data.state_list[i].state_code == 'new') {
               //state_class = 'modified';
-              label = '<span style="border-radius: 0px; opacity: 0.75; font-size: 12px;" class="label label-danger">New</span>';
+              label = '<span style="border-radius: 0px; font-size: 12px;" class="label label-danger">New</span>';
             } else if (data.state_list[i].state_code == 'shown') {
               state_class = 'shown';
             } else if (data.state_list[i].state_code == 'attention') {

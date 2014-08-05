@@ -6,7 +6,11 @@
     <!--meta name="viewport" content="width=device-width, initial-scale=1.0"-->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="description" content="Rplus Management">
-    <meta name="author" content="Alexander Orlenko">
+    <meta name="author" content="Alexander Borisenko">
+
+    <meta name = "description" content = "" />
+    <meta name = "keywords" content = "" />
+    <meta name = "robots" content = "noindex,nofollow" />
 
     <!-- Bootstrap -->
     <link rel="stylesheet" href="<%= $assets_url %>/bootstrap/<%= $bootstrap_ver %>/css/bootstrap.min.css">
