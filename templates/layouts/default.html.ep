@@ -284,7 +284,6 @@
         } else {
           show_ajax_indicator = 1;
         }
-        console.log(show_ajax_indicator);
       }
     </script>
     <%= content_for 'javascript' %>

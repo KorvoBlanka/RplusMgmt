@@ -145,7 +145,7 @@
   }
   
   #view-group {
-    min-height: 370px;
+    min-height: 340px;
   }
   
   .view-group {
@@ -342,10 +342,19 @@
       }
       
       if (realty.agent_id == 10000) {   // посредник
-        $('span[data-name="dg_p9"]', $realty_modal).html(realty.mediator_company);
         $('#dg_p9_label', $realty_modal).html('Агенство');
+        $('span[data-name="dg_p9"]', $realty_modal).html(realty.mediator_company);
+        $('#dg_p_contacts', $realty_modal).html(Rplus.Util.formatPhoneNum(realty.owner_phones[0]));
       } else {
         $('#dg_p9_label', $realty_modal).html('Агент');
+        $('#dg_p_contacts', $realty_modal).html('');
+      }
+
+      if (realty.reference) {
+        $('#dg_p_reference', $realty_modal).attr('href', realty.reference);
+        $('#dg_p_reference', $realty_modal).removeClass('hidden');
+      } else {
+        $('#dg_p_reference', $realty_modal).addClass('hidden');
       }
     }
 
@@ -792,15 +801,28 @@
             </div>
           </div>
 
-        <div class="form-group view-group">
-          <label class="col-md-4 col-lg-4 control-label view-label">Тэги</label>
+          <div class="form-group view-group">
+            <label class="col-md-4 col-lg-4 control-label view-label" id="dg_p9_label"></label>
             <div class="col-md-8 col-lg-8" style="padding-top: 5px;">
-              <div id="rcard-tag-group" class="tag-group input-group ccard-input-group" style="padding-left: 0px;">
-                <span id="realty-color-tag-1" class="realty-color-tag round-button" style="margin-top: 0px;"></span>
+              <p class="form-control-static text-left">
+                <span class="" id="dg_p_contacts"></span>
+              </p>
+            </div>
+          </div>
+
+          <div class="form-group view-group">
+            <label class="col-md-4 col-lg-4 control-label view-label">Тэги</label>
+              <div class="col-md-8 col-lg-8" style="padding-top: 5px;">
+                <div id="rcard-tag-group" class="tag-group input-group ccard-input-group" style="padding-left: 0px;">
+                  <span id="realty-color-tag-1" class="realty-color-tag round-button" style="margin-top: 0px;"></span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+
+          <div class="form-group view-group">
+            <a class="col-md-6 col-lg-6" href="#" target="_blank" id="dg_p_reference">Ссылка на объявление</a>
+          </div>
 
         </div>
 
