@@ -5,9 +5,10 @@ use Rplus::Modern;
 use base qw(RplusMgmt::L10N);
 
 our %Lexicon = (
-    # A
+    # A    
     q{analytics} => 'аналитика',
     q{add} => 'добавить',
+    q{advertisement} => 'реклама',
     q{agent} => 'агент',
     q{agent_ext} => 'агент+',
     q{additional} => 'дополнительно',
@@ -62,6 +63,7 @@ our %Lexicon = (
     q{delete} => 'удалить',
 
     # E
+    q{export advertisement} => 'экспорт рекламы',
     q{export media} => 'выгрузка прессы',
     q{empty} => 'пусто',
     q{end date} => 'дата окончания',
@@ -123,6 +125,7 @@ our %Lexicon = (
     q{new password} => 'новый пароль',
     q{no photo} => 'нет фото',
     q{nobody} => 'не задано',
+    q{notifications} => 'уведомления',
     q{num} => 'номер',
 
     # O

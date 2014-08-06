@@ -155,11 +155,49 @@
         right: auto;
         top: auto;
       }
+
+      .help-window {
+        position: absolute; 
+        top: 50%; 
+        left: 50%; 
+        height: 600px; 
+        width: 800px; 
+        margin-top: -300px; 
+        margin-left: -400px; 
+        z-index: 9000;
+
+        background-color: #eee;
+      }
+
+      .navbar-inverse {
+        background-color: #001F3C;
+        border-color: #003242;
+      }
+
+      .navbar-inverse .navbar-nav > .active > a, .navbar-inverse .navbar-nav > .active > a:hover {
+        background-color: #00305E;
+      }
+
+      .navbar-inverse .navbar-nav > .open > a, .navbar-inverse .navbar-nav > .open > a:hover, .navbar-inverse .navbar-nav > .open > a:focus {
+        background-color: #00305E; 
+      }
+
+      .navbar-inverse .navbar-nav > li > a {
+        color: #ddd;
+      }
+
+      .navbar-inverse .navbar-brand {
+        color: #929292;
+      }
     </style>
 
     <%= content_for 'header' %>
   </head>
   <body>
+
+  <div class="help-window hidden">
+  </div>
+
   <div class="indicator-ajax invisible" style="position: absolute; top: 66%; left: 50%; margin-top: -20px; margin-left: -20px; z-index: 1000;">
     <div style="background-color: #fff; border-radius: 50%;">
       <img style="width: 40px;" src="<%= $assets_url%>/loading-blue.gif">
@@ -187,17 +225,17 @@
             <li class="<%= $controller eq 'realty' && 'active' %>"><a href="/realty"><span class="glyphicon glyphicon-home"></span> <%= ucfloc q{realty} %></a></li>
           % }
           % if (has_permission(clients => 'read')) {
-            <li><a href="/clients/clients"><span class="glyphicon glyphicon-user"></span> <%= ucfloc q{clients} %></a></li>
+            <li class="<%= $controller eq 'clients' && 'active' %>"><a href="/clients"><span class="glyphicon glyphicon-user"></span> <%= ucfloc q{clients} %></a></li>
           % }
           % if (has_permission(realty => 'export') || has_permission(realty => 'analyse')) {
-            <li class="dropdown">
+            <li class="dropdown <%= $controller eq 'service' && 'active' %>">
               <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-star"></span> <%= ucfloc q{services} %> <b class="caret"></b></a>
               <ul class="dropdown-menu">
               % if (has_permission(realty => 'export')) {
-                <li><a href="/service/export"><span class="glyphicon glyphicon-export"></span> <%= ucfloc q{export media} %></a></li>
+                <li><a href="/service/export"><span class="glyphicon glyphicon-export"></span> <%= ucfloc q{advertisement} %></a></li>
               % }
               % if(has_permission(realty => 'analyse')) {
-                <li><a href="/analytics"><span class="glyphicon glyphicon-list-alt"></span> <%= ucfloc q{analytics} %></a></li>
+                <li><a href="/service/analytics"><span class="glyphicon glyphicon-list-alt"></span> <%= ucfloc q{analytics} %></a></li>
               % }
               </ul>
             </li>
@@ -205,7 +243,7 @@
           % if (
           %  has_permission(mediators => 'read') || has_permission(landmarks => 'read') || has_permission(users => 'manage')
           % ) {
-            <li class="dropdown">
+            <li class="dropdown <%= $controller eq 'configuration' && 'active' %>">
               <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-cog"></span> <%= ucfloc q{configuration} %> <b class="caret"></b></a>
               <ul class="dropdown-menu">
               % if (has_permission(mediators => 'read')) {
@@ -218,9 +256,9 @@
                 <li><a href="/configuration/users"><span class="glyphicon glyphicon-user"></span> <%= ucfloc q{users} %></a></li>
               % }
               % if (has_permission(realty=> 'export')) {
-                <li><a href="/configuration/import"><span class="glyphicon glyphicon-import"></span> Импорт</a></li>
-                <li><a href="/configuration/export"><span class="glyphicon glyphicon-export"></span> Экспорт</a></li>
-                <li><a href="/configuration/notifications"><span class="glyphicon glyphicon-send"></span> Уведомления</a></li>
+                <li><a href="/configuration/import"><span class="glyphicon glyphicon-import"></span> <%= ucfloc q{import} %></a></li>
+                <li><a href="/configuration/export"><span class="glyphicon glyphicon-export"></span> <%= ucfloc q{advertisement} %></a></li>
+                <li><a href="/configuration/notifications"><span class="glyphicon glyphicon-send"></span> <%= ucfloc q{notifications} %></a></li>
               % }              
               </ul>
             </li>
