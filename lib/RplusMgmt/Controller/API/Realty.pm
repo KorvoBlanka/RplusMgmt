@@ -60,12 +60,7 @@ my $_serialize = sub {
         $x->{reference} = $vals->{'reference'};
 
         if($realty->color_tags) {
-            foreach ($realty->color_tags) {
-                if ($_->user_id == $self->stash('user')->{id}) {
-                    $x->{color_tag_id} = $_->{color_tag_id};
-                    last;
-                }
-            }
+            $x->{color_tag_id} = $realty->color_tags->[0]->{color_tag_id};
         }
 
         # Exclude fields for read permission "2"
@@ -305,7 +300,7 @@ sub list {
     # Fetch realty objects
     my $realty_objs = Rplus::Model::Realty::Manager->get_objects(
         select => ['realty.*', (map { 'address_object.'.$_ } qw(id name short_type expanded_name metadata))],
-        query => [@query, , delete_date => undef],
+        query => [@query, delete_date => undef],
         sort_by => [@sort_by, 'realty.last_seen_date desc'],
         page => $page,
         per_page => $per_page,
@@ -588,6 +583,7 @@ sub update {
                 }
             }            
         } elsif ($_ eq 'state_code') {
+            return $self->render(json => {error => 'Forbidden'}, status => 403) if $realty->agent_id == 10000 && $self->param('state_code') eq 'work';
             $realty->state_code(scalar $self->param('state_code'));
         } elsif ($_ eq 'color_tag_id') {
             if ($self->param('color_tag_id') eq '') {

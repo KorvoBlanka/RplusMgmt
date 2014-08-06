@@ -137,6 +137,7 @@ our %Lexicon = (
     },
     q{owner} => 'собственник',
     q{owner phone} => 'телефон собственника',
+    q{objects import} => 'импорт объектов',
 
     # P
     q{phone} => 'телефон',

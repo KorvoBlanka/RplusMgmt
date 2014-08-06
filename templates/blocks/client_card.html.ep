@@ -372,11 +372,13 @@
 
     function save() {
       $('#phone-num-alert', $modal).addClass('hidden');
+      var cant_save = false;
       $('#clientCard_subscriptionForm > div > div:visible', $modal).each(function (index, elem) {       
         var empty_query = false;
         $('[name="query"]', this).each(function (index, elem) {
           if ($(this).val().length == 0) {
             empty_query = true;
+            cant_save = true;
           }
         });
         if (empty_query) {
@@ -396,6 +398,12 @@
         }
       });
       
+      if (cant_save) {
+        $modal.addClass('shaker');
+        setTimeout('$("#clientCard_modal").removeClass("shaker");', 1000);
+        return;
+      }
+
       var client = {
         id: $('#clientCard_clientForm [name="id"]:input', $modal).val(),
         name: $('#clientCard_clientForm [name="name"]:input', $modal).val(),
@@ -479,8 +487,7 @@
         })
         .fail(function (jqXHR, textStatus, errorThrown) {
           $modal.addClass('shaker');
-          setTimeout('$("#clientCard_modal").removeClass("shaker");', 1000);
-            
+          setTimeout('$("#clientCard_modal").removeClass("shaker");', 1000); 
           $('#phone-num-alert', $modal).removeClass('hidden');
         })
       ;

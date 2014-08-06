@@ -455,11 +455,15 @@
     function listSubscriptionRealty(subscription_id, page) {
       scroll_type = 1;
       _listRealty_started = true;
+      var color_tag_id = $('[data-filter="color_tag_id"]').data('val');
+      var agent_id = $('[data-filter="agent_id"]').data('val');
       $.ajax({
         type: "POST",
         url: "/api/subscription/realty_list",
         data: {
-          subscription_id: subscription_id, 
+          subscription_id: subscription_id,
+          color_tag_id: color_tag_id,
+          agent_id: agent_id,
           page: page, 
           per_page: 34,
           update_realty: 1,
@@ -482,12 +486,12 @@
             var photo = r.main_photo_thumbnail ? '<a href="#" data-action="photos-show"><span class="glyphicon glyphicon-camera"></span></a>' : '';
             var state_class = '';
             var label = '';
-            if (data.state_list[i].state_code == 'new') {
+            if (r.sr_state_code && r.sr_state_code == 'new') {
               //state_class = 'modified';
               label = '<span style="border-radius: 0px; font-size: 12px;" class="label label-danger">New</span>';
-            } else if (data.state_list[i].state_code == 'shown') {
+            } else if (r.sr_state_code && r.sr_state_code == 'shown') {
               state_class = 'shown';
-            } else if (data.state_list[i].state_code == 'attention') {
+            } else if (r.sr_state_code && r.sr_state_code == 'attention') {
               state_class = 'deleted';
             }
 
@@ -666,7 +670,7 @@
           }
         });
     }
-    
+
     // open client card
     function openClientCard(client_id) {
       var card = ClientCard({
@@ -677,7 +681,26 @@
     }).open(client_id);
     }
     
-    
+    function updateRealtyRow(r) {
+      var $tr = $('#realtyTable > tbody > tr[data-id="' + r.id + '"]');
+
+      if ($tr.length) {
+        var classes = [Rplus.Table['realty_states'][r.state_code].metadata['icon-class']];            
+        var tag = r.color_tag_id ? '<span style="margin-left: 2px; margin-bottom: 6px;" class="tag-button color-tag-' + r.color_tag_id + ' pull-left"></span>' : '';
+        var photo = r.main_photo_thumbnail ? '<a href="#" data-action="photos-show"><span class="glyphicon glyphicon-camera"></span></a>' : '';
+
+        var xhtml = '<td style="width: 20px;">' + tag + '</td>';
+        xhtml += '<td style="width: 20px;"><span class="glyphicon ' + classes.join(' ') + '"></span><br>' + photo +'<br><br>' + '' + '</td>';
+        xhtml += '<td>' + Rplus.Realty.getDigestEx(r, false) + '</td>';
+        xhtml += '<td style="padding-top: 0px;padding-bottom: 10px;"><span style="font-size: 10px;">' + moment(r.change_date).format("DD.MM.YY HH:mm") + '</span><br>&nbsp;</td>';
+        xhtml += '<td style="width: 42px;">' + '<a style="margin-left: 12px; margin-top: 6px;" href="#" data-action="remove-proposal"><span class="glyphicon spec-label-red glyphicon-minus-sign"></span></a>' + '</td>'
+        $tr.html(xhtml);
+
+        agents_ids[r.id] = r.agent_id;
+        media_export[r.id] = r.export_media;
+      }
+    }
+
     // Open realty object card
     function openRealtyCard(id, background) {
       if (!id) return;
@@ -692,7 +715,7 @@
           
           $.ajax({
             type: 'POST',
-            url: '/api/subscription/set_subscription_realty_state_code',
+            url: '/api/subscription/realty_set_state',
             data: {realty_id: realty_id, subscription_id: subscription_id, state_code: 'shown'}
           })
             .done(function (data, textStatus, jqXHR) {
@@ -704,23 +727,7 @@
         },
         saved: function (r) {
           // Update object row in the table
-          var $tr = $('#realtyTable > tbody > tr[data-id="' + r.id + '"]');
-
-          if ($tr.length) {
-            var classes = [Rplus.Table['realty_states'][r.state_code].metadata['icon-class']];            
-            var tag = r.color_tag_id ? '<span style="margin-left: 2px; margin-bottom: 6px;" class="tag-button color-tag-' + r.color_tag_id + ' pull-left"></span>' : '';
-            var photo = r.main_photo_thumbnail ? '<a href="#" data-action="photos-show"><span class="glyphicon glyphicon-camera"></span></a>' : '';
-
-            var xhtml = '<td style="width: 20px;">' + tag + '</td>';
-            xhtml += '<td style="width: 20px;"><span class="glyphicon ' + classes.join(' ') + '"></span><br>' + photo +'<br><br>' + '' + '</td>';
-            xhtml += '<td>' + Rplus.Realty.getDigestEx(r, false) + '</td>';
-            xhtml += '<td style="padding-top: 0px;padding-bottom: 10px;"><span style="font-size: 10px;">' + moment(r.change_date).format("DD.MM.YY HH:mm") + '</span><br>&nbsp;</td>';
-            xhtml += '<td style="width: 42px;">' + '<a style="margin-left: 12px; margin-top: 6px;" href="#" data-action="remove-proposal"><span class="glyphicon spec-label-red glyphicon-minus-sign"></span></a>' + '</td>'
-            $tr.html(xhtml);
-
-            agents_ids[r.id] = r.agent_id;
-            media_export[r.id] = r.export_media;
-          }
+          updateRealtyRow(r);
         },
         close: function (r) {
           
@@ -788,14 +795,19 @@
       $('[data-filter] > ul > li > a').click(function (e) {
         var $display = $(this).closest('[data-filter]').data('val', $(this).data('val')).find('> a [role="display"]');
         if ($(this).data('type') == 'text') { $display.text($(this).text()) } else { $display.html($(this).html()) };
-        listClients(1);
+
+        if (scroll_type == 0) {
+          listRealty(1);
+        } else {
+          listSubscriptionRealty(subscription_id, 1);
+        }
       });
 
       // Init realty table and menu
       (function () {
         //loadRealtyTableConf();
         //loadHistory();
-        //createContextMenu();
+        createContextMenu();
         /*
         var xhtml = '<tr>',
             xhtml2 = '';
@@ -1233,74 +1245,6 @@
         
         clearRealty();
         updateTreeEntry(client);
-          
-        /*
-        var $selected = $('.tree > tbody > tr.cselected');
-        var $sub_selected = $('.tree > tbody > tr.subselected');
-        var id = $selected.data('id');
-        var client = clients[id];
-          
-        // if query selected - change query
-        if($sub_selected.length > 0) {
-          var subscription_id = $('.subselected').data('subscription');          
-          var subscription;
-          for(var si in client.subscriptions) {
-            subscription = client.subscriptions[si];
-            if (subscription.id == subscription_id) {
-              subscription.client_id = id;
-              subscription.queries = [q];
-              break;
-            }
-          }
-          $.ajax({
-            type: "POST",
-            url: "/api/subscription/save",
-            data: subscription,
-            async: false,
-            success: function (data, textStatus, jqXHR) {
-              subscription.id = data.id;
-            },
-            error: function (jqXHR, textStatus, errorThrown) {},
-          });
-          $.ajax({
-            type: "POST",
-            url: "/api/subscription/realty_clear_list",
-            data: {subscription_id: subscription.id},
-            async: false,
-            success: function (data, textStatus, jqXHR) {},
-            error: function (jqXHR, textStatus, errorThrown) {},
-          });
-          
-          updateTreeEntry(client);
-          clearRealty();
-        } else if ($selected.length > 0) {
-          var subscription = {
-            id: null,
-            client_id: id,
-            queries: [q],
-            offer_type_code: offerTypeCode,
-            realty_limit: 0,
-            send_owner_phone: false,
-            end_date: moment().add('days', 14).format('YYYY-MM-DDTHH:mm:ssZZ'),
-          };
-          
-          client.subscriptions.push(subscription);
-          
-          $.ajax({
-            type: "POST",
-            url: "/api/subscription/save",
-            data: subscription,
-            async: false, // (!)
-            success: function (data, textStatus, jqXHR) {
-              subscription.id = data.id;
-            },
-            error: function (jqXHR, textStatus, errorThrown) {},
-          });
-          
-          clearRealty();
-          updateTreeEntry(client);
-        }
-        */
       });
 
       // Create ClientCard
@@ -1400,13 +1344,7 @@
               if (data.status == 'success') {
                 var r = data.realty;
                 // Update row data in realty table
-                for (var j = 0; j < realtyTableConf.fields.length; j++) {
-                  var f = realtyTableConf.fields[j];
-                  $('td:nth-child(' + (j + 1) + ')', $this).html(f.val(r));
-                }
-                agents_ids[r.id] = agentId;
-                $this.removeClass('selected').addClass('modified');
-                last_event_id.push(data.event_id);
+                updateRealtyRow(r);
               }
             })
           ;
@@ -1430,16 +1368,7 @@
                 if (data.status == 'success') {
                   var r = data.realty;
                   // Update row data in realty table
-                  for (var j = 0; j < realtyTableConf.fields.length; j++) {
-                    var f = realtyTableConf.fields[j];
-                    $('td:nth-child(' + (j + 1) + ')', $this).html(f.val(r));
-                  }
-                  if(r.state_code == 'deleted') {
-                      $this.removeClass('selected').removeClass('modified').removeClass('opened').removeClass('shown').addClass('deleted');
-                  } else {
-                      $this.removeClass('selected').removeClass('deleted').addClass('modified');
-                  }
-                  last_event_id.push(data.event_id);
+                  updateRealtyRow(r);
                 }
               });
           }
@@ -1462,11 +1391,9 @@
               if (data.status == 'success') {
                 var r = data.realty;
                 // Update row data in realty table
-                for (var j = 0; j < realtyTableConf.fields.length; j++) {
-                  var f = realtyTableConf.fields[j];
-                  $('td:nth-child(' + (j + 1) + ')', $this).html(f.val(r));
-                }
-                last_event_id.push(data.event_id);
+
+                updateRealtyRow(r);
+                
               }
             });
         });
@@ -1499,13 +1426,7 @@
               if (data.status == 'success') {
                 var r = data.realty;
                 // Update row data in realty table
-                for (var j = 0; j < realtyTableConf.fields.length; j++) {
-                  var f = realtyTableConf.fields[j];
-                  $('td:nth-child(' + (j + 1) + ')', $this).html(f.val(r));
-                }
-                media_export[id] = export_array;
-                $this.removeClass('selected').addClass('modified');
-                last_event_id.push(data.event_id);
+                updateRealtyRow(r);
               }
             }).fail(function (jqXHR, textStatus, errorThrown) {
                

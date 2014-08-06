@@ -198,7 +198,7 @@
   <div class="help-window hidden">
   </div>
 
-  <div class="indicator-ajax invisible" style="position: absolute; top: 66%; left: 50%; margin-top: -20px; margin-left: -20px; z-index: 1000;">
+  <div class="indicator-ajax invisible" style="position: absolute; top: 50%; left: 50%; margin-top: -20px; margin-left: -20px; z-index: 1000;">
     <div style="background-color: #fff; border-radius: 50%;">
       <img style="width: 40px;" src="<%= $assets_url%>/loading-blue.gif">
     </div>
@@ -256,7 +256,7 @@
                 <li><a href="/configuration/users"><span class="glyphicon glyphicon-user"></span> <%= ucfloc q{users} %></a></li>
               % }
               % if (has_permission(realty=> 'export')) {
-                <li><a href="/configuration/import"><span class="glyphicon glyphicon-import"></span> <%= ucfloc q{import} %></a></li>
+                <li><a href="/configuration/import"><span class="glyphicon glyphicon-import"></span> <%= ucfloc q{objects import} %></a></li>
                 <li><a href="/configuration/export"><span class="glyphicon glyphicon-export"></span> <%= ucfloc q{advertisement} %></a></li>
                 <li><a href="/configuration/notifications"><span class="glyphicon glyphicon-send"></span> <%= ucfloc q{notifications} %></a></li>
               % }              

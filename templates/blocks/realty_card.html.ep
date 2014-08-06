@@ -1093,8 +1093,8 @@
 
           <div class="cardheader mainheader">
             <div class="input-group ccard-input-group">
-              <span class="rcard-input-group-addon glyphicon glyphicon-tag"></span>
-              <p>Экспорт</p>
+              <span class="rcard-input-group-addon glyphicon glyphicon-export"></span>
+              <p> <%= ucfloc q{advertisement} %></p>
             </div>
           </div>
 

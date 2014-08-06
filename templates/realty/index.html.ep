@@ -288,7 +288,7 @@
         {id: "source", name: "<%= ucfloc 'import' %>", sortName: "source_media.name", visible: false, val: function (r) {
           return r.source_media_id ? Rplus.Table['media'][r.source_media_id].name : '';
         }},
-        {id: "export", name: "<%= ucfloc 'export' %>", visible: false, val: function (r) {
+        {id: "export", name: "<%= ucfloc q{advertisement} %>", visible: false, val: function (r) {
           return r.export_media ? r.export_media.map(function (x) { return Rplus.Table['media'][x] ? Rplus.Table['media'][x].name : x; }).join('<br>') : '';
         }},
         
@@ -504,7 +504,7 @@
         ]},
         % }
         {text: '<span class="glyphicon glyphicon-cog"></span> Задача'},
-        {text: '<span class="glyphicon glyphicon-comment"></span>  <%= ucfloc 'export' %>', element_id: 'el_export', subMenu: [
+        {text: '<span class="glyphicon glyphicon-export"></span>  <%= ucfloc q{advertisement} %>', element_id: 'el_export', subMenu: [
           % my $loc_id = $self->session('user')->{location_id};      # костыль!
           % for my $x (@{Rplus::Model::Media::Manager->get_objects(query => [type => 'export', delete_date => undef])}) {
           % next if $loc_id == 2 && ($x->id == 2 || $x->id == 3);
