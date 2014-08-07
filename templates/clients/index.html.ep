@@ -1384,8 +1384,8 @@
           var id = $this.data('id');
           $.ajax({
             type: "POST",
-            url: "/api/realty/update_color_tag",
-            data: {realty_id: id, color_tag_id: new_tag_id}
+            url: "/api/realty/update",
+            data: {id: id, color_tag_id: new_tag_id}
           })
             .done(function (data, textStatus, jqXHR) {
               if (data.status == 'success') {
