@@ -54,8 +54,13 @@ my $_serialize = sub {
             sr_state_code => $realty->{sr_state_code},    # sr_state_code это не колонка в таблице ! найти другой способ передать его сюда
         };
 
-        if ($realty->color_tags) {
-            $x->{color_tag_id} = $realty->color_tags->[0]->{color_tag_id};
+        if($realty->color_tags) {
+            foreach($realty->color_tags) {
+                if ($_->{user_id} == $self->stash('user')->{id}) {
+                    $x->{color_tag_id} = $_->{color_tag_id};
+                    last;
+                }
+            }
         }
 
         # Exclude fields for read permission "2"

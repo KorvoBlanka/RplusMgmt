@@ -60,7 +60,9 @@ my $_serialize = sub {
         $x->{reference} = $vals->{'reference'};
 
         if($realty->color_tags) {
-            $x->{color_tag_id} = $realty->color_tags->[0]->{color_tag_id};
+            foreach($realty->color_tags) {
+                $x->{color_tag_id} = $_->{color_tag_id} if $_->{user_id} == $self->stash('user')->{id};
+            }
         }
 
         # Exclude fields for read permission "2"
@@ -206,8 +208,9 @@ sub list {
     my @query;
     {
         if ($color_tag_id ne 'any') {
-            push @query, 'color_tags.color_tag_id' => $color_tag_id;
-            push @query, 'color_tags.user_id' => $self->stash('user')->{id};
+            push @query, and => [
+                'color_tags.color_tag_id' => $color_tag_id,
+                'color_tags.user_id' => $self->stash('user')->{id}];
         }
           
         if ($state_code ne 'any') { push @query, state_code => $state_code } else { push @query, '!state_code' => 'deleted' };
@@ -517,45 +520,6 @@ sub save {
     $self->render(json => $res);
 }
 
-sub update_color_tag {
-    my $self = shift;
-
-    my $realty_id = $self->param('realty_id');
-    my $user_id = $self->stash('user')->{id};
-    my $ct_id = $self->param('color_tag_id');
-    
-    my $realty = Rplus::Model::Realty::Manager->get_objects(query => [id => $realty_id, delete_date => undef])->[0];
-    return $self->render(json => {error => 'Not Found'}, status => 404) unless $realty;
-
-    my $color_tag;
-    
-    # Save data
-    $color_tag = Rplus::Model::ColorTag::Manager->get_objects(query => [realty_id => $realty_id, user_id => $user_id,])->[0];
-    if ($color_tag) {
-        if ($ct_id != $color_tag->color_tag_id) {
-          $color_tag->color_tag_id($ct_id);
-        } else {
-          $color_tag->color_tag_id(undef);
-        }
-        $color_tag->save(changes_only => 1);
-    } else {
-        $color_tag = Rplus::Model::ColorTag->new(
-            realty_id => $realty_id,
-            user_id => $user_id,
-            color_tag_id => $ct_id,
-        );
-        $color_tag->save(insert => 1);
-    }
-
-    my $res = {
-        status => 'success',
-        id => $realty->id,
-        realty => $_serialize->($self, $realty),
-    };
-
-    return $self->render(json => $res);
-}
-
 sub update {
     my $self = shift;
 
@@ -567,6 +531,7 @@ sub update {
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $realty;
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => write => $realty->agent_id) || $self->has_permission(realty => 'write')->{can_assign} && $realty->agent_id == undef;
 
+    my $user_id = $self->stash('user')->{id};
     # Available fields to set: agent_id, state_code
     for ($self->param) {
         if ($_ eq 'agent_id') {
@@ -586,10 +551,22 @@ sub update {
             return $self->render(json => {error => 'Forbidden'}, status => 403) if $realty->agent_id == 10000 && $self->param('state_code') eq 'work';
             $realty->state_code(scalar $self->param('state_code'));
         } elsif ($_ eq 'color_tag_id') {
-            if ($self->param('color_tag_id') eq '') {
-                $realty->color_tag_id(undef);
+            my $color_tag_id = $self->param('color_tag_id');
+            my $color_tag = Rplus::Model::ColorTag::Manager->get_objects(query => [realty_id => $realty->id, user_id => $user_id,])->[0];
+            if ($color_tag) {
+                if ($color_tag_id != $color_tag->color_tag_id) {
+                  $color_tag->color_tag_id($color_tag_id);
+                } else {
+                  $color_tag->color_tag_id(undef);
+                }
+                $color_tag->save(changes_only => 1);
             } else {
-                $realty->color_tag_id(scalar $self->param('color_tag_id'));
+                $color_tag = Rplus::Model::ColorTag->new(
+                    realty_id => $realty->id,
+                    user_id => $user_id,
+                    color_tag_id => $color_tag_id,
+                );
+                $color_tag->save(insert => 1);
             }
         } elsif ($_ eq 'export_media[]') {
             my $export_media_ok = Rplus::DB->new_or_cached->dbh->selectall_hashref(q{SELECT M.id, M.name FROM media M WHERE M.type = 'export' AND M.delete_date IS NULL}, 'id');
