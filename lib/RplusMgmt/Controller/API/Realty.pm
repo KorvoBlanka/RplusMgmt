@@ -61,7 +61,10 @@ my $_serialize = sub {
 
         if($realty->color_tags) {
             foreach($realty->color_tags) {
-                $x->{color_tag_id} = $_->{color_tag_id} if $_->{user_id} == $self->stash('user')->{id};
+                if ($_->{user_id} == $self->stash('user')->{id}) {
+                    $x->{color_tag_id} = $_->{color_tag_id};
+                    last;
+                }
             }
         }
 

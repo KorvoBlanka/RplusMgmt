@@ -734,84 +734,82 @@
         <a href="#" class="ctrl-button pull-right emode-btn hidden" data-action="realty-save">Готово</a>
       </div>
       <div class="modal-body" id="realty-card-body">       
-        <div id="realty-main" class="main col-md-12" style="padding: 0px;">
-        
-        <div id="view-group" class="smode-btn" style="margin-top: 10px;">
-        
-          <div class="form-group view-group">
-            <label class="col-md-4 col-lg-4 control-label view-label">Улица/Район</label>
-            <div class="col-md-8 col-lg-8" style="padding-top: 5px;">
-              <p class="form-control-static text-left"><span class="" data-name="dg_p1"></span></p>
+        <div id="realty-main" class="main col-md-12 smode-btn" style="padding: 0px;">
+          <div id="view-group" class="" style="margin-top: 10px;">
+            <div class="form-group view-group">
+              <label class="col-md-4 col-lg-4 control-label view-label">Улица/Район</label>
+              <div class="col-md-8 col-lg-8" style="padding-top: 5px;">
+                <p class="form-control-static text-left"><span class="" data-name="dg_p1"></span></p>
+              </div>
             </div>
-          </div>
 
-          <div class="form-group view-group">
-            <label class="col-md-4 col-lg-4 control-label view-label">Планировка/Тип</label>
-            <div class="col-md-8 col-lg-8" style="padding-top: 5px;">
-              <p class="form-control-static text-left"><span class="" data-name="dg_p2"></span></p>
+            <div class="form-group view-group">
+              <label class="col-md-4 col-lg-4 control-label view-label">Планировка/Тип</label>
+              <div class="col-md-8 col-lg-8" style="padding-top: 5px;">
+                <p class="form-control-static text-left"><span class="" data-name="dg_p2"></span></p>
+              </div>
             </div>
-          </div>
 
-          <div class="form-group view-group">
-            <label class="col-md-4 col-lg-4 control-label view-label">Комнаты/Этаж</label>
-            <div class="col-md-8 col-lg-8" style="padding-top: 5px;">
-              <p class="form-control-static text-left"><span class="" data-name="dg_p3"></span></p>
+            <div class="form-group view-group">
+              <label class="col-md-4 col-lg-4 control-label view-label">Комнаты/Этаж</label>
+              <div class="col-md-8 col-lg-8" style="padding-top: 5px;">
+                <p class="form-control-static text-left"><span class="" data-name="dg_p3"></span></p>
+              </div>
             </div>
-          </div>
 
-          <div class="form-group view-group">
-            <label class="col-md-4 col-lg-4 control-label view-label">Состояние</label>
-            <div class="col-md-8 col-lg-8" style="padding-top: 5px;">
-              <p class="form-control-static text-left"><span class="" data-name="dg_p4"></span></p>
+            <div class="form-group view-group">
+              <label class="col-md-4 col-lg-4 control-label view-label">Состояние</label>
+              <div class="col-md-8 col-lg-8" style="padding-top: 5px;">
+                <p class="form-control-static text-left"><span class="" data-name="dg_p4"></span></p>
+              </div>
             </div>
-          </div>
-  
-          <div class="form-group view-group">
-            <label class="col-md-4 col-lg-4 control-label view-label">Балконы/Ванные</label>
-            <div class="col-md-8 col-lg-8" style="padding-top: 5px;">
-              <p class="form-control-static text-left"><span class="" data-name="dg_p5"></span></p>
+    
+            <div class="form-group view-group">
+              <label class="col-md-4 col-lg-4 control-label view-label">Балконы/Ванные</label>
+              <div class="col-md-8 col-lg-8" style="padding-top: 5px;">
+                <p class="form-control-static text-left"><span class="" data-name="dg_p5"></span></p>
+              </div>
             </div>
-          </div>
 
-          <div class="form-group view-group">
-            <label class="col-md-4 col-lg-4 control-label view-label">Площадь</label>
-            <div class="col-md-8 col-lg-8" style="padding-top: 5px;">
-              <p class="form-control-static text-left"><span class="" data-name="dg_p6"></span></p>
+            <div class="form-group view-group">
+              <label class="col-md-4 col-lg-4 control-label view-label">Площадь</label>
+              <div class="col-md-8 col-lg-8" style="padding-top: 5px;">
+                <p class="form-control-static text-left"><span class="" data-name="dg_p6"></span></p>
+              </div>
             </div>
-          </div>
 
-          <div class="form-group view-group">
-            <label class="col-md-4 col-lg-4 control-label view-label">Описание</label>
-            <div class="col-md-8 col-lg-8" style="padding-top: 5px;">
-              <p class="form-control-static text-left"><span class="" data-name="dg_p7"></span></p>
-            </div>
-          </div>          
+            <div class="form-group view-group">
+              <label class="col-md-4 col-lg-4 control-label view-label">Описание</label>
+              <div class="col-md-8 col-lg-8" style="padding-top: 5px;">
+                <p class="form-control-static text-left"><span class="" data-name="dg_p7"></span></p>
+              </div>
+            </div>          
 
-          <div class="form-group view-group">
-            <label class="col-md-4 col-lg-4 control-label view-label">Цена</label>
-            <div class="col-md-8 col-lg-8" style="padding-top: 5px;">
-              <p class="form-control-static text-left"><span class="" data-name="dg_p8"></span></p>
+            <div class="form-group view-group">
+              <label class="col-md-4 col-lg-4 control-label view-label">Цена</label>
+              <div class="col-md-8 col-lg-8" style="padding-top: 5px;">
+                <p class="form-control-static text-left"><span class="" data-name="dg_p8"></span></p>
+              </div>
             </div>
-          </div>
-          
-          <div class="form-group view-group">
-            <label class="col-md-4 col-lg-4 control-label view-label" id="dg_p9_label">Агент</label>
-            <div class="col-md-8 col-lg-8" style="padding-top: 5px;">
-              <p class="form-control-static text-left"><span class="" data-name="dg_p9"></span></p>
+            
+            <div class="form-group view-group">
+              <label class="col-md-4 col-lg-4 control-label view-label" id="dg_p9_label">Агент</label>
+              <div class="col-md-8 col-lg-8" style="padding-top: 5px;">
+                <p class="form-control-static text-left"><span class="" data-name="dg_p9"></span></p>
+              </div>
             </div>
-          </div>
 
-          <div class="form-group view-group">
-            <label class="col-md-4 col-lg-4 control-label view-label" id="dg_p9_label"></label>
-            <div class="col-md-8 col-lg-8" style="padding-top: 5px;">
-              <p class="form-control-static text-left">
-                <span class="" id="dg_p_contacts"></span>
-              </p>
+            <div class="form-group view-group">
+              <label class="col-md-4 col-lg-4 control-label view-label" id="dg_p9_label"></label>
+              <div class="col-md-8 col-lg-8" style="padding-top: 5px;">
+                <p class="form-control-static text-left">
+                  <span class="" id="dg_p_contacts"></span>
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div class="form-group view-group">
-            <label class="col-md-4 col-lg-4 control-label view-label">Тэги</label>
+            <div class="form-group view-group">
+              <label class="col-md-4 col-lg-4 control-label view-label">Тэги</label>
               <div class="col-md-8 col-lg-8" style="padding-top: 5px;">
                 <div id="rcard-tag-group" class="tag-group input-group ccard-input-group" style="padding-left: 0px;">
                   <span id="realty-color-tag-1" class="realty-color-tag round-button" style="margin-top: 0px;"></span>
@@ -819,11 +817,9 @@
               </div>
             </div>
           </div>
-
           <div class="form-group view-group">
             <a class="col-md-6 col-lg-6" href="#" target="_blank" id="dg_p_reference">Ссылка на объявление</a>
           </div>
-
         </div>
 
         <div class="form-group view-group smode-btn" style="margin-top: 10px; margin-bottom: 10px;">

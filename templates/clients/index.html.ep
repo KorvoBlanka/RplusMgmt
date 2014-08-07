@@ -431,7 +431,7 @@
         ]},
         % }
         {text: '<span class="glyphicon glyphicon-cog"></span> Задача'},
-        {text: '<span class="glyphicon glyphicon-comment"></span>  <%= ucfloc 'export' %>', element_id: 'el_export', subMenu: [
+        {text: '<span class="glyphicon glyphicon-comment"></span>  <%= ucfloc 'advertisement' %>', element_id: 'el_export', subMenu: [
           % for my $x (@{Rplus::Model::Media::Manager->get_objects(query => [type => 'export', delete_date => undef])}) {
             {text: '<span class="export-check export-check<%= $x->id %> glyphicon glyphicon-ok"></span>&nbsp&nbsp<%= $x->name %>', data_action: 'realty-set-export', data_val: '<%= $x->id %>', },
           % }
@@ -471,7 +471,7 @@
         complete: function () { _listRealty_started = false; }
       })
         .done(function (data, textStatus, jqXHR) {
-          
+
           if (page == 1) {
             $('#realtyTableWrapper').scrollTop(0);
             $('#realtyTable > tbody').html('');
@@ -522,14 +522,13 @@
       var stateCode = '';//$('[data-filter="state_code"]').data('val');
       var offerTypeCode = $('[data-filter="offer_type_code"]').data('val');
       var agentId = $('[data-filter="agent_id"]').data('val');
-      var sortBy = $('#realtyTable').data('sort');
       var colorTagId = $('[data-filter="color_tag_id"]').data('val');
       _listRealty_started = true;
  
       $.ajax({
         type: "POST",
         url: "/api/realty/list",
-        data: {q: q, state_code: stateCode, offer_type_code: offerTypeCode, agent_id: agentId, color_tag_id: colorTagId, sort_by: sortBy, page: page, per_page: 34},
+        data: {q: q, state_code: stateCode, offer_type_code: offerTypeCode, agent_id: agentId, color_tag_id: colorTagId, page: page, per_page: 34},
         complete: function () { _listRealty_started = false; }
       })
         .done(function (data, textStatus, jqXHR) {
@@ -595,12 +594,28 @@
       return xhtml;
     }
     
-    function updateTreeEntry(client) {
-      var $selected = $('[data-id=' + client.id + ']');
-      //var $selected = $('.tree > tbody > tr.cselected');
+    function insertTreeEntry(client) {
+      var $selected = $('.tree > tbody > tr.cselected');
+      $selected.each(function () {
+        $(this).removeClass('cselected');
+      });
+
+      clients[client.id] = client;
+      node_id ++;
+
+      var xhtml = '';
       
+      xhtml += getHtmlForClient(client, 'cselected tree-tmp');
+
+      $('.tree').prepend(xhtml);
+      $('.tree-tmp').treegrid('initNode', settings);
+      $('.tree-tmp').removeClass('tree-tmp');
+    }
+
+    function updateTreeEntry(client, expand) {
       var xhtml = getHtmlForClient(client, 'cselected tree-tmp');
 
+      var $selected = $('[data-id=' + client.id + ']');
       $selected.treegrid('getChildNodes').each(function () {
         $(this).remove();
       });
@@ -609,12 +624,10 @@
       $selected.remove();
       
       $('.tree-tmp').treegrid('initNode', settings);
+      if (expand) {
+        $('.tree-tmp').treegrid('expand');
+      }
       $('.tree-tmp').removeClass('tree-tmp');
-      
-      $selected = $('.tree > tbody > tr.cselected');
-      $selected.each(function () {
-        $(this).treegrid('expand');
-      });
     }    
     
     var node_id = 0;
@@ -676,6 +689,7 @@
       var card = ClientCard({
       saved: function (client) {
         updateTreeEntry(client);
+        card.close();
       },
       
     }).open(client_id);
@@ -719,8 +733,7 @@
             data: {realty_id: realty_id, subscription_id: subscription_id, state_code: 'shown'}
           })
             .done(function (data, textStatus, jqXHR) {
-              var t =  $('#objectsCount').text();
-              $('#objectsCount').text(t - 1);
+
             })
           ;
           
@@ -785,7 +798,40 @@
         .bind('keydown', function (e) {
           if (e.which == 13) {
             $('#searchQuery').typeahead('close');
-            listRealty(1);
+            
+            var $selected = $('.tree > tbody > tr.subselected');
+            if ($selected.length == 0) {
+              listRealty(1);
+            } else {
+
+              var q = $('#searchQuery').val();
+              var subscription_id = $('.subselected').data('subscription');
+              var client_id = $('.tree > tbody > tr.cselected').data('id');
+
+              console.log(client_id);
+
+              $.ajax({
+                type: "POST",
+                url: "/api/subscription/update",
+                data: {id: subscription_id, queries: [q]},
+                async: false,
+                success: function (data2, textStatus2, jqXHR2) {},
+                error: function (jqXHR2, textStatus2, errorThrown2) {},
+              });
+
+              listSubscriptionRealty(subscription_id, 1);
+              
+
+              for (var i = 0; i < clients[client_id].subscriptions.length; i++) {
+                var subscription = clients[client_id].subscriptions[i];
+                console.log(subscription);
+                if (subscription.id == subscription_id) {
+                  subscription.queries = [q];
+                }
+              }
+
+              updateTreeEntry(clients[client_id], true);
+            }
           }
         });
 
@@ -795,7 +841,6 @@
       $('[data-filter] > ul > li > a').click(function (e) {
         var $display = $(this).closest('[data-filter]').data('val', $(this).data('val')).find('> a [role="display"]');
         if ($(this).data('type') == 'text') { $display.text($(this).text()) } else { $display.html($(this).html()) };
-
         if (scroll_type == 0) {
           listRealty(1);
         } else {
@@ -805,23 +850,7 @@
 
       // Init realty table and menu
       (function () {
-        //loadRealtyTableConf();
-        //loadHistory();
         createContextMenu();
-        /*
-        var xhtml = '<tr>',
-            xhtml2 = '';
-        for (var i = 0; i < realtyTableConf.fields.length; i++) {
-          var f = realtyTableConf.fields[i];
-          xhtml += '<th class="' + (!f.visible ? 'hidden' : '') + '" data-index="' + i + '" data-sortable="' + (f.sortName ? 'true' : 'false') + '">' +
-                      f.name + (f.sortName ? '&nbsp;<span class="pull-right hidden glyphicon glyphicon-arrow-down" data-order="asc"></span><span class="pull-right hidden glyphicon glyphicon-arrow-up" data-order="desc"></span>' : '') +
-                   '</th>';
-          xhtml2 += '<li><a href="#" data-index="' + i + '"><span class="glyphicon glyphicon-ok" style="visibility: ' + (f.visible ? 'visible' : 'hidden') + '"></span> ' + (f.menuName || f.name) + '</a></li>';
-        }
-        xhtml += '</tr>';
-        $('#realtyTable > thead').html(xhtml);
-        $('#realtyTableMenu').html(xhtml2);
-        */
       })();
 
       // Infinite scrolling
@@ -954,7 +983,14 @@
         $('.tree').on('mouseup', 'tr.client-node', function (e) {
           if (hasTouch()) return;
           var $this = $(this);
-          var $selected = $('.tree > tbody > tr.cselected');
+
+          var $selected = $('.tree > tbody > tr.subselected');
+          $selected.each(function () {
+            var $this = $(this);
+              $this.removeClass('subselected');
+          });
+
+          $selected = $('.tree > tbody > tr.cselected');
           if ($selected.data('id') == $(this).data('id')) {
             return;
           }
@@ -1052,7 +1088,6 @@
               case 1:   // lmb
                 var sel_idx = $this.index();
                 if (cmd_down || e.ctrlKey) { // Add/remove clicked element to/from selection
-                  //if (!$this.hasClass('opened')) {
                   {
                     $this.toggleClass('selected');
                     if ($this.hasClass('selected')) {
@@ -1180,7 +1215,6 @@
         
         for(var si in client.subscriptions) {
           var subscription = client.subscriptions[si];
-          console.log(subscription.id + '|' + subscription_id)
           if (subscription.id == subscription_id) {
             client.subscriptions.splice(si, 1);
             break;
@@ -1197,7 +1231,7 @@
         });
         
         clearRealty();
-        updateTreeEntry(client);
+        updateTreeEntry(client, true);
         return false;
       });
       
@@ -1244,7 +1278,7 @@
         });
         
         clearRealty();
-        updateTreeEntry(client);
+        updateTreeEntry(client, true);
       });
 
       // Create ClientCard
@@ -1258,14 +1292,11 @@
         var card = ClientCard({
           saved: function (client) {
             if (!saved) {
-              var xhtml = getHtmlForClient(client, '');
-              $('.cselected').removeClass('cselected');
-              $('.tree').prepend(xhtml);
-              $('.tree-tmp').treegrid('initNode', settings);
-              $('.tree-tmp').removeClass('tree-tmp');            
-              $('.treegrid-' + node_id).treegrid('expand');
+              insertTreeEntry(client);
+              card.close();
             } else {
-              updateTreeEntry(client);
+              updateTreeEntry(client, true);
+              card.close();
             }
             saved = true;
           },
@@ -1280,7 +1311,7 @@
           var cid = $this.data('id');
           var card = ClientCard({
             saved: function (client) {
-              updateTreeEntry(client);
+              updateTreeEntry(client, false);
             },
           }).open(cid);
         });
@@ -1391,9 +1422,7 @@
               if (data.status == 'success') {
                 var r = data.realty;
                 // Update row data in realty table
-
                 updateRealtyRow(r);
-                
               }
             });
         });
@@ -1507,7 +1536,7 @@
             
             $.ajax({
               type: 'POST',
-              url: '/api/subscription/set_subscription_realty_state_code',
+              url: '/api/subscription/realty_set_state',
               data: {realty_id: realty_id, subscription_id: subscription_id, state_code: 'del'}
             })
               .done(function (data, textStatus, jqXHR) {
@@ -1652,6 +1681,7 @@
       <div class="navbar-right">
         <ul class="nav navbar-nav">
           <li><a href="#" data-action="realty-geo"><span class="glyphicon glyphicon-globe"></span> <%= ucfloc 'geo' %></a></li>
+
           <!-- Color tag filter -->
           <li class="dropdown" data-filter="color_tag_id" data-val="">
             <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span role="display"><span class="glyphicon glyphicon-tags"></span>&nbsp&nbspВсе</span> <b class="caret"></b></a>
@@ -1665,25 +1695,27 @@
 
           <!-- Agent filter -->
           <li class="dropdown" data-filter="agent_id" data-val="">
-            <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-user"></span> <span role="display"><%= ucfloc 'any' %> <b class="caret"></b></span></a>
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-user"></span><span role="display"><%= ucfloc 'any' %></span> <b class="caret"></b></a>
             <ul class="dropdown-menu">
               % if (has_permission(realty => 'read')->{nobody} || has_permission(realty => 'read')->{others}) {
               <li><a href="#" data-val="" data-type="text"><strong><%= ucfloc 'any' %></strong></a></li>
               % }
               % if (has_permission(realty => 'read')->{nobody}) {
-              <li><a href="#" data-val="nobody" data-type="text"><strong><%= ucfloc 'nobody' %></strong></a></li>
+              <li><a href="#" data-val="nobody" data-type="text"><strong>Не назначено</strong></a></li>
               % }
               % if (has_permission(realty => 'read')->{others}) {
               <li><a href="#" data-val="all" data-type="text"><strong><%= ucfloc 'all agents' %></strong></a></li>
+              <li><a href="#" data-val="10000" data-type="text"><strong> Посредник</strong></a></li>
+              <li><a href="#" data-val="not_med" data-type="text"><strong> Собственник</strong></a></li>
               % }
               % for my $x (@{Rplus::Model::User::Manager->get_objects(query => [role => ['agent', 'agent_ext', 'manager'], delete_date => undef], sort_by => 'name')}) {
-                % if (has_permission(realty => read => $x->id)) {
+                % if (has_permission(realty => read => $x->id) && $x->id != 10000) {
                 <li><a href="#" data-val="<%= $x->id %>" data-type="text"><%= $x->name %></a></li>
                 % }
               % }
             </ul>
           </li>
-
+        </ul>
         <p class="navbar-text">
           <span class="text-primary"><%= ucfloc 'found' %></span> <span class="text-primary" id="objectsCount">0</span>
         </p>

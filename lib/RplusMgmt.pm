@@ -72,7 +72,7 @@ sub startup {
     $self->helper(session_check => sub {
         my ($self, $login) = @_;
 
-        return 1 if 1;  # if dev
+        return 1 if 0;  # if dev
 
         my $acc_data = $self->get_acc_data();
         my $max_users = $acc_data->{user_count} * 1;
@@ -309,7 +309,7 @@ sub startup {
     $r->route('/api/:controller')->bridge->to(cb => sub {
         my $self = shift;
 
-        return 1 if $self->stash('user') && $self->session_check($self->session->{'user'}->{login});
+        return 1 if $self->stash('user') && $self->session_check($self->session->{'user'}->{id});
         $self->render(json => {error => 'Unauthorized'}, status => 401);
         return undef;
     })->route('/:action')->to(namespace => 'RplusMgmt::Controller::API');

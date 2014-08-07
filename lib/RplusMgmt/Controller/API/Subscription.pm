@@ -13,6 +13,7 @@ use Rplus::Model::Photo::Manager;
 use Rplus::Model::ColorTag;
 use Rplus::Model::ColorTag::Manager;
 
+
 use JSON;
 use Mojo::Util qw(trim);
 use Mojo::Collection;
@@ -51,7 +52,7 @@ my $_serialize = sub {
             sublandmark => $realty->sublandmark ? {id => $realty->sublandmark->id, name => $realty->sublandmark->name} : undef,
             main_photo_thumbnail => undef,
             mediator_company => ($realty->mediator_company && $realty->agent_id == 10000) ? $realty->mediator_company->name : '',
-            sr_state_code => $realty->{sr_state_code},    # sr_state_code это не колонка в таблице ! найти другой способ передать его сюда
+            sr_state_code => $realty->{sr_state_code},
         };
 
         if($realty->color_tags) {
@@ -231,12 +232,8 @@ sub realty_set_state {
 
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $realty_record;
 
-    if ($state_code eq 'del') {
-        $realty_record->delete_date('now()');
-    } else {
-        $realty_record->state_code($state_code);
-    }
-    $realty_record->save();
+    $realty_record->state_code($state_code);
+    $realty_record->save(changes_only => 1);
 
     return $self->render(json => {status => 'success', id => $realty_record->id});
 }
@@ -277,11 +274,26 @@ sub realty_list {
         realty_update($self, $subscription->id);
     }
 
-    my @query;
+    my @query; 
     {
-        push @query, subscription_id => $subscription->id;
+        push @query, 'subscription_id' => $subscription->id;
         if ($sr_state_code ne 'any') {
-            push @query, state_code => $sr_state_code;
+            push @query, 'state_code' => $sr_state_code;
+        }
+        if ($agent_id ne 'any') {
+            if ($agent_id eq 'nobody' && $self->has_permission(realty => 'read')->{nobody}) {
+                push @query, 'realty.agent_id' => undef;
+            } elsif ($agent_id eq 'all' && $self->has_permission(realty => 'read')->{others}) {
+                push @query, and => ['!realty.agent_id' => undef, '!realty.agent_id' => 10000];
+            } elsif ($agent_id eq 'not_med') {
+                push @query, or => ['!realty.agent_id' => 10000, 'realty.agent_id' => undef];
+            } elsif ($agent_id =~ /^\d+$/ && $self->has_permission(realty => read => $agent_id)) {
+                push @query, 'realty.agent_id' => $agent_id;
+            }
+        }
+        if ($color_tag_id ne 'any') {
+            push @query, 'color_tag.color_tag_id' => $color_tag_id;
+            push @query, 'color_tag.user_id' => $self->stash('user')->{id};
         }
     }
 
@@ -292,55 +304,40 @@ sub realty_list {
         per_page => $per_page,
     };
 
-    my $subscription_realty_iter = Rplus::Model::SubscriptionRealty::Manager->get_objects_iterator(
-        query => [@query, delete_date => undef,],
-    );
-
-    my %realty_ids;
-    while (my $subscription_realty = $subscription_realty_iter->next) {
-        $realty_ids{$subscription_realty->realty_id} = $subscription_realty->state_code;
-    }
-
-    my @realty_query; 
-    {
-        push @realty_query, id => [keys %realty_ids];
-        if ($agent_id ne 'any') {
-            push @realty_query, agent_id => $agent_id;
-        }
-        if ($color_tag_id ne 'any') {
-            push @realty_query, 'color_tags.color_tag_id' => $color_tag_id;
-            push @realty_query, 'color_tags.user_id' => $self->stash('user')->{id};
-        }
-    }
-
-    my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
-        select => ['realty.*', (map { 'address_object.'.$_ } qw(id name short_type expanded_name metadata))],
+    my $realty_iter = Rplus::Model::SubscriptionRealty::Manager->get_objects_iterator(
+        select => ['subscription_realty.id', 'subscription_realty.state_code', 'realty.*'],
         query => [
-            @realty_query,
+            @query,
             delete_date => undef,
+            '!state_code' => 'del',
         ],
-        with_objects => ['address_object', 'sublandmark', 'color_tags', 'mediator_company'],
+        with_objects => ['realty', 'color_tag'],
+        sort_by => 'subscription_realty.state_code ASC, realty.last_seen_date DESC',
         page => $page,
         per_page => $per_page,
     );
 
+    my $count = Rplus::Model::SubscriptionRealty::Manager->get_objects_count(
+        query => [
+            subscription_id => $subscription->id,
+            delete_date => undef,
+            '!state_code' => 'del',
+        ],
+    );
+    $res->{count} = $count;
+
     my $realty_objs = [];
     while (my $realty = $realty_iter->next) {
-        
-        #my $x = {
-        #    sr_state_code => 'new'; #$realty->subscrion_realty->state_code,
-        #};
-        $realty->{sr_state_code} = $realty_ids{$realty->id};
-        push @{$realty_objs}, $realty;
-        
-        #if ($realty_id->state_code eq 'new') {
-        #  $realty_id->state_code('old');
-        #  $realty_id->save(changes_only => 1);
-        #}        
+        $realty->realty->{sr_state_code} = $realty->state_code;
+        push @{$realty_objs}, $realty->realty;
+        if ($realty->state_code eq 'new') {
+            $realty->state_code('old');
+            $realty->save(changes_only => 1);
+        }
     }
 
     $res->{list} = [$_serialize->($self, $realty_objs)];
-    
+
     return $self->render(json => $res);
 }
 
@@ -382,6 +379,33 @@ sub realty_update {
             Rplus::DB->new_or_cached->dbh->do("INSERT INTO subscription_realty (subscription_id, realty_id) VALUES $values_str;");
         }
     }
+}
+
+sub update {
+    my $self = shift;
+
+    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(subscriptions => 'write');    
+
+    my $id = $self->param('id');
+    my $subscription = Rplus::Model::Subscription::Manager->get_objects(query => [id => $id, '!end_date' => undef, delete_date => undef])->[0];
+
+    return $self->render(json => {error => 'Not Found'}, status => 404) unless $subscription;
+
+    my $queries = Mojo::Collection->new($self->param('queries[]'))->map(sub { trim $_ })->compact->uniq;
+    $subscription->queries($queries);
+    $subscription->save(changes_only => 1);
+
+    my $num_rows_updated = Rplus::Model::SubscriptionRealty::Manager->update_objects(
+        set => {delete_date => \'now()'},
+        where => [
+            subscription_id => $subscription->id,
+            delete_date => undef,
+        ],
+    );
+
+    realty_update($self, $subscription->id);
+
+    return $self->render(json => {status => 'success', id => $subscription->id});
 }
 
 sub save {

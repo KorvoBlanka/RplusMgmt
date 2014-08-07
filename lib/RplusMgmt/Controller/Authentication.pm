@@ -10,7 +10,7 @@ use JSON;
 sub auth {
     my $self = shift;
 
-    return 1 if $self->stash('user') && $self->stash('user')->{'id'} && $self->session_check($self->session->{'user'}->{login});
+    return 1 if $self->stash('user') && $self->stash('user')->{'id'} && $self->session_check($self->session->{'user'}->{id});
 
     $self->render(template => 'authentication/signin');
     return undef;
@@ -28,12 +28,11 @@ sub signin {
     return $self->render(json => {status => 'failed', reason => 'no_data'}) unless $login && defined $password;
 
     my $user = Rplus::Model::User::Manager->get_objects(query => [login => $login, password => $password, delete_date => undef])->[0];
-    return $self->render(json => {status => 'failed', reason => 'not_found'}) unless $user;
 
+    return $self->render(json => {status => 'failed', reason => 'not_found'}) unless $user;
     return $self->render(json => {status => 'failed', reason => 'not_found'}) unless $acc_data;
     return $self->render(json => {status => 'failed', reason => 'no_money'}) if $acc_data->{blocked} == 1;
-
-    return $self->render(json => {status => 'failed', reason => 'user_limit'}) if $self->log_in_check($acc_data->{user_count} * 1, $login) == 0;
+    return $self->render(json => {status => 'failed', reason => 'user_limit'}) if $self->log_in_check($acc_data->{user_count} * 1, $user->id) == 0;
 
     $self->session->{'user'} = {
         id => $user->id,
@@ -56,7 +55,7 @@ sub signin {
         $self->session(expiration => 3600); # default expiration
     }
 
-    $self->log_in($login);
+    $self->log_in($user->id);
 
     return $self->render(json => {status => 'success'});
 }
@@ -64,7 +63,7 @@ sub signin {
 sub signout {
     my $self = shift;
 
-    $self->log_out($self->session->{'user'}->{login});
+    $self->log_out($self->session->{'user'}->{id});
 
     delete $self->session->{'user'};
 

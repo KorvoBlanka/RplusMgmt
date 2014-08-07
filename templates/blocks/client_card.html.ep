@@ -607,7 +607,7 @@
       $.ajax({
         type: "POST",
         url: "/api/subscription/realty_list",
-        data: {subscription_id: subscription_id, state_code: 'offered', page: page, per_page: 100},
+        data: {subscription_id: subscription_id, sr_state_code: 'offered', page: page, per_page: 100},
         complete: function () { _listRealty_started = false; }
       })
         .done(function (data, textStatus, jqXHR) {
