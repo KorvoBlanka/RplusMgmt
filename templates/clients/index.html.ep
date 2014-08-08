@@ -479,32 +479,7 @@
           }
 
           for (var i = 0; i < data.list.length; i++) {
-            var r = data.list[i];
-
-            var classes = [Rplus.Table['realty_states'][r.state_code].metadata['icon-class']];
-            var tag = r.color_tag_id ? '<span style="margin-left: 2px; margin-bottom: 6px;" class="tag-button color-tag-' + r.color_tag_id + ' pull-left"></span>' : '';
-            var photo = r.main_photo_thumbnail ? '<a href="#" data-action="photos-show"><span class="glyphicon glyphicon-camera"></span></a>' : '';
-            var state_class = '';
-            var label = '';
-            if (r.sr_state_code && r.sr_state_code == 'new') {
-              //state_class = 'modified';
-              label = '<span style="border-radius: 0px; font-size: 12px;" class="label label-danger">New</span>';
-            } else if (r.sr_state_code && r.sr_state_code == 'shown') {
-              state_class = 'shown';
-            } else if (r.sr_state_code && r.sr_state_code == 'attention') {
-              state_class = 'deleted';
-            }
-
-            var xhtml = '<tr class="' + state_class + '" data-id="' + r.id + '" data-page="' + data.page + '" data-lat="' + r.latitude + '" data-lng="' + r.longitude + '">';
-            xhtml += '<td style="width: 20px;">' + tag + '</td>';
-            xhtml += '<td style="width: 20px;"><span class="glyphicon ' + classes.join(' ') + '"></span><br>' + photo +'<br><br>' + '' + '</td>';
-            xhtml += '<td>' + Rplus.Realty.getDigestEx(r, false) + '</td>';
-            xhtml += '<td style="padding-top: 0px;padding-bottom: 10px;"><span style="font-size: 10px;">' + moment(r.change_date).format("DD.MM.YY HH:mm") + '</span><br>&nbsp;</td>';
-            //xhtml += '<td><a style="padding-right: 22px; margin-right: 0px;" href="#" data-action="remove-proposal"><span class="glyphicon spec-label-red glyphicon-minus-sign"></span></a></td></tr>';
-            xhtml += '<td style="width: 42px;">' + label + '<a style="margin-left: 12px; margin-top: 6px;" href="#" data-action="remove-proposal"><span class="glyphicon spec-label-red glyphicon-minus-sign"></span></a>' + '</td>'
-            xhtml += '</tr>';
-
-            $('#realtyTable > tbody').append(xhtml);
+            $('#realtyTable > tbody').append(buildHtmlForRealty(data.list[i], data.page));
           }
         })
       ;
@@ -539,29 +514,42 @@
             $('#objectsCount').text(data.count);
           }
 
-          for (var i = 0; i < data.list.length; i++) {
-            var r = data.list[i];
-
-            var classes = [Rplus.Table['realty_states'][r.state_code].metadata['icon-class']];
-            var tag = r.color_tag_id ? '<span style="margin-left: 2px; margin-bottom: 6px;" class="tag-button color-tag-' + r.color_tag_id + ' pull-left"></span>' : '';
-            var photo = r.main_photo_thumbnail ? '<a href="#" data-action="photos-show"><span class="glyphicon glyphicon-camera"></span></a>' : '';
-            var state_class = '';
-
-            var xhtml = '<tr class="' + state_class + '" data-id="' + r.id + '" data-page="' + data.page + '" data-lat="' + r.latitude + '" data-lng="' + r.longitude + '">';
-            xhtml += '<td><span class="glyphicon ' + classes.join(' ') + '"></span>' + tag + '</td>';
-            xhtml += '<td>' + photo + '</td>';
-            xhtml += '<td>' + Rplus.Realty.getDigestEx(r, false) + '</td>';
-            xhtml += '<td style="padding-top: 0px;padding-bottom: 10px;"><span style="font-size: 10px;">' + moment(r.change_date).format("DD.MM.YY HH:mm") + '</span><br>&nbsp;</td>';
-            xhtml += '<td><a style="padding-right: 22px; margin-right: 0px;" href="#" data-action="remove-proposal"><span class="glyphicon spec-label-red glyphicon-minus-sign"></span></a></td></tr>';
-                
-            $('#realtyTable > tbody').append(xhtml);
+          for (var i = 0; i < data.list.length; i++) {                
+            $('#realtyTable > tbody').append(buildHtmlForRealty(data.list[i], data.page));
           }        
         
         })
       ;
     }    
     
-    function getHtmlForClient(client, insert_class) {
+    function buildHtmlForRealty(realty, page) {
+      var r = realty;
+      var classes = [Rplus.Table['realty_states'][r.state_code].metadata['icon-class']];
+      var tag = r.color_tag_id ? '<span style="margin: 6px 0px 6px 4px;" class="tag-button color-tag-' + r.color_tag_id + ' pull-left"></span>' : '';
+      var photo = r.main_photo_thumbnail ? '<a href="#" data-action="photos-show"><span class="glyphicon glyphicon-camera"></span></a>' : '';
+      var state_class = '';
+      var label = '';
+      if (r.sr_state_code && r.sr_state_code == 'new') {
+        label = '<span style="border-radius: 0px; font-size: 12px;" class="label label-danger">New</span>';
+      } else if (r.sr_state_code && r.sr_state_code == 'shown') {
+        state_class = 'shown';
+      } else if (r.sr_state_code && r.sr_state_code == 'attention') {
+        state_class = 'deleted';
+      }
+
+      var xhtml = '<tr class="' + state_class + '" data-id="' + r.id + '" data-page="' + page + '" data-lat="' + r.latitude + '" data-lng="' + r.longitude + '">';
+      xhtml += '<td style="width: 28px;">' + tag + '</td>';
+      xhtml += '<td style="width: 24px;"><span class="glyphicon ' + classes.join(' ') + '"></span><br>' + photo +'<br><br>' + '' + '</td>';
+      xhtml += '<td>' + Rplus.Realty.getDigestEx(r, false) + '</td>';
+      xhtml += '<td style="padding-top: 0px;padding-bottom: 10px;"><span style="font-size: 10px;">' + moment(r.change_date).format("DD.MM.YY HH:mm") + '</span><br>&nbsp;</td>';
+      xhtml += '<td style="width: 42px;">' + label + '<a style="margin-left: 12px; margin-top: 6px;" href="#" data-action="remove-proposal"><span class="glyphicon spec-label-red glyphicon-minus-sign"></span></a>' + '</td>'
+      xhtml += '</tr>';
+
+      return xhtml;
+    }
+
+
+    function buildHtmlForClient (client, insert_class) {
       var offer_type = $('[data-filter="offer_type_code"]').data('val');
       node_id ++;
       var xhtml = '<tr data-id=' + client.id + ' class="' + insert_class + ' client-node treegrid-' + node_id + '">';
@@ -603,24 +591,18 @@
       clients[client.id] = client;
       node_id ++;
 
-      var xhtml = '';
-      
-      xhtml += getHtmlForClient(client, 'cselected tree-tmp');
-
-      $('.tree').prepend(xhtml);
+      $('.tree').prepend(buildHtmlForClient(client, 'cselected tree-tmp'));
       $('.tree-tmp').treegrid('initNode', settings);
       $('.tree-tmp').removeClass('tree-tmp');
     }
 
     function updateTreeEntry(client, expand) {
-      var xhtml = getHtmlForClient(client, 'cselected tree-tmp');
-
       var $selected = $('[data-id=' + client.id + ']');
       $selected.treegrid('getChildNodes').each(function () {
         $(this).remove();
       });
 
-      $selected.after(xhtml);
+      $selected.after(buildHtmlForClient(client, 'cselected tree-tmp'));
       $selected.remove();
       
       $('.tree-tmp').treegrid('initNode', settings);
@@ -638,6 +620,7 @@
       },*/
     };
     var settings = {};
+
     function listClients(page) {
       var offer_type = $('[data-filter="offer_type_code"]').data('val');
       var per_page = 24;
@@ -669,7 +652,7 @@
             '<td style="width: 100px; height: 1px;padding-top: 0px; padding-bottom:0px;"></td>' +
             '<td style="width: 25px; height: 1px;padding-top: 0px; padding-bottom: 0px;"></td></tr>';
             
-            xhtml += getHtmlForClient(client, 'tree-tmp');
+            xhtml += buildHtmlForClient(client, 'tree-tmp');
 
             $('.tree').append(xhtml);
             if (page != 1) {
@@ -695,21 +678,14 @@
     }).open(client_id);
     }
     
-    function updateRealtyRow(r) {
+    function updateRealtyRow(realty) {
+      var r = realty;
       var $tr = $('#realtyTable > tbody > tr[data-id="' + r.id + '"]');
 
       if ($tr.length) {
-        var classes = [Rplus.Table['realty_states'][r.state_code].metadata['icon-class']];            
-        var tag = r.color_tag_id ? '<span style="margin-left: 2px; margin-bottom: 6px;" class="tag-button color-tag-' + r.color_tag_id + ' pull-left"></span>' : '';
-        var photo = r.main_photo_thumbnail ? '<a href="#" data-action="photos-show"><span class="glyphicon glyphicon-camera"></span></a>' : '';
-
-        var xhtml = '<td style="width: 20px;">' + tag + '</td>';
-        xhtml += '<td style="width: 20px;"><span class="glyphicon ' + classes.join(' ') + '"></span><br>' + photo +'<br><br>' + '' + '</td>';
-        xhtml += '<td>' + Rplus.Realty.getDigestEx(r, false) + '</td>';
-        xhtml += '<td style="padding-top: 0px;padding-bottom: 10px;"><span style="font-size: 10px;">' + moment(r.change_date).format("DD.MM.YY HH:mm") + '</span><br>&nbsp;</td>';
-        xhtml += '<td style="width: 42px;">' + '<a style="margin-left: 12px; margin-top: 6px;" href="#" data-action="remove-proposal"><span class="glyphicon spec-label-red glyphicon-minus-sign"></span></a>' + '</td>'
-        $tr.html(xhtml);
-
+        var page = $tr.data('page');
+        console.log(page);
+        $tr.replaceWith(buildHtmlForRealty(realty, page));
         agents_ids[r.id] = r.agent_id;
         media_export[r.id] = r.export_media;
       }
@@ -763,6 +739,7 @@
               success: function (data, textStatus, jqXHR) {
                 console.log(data.id);                
                 var $row = $('#clientTreeWrapper tr[data-id=' + data.id + ']');
+                console.log('!' + $row);
                 if ($row) {
                   $row.mousedown();
                   $row.mouseup();
@@ -838,7 +815,7 @@
       $('form[role="search"]').submit(function (e) { e.preventDefault(); });
 
       // Filters
-      $('[data-filter] > ul > li > a').click(function (e) {
+      $('[data-filter-realty] > ul > li > a').click(function (e) {
         var $display = $(this).closest('[data-filter]').data('val', $(this).data('val')).find('> a [role="display"]');
         if ($(this).data('type') == 'text') { $display.text($(this).text()) } else { $display.html($(this).html()) };
         if (scroll_type == 0) {
@@ -846,6 +823,12 @@
         } else {
           listSubscriptionRealty(subscription_id, 1);
         }
+      });
+
+      $('[data-filter] > ul > li > a').click(function (e) {
+        var $display = $(this).closest('[data-filter]').data('val', $(this).data('val')).find('> a [role="display"]');
+        if ($(this).data('type') == 'text') { $display.text($(this).text()) } else { $display.html($(this).html()) };
+        listClients(1);
       });
 
       // Init realty table and menu
@@ -1683,7 +1666,7 @@
           <li><a href="#" data-action="realty-geo"><span class="glyphicon glyphicon-globe"></span> <%= ucfloc 'geo' %></a></li>
 
           <!-- Color tag filter -->
-          <li class="dropdown" data-filter="color_tag_id" data-val="">
+          <li class="dropdown" data-filter-realty="color_tag_id" data-val="">
             <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span role="display"><span class="glyphicon glyphicon-tags"></span>&nbsp&nbspВсе</span> <b class="caret"></b></a>
             <ul class="dropdown-menu">
               <li><a href="#" data-val=""><span class="glyphicon glyphicon-tags"></span>&nbsp&nbspВсе</a></li>
@@ -1694,7 +1677,7 @@
           </li>
 
           <!-- Agent filter -->
-          <li class="dropdown" data-filter="agent_id" data-val="">
+          <li class="dropdown" data-filter-realty="agent_id" data-val="">
             <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-user"></span><span role="display"><%= ucfloc 'any' %></span> <b class="caret"></b></a>
             <ul class="dropdown-menu">
               % if (has_permission(realty => 'read')->{nobody} || has_permission(realty => 'read')->{others}) {
