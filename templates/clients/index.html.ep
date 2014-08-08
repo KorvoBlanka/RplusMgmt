@@ -455,8 +455,8 @@
     function listSubscriptionRealty(subscription_id, page) {
       scroll_type = 1;
       _listRealty_started = true;
-      var color_tag_id = $('[data-filter="color_tag_id"]').data('val');
-      var agent_id = $('[data-filter="agent_id"]').data('val');
+      var color_tag_id = $('[data-filter-realty="color_tag_id"]').data('val');
+      var agent_id = $('[data-filter-realty="agent_id"]').data('val');
       $.ajax({
         type: "POST",
         url: "/api/subscription/realty_list",
@@ -816,7 +816,7 @@
 
       // Filters
       $('[data-filter-realty] > ul > li > a').click(function (e) {
-        var $display = $(this).closest('[data-filter]').data('val', $(this).data('val')).find('> a [role="display"]');
+        var $display = $(this).closest('[data-filter-realty]').data('val', $(this).data('val')).find('> a [role="display"]');
         if ($(this).data('type') == 'text') { $display.text($(this).text()) } else { $display.html($(this).html()) };
         if (scroll_type == 0) {
           listRealty(1);
@@ -828,6 +828,7 @@
       $('[data-filter] > ul > li > a').click(function (e) {
         var $display = $(this).closest('[data-filter]').data('val', $(this).data('val')).find('> a [role="display"]');
         if ($(this).data('type') == 'text') { $display.text($(this).text()) } else { $display.html($(this).html()) };
+        clearRealty();
         listClients(1);
       });
 
