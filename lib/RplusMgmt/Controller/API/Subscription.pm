@@ -262,6 +262,7 @@ sub realty_list {
     my $per_page = $self->param('per_page');
     my $subscription_id = $self->param('subscription_id');
 
+    my $state_code = $self->param("state_code") || 'any';
     my $agent_id = $self->param("agent_id") || 'any';
     my $color_tag_id = $self->param("color_tag_id") || 'any';
     my $realty_state_code = $self->param("state_code") || 'any';
@@ -294,6 +295,9 @@ sub realty_list {
         if ($color_tag_id ne 'any') {
             push @query, 'color_tag.color_tag_id' => $color_tag_id;
             push @query, 'color_tag.user_id' => $self->stash('user')->{id};
+        }
+        if ($state_code ne 'any') {
+            push @query, 'realty.state_code' => $state_code;
         }
     }
 

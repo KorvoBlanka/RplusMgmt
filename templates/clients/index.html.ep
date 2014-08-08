@@ -490,11 +490,13 @@
       _listRealty_started = true;
       var color_tag_id = $('[data-filter-realty="color_tag_id"]').data('val');
       var agent_id = $('[data-filter-realty="agent_id"]').data('val');
+      var state_code = $('[data-filter-realty="state_code"]').data('val');
       $.ajax({
         type: "POST",
         url: "/api/subscription/realty_list",
         data: {
           subscription_id: subscription_id,
+          state_code: state_code,
           color_tag_id: color_tag_id,
           agent_id: agent_id,
           page: page, 
@@ -1816,6 +1818,18 @@
       <div class="navbar-right">
         <ul class="nav navbar-nav">
           <li><a href="#" data-action="realty-geo"><span class="glyphicon glyphicon-globe"></span> <%= ucfloc 'geo' %></a></li>
+
+          <!-- State filter -->
+          <li class="dropdown" data-filter-realty="state_code" data-val="">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span role="display"><span class="glyphicon glyphicon-th-large"></span> <%= ucfloc 'any' %></span> <b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li><a href="#" data-val=""><span class="glyphicon glyphicon-th-large"></span> <%= ucfloc 'any' %></a></li>
+              % for my $x (@{Rplus::Model::RealtyState::Manager->get_objects(sort_by => 'id')}) {
+                % my $metadata = from_json($x->metadata);
+                <li><a href="#" data-val="<%= $x->code %>"><span class="glyphicon <%= $metadata->{'icon-class'} %>"></span> <%= $x->name %></a></li>
+              % }
+            </ul>
+          </li>
 
           <!-- Color tag filter -->
           <li class="dropdown" data-filter-realty="color_tag_id" data-val="">
