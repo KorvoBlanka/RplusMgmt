@@ -325,9 +325,9 @@
       });
     }
 
-    var confVer = '1.0';
     var stackBottomRight = {"dir1": "up", "dir2": "left", "firstpos1": 75, "firstpos2": 25};
 
+    var clientsLastPage = 0;
     var clients = {};
     var subscription_id;
     var offer_type = 'sale';
@@ -422,17 +422,22 @@
           % }
         ]},
         % if (has_permission(realty => 'write')->{nobody} || has_permission(realty => 'write')->{others}) {
-        {text: '<span class="glyphicon glyphicon-user"></span> <%= ucfloc 'agent' %>', element_id: 'el_agents', subMenu: [
+        {text: '<span class="glyphicon glyphicon-user"></span> Назначить', element_id: 'el_agents', subMenu: [
             {text: '<strong><%= ucfloc 'nobody' %></strong>', data_action: 'realty-set-agent', data_val: '', },
+            {text: '<strong> Посредник</strong>', data_action: 'realty-set-agent', data_val: '10000', },
           % my $iter = Rplus::Model::User::Manager->get_objects_iterator(select => 'id, name', query => [role => ['agent', 'agent_ext', 'manager'], delete_date => undef], sort_by => 'name');
           % while (my $x = $iter->next) {
+          % if ($x->id != 10000) {  
             {text: '<%= $x->name %>', data_action: 'realty-set-agent', data_val: '<%= $x->id %>', },
+          % }
           % }
         ]},
         % }
         {text: '<span class="glyphicon glyphicon-cog"></span> Задача'},
-        {text: '<span class="glyphicon glyphicon-comment"></span>  <%= ucfloc 'advertisement' %>', element_id: 'el_export', subMenu: [
+        {text: '<span class="glyphicon glyphicon-export"></span>  <%= ucfloc q{advertisement} %>', element_id: 'el_export', subMenu: [
+          % my $loc_id = $self->session('user')->{location_id};      # костыль!
           % for my $x (@{Rplus::Model::Media::Manager->get_objects(query => [type => 'export', delete_date => undef])}) {
+          % next if $loc_id == 2 && ($x->id == 2 || $x->id == 3);
             {text: '<span class="export-check export-check<%= $x->id %> glyphicon glyphicon-ok"></span>&nbsp&nbsp<%= $x->name %>', data_action: 'realty-set-export', data_val: '<%= $x->id %>', },
           % }
         ]},
@@ -442,6 +447,34 @@
           '<span class="cmenu-tag-group">' +
           % for my $x (@{Rplus::Model::DictColorTag::Manager->get_objects(query => [delete_date => undef], sort_by => 'id')}) {
             '<span class="round-button color-tag-<%= $x->id %>" data-action="realty-set-color_tag_id" data-val="<%= $x->id %>"></span>' + 
+          % }
+          '</span>'},
+        {divider: true},
+        {text: '<span class="glyphicon glyphicon-print"></span>  Печать'},
+      ]);
+
+      context.attach('#clientsTree', [
+        {text: '<span class="glyphicon glyphicon-folder-open"></span>&nbsp&nbsp<%= ucfloc 'open' %>', element_id: 'el_open', data_action: 'client-open',},
+        {text: '<span class="glyphicon glyphicon-trash"></span>&nbsp&nbsp<%= ucfloc 'delete' %>', element_id: 'el_delete', data_action: 'client-delete',},
+        {divider: true},
+        % if (has_permission(realty => 'write')->{nobody} || has_permission(realty => 'write')->{others}) {
+        {text: '<span class="glyphicon glyphicon-user"></span> <%= ucfloc 'agent' %>', element_id: 'el_agents', subMenu: [
+            {text: '<strong><%= ucfloc 'nobody' %></strong>', data_action: 'client-set-agent', data_val: '', },
+          % my $iter = Rplus::Model::User::Manager->get_objects_iterator(select => 'id, name', query => [role => ['agent', 'agent_ext', 'manager'], delete_date => undef], sort_by => 'name');
+          % while (my $x = $iter->next) {
+          % if ($x->id != 10000) {  
+            {text: '<%= $x->name %>', data_action: 'client-set-agent', data_val: '<%= $x->id %>', },
+          % }
+          % }
+        ]},
+        % }
+        {text: '<span class="glyphicon glyphicon-cog"></span> Задача'},
+        {divider: true},
+        {header: '&nbspТеги...'},
+        {header:  // '+' to concat strings, '' - to match last +
+          '<span class="cmenu-tag-group">' +
+          % for my $x (@{Rplus::Model::DictColorTag::Manager->get_objects(query => [delete_date => undef], sort_by => 'id')}) {
+            '<span class="round-button color-tag-<%= $x->id %>" data-action="client-set-color-tag" data-val="<%= $x->id %>"></span>' + 
           % }
           '</span>'},
         {divider: true},
@@ -541,7 +574,7 @@
       xhtml += '<td style="width: 28px;">' + tag + '</td>';
       xhtml += '<td style="width: 24px;"><span class="glyphicon ' + classes.join(' ') + '"></span><br>' + photo +'<br><br>' + '' + '</td>';
       xhtml += '<td>' + Rplus.Realty.getDigestEx(r, false) + '</td>';
-      xhtml += '<td style="padding-top: 0px;padding-bottom: 10px;"><span style="font-size: 10px;">' + moment(r.change_date).format("DD.MM.YY HH:mm") + '</span><br>&nbsp;</td>';
+      xhtml += '<td style="padding-top: 0px;padding-bottom: 10px;"><span style="font-size: 10px;">' + moment(r.last_seen_date).format("DD.MM.YY HH:mm") + '</span><br>&nbsp;</td>';
       xhtml += '<td style="width: 42px;">' + label + '<a style="margin-left: 12px; margin-top: 6px;" href="#" data-action="remove-proposal"><span class="glyphicon spec-label-red glyphicon-minus-sign"></span></a>' + '</td>'
       xhtml += '</tr>';
 
@@ -553,12 +586,17 @@
       var offer_type = $('[data-filter="offer_type_code"]').data('val');
       node_id ++;
       var xhtml = '<tr data-id=' + client.id + ' class="' + insert_class + ' client-node treegrid-' + node_id + '">';
-      var caption = client.name == null ? Rplus.Util.formatPhoneNum(client.phone_num) + '<br>&nbsp;&nbsp' : client.name + '<br>&nbsp;&nbsp;&nbsp;&nbsp;' + Rplus.Util.formatPhoneNum(client.phone_num) ;
+      var caption = client.name == null ? Rplus.Util.formatPhoneNum(client.phone_num) + '<br>&nbsp;&nbsp' : client.name + '<br>&nbsp;&nbsp;&nbsp;&nbsp;' + Rplus.Util.formatPhoneNum(client.phone_num);
       var tag = '';
       if (client.color_tag_id != 0) {
         tag = '<span class="tag-button color-tag-placeholder color-tag-' + client.color_tag_id + '" style="display: inline-block"></span>';
       }
       
+      if (client.agent_id) {
+        var agent = Rplus.Table.users[client.agent_id];
+        caption += ' ' + agent.public_name || agent.name;
+      }
+
       xhtml += '<td style="width: 1px;"></td>';
       xhtml += '<td style="width: 220px;">&nbsp&nbsp' + tag + '&nbsp&nbsp' + caption + '</td>'
       xhtml += '<td style="width: 100px;padding-top: 0px;padding-bottom: 10px;"><span style="font-size: 10px;">' + moment(client.change_date).format("DD.MM.YY HH:mm") + '</span><br>&nbsp;</td>';
@@ -622,8 +660,9 @@
     var settings = {};
 
     function listClients(page) {
+      clientsLastPage = page;
       var offer_type = $('[data-filter="offer_type_code"]').data('val');
-      var per_page = 24;
+      var per_page = 16;
       $.ajax({
         type: 'POST',
         url: '/api/client/list',
@@ -651,7 +690,7 @@
             '<td style="width: 220px; height: 1px;padding-top: 0px; padding-bottom: 0px;"></td>' +
             '<td style="width: 100px; height: 1px;padding-top: 0px; padding-bottom:0px;"></td>' +
             '<td style="width: 25px; height: 1px;padding-top: 0px; padding-bottom: 0px;"></td></tr>';
-            
+
             xhtml += buildHtmlForClient(client, 'tree-tmp');
 
             $('.tree').append(xhtml);
@@ -734,13 +773,11 @@
             $.ajax({
               type: "GET",
               url: "/api/client/get",
-              data: {phone_num: q},
+              data: {phone_num: q, with_subscriptions: 1,},
               async: false,
               success: function (data, textStatus, jqXHR) {
-                console.log(data.id);                
                 var $row = $('#clientTreeWrapper tr[data-id=' + data.id + ']');
-                console.log('!' + $row);
-                if ($row) {
+                if ($row.length) {
                   $row.mousedown();
                   $row.mouseup();
                   $row.click();
@@ -748,7 +785,10 @@
                   $('#clientTreeWrapper').animate({
                       scrollTop: scroll_pos
                    }, 500);
+                } else {
+                  insertTreeEntry(data);
                 }
+
               },
               error: function (jqXHR, textStatus, errorThrown) {},
           });
@@ -840,8 +880,7 @@
       // Infinite scrolling
       $('#clientTreeWrapper').scroll(function (e) {
         if ($(this).scrollTop() + $(this).innerHeight() >= $(this)[0].scrollHeight) {
-          var lastPage = $('.tree > tbody > tr:last-child').data('page');
-          listClients(lastPage + 1);
+          listClients(clientsLastPage + 1);
         }
       });
       
@@ -993,6 +1032,42 @@
           });
         });
         
+        $('.tree').on('mousedown', 'tr.client-node', function (e) {
+          if (hasTouch()) return;
+          var $this = $(this);          
+          switch (event.which) {
+            case 1:
+            break;
+            case 2:
+            break;
+            case 3:
+              var $selected = $('.tree > tbody > tr.subselected');
+              $selected.each(function () {
+                var $this = $(this);
+                  $this.removeClass('subselected');
+              });
+
+              $selected = $('.tree > tbody > tr.cselected');
+              if ($selected.data('id') == $(this).data('id')) {
+                return;
+              }
+              $selected.each(function () {
+                var $this = $(this);
+                  $this.removeClass('cselected');
+                  $this.treegrid('collapse');
+              });
+              clearRealty();
+              $this.addClass('cselected');
+              
+              var $selected = $('.tree > tbody > tr.subselected');
+              $selected.each(function () {
+                var $this = $(this);
+                $this.removeClass('subselected');
+              });
+            break;
+          }
+        });
+
         // 'mobile' stuff: tap to select/deselect, long tap to open
         $('.tree').on('touchstart', 'tr.client-node', function (e) {
           var $this = $(this);
@@ -1287,17 +1362,36 @@
         }).createWithSubscription(q, offerTypeCode, realtyIds);
       });
       
+      $('[data-action="client-delete"]').click(function (e) {
+        var $selected = $('.tree > tbody > tr.cselected');
+        $selected.each(function () {
+          var $this = $(this);
+          var client_id = $this.data('id');
+
+          $.ajax({
+            type: "POST",
+            url: "/api/client/delete",
+            data: {id: client_id},
+            async: false, // (!)
+            success: function (data, textStatus, jqXHR) {
+              $this.addClass('hidden');
+            },
+            error: function (jqXHR, textStatus, errorThrown) {},
+          });
+        });
+      });
+
       // Open ClientCard
       $('[data-action="client-open"]').click(function (e) {
         var $selected = $('.tree > tbody > tr.cselected');
         $selected.each(function () {
           var $this = $(this);
-          var cid = $this.data('id');
+          var client_id = $this.data('id');
           var card = ClientCard({
             saved: function (client) {
               updateTreeEntry(client, false);
             },
-          }).open(cid);
+          }).open(client_id);
         });
       });
       
@@ -1387,6 +1481,63 @@
                 }
               });
           }
+        });
+      });
+
+      // Set color tag for client
+      $('[data-action="client-set-color-tag"]').click(function (e) {
+        var new_tag_id = $(this).data('val');
+        var $selected = $('.tree > tbody > tr.cselected');
+
+        $selected.each(function () {
+          var $this = $(this);
+          var client_id = $this.data('id');
+
+          var set_tag_id = 0;
+          if (clients[client_id].color_tag_id != new_tag_id) {
+            set_tag_id = new_tag_id;
+          }
+
+          $.ajax({
+            type: "POST",
+            url: "/api/client/update",
+            data: {id: client_id, color_tag_id: set_tag_id}
+          })
+            .done(function (data, textStatus, jqXHR) {
+              if (data.status == 'success') {
+                if (clients[client_id].color_tag_id == new_tag_id) {
+                  clients[client_id].color_tag_id = 0;
+                } else {
+                  clients[client_id].color_tag_id = set_tag_id;
+                }
+                // Update row data in realty table
+                updateTreeEntry(clients[client_id], false);
+              }
+            });
+        });
+      });
+
+      // Set color agent for client
+      $('[data-action="client-set-agent"]').click(function (e) {
+        var agent_id = $(this).data('val');
+        var $selected = $('.tree > tbody > tr.cselected');
+
+        $selected.each(function () {
+          var $this = $(this);
+          var client_id = $this.data('id');
+
+          $.ajax({
+            type: "POST",
+            url: "/api/client/update",
+            data: {id: client_id, agent_id: agent_id}
+          })
+            .done(function (data, textStatus, jqXHR) {
+              if (data.status == 'success') {
+                clients[client_id].agent_id = agent_id;
+                // Update row data in client tree
+                updateTreeEntry(clients[client_id], false);
+              }
+            });
         });
       });
 
@@ -1630,7 +1781,7 @@
         </div>
       </form>
       <div id="clientTreeWrapper">
-      <table class="tree">
+      <table id="clientsTree" class="tree">
       </table>
       </div>
     </div>

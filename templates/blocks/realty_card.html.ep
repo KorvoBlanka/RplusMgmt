@@ -342,12 +342,32 @@
       }
       
       if (realty.agent_id == 10000) {   // посредник
-        $('#dg_p9_label', $realty_modal).html('Агенство');
+        $('#dg_p9_label', $realty_modal).html('Предложение');
         $('span[data-name="dg_p9"]', $realty_modal).html(realty.mediator_company);
+
         $('#dg_p_contacts', $realty_modal).html(Rplus.Util.formatPhoneNum(realty.owner_phones[0]));
+        $('#dg_p_contacts_label', $realty_modal).html('Телефон');
+
+        $('#dg_p_contacts', $realty_modal).removeClass('hidden');
+        $('#dg_p_contacts_label', $realty_modal).removeClass('hidden');
       } else {
-        $('#dg_p9_label', $realty_modal).html('Агент');
-        $('#dg_p_contacts', $realty_modal).html('');
+        if (realty.agent_id) {
+          var agent = Rplus.Table.users[realty.agent_id];
+
+          $('#dg_p9_label', $realty_modal).html('Агент');
+
+          $('#dg_p_contacts', $realty_modal).html((agent.public_phone_num || Rplus.Util.formatPhoneNum(agent.phone_num)));
+          $('#dg_p_contacts_label', $realty_modal).html('Телефон');
+
+          $('#dg_p_contacts', $realty_modal).removeClass('hidden');
+          $('#dg_p_contacts_label', $realty_modal).removeClass('hidden');
+        } else {
+          $('#dg_p9_label', $realty_modal).html('Предложение');
+          $('span[data-name="dg_p9"]', $realty_modal).html('Собственник');
+
+          $('#dg_p_contacts', $realty_modal).addClass('hidden');
+          $('#dg_p_contacts_label', $realty_modal).addClass('hidden');
+        }
       }
 
       if (realty.reference) {
@@ -800,7 +820,7 @@
             </div>
 
             <div class="form-group view-group">
-              <label class="col-md-4 col-lg-4 control-label view-label" id="dg_p9_label"></label>
+              <label class="col-md-4 col-lg-4 control-label view-label" id="dg_p_contacts_label"></label>
               <div class="col-md-8 col-lg-8" style="padding-top: 5px;">
                 <p class="form-control-static text-left">
                   <span class="" id="dg_p_contacts"></span>
@@ -820,23 +840,16 @@
           <div class="form-group view-group">
             <a class="col-md-6 col-lg-6" href="#" target="_blank" id="dg_p_reference">Ссылка на объявление</a>
           </div>
-        </div>
-
-        <div class="form-group view-group smode-btn" style="margin-top: 10px; margin-bottom: 10px;">
-          <label class="col-md-4 col-lg-4 control-label view-label">
-            <a class="" href="#" data-action="realty-geo" style="text-decoration: none !important;">
-              <span class="glyphicon glyphicon-globe"></span>  Показать на карте
+          <div class="form-group view-group" style="margin-top: 10px; margin-bottom: 10px;">
+            <a class="col-md-6 col-lg-6" href="#" data-action="realty-geo" style="text-decoration: none !important;">
+              Показать на карте&nbsp;&nbsp;&nbsp;<span class="glyphicon glyphicon-globe"></span>
             </a>
-          </label>
-          <div class="col-md-8 col-lg-8 hidden" style="padding-top: 5px;">
-            <p class="form-control-static text-left"><span class="" data-name="dg_p10"></span></p>
-          </div>
+          </div>          
         </div>
 
         <div id="edit-group" class="emode-btn hidden">
-          
-        <form class="realty-form" id="realty-form" role="form">
 
+        <form class="realty-form" id="realty-form" role="form">
           <!-- Source block -->
           <div class="" id="sourceBlock-{guid}">
             <div class="col-md-12 col-lg-12" style="padding: 0px;">

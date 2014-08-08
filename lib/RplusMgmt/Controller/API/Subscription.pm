@@ -311,7 +311,8 @@ sub realty_list {
             delete_date => undef,
             '!state_code' => 'del',
         ],
-        with_objects => ['realty', 'color_tag'],
+        require_objects => ['realty'],
+        with_objects => ['color_tag'],
         sort_by => 'subscription_realty.state_code ASC, realty.last_seen_date DESC',
         page => $page,
         per_page => $per_page,
@@ -319,10 +320,12 @@ sub realty_list {
 
     my $count = Rplus::Model::SubscriptionRealty::Manager->get_objects_count(
         query => [
-            subscription_id => $subscription->id,
+            @query,
             delete_date => undef,
             '!state_code' => 'del',
         ],
+        require_objects => ['realty'],
+        with_objects => ['color_tag'],        
     );
     $res->{count} = $count;
 

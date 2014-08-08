@@ -64,7 +64,7 @@
       if (r.rooms_count) digest.push(r.rooms_count + 'к');
       if (r.address_object) {
         digest.push(
-          Rplus.Util.escape(r.address_object.name + ' ' + r.address_object.short_type) +
+          Rplus.Util.escape(r.address_object.name + ' ' + r.address_object.short_type  + '. ' + r.house_num || '') +
           (r.sublandmark ? ' (' + r.sublandmark.name + ')' : '')
         );
         digest.push(Rplus.Util.escape(r.address_object.addr_parts[1].name + ' ' + r.address_object.addr_parts[1].short_type));
@@ -94,7 +94,7 @@
           digest.push('<br><span>Агент: ' + (agent.public_name || agent.name) + ', ' + (agent.public_phone_num || Rplus.Util.formatPhoneNum(Rplus.Table.users[r.agent_id].phone_num)) + '</span>');
         }
       } else {
-        digest.push('<br><span>Агент:</span>');
+        digest.push('<br><span>Собственник</span>');
       }
       return digest.join(', ');
     },
@@ -163,7 +163,7 @@
         
       if (r.agent_id) {
         var agent = Rplus.Table.users[r.agent_id];
-        tstr.push('<span>' + (agent.public_name || agent.name) + ', ' + (agent.public_phone_num || Rplus.Util.formatPhoneNum(Rplus.Table.users[r.agent_id].phone_num)) + '</span>');
+        tstr.push('<span>' + (agent.public_name || agent.name) + '</span>');
       }
       digest['dg_p9'] = tstr.join(', ');
       tstr = [];

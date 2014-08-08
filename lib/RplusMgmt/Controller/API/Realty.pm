@@ -535,6 +535,7 @@ sub update {
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => write => $realty->agent_id) || $self->has_permission(realty => 'write')->{can_assign} && $realty->agent_id == undef;
 
     my $user_id = $self->stash('user')->{id};
+    my $permission_granted = $self->has_permission(realty => write => $realty->agent_id);
     # Available fields to set: agent_id, state_code
     for ($self->param) {
         if ($_ eq 'agent_id') {
@@ -554,6 +555,7 @@ sub update {
             return $self->render(json => {error => 'Forbidden'}, status => 403) if $realty->agent_id == 10000 && $self->param('state_code') eq 'work';
             $realty->state_code(scalar $self->param('state_code'));
         } elsif ($_ eq 'color_tag_id') {
+            $permission_granted = 1;
             my $color_tag_id = $self->param('color_tag_id');
             my $color_tag = Rplus::Model::ColorTag::Manager->get_objects(query => [realty_id => $realty->id, user_id => $user_id,])->[0];
             if ($color_tag) {
@@ -580,7 +582,7 @@ sub update {
     }
 
     # Check that we can rewrite agent
-    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => write => $realty->agent_id);
+    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $permission_granted;
 
     # Save data
     $realty->change_date('now()');

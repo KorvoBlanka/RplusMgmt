@@ -72,6 +72,7 @@ sub list {
             description => $client->description,
             subscriptions => [],
             color_tag_id => 0,
+            agent_id => $client->agent_id,
             subscription_offer_types => $client->subscription_offer_types,
         };
 
@@ -146,6 +147,8 @@ sub get {
         description => $client->description,
         send_owner_phone => $client->send_owner_phone,
         color_tag_id => 0,
+        agent_id => $client->agent_id,
+        subscription_offer_types => $client->subscription_offer_types,
     };
 
     if($client->client_color_tags) {
@@ -292,6 +295,47 @@ sub save {
     return $self->render(json => {status => 'success', id => $client->id});
 }
 
+sub update {
+    my $self = shift;
+
+    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(clients => 'write');
+
+    # Retrieve client
+    my $id = $self->param('id');
+    my $client = Rplus::Model::Client::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
+
+    return $self->render(json => {error => 'Not Found'}, status => 404) unless $client;
+
+    for ($self->param) {
+        if ($_ eq 'agent_id') {
+            my $agent_id = $self->param('agent_id');
+            $client->agent_id($agent_id);
+            $client->save(changes_only => 1);
+
+        } elsif ($_ eq 'color_tag_id') {
+            my $color_tag_id = $self->param('color_tag_id');
+            my $user_id = $self->stash('user')->{id};
+            my $color_tag = Rplus::Model::ClientColorTag::Manager->get_objects(query => [client_id => $client->id, user_id => $user_id,])->[0];
+            if ($color_tag) {
+                if ($color_tag_id != $color_tag->color_tag_id) {
+                  $color_tag->color_tag_id($color_tag_id);
+                } else {
+                  #$color_tag->color_tag_id(undef);
+                }
+                $color_tag->save(changes_only => 1);
+            } else {
+                $color_tag = Rplus::Model::ClientColorTag->new(
+                    client_id => $client->id,
+                    user_id => $user_id,
+                    color_tag_id => $color_tag_id,
+                );
+                $color_tag->save(insert => 1);
+            }
+        }
+    }
+    return $self->render(json => {status => 'success', id => $client->id});
+}
+
 sub delete {
     my $self = shift;
 
@@ -305,12 +349,6 @@ sub delete {
         where => [id => $id, delete_date => undef],
     );
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $num_rows_updated;
-
-    # Delete client subscriptions
-    $num_rows_updated = Rplus::Model::Subscription::Manager->update_objects(
-        set => {delete_date => \'now()'},
-        where => [client_id => $id, delete_date => undef],
-    );
 
     # I think, it's unnecessary to delete subscription realty & client owned realty
 

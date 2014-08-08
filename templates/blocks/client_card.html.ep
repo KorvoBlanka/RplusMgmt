@@ -671,6 +671,7 @@
             data: {id: id, with_subscriptions: true},
           })
             .done(function (data, textStatus, jqXHR) {
+              selected_tag_id = data.color_tag_id;
               setClientView(data, 1, true);
               $modal.modal({show: true, backdrop: false});
             })
