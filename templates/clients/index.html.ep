@@ -664,7 +664,7 @@
     function listClients(page) {
       clientsLastPage = page;
       var offer_type = $('[data-filter="offer_type_code"]').data('val');
-      var per_page = 16;
+      var per_page = 24;
       $.ajax({
         type: 'POST',
         url: '/api/client/list',
