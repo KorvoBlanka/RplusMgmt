@@ -1,0 +1,21 @@
+#!/usr/bin/env perl
+
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+
+use Rplus::Modern;
+
+use Rplus::DB;
+
+my $dbh = Rplus::DB->new_or_cached->dbh;
+
+if (1) {
+
+    # Update model
+    $dbh->do(q{ALTER TABLE public.clients ADD COLUMN agent_id INT4;});
+    $dbh->do(q{COMMENT ON COLUMN public.clients.agent_id IS 'id пользователя (агента)';});
+
+    $dbh->do(q{ALTER TABLE ONLY public.clients ADD CONSTRAINT client_agent_fk FOREIGN KEY (agent_id) REFERENCES users(id);});
+}
+
+exit 1;
