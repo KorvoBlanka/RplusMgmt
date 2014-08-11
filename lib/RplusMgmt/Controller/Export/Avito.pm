@@ -60,7 +60,7 @@ my %templates_hash = (
                 my $r = shift;
                 my $addr = '';
                 if ($r->address_object) {
-                    $addr = $r->address_object ? $r->address_object->name . ($r->address_object->short_type ne 'ул' ? ' ' . $r->address_object->short_type : '') : '',
+                    $addr = $r->address_object ? $r->address_object->name . ($r->address_object->short_type ne 'ул' ? ' ' . $r->address_object->short_type : '') : '';
                     if ($r->house_num) {
                         $addr .= ' ' . $r->house_num;
                     }
@@ -94,7 +94,7 @@ my %templates_hash = (
             },
         'Price' => sub {
                 my $r = shift;
-                return $r->price * 1000,
+                return $r->price * 1000;
             },
 
         'CompanyName' => sub {
@@ -159,7 +159,7 @@ my %templates_hash = (
                 my $r = shift;
                 my $addr = '';
                 if ($r->address_object) {
-                    $addr = $r->address_object ? $r->address_object->name . ($r->address_object->short_type ne 'ул' ? ' ' . $r->address_object->short_type : '') : '',
+                    $addr = $r->address_object ? $r->address_object->name . ($r->address_object->short_type ne 'ул' ? ' ' . $r->address_object->short_type : '') : '';
                     if ($r->house_num) {
                         $addr .= ' ' . $r->house_num;
                     }
@@ -265,7 +265,7 @@ my %templates_hash = (
                 my $r = shift;
                 my $addr = '';
                 if ($r->address_object) {
-                    $addr = $r->address_object ? $r->address_object->name . ($r->address_object->short_type ne 'ул' ? ' ' . $r->address_object->short_type : '') : '',
+                    $addr = $r->address_object ? $r->address_object->name . ($r->address_object->short_type ne 'ул' ? ' ' . $r->address_object->short_type : '') : '';
                     if ($r->house_num) {
                         $addr .= ' ' . $r->house_num;
                     }
