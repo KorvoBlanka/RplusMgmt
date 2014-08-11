@@ -412,6 +412,7 @@
         skype: $('#clientCard_clientForm [name="skype"]:input', $modal).val(),
         description: $('#clientCard_clientForm [name="description"]:input', $modal).val(),
         send_owner_phone: $('#clientCard_clientForm [name="send_owner_phone"]', $modal).prop('checked'),
+        agent_id: $('#clientCard_clientForm [name="agent_id"]', $modal).val(),
         color_tag_id: selected_tag_id,
       };
       $.ajax({
@@ -525,6 +526,7 @@
       $('#clientCard_clientForm [name="description"]:input', $modal).val(client.description);
       //$('#clientCard_addDate', $modal).text(moment(client.add_date).format('DD.MM.YYYY'));
       $('#clientCard_clientForm [name="send_owner_phone"]', $modal).prop('checked', client.send_owner_phone);
+      $('#clientCard_clientForm [name="agent_id"]', $modal).val(client.agent_id);
       
       if (subscription_mode == 'rent') {
         $("#subscription-type").html('Аренда');
@@ -802,6 +804,25 @@
               <span class="ccard-input-group-addon">Телефон собственника</span>
               <input class="" type="checkbox" id="phonecb" name="send_owner_phone" style="margin-top: 10px"></textarea>
             </div>
+
+            <hr width="90%" align="right">
+            <div class="input-group ccard-input-group">
+              <span class="ccard-input-group-addon glyphicon glyphicon-user"></span>
+              <select class="form-control input-sm" name="agent_id" id="agentInput" style="border: 0; box-shadow: 0 0 0 0; font-size: 14px;">
+              %# check read (!) permission to prevent empty list
+              % if (has_permission(clients => read => undef)) {
+                <option class="text-muted" value="">-</option>
+              % }
+              % for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [role => ['agent', 'agent_ext', 'manager'], delete_date => undef], sort_by => 'name')}) {
+                % if ($self->stash('user')->{role} eq 'manager' || $x->id == $self->stash('user')->{id}) {
+                  <option value="<%= $x->id %>"><%= $x->name %></option>
+                % } else {
+                  <option disabled value="<%= $x->id %>"><%= $x->name %></option>
+                % }
+              % }
+              </select>
+            </div>
+
           </form>
 
           <div class="cardheader mainheader">

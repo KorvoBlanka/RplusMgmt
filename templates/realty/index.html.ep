@@ -1466,7 +1466,7 @@
     </div>
 
     <nav class="navbar navbar-default navbar-fixed-bottom">
-      <div class="container">
+      <div class="container" id="nav-0">
         <ul class="nav navbar-nav">            
           <li><a href="#" data-action="realty-create"><span class="glyphicon glyphicon-plus"></span> <%= ucfloc 'add' %></a></li>  
           <li><a href="#" data-action="realty-open"><span class="glyphicon glyphicon-folder-open"></span>&nbsp;&nbsp;<%= ucfloc 'open' %></a></li>
@@ -1493,9 +1493,6 @@
               <ul class="dropdown-menu">
                 % if (has_permission(realty => 'read')->{nobody} || has_permission(realty => 'read')->{others}) {
                 <li><a href="#" data-val="" data-type="text"><strong><%= ucfloc 'any' %></strong></a></li>
-                % }
-                % if (has_permission(realty => 'read')->{nobody}) {
-                <li><a href="#" data-val="nobody" data-type="text"><strong>Не назначено</strong></a></li>
                 % }
                 % if (has_permission(realty => 'read')->{others}) {
                 <li><a href="#" data-val="all" data-type="text"><strong><%= ucfloc 'all agents' %></strong></a></li>

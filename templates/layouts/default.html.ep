@@ -224,7 +224,7 @@
           % if (has_permission(realty => 'read') && !is_hidden_nav('realty')) {
             <li class="<%= $controller eq 'realty' && 'active' %>"><a href="/realty"><span class="glyphicon glyphicon-home"></span> <%= ucfloc q{realty} %></a></li>
           % }
-          % if (has_permission(clients => 'read')) {
+          % if (has_permission(clients => 'read') || 1) {
             <li class="<%= $controller eq 'clients' && 'active' %>"><a href="/clients"><span class="glyphicon glyphicon-user"></span> <%= ucfloc q{clients} %></a></li>
           % }
           % if (has_permission(realty => 'export') || has_permission(realty => 'analyse')) {

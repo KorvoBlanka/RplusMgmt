@@ -282,12 +282,10 @@ sub realty_list {
             push @query, 'state_code' => $sr_state_code;
         }
         if ($agent_id ne 'any') {
-            if ($agent_id eq 'nobody' && $self->has_permission(realty => 'read')->{nobody}) {
-                push @query, 'realty.agent_id' => undef;
-            } elsif ($agent_id eq 'all' && $self->has_permission(realty => 'read')->{others}) {
+            if ($agent_id eq 'all' && $self->has_permission(realty => 'read')->{others}) {
                 push @query, and => ['!realty.agent_id' => undef, '!realty.agent_id' => 10000];
             } elsif ($agent_id eq 'not_med') {
-                push @query, or => ['!realty.agent_id' => 10000, 'realty.agent_id' => undef];
+                push @query, 'realty.agent_id' => undef;
             } elsif ($agent_id =~ /^\d+$/ && $self->has_permission(realty => read => $agent_id)) {
                 push @query, 'realty.agent_id' => $agent_id;
             }

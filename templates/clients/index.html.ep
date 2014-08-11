@@ -596,7 +596,7 @@
       
       if (client.agent_id) {
         var agent = Rplus.Table.users[client.agent_id];
-        caption += ' ' + agent.public_name || agent.name;
+        caption += ' ' + agent.public_name && agent.public_name.trim() != '' ? agent.public_name : agent.name;
       }
 
       xhtml += '<td style="width: 1px;"></td>';
@@ -664,12 +664,18 @@
     function listClients(page) {
       clientsLastPage = page;
       var offer_type = $('[data-filter="offer_type_code"]').data('val');
+
+      var color_tag_id = $('[data-filter="client-color_tag_id"]').data('val');
+      var agent_id = $('[data-filter="client-agent_id"]').data('val');
+
       var per_page = 24;
       $.ajax({
         type: 'POST',
         url: '/api/client/list',
         data: {
           subscription_offer_types: offer_type,
+          color_tag_id: color_tag_id,
+          agent_id: agent_id,
           page: page,
           per_page: per_page
         },
@@ -1342,6 +1348,16 @@
         updateTreeEntry(client, true);
       });
 
+
+      $('[data-action="toggle-nav"]').click(function (e) {
+        $('#nav-1').toggleClass('hidden');
+        if ($('#nav-1').hasClass('hidden')) {
+          $(this).html('<span class="glyphicon glyphicon-chevron-up">');
+        } else {
+          $(this).html('<span class="glyphicon glyphicon-chevron-down">');
+        }
+      });
+
       // Create ClientCard
       $('[data-action="client-create"]').click(function (e) {
         
@@ -1797,39 +1813,31 @@
     </div>
   </div>
 
-  <nav class="navbar navbar-default navbar-fixed-bottom">
-    <div class="container">
+  <nav class="navbar navbar-default navbar-fixed-bottom">  
+    <div class="container" id="nav-0">
+
+    <div id="nav-toggle" style="width: 14px; height: 14px; position: absolute; top: 0; left: 50%; margin-left: -7px; margin-top: 7px;">
+      <a href="#" style="color: #aaa;" data-action="toggle-nav"><span class="glyphicon glyphicon-chevron-up"></span></a>
+    </div>
+
       <ul class="nav navbar-nav">
         <li><a href="#" data-action="client-create"><span class="glyphicon glyphicon-plus"></span>&nbsp&nbspДобавить</a></li>
         <li><a href="#" data-action="client-open"><span class="glyphicon glyphicon-folder-open"></span> <%= ucfloc 'open' %></a></li>
 
-          <!-- Offer type filter -->
-          <li class="dropdown" data-filter="offer_type_code" data-val="sale">
-            <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span role="display"><%= ucfloc 'sale' %></span> <b class="caret"></b></a>
-            <ul class="dropdown-menu">
-              % for my $x (@{Rplus::Model::RealtyOfferType::Manager->get_objects(sort_by => 'id')}) {
-                <li><a href="#" data-val="<%= $x->code %>"><%= $x->name %></a></li>
-              % }
-            </ul>
-          </li>
-
+        <!-- Offer type filter -->
+        <li class="dropdown" data-filter="offer_type_code" data-val="sale">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span role="display"><%= ucfloc 'sale' %></span> <b class="caret"></b></a>
+          <ul class="dropdown-menu">
+            % for my $x (@{Rplus::Model::RealtyOfferType::Manager->get_objects(sort_by => 'id')}) {
+              <li><a href="#" data-val="<%= $x->code %>"><%= $x->name %></a></li>
+            % }
+          </ul>
+        </li>
       </ul>
 
       <div class="navbar-right">
         <ul class="nav navbar-nav">
           <li><a href="#" data-action="realty-geo"><span class="glyphicon glyphicon-globe"></span> <%= ucfloc 'geo' %></a></li>
-
-          <!-- State filter -->
-          <li class="dropdown" data-filter-realty="state_code" data-val="">
-            <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span role="display"><span class="glyphicon glyphicon-th-large"></span> <%= ucfloc 'any' %></span> <b class="caret"></b></a>
-            <ul class="dropdown-menu">
-              <li><a href="#" data-val=""><span class="glyphicon glyphicon-th-large"></span> <%= ucfloc 'any' %></a></li>
-              % for my $x (@{Rplus::Model::RealtyState::Manager->get_objects(sort_by => 'id')}) {
-                % my $metadata = from_json($x->metadata);
-                <li><a href="#" data-val="<%= $x->code %>"><span class="glyphicon <%= $metadata->{'icon-class'} %>"></span> <%= $x->name %></a></li>
-              % }
-            </ul>
-          </li>
 
           <!-- Color tag filter -->
           <li class="dropdown" data-filter-realty="color_tag_id" data-val="">
@@ -1849,9 +1857,6 @@
               % if (has_permission(realty => 'read')->{nobody} || has_permission(realty => 'read')->{others}) {
               <li><a href="#" data-val="" data-type="text"><strong><%= ucfloc 'any' %></strong></a></li>
               % }
-              % if (has_permission(realty => 'read')->{nobody}) {
-              <li><a href="#" data-val="nobody" data-type="text"><strong>Не назначено</strong></a></li>
-              % }
               % if (has_permission(realty => 'read')->{others}) {
               <li><a href="#" data-val="all" data-type="text"><strong><%= ucfloc 'all agents' %></strong></a></li>
               <li><a href="#" data-val="10000" data-type="text"><strong> Посредник</strong></a></li>
@@ -1864,10 +1869,55 @@
               % }
             </ul>
           </li>
+
+          <!-- State filter -->
+          <li class="dropdown" data-filter-realty="state_code" data-val="">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span role="display"><span class="glyphicon glyphicon-th-large"></span> <%= ucfloc 'any' %></span> <b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li><a href="#" data-val=""><span class="glyphicon glyphicon-th-large"></span> <%= ucfloc 'any' %></a></li>
+              % for my $x (@{Rplus::Model::RealtyState::Manager->get_objects(sort_by => 'id')}) {
+                % my $metadata = from_json($x->metadata);
+                <li><a href="#" data-val="<%= $x->code %>"><span class="glyphicon <%= $metadata->{'icon-class'} %>"></span> <%= $x->name %></a></li>
+              % }
+            </ul>
+          </li>
+
         </ul>
         <p class="navbar-text">
           <span class="text-primary"><%= ucfloc 'found' %></span> <span class="text-primary" id="objectsCount">0</span>
         </p>
       </div>
     </div>
+    <div class="container hidden" id="nav-1">
+      <ul class="nav navbar-nav">            
+          <!-- Color tag filter -->
+          <li class="dropdown" data-filter="client-color_tag_id" data-val="">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span role="display"><span class="glyphicon glyphicon-tags"></span>&nbsp&nbspВсе</span> <b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li><a href="#" data-val=""><span class="glyphicon glyphicon-tags"></span>&nbsp&nbspВсе</a></li>
+              % for my $x (@{Rplus::Model::DictColorTag::Manager->get_objects(query => [delete_date => undef], sort_by => 'id')}) {
+                <li><a href="#" data-val="<%= $x->id %>"><span class="tag-button color-tag-<%= $x->id %> pull-left"></span>&nbsp<%= $x->name %></a></li>
+              % }
+            </ul>
+          </li>
+
+          <!-- Agent filter -->
+          <li class="dropdown" data-filter="client-agent_id" data-val="">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-user"></span><span role="display"><%= ucfloc 'any' %></span> <b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              % if (has_permission(realty => 'read')->{nobody} || has_permission(realty => 'read')->{others}) {
+              <li><a href="#" data-val="" data-type="text"><strong><%= ucfloc 'any' %></strong></a></li>
+              % }
+              % if (has_permission(realty => 'read')->{nobody}) {
+              <li><a href="#" data-val="nobody" data-type="text"><strong>Не назначено</strong></a></li>
+              % }
+              % for my $x (@{Rplus::Model::User::Manager->get_objects(query => [role => ['agent', 'agent_ext', 'manager'], delete_date => undef], sort_by => 'name')}) {
+                % if (has_permission(realty => read => $x->id) && $x->id != 10000) {
+                <li><a href="#" data-val="<%= $x->id %>" data-type="text"><%= $x->name %></a></li>
+                % }
+              % }
+            </ul>
+          </li>
+      </ul>      
+    </div>    
   </nav> <!-- /.navbar -->

@@ -226,14 +226,11 @@ sub list {
         }
 
         my $agent_ok;
-        if ($agent_id eq 'nobody' && $self->has_permission(realty => 'read')->{nobody}) {
-            push @query, agent_id => undef;
-            $agent_ok = 1;
-        } elsif ($agent_id eq 'all' && $self->has_permission(realty => 'read')->{others}) {
+        if ($agent_id eq 'all' && $self->has_permission(realty => 'read')->{others}) {
             push @query, and => ['!agent_id' => undef, '!agent_id' => 10000];
             $agent_ok = 1;
         } elsif ($agent_id eq 'not_med') {
-            push @query, or => ['!agent_id' => 10000, 'agent_id' => undef];
+            push @query, 'agent_id' => undef;
             $agent_ok = 1;
         } elsif ($agent_id =~ /^\d+$/ && $self->has_permission(realty => read => $agent_id)) {
             push @query, agent_id => $agent_id;
@@ -581,7 +578,7 @@ sub update {
         }
     }
 
-    # Check that we can rewrite agent
+    # Check that we can rewrite 
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $permission_granted;
 
     # Save data

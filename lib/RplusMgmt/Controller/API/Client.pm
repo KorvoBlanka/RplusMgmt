@@ -24,7 +24,7 @@ use Mojo::Collection;
 sub list {
     my $self = shift;
 
-    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(clients => 'read');
+    #return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(clients => 'read');
 
     # Input validation
     $self->validation->optional('page')->like(qr/^\d+$/);
@@ -39,6 +39,8 @@ sub list {
 
     # Input params
     my $subscription_offer_types = $self->param("subscription_offer_types") || 'none';
+    my $color_tag_id = $self->param("color_tag_id") || 'any';
+    my $agent_id = $self->param("agent_id") || 'any';
     my $page = $self->param("page") || 1;
     my $per_page = $self->param("per_page") || 30;
 
@@ -48,13 +50,36 @@ sub list {
         page => $page,
     };
 
+    my @query; 
+    {
+        if ($agent_id ne 'any') {
+            if ($agent_id eq 'nobody') {
+                push @query, 'agent_id' => undef;
+            } elsif ($agent_id eq 'all') {
+                push @query, '!agent_id' => undef;
+            } elsif ($agent_id =~ /^\d+$/) {
+                push @query, 'agent_id' => $agent_id;
+            }
+        }
+        if ($color_tag_id ne 'any') {
+            push @query, 'client_color_tags.color_tag_id' => $color_tag_id;
+            push @query, 'client_color_tags.user_id' => $self->stash('user')->{id};
+        }
+    }
+
     my $clients_iter = Rplus::Model::Client::Manager->get_objects_iterator(
-        query => [
-        or => [
-            subscription_offer_types => $subscription_offer_types,
-            subscription_offer_types => 'both',
+        select => [
+            'clients.*',
         ],
-        delete_date => undef],
+        query => [
+            or => [
+                subscription_offer_types => $subscription_offer_types,
+                subscription_offer_types => 'both',
+            ],
+            @query,
+            delete_date => undef
+        ],
+        with_objects => ['client_color_tags'],
         sort_by => 'change_date desc',
         page => $page,
         per_page => $per_page,
@@ -66,7 +91,7 @@ sub list {
             add_date => $self->format_datetime($client->add_date),
             change_date => $self->format_datetime($client->change_date),
             name => $client->name,
-            phone_num => $client->phone_num,
+            phone_num => $self->has_permission(clients => 'read') || $client->agent_id == $self->stash('user')->{id} ? $client->phone_num : ' ',
             email => $client->email,
             skype => $client->skype,
             description => $client->description,
@@ -125,7 +150,7 @@ sub list {
 sub get {
     my $self = shift;
 
-    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(clients => 'read');
+    #return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(clients => 'read');
     
     # Retrieve client (by id or phone_num)
     my $client;
@@ -139,7 +164,7 @@ sub get {
     my $res = {
         id => $client->id,
         name => $client->name,
-        phone_num => $client->phone_num,
+        phone_num => $self->has_permission(clients => 'read') || $client->agent_id == $self->stash('user')->{id} ? $client->phone_num : ' ',
         email => $client->email,
         skype => $client->skype,
         add_date => $self->format_datetime($client->add_date),
@@ -195,13 +220,13 @@ sub get {
 
 sub update_offer_types {
     my $self = shift;
-    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(clients => 'write');
     
     # Retrieve client
     my $id = $self->param('id');
     my $client = Rplus::Model::Client::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $client;
-    
+    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(clients => 'write') || $self->has_permission(clients => 'read') || $client->agent_id == $self->stash('user')->{id};    
+
     my $subscription_iter = Rplus::Model::Subscription::Manager->get_objects_iterator(
         query => [
             client_id => $client->id,
@@ -228,8 +253,6 @@ sub update_offer_types {
 sub save {
     my $self = shift;
 
-    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(clients => 'write');
-
     # Retrieve client
     my $client;
     if (my $id = $self->param('id')) {
@@ -238,6 +261,8 @@ sub save {
         $client = Rplus::Model::Client->new;
     }
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $client;
+
+    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(clients => 'write' => $client->agent_id) || $client->agent_id == $self->stash('user')->{id};
 
     # Validation
     $self->validation->required('phone_num')->is_phone_num;
@@ -256,6 +281,7 @@ sub save {
     my $description = $self->param_n('description');
     my $send_owner_phone = $self->param_b('send_owner_phone');
     my $color_tag_id = $self->param('color_tag_id');
+    my $agent_id = $self->param('agent_id');
     my $subscription_offer_types = $self->param('subscription_offer_types');
     
     # Save
@@ -265,6 +291,9 @@ sub save {
     $client->skype($skype);
     $client->description($description);
     $client->send_owner_phone($send_owner_phone);
+    if ($self->has_permission(clients => 'write' => $client->agent_id)) {
+        $client->agent_id($agent_id);
+    }
     $client->change_date('now()');
     $client->subscription_offer_types($subscription_offer_types);
     
@@ -298,7 +327,7 @@ sub save {
 sub update {
     my $self = shift;
 
-    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(clients => 'write');
+    #return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(clients => 'write') || $client->agent_id == $self->stash('user')->{id};
 
     # Retrieve client
     my $id = $self->param('id');
@@ -306,13 +335,13 @@ sub update {
 
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $client;
 
+    my $permission_granted = $self->has_permission(clients => 'write');
     for ($self->param) {
         if ($_ eq 'agent_id') {
             my $agent_id = $self->param('agent_id');
             $client->agent_id($agent_id);
-            $client->save(changes_only => 1);
-
         } elsif ($_ eq 'color_tag_id') {
+            $permission_granted = 1;
             my $color_tag_id = $self->param('color_tag_id');
             my $user_id = $self->stash('user')->{id};
             my $color_tag = Rplus::Model::ClientColorTag::Manager->get_objects(query => [client_id => $client->id, user_id => $user_id,])->[0];
@@ -322,7 +351,6 @@ sub update {
                 } else {
                   #$color_tag->color_tag_id(undef);
                 }
-                $color_tag->save(changes_only => 1);
             } else {
                 $color_tag = Rplus::Model::ClientColorTag->new(
                     client_id => $client->id,
@@ -333,6 +361,10 @@ sub update {
             }
         }
     }
+    # Check that we can rewrite 
+    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $permission_granted;
+    $client->save(changes_only => 1);
+
     return $self->render(json => {status => 'success', id => $client->id});
 }
 
@@ -357,8 +389,6 @@ sub delete {
 
 sub subscribe {
     my $self = shift;
-
-    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(clients => 'subscribe');
 
     # Validation
     $self->validation->required('phone_num')->is_phone_num;
@@ -391,6 +421,9 @@ sub subscribe {
     if (!$client) {
         $client = Rplus::Model::Client->new(phone_num => $phone_num, db => $db);
     }
+
+    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(clients => 'subscribe') || $client->agent_id == $self->stash('user')->{id};
+
     $client->change_date('now()');
     $client->save;
 
