@@ -292,7 +292,11 @@ sub save {
     $client->description($description);
     $client->send_owner_phone($send_owner_phone);
     if ($self->has_permission(clients => 'write' => $client->agent_id)) {
-        $client->agent_id($agent_id);
+        if ($agent_id eq '') {
+            $client->agent_id(undef);
+        } else {
+            $client->agent_id($agent_id);
+        }
     }
     $client->change_date('now()');
     $client->subscription_offer_types($subscription_offer_types);

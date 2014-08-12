@@ -170,7 +170,8 @@
       }
 
       .navbar-inverse {
-        background-color: #001F3C;
+        /*background-color: #001F3C;*/
+        background-color: #062141;
         border-color: #003242;
       }
 

@@ -41,7 +41,7 @@
     border-radius: 5px;
     margin-top: 5px;
     
-    margin-left: 10px;
+    /*margin-left: 10px;*/
     margin-right: 4px;
   }
 
@@ -123,12 +123,12 @@
   }
   
   .tree > tbody > tr.subselected > td {
-    background-color: #C5D3DB !important;
+    background-color: #6B7F98 !important;
     color: #fff;
   }
 
   .tree > tbody > tr.subselected:hover > td {
-    background-color: #CAD9E3 !important;
+    background-color: #6B7F98 !important;
     color: #fff;
   }
   
@@ -233,23 +233,23 @@
   }
   
   .tree > tbody {
-    border-right: 1px double #e5e5e5;
-    border-left:1px solid #e5e5e5;
-    border-top:1px solid #e5e5e5;
+    border-right: 1px double #E5E5E5;
+    border-left:1px solid #E5E5E5;
+    border-top:1px solid #E5E5E5;
   }
   
   .tree > tbody > tr > th, td {
     text-align:left;
     padding:5px 10px;
-    border-bottom:1px solid #e5e5e5;
+    border-bottom:1px solid #E5E5E5;
   }
   
   .client-node {
-    background-color: #fafafa;
+    background-color: #FAFAFA;
   }
   
   .subscription-node {
-    background-color: #dadada;
+    background-color: #F0F0F0;
   }
 
   .subscription-node > td {
@@ -588,21 +588,23 @@
       var offer_type = $('[data-filter="offer_type_code"]').data('val');
       node_id ++;
       var xhtml = '<tr data-id=' + client.id + ' class="' + insert_class + ' client-node treegrid-' + node_id + '">';
-      var caption = client.name == null ? Rplus.Util.formatPhoneNum(client.phone_num) + '<br>&nbsp;&nbsp' : client.name + '<br>&nbsp;&nbsp;&nbsp;&nbsp;' + Rplus.Util.formatPhoneNum(client.phone_num);
+      var caption = client.name == null ? Rplus.Util.formatPhoneNum(client.phone_num) : Rplus.Util.formatPhoneNum(client.phone_num) + ' ' + client.name;
       var tag = '';
+      var agent_str = '';
       if (client.color_tag_id != 0) {
         tag = '<span class="tag-button color-tag-placeholder color-tag-' + client.color_tag_id + '" style="display: inline-block"></span>';
       }
       
       if (client.agent_id) {
         var agent = Rplus.Table.users[client.agent_id];
-        caption += ' ' + agent.public_name && agent.public_name.trim() != '' ? agent.public_name : agent.name;
+        agent_str = 'Агент: ';
+        agent_str += agent.public_name && agent.public_name.trim() != '' ? agent.public_name : agent.name;
       }
 
       xhtml += '<td style="width: 1px;"></td>';
-      xhtml += '<td style="width: 220px;">&nbsp&nbsp' + tag + '&nbsp&nbsp' + caption + '</td>'
-      xhtml += '<td style="width: 100px;padding-top: 0px;padding-bottom: 10px;"><span style="font-size: 10px;">' + moment(client.change_date).format("DD.MM.YY HH:mm") + '</span><br>&nbsp;</td>';
-      xhtml += '<td style="width: 25px;padding-left: 0px;"><a style="display: inline-block;" href="#" data-action="client-add-query"><span class="glyphicon glyphicon-plus-sign pull-right"></span></a></td>';
+      xhtml += '<td style="width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + tag + '&nbsp' + caption + '<br>' + agent_str + '</td>'
+      xhtml += '<td style="width: 90px;padding-top: 0px;padding-bottom: 10px;"><span style="font-size: 10px;">' + moment(client.change_date).format("DD.MM.YY HH:mm") + '</span><br>&nbsp;</td>';
+      xhtml += '<td style="width: 20px;padding-left: 0px;"><a style="display: inline-block;" href="#" data-action="client-add-query"><span class="glyphicon glyphicon-plus-sign pull-right"></span></a></td>';
       xhtml += '</tr>';
 
       var parent = node_id;
@@ -696,8 +698,8 @@
 
             var xhtml = '<tr><td style="width: 1px; height: 1px; padding-top: 0px; padding-bottom: 0px;"></td>' +
             '<td style="width: 220px; height: 1px;padding-top: 0px; padding-bottom: 0px;"></td>' +
-            '<td style="width: 100px; height: 1px;padding-top: 0px; padding-bottom:0px;"></td>' +
-            '<td style="width: 25px; height: 1px;padding-top: 0px; padding-bottom: 0px;"></td></tr>';
+            '<td style="width: 90px; height: 1px;padding-top: 0px; padding-bottom:0px;"></td>' +
+            '<td style="width: 20px; height: 1px;padding-top: 0px; padding-bottom: 0px;"></td></tr>';
 
             xhtml += buildHtmlForClient(client, 'tree-tmp');
 
