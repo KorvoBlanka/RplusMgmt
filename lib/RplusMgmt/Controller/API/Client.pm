@@ -343,7 +343,11 @@ sub update {
     for ($self->param) {
         if ($_ eq 'agent_id') {
             my $agent_id = $self->param('agent_id');
-            $client->agent_id($agent_id);
+            if ($agent_id eq '') {
+                $client->agent_id(undef);
+            } else {
+                $client->agent_id($agent_id);
+            }
         } elsif ($_ eq 'color_tag_id') {
             $permission_granted = 1;
             my $color_tag_id = $self->param('color_tag_id');
@@ -355,6 +359,7 @@ sub update {
                 } else {
                   #$color_tag->color_tag_id(undef);
                 }
+                $color_tag->save(changes_only => 1);
             } else {
                 $color_tag = Rplus::Model::ClientColorTag->new(
                     client_id => $client->id,
