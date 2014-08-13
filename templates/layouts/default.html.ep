@@ -343,7 +343,7 @@
         $(document).on('click', 'a[href="#"]', function (event) { event.preventDefault(); });
       });
 
-      setClientNewCount();
+      setTimeout(setClientNewCount, 3000);
       setInterval(setClientNewCount, 60000);
 
       function setClientNewCount() {
