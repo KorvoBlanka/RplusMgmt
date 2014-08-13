@@ -551,7 +551,7 @@ sub get_new_count {
                     delete_date => undef,
                 ],
             );
-            if ($sub_new_count > 0) {
+            if ($sub_new_count > 0 || get_new_realty_count($self, $subscription->id) > 0) {
                 $new_count ++;
                 last;
             }
@@ -559,6 +559,37 @@ sub get_new_count {
     }
 
     return $self->render(json => {status => 'success', new_count => $new_count});
+}
+
+sub get_new_realty_count {
+    my ($self, $subscription_id) = @_;
+    my $subscription = Rplus::Model::Subscription::Manager->get_objects(query => [id => $subscription_id, delete_date => undef])->[0];
+
+    my $realty_count = 0;
+    for my $q (@{$subscription->queries}) {
+        # Skip FTS data
+        my @query = map { ref($_) eq 'SCALAR' && $$_ =~ /^t1\.fts/ ? () : $_ } (Rplus::Util::Query->parse($q, $self));
+
+        $realty_count += Rplus::Model::Realty::Manager->get_objects_count (
+            query => [
+                offer_type_code => $subscription->offer_type_code,
+                or => [
+                  state_code => 'work',
+                  state_code => 'suspended',
+                  state_code => 'raw',
+                ],
+                #or => [
+                #    state_change_date => {gt => $subscription->add_date},
+                #    price_change_date => {gt => ($subscription->last_check_date || $subscription->add_date)},
+                #],
+                [\"t1.id NOT IN (SELECT SR.realty_id FROM subscription_realty SR WHERE SR.subscription_id = ? AND SR.delete_date IS NULL)" => $subscription->id],
+                delete_date => undef,
+                @query
+            ],
+        );
+    }
+
+    return $realty_count;
 }
 
 1;

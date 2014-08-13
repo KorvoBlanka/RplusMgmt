@@ -7,10 +7,48 @@ use Rplus::Modern;
 
 use Rplus::Model::Realty;
 use Rplus::Model::Realty::Manager;
+use Rplus::Model::Client;
+use Rplus::Model::Client::Manager;
 use Rplus::Model::Subscription;
 use Rplus::Model::Subscription::Manager;
 use Rplus::Model::SubscriptionRealty;
 use Rplus::Model::SubscriptionRealty::Manager;
+
+use Rplus::Util::Config;
+use Rplus::Util::Query;
+
+check_clients();
+
+sub check_clients {
+	my $c = {config => Rplus::Util::Config::get_config()};
+
+    my $clients_iter = Rplus::Model::Client::Manager->get_objects_iterator(
+        query => [delete_date => undef],
+    );
+
+    while (my $client = $clients_iter->next) {
+        my $subscription_iter = Rplus::Model::Subscription::Manager->get_objects_iterator(
+            query => [
+                client_id => $client->id,
+                delete_date => undef,
+            ],
+        );
+
+        while (my $subscription = $subscription_iter->next) {
+            realty_update($c, $subscription->id);
+            my $sub_new_count = Rplus::Model::SubscriptionRealty::Manager->get_objects_count(
+                query => [
+                    subscription_id => $subscription->id,
+                    state_code => 'new',
+                    delete_date => undef,
+                ],
+            );
+            if ($sub_new_count > 0) {
+                last;
+            }
+        }
+    }	
+}
 
 sub realty_update {
     my ($self, $subscription_id) = @_;
