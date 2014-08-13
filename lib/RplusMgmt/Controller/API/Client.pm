@@ -80,7 +80,7 @@ sub list {
                 subscription_offer_types => 'both',
             ],
             @query,
-            delete_date => undef
+            delete_date => undef,
         ],
         with_objects => ['client_color_tags'],
         sort_by => 'change_date desc',
@@ -550,7 +550,7 @@ sub get_new_count {
                 client_id => $client->id,
                 offer_type_code => $offer_type_code,
                 delete_date => undef,
-                end_date => {gt => \'now()'},
+                #end_date => {gt => \'now()'},
             ],
         );
 
