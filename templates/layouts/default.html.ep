@@ -343,7 +343,8 @@
         $(document).on('click', 'a[href="#"]', function (event) { event.preventDefault(); });
       });
 
-      setInterval(setClientNewCount, 10000);
+      setClientNewCount();
+      setInterval(setClientNewCount, 60000);
 
       function setClientNewCount() {
         supressAjaxIndicator(1);
