@@ -1925,7 +1925,7 @@
             </ul>
           </li>
 
-          <li style="width: 145px; height: 1px;"></li>
+          <li style="width: 142px; height: 1px;"></li>
 
           <li><a href="#" data-action="realty-geo"><span class="glyphicon glyphicon-globe"></span> <%= ucfloc 'geo' %></a></li>
 

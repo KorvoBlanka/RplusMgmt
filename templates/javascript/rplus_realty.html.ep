@@ -64,9 +64,7 @@
       if (r.rooms_count) digest.push(r.rooms_count + 'к');
       if (r.address_object) {
         digest.push(
-          Rplus.Util.escape(r.address_object.name + ' ' + r.address_object.short_type  + '. ' + r.house_num || '') +
-          (r.sublandmark ? ' (' + r.sublandmark.name + ')' : '')
-        );
+          Rplus.Util.escape(r.address_object.name + ' ' + r.address_object.short_type  + '. ' +  (r.house_num ? r.house_num : '') + (r.sublandmark ? ' (' + r.sublandmark.name + ')' : '')));
         digest.push(Rplus.Util.escape(r.address_object.addr_parts[1].name + ' ' + r.address_object.addr_parts[1].short_type));
       }
       if (r.ap_scheme_id) digest.push(Rplus.Table.Dict.ap_schemes[r.ap_scheme_id].metadata.description || Rplus.Table.Dict.ap_schemes[r.ap_scheme_id].name);
@@ -107,7 +105,7 @@
       if (r.rooms_count) tstr.push(r.rooms_count + 'к');
 
       if (r.address_object) {
-        tstr.push(r.address_object.name + ' ' + r.address_object.short_type + (r.sublandmark ? ' (' + r.sublandmark.name + ')' : ''));
+        tstr.push(r.address_object.name + ' ' + r.address_object.short_type + '. ' +  (r.house_num ? r.house_num : '') + (r.sublandmark ? ' (' + r.sublandmark.name + ')' : ''));
         tstr.push(r.address_object.addr_parts[1].short_type + '. ' + r.address_object.addr_parts[1].name );
       }
       digest['dg_p1'] = tstr.join(', ');
