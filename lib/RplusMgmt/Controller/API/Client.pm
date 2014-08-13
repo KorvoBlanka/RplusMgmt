@@ -555,7 +555,7 @@ sub get_new_count {
         );
         my $sub_new_count = 0;
         while (my $subscription = $subscription_iter->next) {
-            realty_update($self, $subscription->id);
+            #realty_update($self, $subscription->id);
             $sub_new_count += Rplus::Model::SubscriptionRealty::Manager->get_objects_count(
                 query => [
                     subscription_id => $subscription->id,
