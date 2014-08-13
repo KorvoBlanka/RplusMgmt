@@ -343,14 +343,15 @@
         $(document).on('click', 'a[href="#"]', function (event) { event.preventDefault(); });
       });
 
-      setClientNewCount();
-      setInterval(setClientNewCount, 30000);
+      setInterval(setClientNewCount, 10000);
 
       function setClientNewCount() {
+        supressAjaxIndicator(1);
         $.ajax({
           type: "POST",
           url: "/api/client/get_new_count",
           data: {},
+          complete: function () {}
         })
           .done(function (data, textStatus, jqXHR) {
             if (data.status == 'success') {
@@ -362,6 +363,7 @@
               }
             }
           });
+        supressAjaxIndicator(0);
       }
     </script>
   </body>
