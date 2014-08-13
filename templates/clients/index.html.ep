@@ -95,12 +95,12 @@
   }
 
   #realtyTable > tbody > tr {
-    border-right-width: 3px;
-    border-right-style: inset;
+    border-right-width: 2px;
+    border-right-style: solid;
     border-right-color: #e5e5e5;
     
-    border-left-width: 2px;
-    border-left-style: inset;
+    border-left-width: 1px;
+    border-left-style: solid;
     border-left-color: #e5e5e5;
     
     border-bottom-width: 2px ! important;
@@ -282,7 +282,27 @@
     right: 18px;    
     background: none;
     border: none;
-  }  
+  }
+
+  .navbar .divider-vertical {
+    top: 5px;
+    height: 40px;
+    margin: 0 9px;
+    border-right: 1px double #ffffff;
+    border-left: 1px solid #E0E0E0;
+  }
+
+  .navbar-inverse .divider-vertical {
+    border-right-color: #222222;
+    border-left-color: #111111;
+  }
+
+  @media (max-width: 767px) {
+    .navbar-collapse .nav > .divider-vertical {
+      display: none;
+    }
+  }
+
 </style>
 % end
 
@@ -1805,7 +1825,17 @@
       </table>
       </div>
     </div>
-    <div class="col-md-7 col-lg-8" style="padding-left: 4px;">
+
+    <!--<div style="
+      width: 2px;
+      height: 100%;
+      position: absolute;
+      left: 39.55%;
+      border-right: 1px double #ffffff;
+      border-left: 1px solid #E0E0E0;">
+    </div>-->
+
+    <div class="col-md-7 col-lg-8" style="padding-left: 11px;">
       <div class="table-responsive" id="realtyTableWrapper">
         <table style="overflow: hidden;" class="table table-condensed table-striped table-hover" id="realtyTable" data-toggle="context">
           <thead></thead>
@@ -1815,30 +1845,68 @@
     </div>
   </div>
 
-  <nav class="navbar navbar-default navbar-fixed-bottom">  
-    <div class="container" id="nav-0">
+  <nav class="navbar navbar-default navbar-fixed-bottom">
+    <div class="container hidden" id="nav-1">
+      <ul class="nav navbar-nav" style="width: 34.3%;">            
+          <!-- Color tag filter -->
+          <li class="dropdown" data-filter="client-color_tag_id" data-val="">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span role="display"><span class="glyphicon glyphicon-tags"></span>&nbsp&nbspВсе</span> <b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li><a href="#" data-val=""><span class="glyphicon glyphicon-tags"></span>&nbsp&nbspВсе</a></li>
+              % for my $x (@{Rplus::Model::DictColorTag::Manager->get_objects(query => [delete_date => undef], sort_by => 'id')}) {
+                <li><a href="#" data-val="<%= $x->id %>"><span class="tag-button color-tag-<%= $x->id %> pull-left"></span>&nbsp<%= $x->name %></a></li>
+              % }
+            </ul>
+          </li>
 
-    <div id="nav-toggle" style="width: 14px; height: 14px; position: absolute; top: 0; left: 50%; margin-left: -7px; margin-top: 7px;">
-      <a href="#" style="color: #aaa;" data-action="toggle-nav"><span class="glyphicon glyphicon-chevron-up"></span></a>
+          <!-- Agent filter -->
+          <li class="dropdown" data-filter="client-agent_id" data-val="">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-user"></span><span role="display"><%= ucfloc 'any' %></span> <b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              % if (has_permission(realty => 'read')->{nobody} || has_permission(realty => 'read')->{others}) {
+              <li><a href="#" data-val="" data-type="text"><strong><%= ucfloc 'any' %></strong></a></li>
+              % }
+              % if (has_permission(realty => 'read')->{nobody}) {
+              <li><a href="#" data-val="nobody" data-type="text"><strong>Не назначено</strong></a></li>
+              % }
+              % for my $x (@{Rplus::Model::User::Manager->get_objects(query => [role => ['agent', 'agent_ext', 'manager'], delete_date => undef], sort_by => 'name')}) {
+                % if (has_permission(realty => read => $x->id) && $x->id != 10000) {
+                <li><a href="#" data-val="<%= $x->id %>" data-type="text"><%= $x->name %></a></li>
+                % }
+              % }
+            </ul>
+          </li>
+      </ul>      
     </div>
 
-      <ul class="nav navbar-nav">
-        <li><a href="#" data-action="client-create"><span class="glyphicon glyphicon-plus"></span>&nbsp&nbspДобавить</a></li>
-        <li><a href="#" data-action="client-open"><span class="glyphicon glyphicon-folder-open"></span> <%= ucfloc 'open' %></a></li>
+    <div class="container" id="nav-0">
 
-        <!-- Offer type filter -->
-        <li class="dropdown" data-filter="offer_type_code" data-val="sale">
-          <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span role="display"><%= ucfloc 'sale' %></span> <b class="caret"></b></a>
-          <ul class="dropdown-menu">
-            % for my $x (@{Rplus::Model::RealtyOfferType::Manager->get_objects(sort_by => 'id')}) {
-              <li><a href="#" data-val="<%= $x->code %>"><%= $x->name %></a></li>
-            % }
-          </ul>
-        </li>
+      <div id="nav-toggle" style="width: 14px; height: 14px; position: absolute; top: 0; left: 50%; margin-left: -7px; margin-top: 7px;">
+        <a href="#" style="color: #aaa;" data-action="toggle-nav"><span class="glyphicon glyphicon-chevron-up"></span></a>
+      </div>
+
+      <ul class="nav navbar-nav" style="width: 34.3%;">
+        <li><a href="#" data-action="client-create"><span class="glyphicon glyphicon-plus"></span>&nbsp&nbspДобавить</a></li>
+        <li><a href="#" data-action="client-delete"><span class="glyphicon glyphicon-trash"></span> <%= ucfloc 'delete' %></a></li>
+
+        <li class="divider-vertical pull-right"></li>
       </ul>
 
       <div class="navbar-right">
         <ul class="nav navbar-nav">
+
+          <!-- Offer type filter -->
+          <li class="dropdown" data-filter="offer_type_code" data-val="sale">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span role="display"><%= ucfloc 'sale' %></span> <b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              % for my $x (@{Rplus::Model::RealtyOfferType::Manager->get_objects(sort_by => 'id')}) {
+                <li><a href="#" data-val="<%= $x->code %>"><%= $x->name %></a></li>
+              % }
+            </ul>
+          </li>
+
+          <li style="width: 145px; height: 1px;"></li>
+
           <li><a href="#" data-action="realty-geo"><span class="glyphicon glyphicon-globe"></span> <%= ucfloc 'geo' %></a></li>
 
           <!-- Color tag filter -->
@@ -1889,37 +1957,5 @@
           <span class="text-primary"><%= ucfloc 'found' %></span> <span class="text-primary" id="objectsCount">0</span>
         </p>
       </div>
-    </div>
-    <div class="container hidden" id="nav-1">
-      <ul class="nav navbar-nav">            
-          <!-- Color tag filter -->
-          <li class="dropdown" data-filter="client-color_tag_id" data-val="">
-            <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span role="display"><span class="glyphicon glyphicon-tags"></span>&nbsp&nbspВсе</span> <b class="caret"></b></a>
-            <ul class="dropdown-menu">
-              <li><a href="#" data-val=""><span class="glyphicon glyphicon-tags"></span>&nbsp&nbspВсе</a></li>
-              % for my $x (@{Rplus::Model::DictColorTag::Manager->get_objects(query => [delete_date => undef], sort_by => 'id')}) {
-                <li><a href="#" data-val="<%= $x->id %>"><span class="tag-button color-tag-<%= $x->id %> pull-left"></span>&nbsp<%= $x->name %></a></li>
-              % }
-            </ul>
-          </li>
-
-          <!-- Agent filter -->
-          <li class="dropdown" data-filter="client-agent_id" data-val="">
-            <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-user"></span><span role="display"><%= ucfloc 'any' %></span> <b class="caret"></b></a>
-            <ul class="dropdown-menu">
-              % if (has_permission(realty => 'read')->{nobody} || has_permission(realty => 'read')->{others}) {
-              <li><a href="#" data-val="" data-type="text"><strong><%= ucfloc 'any' %></strong></a></li>
-              % }
-              % if (has_permission(realty => 'read')->{nobody}) {
-              <li><a href="#" data-val="nobody" data-type="text"><strong>Не назначено</strong></a></li>
-              % }
-              % for my $x (@{Rplus::Model::User::Manager->get_objects(query => [role => ['agent', 'agent_ext', 'manager'], delete_date => undef], sort_by => 'name')}) {
-                % if (has_permission(realty => read => $x->id) && $x->id != 10000) {
-                <li><a href="#" data-val="<%= $x->id %>" data-type="text"><%= $x->name %></a></li>
-                % }
-              % }
-            </ul>
-          </li>
-      </ul>      
     </div>    
   </nav> <!-- /.navbar -->

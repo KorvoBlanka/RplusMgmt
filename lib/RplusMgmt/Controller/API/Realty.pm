@@ -523,19 +523,18 @@ sub save {
 sub update {
     my $self = shift;
 
-    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => 'write');
+    #return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => 'write');
 
     my $id = $self->param('id');
 
     my $realty = Rplus::Model::Realty::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $realty;
-    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => write => $realty->agent_id) || $self->has_permission(realty => 'write')->{can_assign} && $realty->agent_id == undef;
 
     my $user_id = $self->stash('user')->{id};
-    my $permission_granted = $self->has_permission(realty => write => $realty->agent_id);
     # Available fields to set: agent_id, state_code
     for ($self->param) {
         if ($_ eq 'agent_id') {
+            return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => write => $realty->agent_id) || ($self->has_permission(realty => 'write')->{can_assign} && $realty->agent_id == undef);
             # if agent_id changed - set 'assign_date'
             $realty->assign_date('now()');
             if ($self->param('agent_id') eq '') {
@@ -544,15 +543,17 @@ sub update {
                 my $agent_id = $self->param_n('agent_id');
                 $realty->agent_id(scalar $self->param('agent_id'));
                 if ($agent_id == 10000) {
+                    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => write => $realty->agent_id);
                     my $company = 'ПОСРЕДНИК В НЕДВИЖИМОСТИ';
                     add_mediator($company, $realty->owner_phones->[0], 'user_' . $self->stash('user')->{id});
                 }
-            }            
+            }
+            return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => write => $realty->agent_id);
         } elsif ($_ eq 'state_code') {
+            return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => write => $realty->agent_id);
             return $self->render(json => {error => 'Forbidden'}, status => 403) if $realty->agent_id == 10000 && $self->param('state_code') eq 'work';
             $realty->state_code(scalar $self->param('state_code'));
         } elsif ($_ eq 'color_tag_id') {
-            $permission_granted = 1;
             my $color_tag_id = $self->param('color_tag_id');
             my $color_tag = Rplus::Model::ColorTag::Manager->get_objects(query => [realty_id => $realty->id, user_id => $user_id,])->[0];
             if ($color_tag) {
@@ -571,15 +572,14 @@ sub update {
                 $color_tag->save(insert => 1);
             }
         } elsif ($_ eq 'export_media[]') {
+            return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => write => $realty->agent_id);
             my $export_media_ok = Rplus::DB->new_or_cached->dbh->selectall_hashref(q{SELECT M.id, M.name FROM media M WHERE M.type = 'export' AND M.delete_date IS NULL}, 'id');
             $realty->export_media(Mojo::Collection->new($self->param('export_media[]'))->grep(sub { exists $export_media_ok->{$_} })->uniq);
         } elsif ($_ eq 'export_media') {
+            return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => write => $realty->agent_id);
             $realty->export_media(Mojo::Collection->new());
         }
     }
-
-    # Check that we can rewrite 
-    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $permission_granted;
 
     # Save data
     $realty->change_date('now()');

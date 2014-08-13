@@ -190,6 +190,16 @@
       .navbar-inverse .navbar-brand {
         color: #929292;
       }
+
+      .quick-notifier {
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        background-color: rgb(255, 41, 0);
+        z-index: 1;
+        font-weight: 200;
+      }
+
     </style>
 
     <%= content_for 'header' %>
@@ -226,7 +236,7 @@
             <li class="<%= $controller eq 'realty' && 'active' %>"><a href="/realty"><span class="glyphicon glyphicon-home"></span> <%= ucfloc q{realty} %></a></li>
           % }
           % if (has_permission(clients => 'read') || 1) {
-            <li class="<%= $controller eq 'clients' && 'active' %>"><a href="/clients"><span class="glyphicon glyphicon-user"></span> <%= ucfloc q{clients} %></a></li>
+            <li class="<%= $controller eq 'clients' && 'active' %>"><span id="client-count-notifier" class="badge badge-default quick-notifier hidden"></span><a href="/clients"><span class="glyphicon glyphicon-user"></span> <%= ucfloc q{clients} %></a></li>
           % }
           % if (has_permission(realty => 'export') || has_permission(realty => 'analyse')) {
             <li class="dropdown <%= $controller eq 'service' && 'active' %>">
@@ -332,6 +342,27 @@
       $(function () {
         $(document).on('click', 'a[href="#"]', function (event) { event.preventDefault(); });
       });
+
+      setClientNewCount();
+      setInterval(setClientNewCount, 30000);
+
+      function setClientNewCount() {
+        $.ajax({
+          type: "POST",
+          url: "/api/client/get_new_count",
+          data: {},
+        })
+          .done(function (data, textStatus, jqXHR) {
+            if (data.status == 'success') {
+              if (data.new_count == 0) {              
+                $('#client-count-notifier').addClass('hidden');
+              } else {
+                $('#client-count-notifier').html(data.new_count);
+                $('#client-count-notifier').removeClass('hidden');
+              }
+            }
+          });
+      }
     </script>
   </body>
 </html>
