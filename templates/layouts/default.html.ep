@@ -197,7 +197,7 @@
         right: 2px;
         background-color: rgb(255, 41, 0);
         z-index: 1;
-        font-weight: 200;
+        font-weight: 400;
       }
 
     </style>
@@ -351,7 +351,7 @@
         $.ajax({
           type: "POST",
           url: "/api/client/get_new_count",
-          data: {},
+          data: {offer_type_code: Rplus.Variables['User'].offer_mode},
           complete: function () {}
         })
           .done(function (data, textStatus, jqXHR) {
@@ -366,6 +366,12 @@
           });
         supressAjaxIndicator(0);
       }
+
+      window.Rplus.Functions = { 
+        setClientNewCount: function () {
+          setClientNewCount();
+        }
+      };
     </script>
   </body>
 </html>

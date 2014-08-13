@@ -23,6 +23,7 @@ __PACKAGE__->meta->setup(
         permissions      => { type => 'scalar', default => '{}', not_null => 1, remarks => 'Локальные права пользователя' },
         ip_telephony     => { type => 'scalar', default => '{}', not_null => 1, remarks => 'sip телефония, хост, логин, пароль' },
         photo_url        => { type => 'varchar', remarks => 'путь к фото пользователя' },
+        offer_mode       => { type => 'varchar', default => 'sale', not_null => 1 },
     ],
 
     primary_key_columns => [ 'id' ],

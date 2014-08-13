@@ -32,16 +32,6 @@ __PACKAGE__->meta->setup(
             key_columns => { subscription_id => 'id' },
         },
     ],
-
-    relationships =>
-    [
-        color_tag =>
-        {
-          type       => 'one to many',
-          class      => 'Rplus::Model::ColorTag',
-          column_map => { realty_id => 'realty_id' },
-        },
-    ],
 );
 
 1;

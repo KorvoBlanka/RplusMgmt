@@ -22,6 +22,11 @@
 <script type="application/javascript">
   "use strict";
 
+  window.Rplus.Variables = {
+  % my $x = Rplus::Model::User::Manager->get_objects(query => [id => $self->session('user')->{id}, delete_date => undef])->[0];
+    User: {id: <%= $x->id %>, offer_mode: "<%= $x->offer_mode %>", name: "<%= $x->name %>", phone_num: "<%= $x->phone_num %>", public_name: "<%= $x->{'public_name'} %>", public_phone_num: "<%= $x->{'public_phone_num'} %>",}
+  }
+
   window.Rplus.Table = {
     Dict: {
       ap_schemes: { <% { %>
@@ -98,7 +103,7 @@
     users: { <% { %>
       % my $iter = Rplus::Model::User::Manager->get_objects_iterator(query => [role => ['agent', 'agent_ext', 'manager'], delete_date => undef]);
       % while (my $x = $iter->next) {
-        "<%= $x->id %>": {id: <%= $x->id %>, name: "<%= $x->name %>", phone_num: "<%= $x->phone_num %>", public_name: "<%= $x->{'public_name'} %>", public_phone_num: "<%= $x->{'public_phone_num'} %>"},
+        "<%= $x->id %>": {id: <%= $x->id %>, offer_mode: "<%= $x->offer_mode %>", name: "<%= $x->name %>", phone_num: "<%= $x->phone_num %>", public_name: "<%= $x->{'public_name'} %>", public_phone_num: "<%= $x->{'public_phone_num'} %>"},
       % }
     <% } %> },
   };

@@ -35,6 +35,7 @@ sub list {
                 description => $user->description,
                 add_date => $self->format_datetime($user->add_date),
                 photo_url => $user->photo_url ? $self->config->{'storage'}->{'url'} . $user->photo_url . '?ts=' . time : '',
+                offer_mode => $user->offer_mode,
             };
             push @{$res->{list}}, $x;
         }
@@ -71,6 +72,7 @@ sub get {
         sip_login => $sip->{sip_login} ? $sip->{sip_login} : '',
         sip_password => $sip->{sip_password} ? $sip->{sip_password} : '',
         photo_url => $user->photo_url ? $self->config->{'storage'}->{'url'} . $user->photo_url . '?ts=' . time : '',
+        offer_mode => $user->offer_mode,
     };
 
     return $self->render(json => $res);
@@ -246,7 +248,7 @@ sub remove_photo {
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $user;    
 
     $user->photo_url(undef);
-    $user->save;
+    $user->save(changes_only => 1);
 
     return $self->render(json => {status => 'success'});
 }
@@ -265,6 +267,20 @@ sub delete {
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $num_rows_updated;
 
     return $self->render(json => {status => 'success'});
+}
+
+sub set_offer_mode {
+    my $self = shift;
+
+    my $user_id = $self->param('id');
+    my $offer_mode = $self->param('offer_mode');
+    my $user = Rplus::Model::User::Manager->get_objects(query => [id => $user_id, delete_date => undef])->[0];
+    return $self->render(json => {error => 'Not Found'}, status => 404) unless $user;    
+
+    $user->offer_mode($offer_mode);
+    $user->save(changes_only => 1);
+
+    return $self->render(json => {status => 'success'});    
 }
 
 1;

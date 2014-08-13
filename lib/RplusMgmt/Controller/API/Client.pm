@@ -529,16 +529,26 @@ sub subscribe {
 sub get_new_count {
     my $self = shift;
 
+    my $offer_type_code = $self->param('offer_type_code');
+
     my $new_count = 0;
 
+    my @query;
+    if ($self->stash('user')->{role} ne 'manager') {
+        push @query, agent_id => $self->stash('user')->{id};
+    }
     my $clients_iter = Rplus::Model::Client::Manager->get_objects_iterator(
-        query => [delete_date => undef],
+        query => [
+            @query,
+            delete_date => undef,
+        ],
     );
 
     while (my $client = $clients_iter->next) {
         my $subscription_iter = Rplus::Model::Subscription::Manager->get_objects_iterator(
             query => [
                 client_id => $client->id,
+                offer_type_code => $offer_type_code,
                 delete_date => undef,
                 end_date => {gt => \'now()'},
             ],

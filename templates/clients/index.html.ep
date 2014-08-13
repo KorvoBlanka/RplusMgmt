@@ -330,6 +330,9 @@
 
   (function () {
 
+    $('#offer-type-filter').data('val', Rplus.Variables['User'].offer_mode);
+    $('#offer-type-filter > a > span').text(Rplus.Variables['User'].offer_mode == 'sale' ? 'Продажа' : 'Аренда');
+
     function initSpeech() {
       $('#searchQuery').webSpeech({ 
         button      : 'speech-button', //id of the initiating button
@@ -900,6 +903,22 @@
         if ($(this).data('type') == 'text') { $display.text($(this).text()) } else { $display.html($(this).html()) };
         clearRealty();
         listClients(1);
+      });
+
+      $('#offer-type-filter > ul > li > a').click(function (e) {
+        var $display = $(this).closest('[data-filter]').data('val', $(this).data('val')).find('> a [role="display"]');
+        if ($(this).data('type') == 'text') { 
+          $display.text($(this).text()) } else { $display.html($(this).html()) 
+        };
+            $.ajax({
+              type: "POST",
+              url: "/api/user/set_offer_mode",
+              data: {id: <%= $self->session('user')->{id} %>, offer_mode: $('#offer-type-filter').data('val')},
+            })
+              .done(function (data, textStatus, jqXHR) {
+                Rplus.Variables['User'].offer_mode = $('#offer-type-filter').data('val');
+                Rplus.Functions['setClientNewCount']();
+              });
       });
 
       // Init realty table and menu
@@ -1896,8 +1915,9 @@
         <ul class="nav navbar-nav">
 
           <!-- Offer type filter -->
-          <li class="dropdown" data-filter="offer_type_code" data-val="sale">
-            <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span role="display"><%= ucfloc 'sale' %></span> <b class="caret"></b></a>
+          % my $m = $self->session->{'user'}->{offer_mode};
+          <li class="dropdown" id="offer-type-filter" data-filter="offer_type_code" data-val="">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span role="display"></span><b class="caret"></b></a>
             <ul class="dropdown-menu">
               % for my $x (@{Rplus::Model::RealtyOfferType::Manager->get_objects(sort_by => 'id')}) {
                 <li><a href="#" data-val="<%= $x->code %>"><%= $x->name %></a></li>
