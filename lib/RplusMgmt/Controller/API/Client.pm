@@ -529,7 +529,7 @@ sub subscribe {
 sub get_new_count {
     my $self = shift;
 
-    my $offer_type_code = $self->param('offer_type_code');
+    my $offer_type_code = $self->param('offer_type_code') || 'none';
 
     my $new_count = 0;
 
@@ -539,6 +539,10 @@ sub get_new_count {
     }
     my $clients_iter = Rplus::Model::Client::Manager->get_objects_iterator(
         query => [
+            or => [
+                subscription_offer_types => $offer_type_code,
+                subscription_offer_types => 'both',
+            ],        
             @query,
             delete_date => undef,
         ],
