@@ -553,21 +553,20 @@ sub get_new_count {
                 #end_date => {gt => \'now()'},
             ],
         );
-
+        my $sub_new_count = 0;
         while (my $subscription = $subscription_iter->next) {
             realty_update($self, $subscription->id);
-            my $sub_new_count = Rplus::Model::SubscriptionRealty::Manager->get_objects_count(
+            $sub_new_count += Rplus::Model::SubscriptionRealty::Manager->get_objects_count(
                 query => [
                     subscription_id => $subscription->id,
                     state_code => 'new',
                     delete_date => undef,
                 ],
             );
-            if ($sub_new_count > 0) {
-                $new_count ++;
-                last;
-            }
         }
+        if ($sub_new_count > 0) {
+            $new_count ++;
+        }        
     }
 
     return $self->render(json => {status => 'success', new_count => $new_count});
