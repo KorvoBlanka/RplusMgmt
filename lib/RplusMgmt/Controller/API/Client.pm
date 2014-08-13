@@ -540,10 +540,12 @@ sub get_new_count {
             query => [
                 client_id => $client->id,
                 delete_date => undef,
+                end_date => {gt => \'now()'},
             ],
         );
 
         while (my $subscription = $subscription_iter->next) {
+            realty_update($self, $subscription->id);
             my $sub_new_count = Rplus::Model::SubscriptionRealty::Manager->get_objects_count(
                 query => [
                     subscription_id => $subscription->id,
@@ -551,7 +553,7 @@ sub get_new_count {
                     delete_date => undef,
                 ],
             );
-            if ($sub_new_count > 0 || get_new_realty_count($self, $subscription->id) > 0) {
+            if ($sub_new_count > 0) {
                 $new_count ++;
                 last;
             }
@@ -561,16 +563,15 @@ sub get_new_count {
     return $self->render(json => {status => 'success', new_count => $new_count});
 }
 
-sub get_new_realty_count {
+sub realty_update {
     my ($self, $subscription_id) = @_;
     my $subscription = Rplus::Model::Subscription::Manager->get_objects(query => [id => $subscription_id, delete_date => undef])->[0];
 
-    my $realty_count = 0;
     for my $q (@{$subscription->queries}) {
         # Skip FTS data
         my @query = map { ref($_) eq 'SCALAR' && $$_ =~ /^t1\.fts/ ? () : $_ } (Rplus::Util::Query->parse($q, $self));
 
-        $realty_count += Rplus::Model::Realty::Manager->get_objects_count (
+        my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
             query => [
                 offer_type_code => $subscription->offer_type_code,
                 or => [
@@ -587,9 +588,19 @@ sub get_new_realty_count {
                 @query
             ],
         );
-    }
 
-    return $realty_count;
+        my $values_str = '';
+        my $sid = $subscription->id;
+        while (my $realty = $realty_iter->next) {
+            #Rplus::Model::SubscriptionRealty->new(subscription_id => $subscription->id, realty_id => $realty->id)->save;
+            my $realty_id = $realty->id; 
+            $values_str .= "($sid, $realty_id),";
+        }
+        if (length $values_str > 0) {
+            chop $values_str;
+            Rplus::DB->new_or_cached->dbh->do("INSERT INTO subscription_realty (subscription_id, realty_id) VALUES $values_str;");
+        }
+    }
 }
 
 1;
