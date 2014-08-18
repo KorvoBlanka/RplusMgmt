@@ -151,6 +151,7 @@ sub run {
                             $realty->metadata(encode_json($vals));
                             $realty->{work_info} = '';
                         }
+                        $realty->last_seen_date($data->{add_date});
                         $realty->save;
                         my $data_id = $data->{id};
                         my $id = $realty->id;
