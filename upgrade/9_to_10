@@ -1,0 +1,19 @@
+#!/usr/bin/env perl
+
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+
+use Rplus::Modern;
+
+use Rplus::DB;
+
+my $dbh = Rplus::DB->new_or_cached->dbh;
+
+if (1) {
+
+    # fix last seen date
+    $dbh->do(q{UPDATE REALTY SET last_seen_date = last_seen_date - INTERVAL '1 day' where last_seen_date > now();});
+    $dbh->do(q{UPDATE REALTY SET add_date = add_date - INTERVAL '1 day' where add_date > now();});
+}
+
+exit 1;
