@@ -1767,6 +1767,59 @@
           ;
           return false;
         });
+
+        // Load photos
+        $(document).bind('showPhoto', function (e, id, photo_id) {
+          var realtyId = id;
+          $.ajax({
+            type: 'POST',
+            url: '/api/photo/list',
+            data: {realty_id: realtyId}
+          })
+            .done(function (data, textStatus, jqXHR) {
+              guid = Rplus.Util.guid();
+              $('#photosModal .modal-body').html(template.replace(/{guid}/g, guid));
+              
+              var img_num = 0;
+              for (var i = 0; i < data.list.length; i++) {
+                var x = data.list[i];
+                if (photo_id == x.id) {
+                  img_num = i;
+                }
+                $('#photosCarousel-' + guid + ' > .carousel-indicators').append('<li data-target="#photosCarousel-' + guid + '" data-slide-to="' + i + '" class="' + (i == 0 ? 'active' : '') + '"></li>');
+                $('#photosCarousel-' + guid + ' > .carousel-inner').append('<div class="item' + (i == 0 ? ' active' : '') + '"><img src="' + x.photo_url + '"></div>');
+              }
+              
+              $('#photosCarousel-' + guid).carousel(img_num);
+              if (data.list.length) { $('#photosModal').modal('show'); };
+            })
+          ;
+          return false;
+        });
+
+        // Load photos
+        $('[data-action="photos-show"]').on('click', function (e) {
+          var realtyId = $(this).data('id');
+          $.ajax({
+            type: 'POST',
+            url: '/api/photo/list',
+            data: {realty_id: realtyId}
+          })
+            .done(function (data, textStatus, jqXHR) {
+              guid = Rplus.Util.guid();
+              $('#photosModal .modal-body').html(template.replace(/{guid}/g, guid));
+
+              for (var i = 0; i < data.list.length; i++) {
+                var x = data.list[i];
+                $('#photosCarousel-' + guid + ' > .carousel-indicators').append('<li data-target="#photosCarousel-' + guid + '" data-slide-to="' + i + '" class="' + (i == 0 ? 'active' : '') + '"></li>');
+                $('#photosCarousel-' + guid + ' > .carousel-inner').append('<div class="item' + (i == 0 ? ' active' : '') + '"><img src="' + x.photo_url + '"></div>');
+              }
+
+              if (data.list.length) { $('#photosModal').modal('show'); };
+            })
+          ;
+          return false;
+        });
       })();
 
       // Notifications
