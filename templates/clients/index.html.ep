@@ -539,6 +539,11 @@
           for (var i = 0; i < data.list.length; i++) {
             $('#realtyTable > tbody').append(buildHtmlForRealty(data.list[i], data.page));
           }
+
+          for (var i = 0; i < data.list.length; i++) {
+            var r = data.list[i];
+            $('#realtyTable > tbody > tr[data-id="' + r.id + '"]').data('obj', r);
+          }
         })
       ;
     }
@@ -576,6 +581,10 @@
             $('#realtyTable > tbody').append(buildHtmlForRealty(data.list[i], data.page));
           }        
         
+          for (var i = 0; i < data.list.length; i++) {
+            var r = data.list[i];
+            $('#realtyTable > tbody > tr[data-id="' + r.id + '"]').data('obj', r);
+          }
         })
       ;
     }    
@@ -770,7 +779,7 @@
       var card = RealtyCard({
         loaded: function (r) {
           // Mark opened realty object in the table
-          $('tr[data-id="' + r.id + '"]', '#realtyTable').removeClass('selected').addClass('shown');
+          $('tr[data-id="' + r.id + '"]', '#realtyTable').addClass('shown');
           
           var realty_id = r.id;
           var subscription_id = $('.subselected').data('subscription');
