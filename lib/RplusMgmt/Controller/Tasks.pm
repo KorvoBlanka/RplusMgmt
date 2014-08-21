@@ -8,6 +8,7 @@ use Rplus::Model::RuntimeParam::Manager;
 use RplusMgmt::Task::SMS;
 use RplusMgmt::Task::Subscriptions;
 use RplusMgmt::Task::Landmarks;
+use RplusMgmt::Task::SubscriptionRealty;
 
 use Mojo::IOLoop;
 
@@ -35,6 +36,7 @@ sub run {
     RplusMgmt::Task::Subscriptions->run($self);
     RplusMgmt::Task::SMS->run($self);
     RplusMgmt::Task::Landmarks->run($self);
+    RplusMgmt::Task::SubscriptionRealty->run($self);
 
     # Update lock
     $mutex->ts('now()');

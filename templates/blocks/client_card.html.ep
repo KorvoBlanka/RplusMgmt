@@ -490,6 +490,18 @@
           $modal.addClass('shaker');
           setTimeout('$("#clientCard_modal").removeClass("shaker");', 1000); 
           $('#phone-num-alert', $modal).removeClass('hidden');
+
+              var stackBottomRight = {"dir1": "up", "dir2": "left", "firstpos1": 75, "firstpos2": 25};
+               $.pnotify({
+                  title: "Ошибка при сохранении",
+                  text: 'Клиент с таким номером уже существует, попробуйте воспользоваться поиском',
+                  sticker: true,
+                  addclass: "stack-bottomright custom-notify",
+                  stack: stackBottomRight,
+                  type: "error",
+                  cornerclass: "ui-pnotify-sharp",
+              });
+
         })
       ;
       
@@ -694,7 +706,10 @@
               $modal.modal({show: true, backdrop: false});
             },
             error: function (jqXHR, textStatus, errorThrown) {
-              setClientView({phone_num: phoneNum}, 1, true);
+              setClientView({
+                phone_num: phoneNum, 
+                agent_id: '<%= $self->stash('user')->{id} %>',
+              }, 1, true);
               $modal.modal({show: true, backdrop: false});
             },
           });
@@ -711,6 +726,7 @@
           skel.email = '';
           skel.skype = '';
           skel.description = '';
+          skel.agent_id = '<%= $self->stash('user')->{id} %>',
           skel.subscriptions = [];
           //skel.realty => []
           

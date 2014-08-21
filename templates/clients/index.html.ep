@@ -303,6 +303,16 @@
     }
   }
 
+  .custom-notify > .ui-pnotify-container {
+    background-color: #f8f8f8;
+    color: #666;
+    border-color: #e7e7e7;
+  }
+
+  .custom-notify > .ui-pnotify-container > .ui-pnotify-icon {
+    color: rgba(190, 20, 20, 0.70);
+  }
+
 </style>
 % end
 
@@ -728,12 +738,14 @@
             clients[client.id] = client;
             node_id ++;
 
+            /*
             var xhtml = '<tr><td style="width: 1px; height: 1px; padding-top: 0px; padding-bottom: 0px;"></td>' +
             '<td style="width: 220px; height: 1px;padding-top: 0px; padding-bottom: 0px;"></td>' +
             '<td style="width: 90px; height: 1px;padding-top: 0px; padding-bottom:0px;"></td>' +
             '<td style="width: 20px; height: 1px;padding-top: 0px; padding-bottom: 0px;"></td></tr>';
+            */
 
-            xhtml += buildHtmlForClient(client, 'tree-tmp');
+            var xhtml = buildHtmlForClient(client, 'tree-tmp');
 
             $('.tree').append(xhtml);
             if (page != 1) {
@@ -1435,7 +1447,7 @@
         $selected.each(function () {
           var $this = $(this);
           var client_id = $this.data('id');
-
+          $this.treegrid('collapse');
           $.ajax({
             type: "POST",
             url: "/api/client/delete",

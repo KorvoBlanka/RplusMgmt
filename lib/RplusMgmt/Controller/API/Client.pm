@@ -227,8 +227,6 @@ sub update_offer_types {
     # Retrieve client
     my $id = $self->param('id');
     my $client = Rplus::Model::Client::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
-    return $self->render(json => {error => 'Not Found'}, status => 404) unless $client;
-    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(clients => 'write') || $self->has_permission(clients => 'read') || $client->agent_id == $self->stash('user')->{id};    
 
     my $subscription_iter = Rplus::Model::Subscription::Manager->get_objects_iterator(
         query => [
@@ -257,15 +255,19 @@ sub save {
     my $self = shift;
 
     # Retrieve client
+    my $new_client = 0;
     my $client;
     if (my $id = $self->param('id')) {
         $client = Rplus::Model::Client::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
     } else {
         $client = Rplus::Model::Client->new;
+        $new_client = 1;
     }
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $client;
 
-    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(clients => 'write' => $client->agent_id) || $client->agent_id == $self->stash('user')->{id};
+    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(clients => 'write' => $client->agent_id) ||
+                                                                                                        $client->agent_id == $self->stash('user')->{id} ||
+                                                                                                        $new_client && $self->param('agent_id') == $self->stash('user')->{id};
 
     # Validation
     $self->validation->required('phone_num')->is_phone_num;
@@ -294,13 +296,17 @@ sub save {
     $client->skype($skype);
     $client->description($description);
     $client->send_owner_phone($send_owner_phone);
-    if ($self->has_permission(clients => 'write' => $client->agent_id)) {
-        if ($agent_id eq '') {
-            $client->agent_id(undef);
-        } else {
-            $client->agent_id($agent_id);
-        }
+
+    unless ($self->has_permission(clients => 'write' => $client->agent_id)) {
+        #$agent_id = $self->stash('user')->{id};
     }
+
+    if ($agent_id eq '') {
+        $client->agent_id(undef);
+    } else {
+        $client->agent_id($agent_id);
+    }
+
     $client->change_date('now()');
     $client->subscription_offer_types($subscription_offer_types);
     

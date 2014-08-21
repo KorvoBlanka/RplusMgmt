@@ -110,7 +110,7 @@ my $_serialize = sub {
 sub list {
     my $self = shift;
 
-    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(subscriptions => 'read');
+    #return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(subscriptions => 'read');
 
     # Validation
     $self->validation->optional('date_from')->is_datetime;
@@ -212,7 +212,7 @@ sub list {
 sub get {
     my $self = shift;
 
-    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(subscriptions => 'read');
+    #return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(subscriptions => 'read');
 
     # Not Implemented
 
@@ -222,7 +222,7 @@ sub get {
 sub realty_set_state {
     my $self = shift;
 
-    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(subscriptions => 'write');
+    #return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(subscriptions => 'write');
 
     my $realty_id = $self->param('realty_id');
     my $subscription_id = $self->param('subscription_id');
@@ -389,7 +389,7 @@ sub realty_update {
 sub update {
     my $self = shift;
 
-    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(subscriptions => 'write');    
+    #return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(subscriptions => 'write');    
 
     my $id = $self->param('id');
     my $subscription = Rplus::Model::Subscription::Manager->get_objects(query => [id => $id, '!end_date' => undef, delete_date => undef])->[0];
@@ -416,7 +416,7 @@ sub update {
 sub save {
     my $self = shift;
 
-    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(subscriptions => 'write');
+    #return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(subscriptions => 'write');
 
     my $subscription;
     if (my $id = $self->param('id')) {
@@ -549,7 +549,7 @@ sub save {
 sub delete {
     my $self = shift;
 
-    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(subscriptions => 'write');
+    #return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(subscriptions => 'write');
 
     my $id = $self->param('id');
 
