@@ -170,7 +170,7 @@ sub get_digest {
     }
 
     if ($r->square_land && $r->square_land_type) {
-        push @digest, $r->square_land . ' ' . ($r->square_land_type eq 'ar' ? 'сот.' : 'га'));
+        push @digest, $r->square_land . ' ' . ($r->square_land_type eq 'ar' ? 'сот.' : 'га');
     }
     if ($r->description) {
         push @digest, $r->description;
