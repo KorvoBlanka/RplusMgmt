@@ -552,6 +552,8 @@ sub get_new_count {
             @query,
             delete_date => undef,
         ],
+        sort_by => 'change_date desc',
+        limit => 99,
     );
 
     while (my $client = $clients_iter->next) {

@@ -466,6 +466,10 @@
           % }
         ]},
         % }
+        {text: '<span class="glyphicon glyphicon-send"></span> Уведомить', subMenu: [
+          {text: '<span class="glyphicon glyphicon-ok"></span>&nbsp&nbspСМС', data_action: 'notify-sms', data_val: '', },
+          {text: '<span class="glyphicon glyphicon-envelope"></span>&nbsp&nbspe-mail', data_action: 'notify-email', data_val: '', },
+        ]},
         {text: '<span class="glyphicon glyphicon-cog"></span> Задача'},
         {text: '<span class="glyphicon glyphicon-export"></span>  <%= ucfloc q{advertisement} %>', element_id: 'el_export', subMenu: [
           % my $loc_id = $self->session('user')->{location_id};      # костыль!
@@ -699,6 +703,8 @@
     var node_id = 0;
     var tree_options = {
       initialState: "collapsed",
+      expanderExpandedClass: 'hidden',
+      expanderCollapsedClass: 'hidden'
       /*onExpand: function () {
         console.log('!');
       },*/
@@ -1084,7 +1090,12 @@
           });
 
           $selected = $('.tree > tbody > tr.cselected');
-          if ($selected.data('id') == $(this).data('id')) {
+          if ($selected.data('id') == $this.data('id')) {
+            if ($this.treegrid('isCollapsed')) {
+              $this.treegrid('expand');
+            } else {
+              $this.treegrid('collapse');
+            }
             return;
           }
           $selected.each(function () {
@@ -1094,7 +1105,7 @@
           });
           clearRealty();
           $this.addClass('cselected');
-          
+          $this.treegrid('expand');
           var $selected = $('.tree > tbody > tr.subselected');
           $selected.each(function () {
             var $this = $(this);
@@ -1410,6 +1421,57 @@
         updateTreeEntry(client, true);
       });
 
+      $('[data-action="notify-sms"]').click(function (e) {
+        var $clients = $('.tree > tbody > tr.cselected');
+        $clients.each(function () {
+          var $this = $(this);
+          var client_id = $this.data('id');
+          var $realtys = $('#realtyTable > tbody > tr.selected');
+          $realtys.each(function () {
+            $.ajax({
+              type: "POST",
+              url: "/api/notification/by_sms",
+              data: {
+                client_id: client_id,
+                realty_id: $(this).data('id'),
+              },
+              async: false, // (!)
+              success: function (data, textStatus, jqXHR) {
+                console.log(data);
+              },
+              error: function (jqXHR, textStatus, errorThrown) {
+                console.log('fail');
+              },
+            });
+          });
+        });
+      });
+      
+      $('[data-action="notify-email"]').click(function (e) {
+        var $clients = $('.tree > tbody > tr.cselected');
+        $clients.each(function () {
+          var $this = $(this);
+          var client_id = $this.data('id');
+          var $realtys = $('#realtyTable > tbody > tr.selected');
+          $realtys.each(function () {
+            $.ajax({
+              type: "POST",
+              url: "/api/notification/by_email",
+              data: {
+                client_id: client_id,
+                realty_id: $(this).data('id'),
+              },
+              async: false, // (!)
+              success: function (data, textStatus, jqXHR) {
+                console.log(data);
+              },
+              error: function (jqXHR, textStatus, errorThrown) {
+                console.log('fail');
+              },
+            });
+          });
+        });
+      });
 
       $('[data-action="toggle-nav"]').click(function (e) {
         $('#nav-1').toggleClass('hidden');
