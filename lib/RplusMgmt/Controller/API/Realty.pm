@@ -106,13 +106,13 @@ my $_serialize = sub {
     }
 
     # Fetch photos
-    #if (keys %realty_h) {
-    #    my $photo_iter = Rplus::Model::Photo::Manager->get_objects_iterator(query => [realty_id => [keys %realty_h], delete_date => undef], sort_by => 'is_main DESC, id ASC');
-    #    while (my $photo = $photo_iter->next) {
-    #        next if $realty_h{$photo->realty_id}->{main_photo_thumbnail};
-    #        $realty_h{$photo->realty_id}->{main_photo_thumbnail} = $self->config->{'storage'}->{'url'}.'/photos/'.$photo->realty_id.'/'.$photo->thumbnail_filename;
-    #    }
-    #}
+    if (keys %realty_h) {
+        my $photo_iter = Rplus::Model::Photo::Manager->get_objects_iterator(query => [realty_id => [keys %realty_h], delete_date => undef], sort_by => 'is_main DESC, id ASC');
+        while (my $photo = $photo_iter->next) {
+            next if $realty_h{$photo->realty_id}->{main_photo_thumbnail};
+            $realty_h{$photo->realty_id}->{main_photo_thumbnail} = $self->config->{'storage'}->{'url'}.'/photos/'.$photo->realty_id.'/'.$photo->thumbnail_filename;
+        }
+    }
 
     return @realty_objs == 1 ? $serialized[0] : @serialized;
 };
