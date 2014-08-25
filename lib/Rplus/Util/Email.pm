@@ -12,7 +12,7 @@ use IPC::Open2;
 use JSON;
 
 sub send {
-    my ($class, $self, $email, $message_text) = @_;
+    my ($class, $self, $email, $message_text, $config) = @_;
 
     my $rt_param = Rplus::Model::RuntimeParam->new(key => 'notifications')->load();
     my $config;
@@ -23,13 +23,13 @@ sub send {
     }
 
     $self->app->log->debug(sprintf("Sending email: (%s) %s => %s", -1, $email, $message_text));
-    send_email($email, 'Подобрана недвижимость', $message_text);
+    send_email($email, 'Подобрана недвижимость', $message_text, $config);
 
     return 'success';
 }
 
 sub send_email {
-    my ($to, $subject, $message) = @_;
+    my ($to, $subject, $message, $config) = @_;
 
     my $from = 'info@rplusmgmt.com';
 
@@ -41,7 +41,12 @@ sub send_email {
                    );
 
     $msg->attr("content-type" => "text/html; charset=UTF-8");
-    $msg->send('smtp', 'smtp.yandex.ru', AuthUser=>'info@rplusmgmt.com', AuthPass=>'ckj;ysqgfhjkm', Port => 587);
+
+    my $port = 587;
+    if ($config->{'email-port'} =~ /^(\d+)$/) {
+      $port = $1;
+    }
+    $msg->send('smtp', $config->{'email-smtp'}, AuthUser => $config->{'email-user'}, AuthPass => $config->{'email-password'}, Port => $port);
 }
 
 1;

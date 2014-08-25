@@ -159,7 +159,7 @@
 
 <div class="row">
 
-  <h3 class="page-header">Импорт</h3>
+  <h3 class="page-header">Импорт объектов</h3>
   <ul class="nav nav-tabs">
     % for my $x (@{Rplus::Model::Media::Manager->get_objects(query => [type => 'import'], sort_by => 'id')}) {
     %     my $loc_id = $self->session('user')->{location_id};      # костыль, сделать получение списка доступных источников с сервера!

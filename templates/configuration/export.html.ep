@@ -156,7 +156,7 @@
 % end
 
 <div class="row">
-  <h3 class="page-header">Экспорт</h3>
+  <h3 class="page-header">Реклама объектов</h3>
   <ul class="nav nav-tabs">
     % my $loc_id = $self->session('user')->{location_id};      # костыль!
     % if ($loc_id == 1) {

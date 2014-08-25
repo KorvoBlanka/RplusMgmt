@@ -62,7 +62,7 @@
   }
   
   #searchTable > tbody > tr.selected:hover > td {
-    background-color: #006087 !important;
+    background-color: #006096 !important;
     color: #fff;
   }
 

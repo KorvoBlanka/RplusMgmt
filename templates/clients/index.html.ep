@@ -114,7 +114,7 @@
   }
 
   .tree > tbody > tr.cselected:hover > td {
-    background-color: #006087 !important;
+    background-color: #006096 !important;
     color: #fff;
   }
 
@@ -128,17 +128,17 @@
   }
 
   .tree > tbody > tr.subselected:hover > td {
-    background-color: #6B7F98 !important;
+    background-color: #657992 !important;
     color: #fff;
   }
   
   #realtyTable > tbody > tr.selected > td {
-    background-color: #0088cc !important;
+    background-color: #6B7F98 !important;
     color: #fff;
   }
 
   #realtyTable > tbody > tr.selected:hover > td {
-    background-color: #0082C7 !important;
+    background-color: #657992 !important;
     color: #fff;
   }
 
@@ -1069,6 +1069,13 @@
               _dblclick_timer = [
                 id, setTimeout(function () {
                   if (_dblclick_timer[0] == id) _dblclick_timer = null;
+
+                  if ($this.treegrid('isCollapsed')) {
+                    $this.treegrid('expand');
+                  } else {
+                    $this.treegrid('collapse');
+                  }
+
                 }, _dblclick_timeout)
               ];
             } else {
@@ -1091,11 +1098,11 @@
 
           $selected = $('.tree > tbody > tr.cselected');
           if ($selected.data('id') == $this.data('id')) {
-            if ($this.treegrid('isCollapsed')) {
+            /*if ($this.treegrid('isCollapsed')) {
               $this.treegrid('expand');
             } else {
               $this.treegrid('collapse');
-            }
+            }*/
             return;
           }
           $selected.each(function () {
@@ -1105,7 +1112,7 @@
           });
           clearRealty();
           $this.addClass('cselected');
-          $this.treegrid('expand');
+          //$this.treegrid('expand');
           var $selected = $('.tree > tbody > tr.subselected');
           $selected.each(function () {
             var $this = $(this);
@@ -1438,9 +1445,13 @@
               async: false, // (!)
               success: function (data, textStatus, jqXHR) {
                 console.log(data);
+                if(data.status != 'success') {
+                    alert('не удалось отправить sms');
+                } 
               },
               error: function (jqXHR, textStatus, errorThrown) {
                 console.log('fail');
+                alert('не удалось отправить СМС, проверьте настройки');
               },
             });
           });
@@ -1463,10 +1474,17 @@
               },
               async: false, // (!)
               success: function (data, textStatus, jqXHR) {
-                console.log(data);
+                if(data.status != 'success') {
+                  if(data.status == 'not sent') {
+                    alert('В карточке клиента не указан email');
+                  } else {
+                    alert('не удалось отправить e-mail');
+                  }
+                } 
               },
               error: function (jqXHR, textStatus, errorThrown) {
                 console.log('fail');
+                alert('не удалось отправить e-mail');
               },
             });
           });

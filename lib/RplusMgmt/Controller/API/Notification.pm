@@ -47,14 +47,16 @@ sub by_sms {
         with_objects => ['address_object', 'agent', 'type', 'sublandmark'],
     )->[0];
 
+    my $rt_param = Rplus::Model::RuntimeParam->new(key => 'notifications')->load();
+    my $config;
+    if ($rt_param) {
+        $config = from_json($rt_param->{value});
+    } else {
+        return;
+    }
+
     # Prepare SMS for client
     if ($client->phone_num =~ /^9\d{9}$/) {
-        my $rt_param = Rplus::Model::RuntimeParam->new(key => 'notifications')->load();
-        my $contact_info = '';
-        if ($rt_param) {
-            my $config = from_json($rt_param->{value});
-            $contact_info = $config->{'contact_info'} ? $config->{'contact_info'} : '';
-        }        
         # TODO: Add template settings
         my @parts;
         {
@@ -67,9 +69,9 @@ sub by_sms {
             push @parts, $realty->agent->public_phone_num || $realty->agent->phone_num if $realty->agent;
         }
         my $sms_body = join(', ', @parts);
-        $sms_text = 'Вы интересовались: '.$sms_body.($sms_body =~ /\.$/ ? '' : '.').$contact_info;
+        $sms_text = 'Вы интересовались: '.$sms_body.($sms_body =~ /\.$/ ? '' : '.').($config->{'contact_info'} ? $config->{'contact_info'} : '');
 
-        $status = Rplus::Util::SMS->send($self, $client->phone_num, $sms_text);
+        $status = Rplus::Util::SMS->send($self, $client->phone_num, $sms_text, $config);
     }
 
     return $self->render(json => {status => $status,});
@@ -89,31 +91,33 @@ sub by_email {
         with_objects => ['address_object', 'agent', 'type', 'sublandmark'],
     )->[0];
 
-    # Prepare SMS for client
+    my $rt_param = Rplus::Model::RuntimeParam->new(key => 'notifications')->load();
+    my $config;
+    if ($rt_param) {
+        $config = from_json($rt_param->{value});
+    } else {
+        return;
+    }
+
+    # Prepare email for client
     if ($client->email) {
-        my $rt_param = Rplus::Model::RuntimeParam->new(key => 'notifications')->load();
-        my $contact_info = '';
-        if ($rt_param) {
-            my $config = from_json($rt_param->{value});
-            $contact_info = $config->{'contact_info'} ? $config->{'contact_info'} : '';
-        }
         my @photos;
         my $photo_iter = Rplus::Model::Photo::Manager->get_objects_iterator(query => [realty_id => $realty->id, delete_date => undef], sort_by => 'is_main DESC, id ASC');
         while (my $photo = $photo_iter->next) {
             push @photos, $photo->thumbnail_filename;
         }        
         # TODO: Add template settings
-        my $message = get_digest($realty, \@photos);
+        my $sender = Rplus::Model::User::Manager->get_objects(query => [id => $self->stash('user')->{id}, delete_date => undef])->[0];
+        my $message = get_digest($realty, \@photos, $config->{'contact_info'} ? $config->{'contact_info'} : '', $sender);
 
-        $status = Rplus::Util::Email->send($self, $client->email, $message);
+        $status = Rplus::Util::Email->send($self, $client->email, $message, $config);
     }
 
     return $self->render(json => {status => $status,});
 }
 
 sub get_digest {
-    my $r = shift;
-    my $photos = shift;
+    my ($r, $photos, $contact_info, $sender) = @_;
 
     my @digest;
 
@@ -178,17 +182,17 @@ sub get_digest {
     if ($r->price) {
         push @digest, '<br><span style="color: #428bca;">' . $r->price . ' тыс. руб.</span>';
     }
-    #if (r.agent_id) {
-    #if (r.agent_id == 10000) {
-    #  digest.push('<br><span>Посредник: ' + r.mediator_company + '</span>');
-    #} else {
-    #  var agent = Rplus.Table.users[r.agent_id];
-    #  digest.push('<br><span>Агент: ' + (agent.public_name || agent.name) + ', ' + (agent.public_phone_num || Rplus.Util.formatPhoneNum(Rplus.Table.users[r.agent_id].phone_num)) + '</span>');
-    #}
-    #} else {
-    #digest.push('<br><span>Собственник</span>');
-    #}
-    #return digest.join(', ');
+    if ($r->agent_id) {
+        if ($r->agent_id == 10000) {
+            push @digest, '<br><span>Агент: ' . ($sender->public_name || $sender->name) . ', ' . ($sender->public_phone_num || $sender->phone_num) . '</span>';
+        } else {
+            push @digest, '<br><span>Агент: ' . ($r->agent->public_name || $r->agent->name) . ', ' . ($r->agent->public_phone_num || $r->agent->phone_num) . '</span>';
+        }
+    } else {
+        push @digest, '<br><span>Агент: ' . ($sender->public_name || $sender->name) . ', ' . ($sender->public_phone_num || $sender->phone_num) . '</span>';
+    }
+    push @digest, '<br>'.$contact_info;
+
     push @digest, '</div>';
 
     my $message = $template_head;

@@ -29,6 +29,12 @@
         },
       })
         .done(function (data, textStatus, jqXHR) {
+
+          $('[name="email-smtp"]:input').val(data.val['email-smtp']);
+          $('[name="email-user"]:input').val(data.val['email-user']);
+          $('[name="email-password"]:input').val(data.val['email-password']);
+          $('[name="email-port"]:input').val(data.val['email-port']);
+
           if (data.val['active'] == '1' || data.val['active'] == 'true') {
             $('[name="active"]:input').prop('checked', true);
           } else {
@@ -73,6 +79,19 @@
         var t;
         var opt_hash = {};
 
+        t = $('[name="email-smtp"]:input').val();
+        opt_hash['email-smtp'] = t;
+
+        t = $('[name="email-user"]:input').val();
+        opt_hash['email-user'] = t;
+
+        t = $('[name="email-password"]:input').val();
+        opt_hash['email-password'] = t;
+
+        t = $('[name="email-port"]:input').val();
+        opt_hash['email-port'] = t;
+
+
         t = $('[name="active"]:input').prop('checked');
         opt_hash['active'] = t;
 
@@ -111,6 +130,50 @@
 % end
 
 <div class="row">
+  <h3 class="page-header">Общие</h3>
+
+  <div class="form-group">
+    <label class="col-lg-3 control-label" style="padding-top: 15px;">Контактные данные</label>
+    <div class="col-lg-9" style="padding-top: 15px;">
+      <input type="text" class="form-control" name="contact_info" style="width: 200px;" placeholder="контактные данные">
+    </div>
+  </div>
+
+</div>
+
+<div class="row">
+  <h3 class="page-header">E-mail уведомления</h3>
+
+  <div class="form-group">
+    <label class="col-lg-3 control-label" style="padding-top: 15px;">Адрес SMTP сервера</label>
+    <div class="col-lg-9" style="padding-top: 15px;">
+      <input type="text" class="form-control" name="email-smtp" style="width: 200px;" placeholder="smtp.server.ru">
+    </div>
+  </div>
+  <div class="form-group">
+    <label class="col-lg-3 control-label" style="padding-top: 15px;">SMTP порт</label>
+    <div class="col-lg-9" style="padding-top: 15px;">
+      <input type="text" class="form-control" name="email-port" style="width: 200px;" placeholder="порт (по-умолчанию 587)">
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label class="col-lg-3 control-label" style="padding-top: 15px;">e-mail</label>
+    <div class="col-lg-9" style="padding-top: 15px;">
+      <input type="email" class="form-control" name="email-user" style="width: 200px;" placeholder="some@mail.ru">
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label class="col-lg-3 control-label" style="padding-top: 15px;">Пароль от ящика</label>
+    <div class="col-lg-9" style="padding-top: 15px;">
+      <input type="password" class="form-control" name="email-password" style="width: 200px;" placeholder="пароль">
+    </div>
+  </div>
+
+</div>
+
+<div class="row">
   <h3 class="page-header">SMS уведомления</h3>
 
   <div class="form-group">
@@ -119,26 +182,18 @@
       <input type="checkbox" class="" name="active">
     </div>
   </div>
-
   <div class="form-group">
     <label class="col-lg-3 control-label" style="padding-top: 15px;">Количество сообщений</label>
     <div class="col-lg-9" style="padding-top: 15px;">
       <input type="number" class="form-control" name="msg-count" style="width: 60px;" placeholder="# of messages">
     </div>
   </div>
-
   <div class="form-group">
     <label class="col-lg-3 control-label" style="padding-top: 15px;">Название компании</label>
     <div class="col-lg-9" style="padding-top: 15px;">
       <input type="text" class="form-control" name="company" style="width: 200px;" placeholder="название компании">
     </div>
   </div>
-  <div class="form-group">
-    <label class="col-lg-3 control-label" style="padding-top: 15px;">Контактные данные</label>
-    <div class="col-lg-9" style="padding-top: 15px;">
-      <input type="text" class="form-control" name="contact_info" style="width: 200px;" placeholder="контактные данные">
-    </div>
-  </div> 
   <div class="form-group">
     <label class="col-lg-3 control-label" style="padding-top: 15px;">Логин</label>
     <div class="col-lg-9" style="padding-top: 15px;">
@@ -154,6 +209,11 @@
   <div class="form-group">
     <button type="" class="btn btn-primary btn-save" style="margin-top: 15px">Сохранить</button>
   </div>  
+</div>
+
+<div class="row">
+  <div style="height: 100px">
+  </div>
 </div>
 
 <nav class="navbar navbar-default navbar-fixed-bottom">

@@ -8,7 +8,7 @@ our %Lexicon = (
     # A    
     q{analytics} => 'аналитика',
     q{add} => 'добавить',
-    q{advertisement} => 'реклама',
+    q{advertisement} => 'реклама объектов',
     q{agent} => 'агент',
     q{agent_ext} => 'агент+',
     q{additional} => 'дополнительно',
