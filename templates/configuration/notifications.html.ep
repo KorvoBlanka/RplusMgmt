@@ -131,84 +131,85 @@
 
 <div class="row">
   <h3 class="page-header">Общие</h3>
-
-  <div class="form-group">
-    <label class="col-lg-3 control-label" style="padding-top: 15px;">Контактные данные</label>
-    <div class="col-lg-9" style="padding-top: 15px;">
-      <input type="text" class="form-control" name="contact_info" style="width: 200px;" placeholder="контактные данные">
+  <form class="form-horizontal" role="form">
+    <div class="form-group" style="padding-top: 15px;">
+      <label class="col-lg-3 control-label">Контактные данные</label>
+      <div class="col-lg-9">
+        <input type="text" class="form-control" name="contact_info" style="width: 200px;" placeholder="контактные данные">
+      </div>
     </div>
-  </div>
-
+  </form>
 </div>
 
 <div class="row">
   <h3 class="page-header">E-mail уведомления</h3>
 
-  <div class="form-group">
-    <label class="col-lg-3 control-label" style="padding-top: 15px;">Адрес SMTP сервера</label>
-    <div class="col-lg-9" style="padding-top: 15px;">
-      <input type="text" class="form-control" name="email-smtp" style="width: 200px;" placeholder="smtp.server.ru">
+  <form class="form-horizontal" role="form">
+    <div class="form-group" style="padding-top: 15px;">
+      <label class="col-lg-3 control-label">Адрес SMTP сервера</label>
+      <div class="col-lg-9">
+        <input type="text" class="form-control" name="email-smtp" style="width: 200px;" placeholder="smtp.server.ru">
+      </div>
     </div>
-  </div>
-  <div class="form-group">
-    <label class="col-lg-3 control-label" style="padding-top: 15px;">SMTP порт</label>
-    <div class="col-lg-9" style="padding-top: 15px;">
-      <input type="text" class="form-control" name="email-port" style="width: 200px;" placeholder="порт (по-умолчанию 587)">
+    <div class="form-group" style="padding-top: 15px;">
+      <label class="col-lg-3 control-label">SMTP порт</label>
+      <div class="col-lg-9">
+        <input type="text" class="form-control" name="email-port" style="width: 200px;" placeholder="порт (по-умолчанию 587)">
+      </div>
     </div>
-  </div>
-
-  <div class="form-group">
-    <label class="col-lg-3 control-label" style="padding-top: 15px;">e-mail</label>
-    <div class="col-lg-9" style="padding-top: 15px;">
-      <input type="email" class="form-control" name="email-user" style="width: 200px;" placeholder="some@mail.ru">
+    <div class="form-group" style="padding-top: 15px;">
+      <label class="col-lg-3 control-label">e-mail</label>
+      <div class="col-lg-9">
+        <input type="email" class="form-control" name="email-user" style="width: 200px;" placeholder="some@mail.ru">
+      </div>
     </div>
-  </div>
-
-  <div class="form-group">
-    <label class="col-lg-3 control-label" style="padding-top: 15px;">Пароль от ящика</label>
-    <div class="col-lg-9" style="padding-top: 15px;">
-      <input type="password" class="form-control" name="email-password" style="width: 200px;" placeholder="пароль">
+    <div class="form-group" style="padding-top: 15px;">
+      <label class="col-lg-3 control-label">Пароль от ящика</label>
+      <div class="col-lg-9">
+        <input type="password" class="form-control" name="email-password" style="width: 200px;" placeholder="пароль">
+      </div>
     </div>
-  </div>
-
+  </form>
 </div>
 
 <div class="row">
   <h3 class="page-header">SMS уведомления</h3>
 
-  <div class="form-group">
-    <label class="col-lg-3 control-label">Использоваьт СМС</label>
-    <div class="col-lg-9">
-      <input type="checkbox" class="" name="active">
+  <form class="form-horizontal" role="form">
+    <div class="form-group">
+      <label class="col-lg-3 control-label">Использоваьт СМС</label>
+      <div class="col-lg-9">
+        <input type="checkbox" class="" name="active">
+      </div>
     </div>
-  </div>
-  <div class="form-group">
-    <label class="col-lg-3 control-label" style="padding-top: 15px;">Количество сообщений</label>
-    <div class="col-lg-9" style="padding-top: 15px;">
-      <input type="number" class="form-control" name="msg-count" style="width: 60px;" placeholder="# of messages">
+    <div class="form-group" style="padding-top: 15px;">
+      <label class="col-lg-3 control-label">Количество сообщений</label>
+      <div class="col-lg-9">
+        <input type="number" class="form-control" name="msg-count" style="width: 60px;" placeholder="# of messages">
+      </div>
     </div>
-  </div>
-  <div class="form-group">
-    <label class="col-lg-3 control-label" style="padding-top: 15px;">Название компании</label>
-    <div class="col-lg-9" style="padding-top: 15px;">
-      <input type="text" class="form-control" name="company" style="width: 200px;" placeholder="название компании">
+    <div class="form-group" style="padding-top: 15px;">
+      <label class="col-lg-3 control-label">Название компании</label>
+      <div class="col-lg-9">
+        <input type="text" class="form-control" name="company" style="width: 200px;" placeholder="название компании">
+      </div>
     </div>
-  </div>
-  <div class="form-group">
-    <label class="col-lg-3 control-label" style="padding-top: 15px;">Логин</label>
-    <div class="col-lg-9" style="padding-top: 15px;">
-      <input type="text" class="form-control" name="login" style="width: 200px;" placeholder="логин">
+    <div class="form-group" style="padding-top: 15px;">
+      <label class="col-lg-3 control-label">Логин</label>
+      <div class="col-lg-9">
+        <input type="text" class="form-control" name="login" style="width: 200px;" placeholder="логин">
+      </div>
     </div>
-  </div>
-  <div class="form-group">
-    <label class="col-lg-3 control-label" style="padding-top: 15px;">Пароль</label>
-    <div class="col-lg-9" style="padding-top: 15px;">
-      <input type="password" class="form-control" name="password" style="width: 200px;" placeholder="пароль">
+    <div class="form-group" style="padding-top: 15px;">
+      <label class="col-lg-3 control-label">Пароль</label>
+      <div class="col-lg-9">
+        <input type="password" class="form-control" name="password" style="width: 200px;" placeholder="пароль">
+      </div>
     </div>
-  </div>
-  <div class="form-group">
-    <button type="" class="btn btn-primary btn-save" style="margin-top: 15px">Сохранить</button>
-  </div>  
+    <div class="form-group" style="margin-top: 15px">
+      <button type="" class="btn btn-primary btn-save">Сохранить</button>
+    </div>
+  </form>
 </div>
 
 <div class="row">

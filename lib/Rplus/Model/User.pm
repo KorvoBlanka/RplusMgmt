@@ -63,7 +63,7 @@ __PACKAGE__->meta->setup(
 
         tasks_objs => {
             class      => 'Rplus::Model::Task',
-            column_map => { id => 'creator_id' },
+            column_map => { id => 'creator_user_id' },
             type       => 'one to many',
         },
     ],

@@ -181,12 +181,6 @@ __PACKAGE__->meta->setup(
             column_map => { id => 'realty_id' },
             type       => 'one to many',
         },
-
-        tasks => {
-            class      => 'Rplus::Model::Task',
-            column_map => { id => 'realty_id' },
-            type       => 'one to many',
-        },
     ],
 );
 

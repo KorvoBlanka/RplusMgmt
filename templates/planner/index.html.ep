@@ -1,0 +1,923 @@
+% layout 'default';
+% use Rplus::Model::DictTaskType::Manager;
+
+%= include 'blocks/client_card';
+%= include 'blocks/realty_card';
+
+% content_for header => begin
+%= css_once "$assets_url/bootstrap-datepicker/css/datepicker3.css";
+
+<style type="text/css">
+
+.table>thead>tr>th, .table>tbody>tr>th, .table>tfoot>tr>th, .table>thead>tr>td, .table>tbody>tr>td, .table>tfoot>tr>td {
+  padding: 0;
+}
+
+.cell-today {
+  background-color: #A6E0D4;
+  opacity: 0.2;
+}
+
+.simple-calendar-body {
+  -webkit-user-select: none;  /* Chrome all / Safari all */
+  -moz-user-select: none;     /* Firefox all */
+  -ms-user-select: none;      /* IE 10+ */
+
+  /* No support for these yet, use at own risk */
+  -o-user-select: none;
+  user-select: none; 
+}
+
+.simple-calendar-event {
+  cursor: pointer;
+  z-index: 2;
+  position: absolute; 
+  overflow: hidden;
+  border: 1px solid #eee; 
+  opacity: 0.7;
+  border-radius: 6px;
+
+  height: 50px;
+  white-space: nowrap;
+
+  -webkit-user-select: none;  /* Chrome all / Safari all */
+  -moz-user-select: none;     /* Firefox all */
+  -ms-user-select: none;      /* IE 10+ */
+
+  /* No support for these yet, use at own risk */
+  -o-user-select: none;
+  user-select: none;   
+}
+
+.event-selected {
+  z-index: 3 !important;
+  opacity: 1;
+  height: auto;
+  min-height: 50px;
+  white-space: normal;
+}
+
+.task-complete-button {
+  width: 20px;
+  height: 20px;
+  float: left;
+  background-color: #fff;
+  border-radius: 50%;
+  margin: 5px;
+  border: 1px solid #aaa;
+}
+
+.task-complete-button:hover > .task-complete-check {
+  color: #8EC448 !important;
+  -webkit-animation-duration: 0.5s; /* Chrome, Safari, Opera */
+  animation-duration: 0.5s;
+}
+
+.task-done {
+  background-color: #eee !important;
+  z-index: 1;
+}
+
+.task-new .task-complete-check {
+  display: none!important;
+  visibility: hidden!important;
+}
+
+</style>
+% end
+
+% content_for after_bootstrap => begin
+%= js_once "$assets_url/bootstrap-datepicker/js/bootstrap-datepicker.js";
+%= js_once "$assets_url/bootstrap-datepicker/js/locales/bootstrap-datepicker.ru.js";
+%= js_once "$assets_url/jquery-pep-js/src/jquery.pep.js";
+%= js_once "$assets_url/modernizr/modernizr.js";
+% end
+
+% content_for javascript => begin
+<script type="application/javascript">
+  "use strict";
+
+  registerGlobalAjaxEvents();
+
+  (function () {
+    function hasTouch() {
+      return Modernizr.touch;
+    }
+
+    //var calendar_start_date = moment().startOf('day');
+    var calendar_start_hour = 0;
+    var calendar_hours_count = 24;
+
+    var calendar_days_count = null;
+    var t = localStorage.getItem('calendar_days_count');
+    if (t) {
+      calendar_days_count = t;
+      switch (calendar_days_count) {
+        case '1':
+          $('[data-filter="calendar-mode"] span[role="display"]').text(' день');
+          $('[data-filter="calendar-mode"]').data('val', '1');
+          break;
+        case '2':
+          $('[data-filter="calendar-mode"] span[role="display"]').text(' два дня');
+          $('[data-filter="calendar-mode"]').data('val', '2');
+          break;
+        case '7':
+          $('[data-filter="calendar-mode"] span[role="display"]').text(' неделя');
+          $('[data-filter="calendar-mode"]').data('val', '7');
+          break;
+        case '30':
+          $('[data-filter="calendar-mode"] span[role="display"]').text(' месяц');
+          $('[data-filter="calendar-mode"]').data('val', '30');
+          break;
+      }
+    }
+    else {
+      calendar_days_count = 1;
+    }
+
+    var calendar_start_date = null;
+    t = localStorage.getItem('calendar_start_date');
+    if (t) {
+      calendar_start_date = moment(t);
+    }
+    else {
+      calendar_start_date = moment().startOf('day');
+    }
+    //localStorage.getItem('calendar_days_count');
+
+
+    $('#date-picker').datepicker({
+      todayHighlight: true,
+      format: 'yyyy-mm-dd',
+      language: 'ru',
+      todayBtn: 'linked',
+      //multidate: true,
+    });
+
+    $('#date-picker').datepicker()
+      .on('changeDate', function(e){
+        var date = $('#date-picker').datepicker('getDate');
+        if (date != 'Invalid Date') {
+          calendar_start_date = moment(date);
+          localStorage.getItem('calendar_start_date', calendar_start_date.format('YYYY-MM-DD'));
+          drawPlanner();
+        }
+      });
+
+    function drawCalendarCaption(start_date) {
+      var end_date = start_date.clone();
+      end_date.add(calendar_days_count - 1, 'days');
+
+      if (calendar_days_count != 1) {
+        var xhtml = start_date.date() + ' - ' + end_date.date() + ' ' + moment.months(start_date.month());
+      } else {
+        var xhtml = start_date.date() + ' ' + moment.months(start_date.month());
+      }
+      $('.simple-calendar-caption-text').html(xhtml);
+      $('.simple-calendar-caption-days-count').html(calendar_days_count);
+    }
+
+    function drawCalendarHeader(start_date) {
+      var xhtml = '<tr><th class="" style="width: 6%; text-align: center;">&nbsp;</th>';
+      var t = start_date.clone();
+      for (var i = 0; i < calendar_days_count; i++) {
+
+        xhtml += '<th class="" style="text-align: center;">' + t.date() + ' ' + moment.weekdaysShort(t.day()) + '</th>';
+
+        t.add(1, 'days');
+      }
+
+      xhtml += '</tr>';
+      $('.simple-calendar-header > table > tbody').html(xhtml);
+    }
+
+    function drawCalendarBody(start_hour, hour_count) {
+      // timeline
+      var xhtml = '';
+      for (var i = 0; i < hour_count; i++) {
+        var h = start_hour + i;
+        xhtml += '<tr class="" style="height: 100px;">';
+        xhtml += '<th class="" style="vertical-align: middle; text-align: center;">' + (h < 10 ? '0' : '') + h + ':00' + '</th>';
+        xhtml += '</tr>';
+      }
+
+      $('.simple-calendar-body-timeline > table > tbody').html(xhtml);
+
+      //cells
+      var marker = moment().date() - calendar_start_date.date();
+
+      xhtml = '';
+      for (var i = 0; i < hour_count; i++) {
+        var h = start_hour + i;
+        xhtml += '<tr class="" style="height: 50px;">';
+        for (var j = 0; j < calendar_days_count; j++) {
+          if (j == marker) {
+            xhtml += '<th class="cell-today">&nbsp;</th>';
+          } else {
+            xhtml += '<th class="">&nbsp;</th>';
+          }
+        }
+        xhtml += '</tr>';
+        xhtml += '<tr class="" style="height: 50px;">';
+        for (var j = 0; j < calendar_days_count; j++) {
+          if (j == marker) {
+            xhtml += '<th class="cell-today">&nbsp;</th>';
+          } else {
+            xhtml += '<th class="">&nbsp;</th>';
+          }
+        }
+        xhtml += '</tr>';      
+      }
+      $('.simple-calendar-body-cells > table > tbody').html(xhtml);
+
+      var body_height = $(window).height();
+      body_height -= $('.navbar-fixed-top').height();
+      body_height -= $('.navbar-fixed-bottom').height();
+      body_height -= $('.simple-calendar-caption').height();
+      body_height -= 60;
+
+      $('.simple-calendar-body').height(body_height);
+    }
+
+    function drawEvents(event_list) {
+      var xhtml = '';
+      var groups = {};
+
+      $('.simple-calendar-event').remove();
+
+      var reverse_list = event_list.reverse();
+      var last_ts = null;
+      var group_idx = 0;
+      for (var i = 0; i < reverse_list.length; i++) {
+        var event = reverse_list[i];
+        var dead_line = moment(event.dead_line);
+        if (last_ts) {
+          if (dead_line.diff(last_ts, 'minutes') > 15) {
+            group_idx ++;
+          } else {
+
+          }
+        }
+        last_ts = dead_line;
+        if (!groups[group_idx]) {
+          groups[group_idx] = [];
+        } 
+        groups[group_idx].push(event);
+      }
+
+      for (var idx in groups) { 
+        var events = groups[idx];
+        for (var i = 0; i < events.length; i++) {
+          var event = events[i];
+          var dead_line = moment(event.dead_line);
+
+          var table_width = $('.simple-calendar-body-cells').width();
+          var column = dead_line.clone().startOf('day').diff(calendar_start_date, 'days');
+          var cell_count = events.length;
+
+          var column_width = table_width / calendar_days_count;
+          var cell_width = column_width/ cell_count;
+
+          if (column >= 0 && column < calendar_days_count) {
+            var offset_x = column * column_width + cell_width * i;
+            var offset_y = (dead_line.hour() - calendar_start_hour) * 100;
+            offset_y += (dead_line.minute()) * (100 / 60);
+            xhtml += '<div data-date="' + dead_line.format('YYYY-MM-DD') + '" data-status="' + event.status + '" data-left=' + (column * column_width) + ' data-width=' + column_width + ' data-column=' + column + ' data-id="' + event.id + '" class="simple-calendar-event task-' + event.status + '" style="top: ' + offset_y + 'px; left: ' + offset_x + 'px; width: ' + cell_width + 'px; background-color: ' + event.color + ';">';
+            xhtml +=  '<a data-action="task-complete"><div class="task-complete-button-wrapper hidden" style="float: left; width: 38px; height: 100%;">';
+            xhtml +=   '<div class="task-complete-button">';
+            xhtml +=    '<span class="glyphicon glyphicon-ok task-complete-check" style="margin: 0 3px; color: #b2b2b2;"></span>';
+            xhtml +=   '</div>';
+            xhtml +=  '</div></a>';
+            xhtml +=  '<div class="simple-calendar-event-description" style="margin: 3px; overflow: hidden; text-overflow: ellipsis;">';
+            xhtml +=   '<strong class="dead-line">' + dead_line.format('HH:mm') + '</strong> ' + event.task_type + ': ' + event.description;
+            xhtml +=  '</div>';
+            xhtml += '</div>';
+          }
+        }
+      }
+      $('.simple-calendar-events-container').append(xhtml);
+        
+      $('a[data-action="realty-open"]').click(function (event) {
+        var realty_id = $(this).data('id');
+        event.stopPropagation();
+        openRealtyCard(realty_id);
+      });
+
+      $('a[data-action="task-complete"]').click(function (){
+        var $event = $(this).closest('.simple-calendar-event');
+        var task_id = $event.data('id');
+        var event_status = $event.data('status');
+
+        var new_status = 'done';
+        if (event_status == 'done') {
+          new_status = 'new';
+        }
+
+        $.ajax({
+          type: "POST",
+          url: "/api/task/update",
+          data: {
+            id: task_id,
+            status: new_status,
+          },
+        })
+        .done(function (data, textStatus, jqXHR) {
+          var $event = $('.simple-calendar-event[data-id="' + task_id + '"]');
+          $event.data('status', new_status);
+          if (new_status == 'done') {
+            $event.addClass('task-done');
+            $event.removeClass('task-new');
+          } else {
+            $event.removeClass('task-done');
+            $event.addClass('task-new');
+          }
+          Rplus.Functions.getTodaysTasksCount();
+        });
+      });
+
+      function toggleEventSelect($this) {
+        var old_width = $this.css('width');
+        var old_left = $this.css('left');
+
+        var width = $this.data('width');
+        var left = $this.data('left');
+
+        $this.data('width', old_width);
+        $this.data('left', old_left);
+
+        $this.css('width', width);
+        $this.css('left', left);
+
+        if (calendar_days_count > 2) {
+          $this.css('width', width * 2);
+        }
+
+        $this.toggleClass('event-selected');
+        $('.task-complete-button-wrapper', $this).toggleClass('hidden');
+      }
+
+      var drag = false;
+      $('.simple-calendar-event').click(function () {
+        var $this = $(this);
+
+        if (!$this.hasClass('event-selected')) {  // открываем событие, надо закрыть предыдущее открытое
+          $('.event-selected').click();
+
+          toggleEventSelect($this);
+
+          if ($this.data('status') != 'done') {
+            $this.pep({
+              constrainTo: 'parent',
+              shouldEase: false,
+              useCSSTranslation: false,
+              elementsWithInteraction: 'a',
+              start: function () {
+                drag = true;
+              },
+              drag: function (event, obj) {
+                var pos_y = obj.pos.y;
+                if (!pos_y) return;
+                var hour = Math.floor(pos_y / 100) + calendar_start_hour;
+                var min = Math.floor((pos_y % 100) * (60 / 100));
+                var time = (hour < 10 ? '0' : '') + hour + ':' + (min < 10 ? '0' : '') + min;
+                obj.$el.find('.dead-line').html(time);
+
+                if (obj.$el.hasClass('event-selected')) {
+                  toggleEventSelect(obj.$el);
+                }
+              },
+              stop: function (event, obj) {
+                var $this = $(obj.$el);
+
+                if (drag) {
+                  var pos_y = obj.pos.y;
+                  var pos_x = obj.pos.x;
+
+                  var hour = Math.floor(pos_y / 100) + calendar_start_hour;
+                  var min = Math.floor((pos_y % 100) * (60 / 100));
+                  var time = (hour < 10 ? '0' : '') + hour + ':' + (min < 10 ? '0' : '') + min;
+
+                  var table_width = $('.simple-calendar-body-cells').width();
+                  var cell_width = table_width / calendar_days_count;
+
+                  var old_column = $this.data('column');
+                  var column = Math.round((pos_x + 70 + parseFloat($this.css('width')) / 2) / cell_width) - 1;  // fixme: 70 - костыль, посчитать
+                  var add_days = column - old_column;
+
+                  var task_id = obj.$el.data('id');
+                  var dead_line = moment(obj.$el.data('date') + ' ' + time);
+                  dead_line.add(add_days, 'days');
+                  $this.addClass('hidden');
+                  $.ajax({
+                    type: "POST",
+                    url: "/api/task/update",
+                    data: {
+                      id: task_id,
+                      dead_line: dead_line.format("YYYY-MM-DD HH:mm"),
+                    },
+                  })
+                  .done(function (data, textStatus, jqXHR) {
+                    Rplus.Functions.getTodaysTasksCount();
+                    listEvents();
+                  })
+                  .fail(function (jqXHR, textStatus, errorThrown) {
+                    $this.removeClass('hidden');
+                  });
+                } else {
+                  if (hasTouch()) {   // костыль, на девайсах с тачем клики после анбинда не приходит, на десктопе - приходит
+                    toggleEventSelect($this);
+                    $.pep.unbind($this);
+                  }
+                }
+              },
+            });
+          }
+        } else {
+          toggleEventSelect($this);
+          $.pep.unbind($this);
+        }
+      });
+    }
+
+    function listEvents() {
+
+      var task_type_id = $('[data-filter="task_type_id"]').data('val');
+      var assigned_user_id = $('[data-filter="assigned_user_id"]').data('val');
+      var task_status = $('[data-filter="task_status"]').data('val');
+
+      var start_date = calendar_start_date.format();
+      var end_date = calendar_start_date.clone().add(calendar_days_count, 'days').format();
+
+      $.ajax({
+        type: "POST",
+        url: "/api/task/list",
+        data: {
+          start_date: start_date,
+          end_date: end_date,
+          task_status: task_status,
+          assigned_user_id: assigned_user_id,
+          task_type_id: task_type_id,
+        },
+      })
+        .done(function (data, textStatus, jqXHR) {
+          drawEvents(data.list);
+          $('#objectsCount').text(data.count);
+        });
+    }
+
+    function drawCurrentTime() {
+      var now = moment();
+      var offset_y = (now.hour() - calendar_start_hour) * 100;
+      offset_y += (now.minute()) * (100 / 60);
+      $('.simple-calendar-marker').css('top', offset_y);
+      $('.simple-calendar-time-display').text(now.format('HH:mm'));
+    }
+
+    function calendarSetStartDay() {
+      if (calendar_start_date.isSame(moment().startOf('Day')) && (calendar_days_count == 1 || calendar_days_count == 2)) {
+        $('.simple-calendar-marker').removeClass('hidden');
+      } else {
+        $('.simple-calendar-marker').addClass('hidden');
+      }
+      localStorage.setItem('calendar_start_date', calendar_start_date.format('YYYY-MM-DD'));
+    }
+
+    function calendarSetMode() {
+      if (calendar_days_count == '1') {
+        // показать календарь
+        $('.simple-calendar-lbar').removeClass('hidden');
+        $('.simple-calendar').addClass('col-lg-9');
+        $('.simple-calendar').addClass('col-md-9');
+        $('.simple-calendar').removeClass('col-lg-12');
+        $('.simple-calendar').removeClass('col-md-12');
+        calendar_start_date = moment().startOf('day');;
+      } else if (calendar_days_count == '2') {
+        // показать календарь
+        $('.simple-calendar-lbar').removeClass('hidden');
+        $('.simple-calendar').addClass('col-lg-9');
+        $('.simple-calendar').addClass('col-md-9');
+        $('.simple-calendar').removeClass('col-lg-12');
+        $('.simple-calendar').removeClass('col-md-12');
+        calendar_start_date = moment().startOf('day');
+      } else if (calendar_days_count == '7') {
+        //
+        $('.simple-calendar-lbar').addClass('hidden');
+        $('.simple-calendar').removeClass('col-lg-9');
+        $('.simple-calendar').removeClass('col-md-9');
+        $('.simple-calendar').addClass('col-lg-12');
+        $('.simple-calendar').addClass('col-md-12');
+        calendar_start_date = calendar_start_date.startOf('week');
+      } else if (calendar_days_count == '30') {
+
+      }
+      calendarSetStartDay();
+    }
+
+    function drawPlanner() {
+      drawCalendarCaption(calendar_start_date);
+      drawCalendarHeader(calendar_start_date);
+      drawCalendarBody(calendar_start_hour, calendar_hours_count);
+
+      listEvents();
+    }
+
+    $('[data-action="day-minus"]').click(function() {
+      if (calendar_days_count == 7) {
+        calendar_start_date.add(-7, 'days');
+      } else {
+        calendar_start_date.add(-1, 'days');
+      }
+      calendarSetStartDay();
+      $('#date-picker').datepicker('setDate', calendar_start_date.format('YYYY-MM-DD'));      
+    });
+
+    $('[data-action="day-plus"]').click(function() {
+      if (calendar_days_count == 7) {
+        calendar_start_date.add(7, 'days');
+      } else {
+        calendar_start_date.add(1, 'days');
+      }
+      calendarSetStartDay();
+      $('#date-picker').datepicker('setDate', calendar_start_date.format('YYYY-MM-DD'));      
+    });
+
+    $('#card-date-picker').datepicker({
+      todayHighlight: true,
+      format: 'yyyy-mm-dd',
+      language: 'ru',
+    });
+    $('#taskModal')
+      .modal({show: false, backdrop: true, keyboard: false})
+      .on('show.bs.modal', function () {
+        
+      })
+      .on('shown.bs.modal', function () {
+
+      })
+    ;
+
+    $('[data-action="incrementHours"]').click(function (e) {
+      var val = $('#timepicker-hour').text() * 1 + 1;
+      if (val > 23) val = 0;
+      var str_val = (val < 10 ? '0' : '') + val;
+      $('#timepicker-hour').text(str_val);
+    });
+    $('[data-action="decrementHours"]').click(function (e) {
+      var val = $('#timepicker-hour').text() * 1 - 1;
+      if (val < 0) val = 23;
+      var str_val = (val < 10 ? '0' : '') + val;      
+      $('#timepicker-hour').text(str_val);
+    });
+    $('[data-action="incrementMinutes"]').click(function (e) {
+      var val = $('#timepicker-minute').text() * 1 + 1;
+      if (val > 59) val = 0;
+      var str_val = (val < 10 ? '0' : '') + val;
+      $('#timepicker-minute').text(str_val);
+    });
+    $('[data-action="decrementMinutes"]').click(function (e) {
+      var val = $('#timepicker-minute').text() * 1 - 1;
+      if (val < 0) val = 59;
+      var str_val = (val < 10 ? '0' : '') + val;
+      $('#timepicker-minute').text(str_val);
+    });
+
+    $('[data-action="task-open"]').click(function() {
+      $('.event-selected').each(function() {
+        var id = $(this).data('id');
+        $.ajax({
+          type: "POST",
+          url: "/api/task/get",
+          data: {id: id},
+        })
+          .done(function (data, textStatus, jqXHR) {
+            if (data.status == 'success') {
+              var dead_line = moment(data.task.dead_line);
+
+              $('#taskIdInput').val(data.task.id);
+
+              $('#card-date-picker').datepicker('setDate', dead_line.format('YYYY-MM-DD'));
+              $('#timepicker-hour').text(dead_line.format('HH'));
+              $('#timepicker-minute').text(dead_line.format('mm'));
+
+              $('#taskTypeInput').val(data.task.task_type_id);
+              $('#assignedUserIdInput').val(data.task.assigned_user_id);
+              $('#taskDescriptionInput').html(data.task.description);
+
+              $('#taskModal').modal('show');
+            } else {
+
+            }
+          }).fail(function (jqXHR, textStatus, errorThrown) {
+
+          });
+      });
+    });
+
+    $('[data-action="task-create"]').click(function() {
+      $('#taskIdInput').val('');
+
+      var now = new Date();
+      $('#card-date-picker').datepicker('setDate', now);
+      $('#timepicker-hour').text(now.getHours());
+      $('#timepicker-minute').text((now.getMinutes() < 10 ? '0' : '') + now.getMinutes());
+
+      $('#assignedUserIdInput').val(<%= $self->stash('user')->{id} %>);
+      $('#taskDescriptionInput').html('');
+
+      $('#taskModal').modal('show');
+    });
+
+    $('[data-action="task-save"]').click(function (e) {
+      var hr = $('#timepicker-hour').text();
+      var min = $('#timepicker-minute').text();
+      var date = $('#card-date-picker').datepicker('getDate').yyyymmdd();
+      var tz = '+11';
+      var dead_line = date + ' ' + hr + ':' + min + ':' + '00' + tz;
+      var task_id = $('#taskIdInput').val();
+      var task_type_id = $('#taskTypeInput').val();
+      var assigned_user_id = $('#assignedUserIdInput').val();
+      var description = $('#taskDescriptionInput').html();
+
+      $.ajax({
+        type: "POST",
+        url: "/api/task/save",
+        data: {id: task_id, task_type_id: task_type_id, assigned_user_id: assigned_user_id, dead_line: dead_line, description: description,},
+      })
+        .done(function (data, textStatus, jqXHR) {
+          if (data.status == 'success') {
+            $('#taskModal').modal('hide');
+            Rplus.Functions.getTodaysTasksCount();
+            listEvents();
+          } else {
+
+          }
+        }).fail(function (jqXHR, textStatus, errorThrown) {
+
+        });
+
+    });    
+
+
+    // Open realty object card
+    function openRealtyCard(id) {      
+      var card = RealtyCard({
+        loaded: function (r) {
+
+        },
+        saved: function (r) {
+          // Update object row in the table
+
+        },
+        addr_changed: function (r) {
+
+        },
+        close: function (r) {
+
+        },
+      });
+      if (id != null) {
+        card.open(id);
+      } else {
+
+      }
+    }
+
+
+
+    // Filters
+    $('[data-filter] > ul > li > a').click(function (e) {
+      var $display = $(this).closest('[data-filter]').data('val', $(this).data('val')).find('> a [role="display"]');
+      if ($(this).data('type') == 'text') { $display.text($(this).text()) } else { $display.html($(this).html()) };
+
+      calendar_days_count = $('[data-filter="calendar-mode"]').data('val');
+      localStorage.setItem('calendar_days_count', calendar_days_count);
+      calendarSetMode();
+      $('#date-picker').datepicker('setDate', calendar_start_date.format('YYYY-MM-DD'));
+    });
+
+    calendarSetMode();
+    $('#date-picker').datepicker('setDate', calendar_start_date.format('YYYY-MM-DD'));
+    setInterval(drawCurrentTime, 30);
+
+  })();
+</script>
+% end
+
+% content_for modals => begin
+
+<!-- Modal:Task creation -->
+<div class="modal" id="taskModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <a href="#" class="ctrl-button" data-dismiss="modal" data-action="task-cancel">Отменить</a>
+        <a href="#" class="ctrl-button pull-right" data-action="task-save">Готово</a>
+      </div>
+      <div class="modal-body" style="padding: 15px;">
+
+        <div class="row hidden">
+          <div class="col-lg-12 col-md-12">
+            <input type="text" name="taskId" id="taskIdInput" style="width: 100%;"></input>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6">
+            <div id="card-date-picker">
+            </div>
+          </div>
+          <div class="col-md-6">
+            <table class="table-condensed" style="text-align: center;font-size: 38px;font-weight: 100;font-style: inherit;margin-top: 10px;margin-left: 20px;">
+              <tbody>
+                <tr>
+                  <td>
+                    <a href="#" class="btn" data-action="incrementHours">
+                      <i class="fa fa-chevron-up"></i>
+                    </a>
+                  </td>
+                  <td class="separator"></td>
+                  <td>
+                    <a href="#" class="btn" data-action="incrementMinutes">
+                      <i class="fa fa-chevron-up"></i>
+                    </a>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <span id="timepicker-hour" class="timepicker-hour">8</span>
+                  </td> 
+                  <td class="separator">:</td>
+                  <td>
+                    <span id="timepicker-minute" class="timepicker-minute">42</span>
+                  </td> 
+                </tr>
+                <tr>
+                  <td>
+                    <a href="#" class="btn" data-action="decrementHours" style="vertical-align: top;">
+                      <i class="fa fa-chevron-down"></i>
+                    </a>
+                  </td>
+                  <td class="separator"></td>
+                  <td>
+                    <a href="#" class="btn" data-action="decrementMinutes" style="vertical-align: top;">
+                      <i class="fa fa-chevron-down"></i>
+                    </a>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-lg-12 col-md-12" style="padding-top: 15px;">
+            <select class="form-control input-sm" name="assignedUserId" id="assignedUserIdInput">
+            % for my $x (@{Rplus::Model::User::Manager->get_objects(query => [delete_date => undef,], sort_by => 'id')}) {
+              <option value="<%= $x->id %>"><%= $x->name %></option>
+            % }
+            </select>
+          </div>
+        </div>        
+        <div class="row">
+          <div class="col-lg-12 col-md-12" style="padding-top: 15px;">
+            <select class="form-control input-sm" name="taskType" id="taskTypeInput">
+            % for my $x (@{Rplus::Model::DictTaskType::Manager->get_objects(query => [delete_date => undef,], sort_by => 'id')}) {
+              <option value="<%= $x->id %>"><%= $x->name %></option>
+            % }
+            </select>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-lg-12 col-md-12" style="padding-top: 15px;">
+            <div name="taskDescription" id="taskDescriptionInput" class="div-editable" style="height: 125px; width: 100%; border: 1px solid #eee;" contenteditable="true"></div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+% end
+
+<div class="row">
+  <div class="col-lg-12 col-md-12">
+
+    <div class="simple-calendar-caption" style="cursor: pointer; text-align: center; font-size: 36px; font-weight: 100; margin-bottom: 15px;">
+      <div class="" style="width: 345px; margin: 0 auto;">
+        <div style="float: left;" data-action="day-minus">&lt;</div>
+        <div style="float: right;" data-action="day-plus">&gt;</div>
+        <span class="simple-calendar-caption-text"></span>
+      </div>
+    </div>
+
+    <div class="simple-calendar-lbar col-lg-3 col-md-3" style="">
+      <div class="calendar" style="">
+        <div id="date-picker">
+        </div>
+      </div>
+    </div>
+    <div class="simple-calendar col-lg-9 col-md-9" style="">
+
+      <div class="simple-calendar-header">
+        <table class="" style="width:100%">
+          <tbody>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="simple-calendar-body" style="position: relative; width: 100%; height: 600px; overflow: auto; -webkit-overflow-scrolling: touch;">
+        <div class="simple-calendar-body-timeline" style="width: 6%; float: left;">
+          <table class="table table-striped" style="">
+            <tbody>
+            </tbody>
+          </table>
+        </div>
+        <div class="simple-calendar-body-cells simple-calendar-events-container" style="width: 94%; float: right; position: relative;">
+          <table class="table table-bordered" style="">
+            <tbody style="">
+            </tbody>
+          </table>
+        </div>
+        <div class="simple-calendar-marker" style="position: absolute; top: 0px; left: 0px; width: 100%; height: 8px; z-index: 10;">
+          <div class="simple-calendar-time-display" style="float: left; width: 6%; height: 12px; background-color: #f00; font-size: 11px; color: #fff; text-align: center; line-height: 12px;">
+            08:00
+          </div>
+          <div style="float: left; width: 94%; height: 2px; background-color: #f00;">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<nav class="navbar navbar-default navbar-fixed-bottom">
+  <div class="container">
+
+    <div class="navbar-left">
+      <ul class="nav navbar-nav">
+        <li><a href="#" data-action="task-create"><span class="glyphicon glyphicon-plus"></span> <%= ucfloc 'add' %></a></li>
+        <li><a href="#" data-action="task-open"><span class="glyphicon glyphicon-folder-open"></span> <%= ucfloc 'open' %></a></li>
+      </ul>
+    </div>
+    <div class="navbar-right">
+      <ul class="nav navbar-nav">
+
+        <!-- Task type filter -->
+        <li class="dropdown" data-filter="task_status" data-val="all">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-ok"></span><span role="display"> Все</span> <b class="caret"></b></a>
+          <ul class="dropdown-menu">
+            <li><a href="#" data-val="all" data-type="text"><strong> Все</strong></a></li>
+            <li><a href='#' data-val="new" data-type="text"> Невыполненные</a></li>
+            <li><a href='#' data-val="done" data-type="text"> Выполненные</a></li>
+          </ul>
+        </li>
+
+        <!-- Task type filter -->
+        <li class="dropdown" data-filter="task_type_id" data-val="all">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-th-list"></span><span role="display"> Все</span> <b class="caret"></b></a>
+          <ul class="dropdown-menu">
+            <li><a href="#" data-val="all" data-type="text"><strong> Все</strong></a></li>
+          % for my $x (@{Rplus::Model::DictTaskType::Manager->get_objects(query => [delete_date => undef,], sort_by => 'id')}) {
+            <li><a href='#' data-val="<%= $x->id %>" data-type="text"><%= $x->name %></a></li>
+          % }
+          </ul>
+        </li>
+
+        <!-- Agent filter -->
+        % if ($self->stash('user')->{role} ne 'manager') {
+        <li class="dropdown" data-filter="assigned_user_id" data-val="own">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-user"></span><span role="display"> <%= $self->stash('user')->{name} %></span> <b class="caret"></b></a>
+          <ul class="dropdown-menu">
+            <li><a href="#" data-val="own" data-type="text"><strong> <%= $self->stash('user')->{name} %></strong></a></li>
+          </ul>
+        </li>
+        % } else {
+        <li class="dropdown" data-filter="assigned_user_id" data-val="own">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-user"></span><span role="display"> <%= $self->stash('user')->{name} %></span> <b class="caret"></b></a>
+          <ul class="dropdown-menu">
+            <li><a href="#" data-val="all" data-type="text"><strong> Все</strong></a></li>
+            % for my $x (@{Rplus::Model::User::Manager->get_objects(query => [role => ['agent', 'agent_ext', 'manager'], delete_date => undef], sort_by => 'name')}) {
+            % if (has_permission(realty => read => $x->id) && $x->id != 10000) {
+            <li><a href="#" data-val="<%= $x->id %>" data-type="text"><%= $x->name %></a></li>
+              % }
+            % }
+          </ul>
+        </li>
+        % }
+
+        <li class="dropdown" data-filter="calendar-mode" data-val="1">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-calendar"></span><span role="display">день </span><b class="caret"></b></a>
+          <ul class="dropdown-menu">
+            <li><a href="#" data-val="1">день </a></li>
+            <li><a href="#" data-val="2">два дня </a></li>
+            <li><a href="#" data-val="7">неделя </a></li>
+            <li><a href="#" data-val="30">месяц </a></li>
+          </ul>
+        </li>
+
+      </ul>
+        <p class="navbar-text">
+          <span class="text-primary"><%= ucfloc 'found' %></span> <span class="text-primary" id="objectsCount">0</span>
+        </p>
+    </div>
+  </div>
+</nav>

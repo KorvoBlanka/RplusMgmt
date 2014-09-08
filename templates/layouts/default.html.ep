@@ -16,6 +16,7 @@
     <link rel="stylesheet" href="<%= $assets_url %>/bootstrap/<%= $bootstrap_ver %>/css/bootstrap.min.css">
     <!-- Pines Notify -->
     <link rel="stylesheet" href="<%= $assets_url %>/pnotify/1.2.2/jquery.pnotify.default.css">
+    <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet">
 
     <style type="text/css">
       body {
@@ -200,6 +201,23 @@
         font-weight: 400;
       }
 
+      .modal-header {
+        background-color: #eaeaea;
+      }
+      
+      .modal-content {
+        border-radius: 0px;
+      }
+
+      .modal-body {
+        overflow-y: scroll;
+        overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
+        
+        padding: 15px;
+        border-radius: 0px;
+      }
+      
     </style>
 
     <%= content_for 'header' %>
@@ -229,6 +247,9 @@
 
         <div class="collapse navbar-collapse navbar-top-collapse">
           <ul class="nav navbar-nav">
+          % if (!is_hidden_nav('planner')) {
+            <li class="<%= $controller eq 'planner' && 'active' %>"><span id="task-count-notifier" class="badge badge-default quick-notifier hidden"></span><a href="/planner"><span class="glyphicon glyphicon-list-alt"></span> Ежедневник</a></li>
+          % }          
           % if (has_permission(realty => 'read') && !is_hidden_nav('search')) {
             <li class="<%= $controller eq 'search' && 'active' %>"><a href="/search"><span class="glyphicon glyphicon-earphone"></span> Call-центр</a></li>
           % }
@@ -248,6 +269,9 @@
               % if(has_permission(realty => 'analyse')) {
                 <li><a href="/service/analytics"><span class="glyphicon glyphicon-list-alt"></span> <%= ucfloc q{analytics} %></a></li>
               % }
+              % if(has_permission(realty => 'analyse')) {
+                <li><a href="/service/piramid"><span class="glyphicon glyphicon-list-alt"></span> Воронка</a></li>
+              % }              
               </ul>
             </li>
           % }
@@ -255,7 +279,7 @@
           %  has_permission(mediators => 'read') || has_permission(landmarks => 'read') || has_permission(users => 'manage')
           % ) {
             <li class="dropdown <%= $controller eq 'configuration' && 'active' %>">
-              <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-cog"></span> <%= ucfloc q{configuration} %> <b class="caret"></b></a>
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-cog"></span> <b class="caret"></b></a>
               <ul class="dropdown-menu">
               % if (has_permission(mediators => 'read')) {
                 <li><a href="/configuration/mediators"><span class="glyphicon glyphicon-ban-circle"></span> <%= ucfloc q{mediators} %></a></li>
@@ -270,7 +294,8 @@
                 <li><a href="/configuration/import"><span class="glyphicon glyphicon-import"></span> <%= ucfloc q{objects import} %></a></li>
                 <li><a href="/configuration/export"><span class="glyphicon glyphicon-export"></span> <%= ucfloc q{advertisement} %></a></li>
                 <li><a href="/configuration/notifications"><span class="glyphicon glyphicon-send"></span> <%= ucfloc q{notifications} %></a></li>
-              % }              
+              % }
+                <li><a href="/configuration/tasks"><span class="glyphicon glyphicon-list-alt"></span> Задачи</a></li>
               </ul>
             </li>
           % }
@@ -295,7 +320,7 @@
     <!-- Bootstrap -->
     <script type="application/javascript" src="<%= $assets_url %>/bootstrap/<%= $bootstrap_ver %>/js/bootstrap.min.js"></script>
     <!-- MomentJS -->
-    <script type="application/javascript" src="<%= $assets_url %>/moment/<%= $momentjs_ver %>/moment.min.js"></script>
+    <script type="application/javascript" src="<%= $assets_url %>/moment/<%= $momentjs_ver %>/moment-with-locales.min.js"></script>
     <!-- HolderJS -->
     <script type="application/javascript" src="<%= $assets_url %>/holder/<%= $holderjs_ver %>/holder.min.js"></script>
     <!-- Pines Notify -->
@@ -303,9 +328,20 @@
     <%= content_for 'after_bootstrap' %>
 
     <%= include 'javascript/rplus' %>
+    <%= include 'javascript/rplus_table' %>
+    <%= include 'javascript/rplus_realty' %>
 
     <script type="application/javascript">
       "use strict";
+
+      moment.locale('ru');
+
+      Date.prototype.yyyymmdd = function() {
+         var yyyy = this.getFullYear().toString();
+         var mm = (this.getMonth()+1).toString(); // getMonth() is zero-based
+         var dd  = this.getDate().toString();
+         return yyyy + '-' + (mm[1]?mm:"0" + mm[0]) + '-' + (dd[1]?dd:"0" + dd[0]); // padding
+        };
 
       var globalAjaxEventsRegistered = 0;
       var show_ajax_indicator = 1;
@@ -343,10 +379,7 @@
         $(document).on('click', 'a[href="#"]', function (event) { event.preventDefault(); });
       });
 
-      setTimeout(setClientNewCount, 3000);
-      setInterval(setClientNewCount, 60000);
-
-      function setClientNewCount() {
+      function getClientNewCount() {
         supressAjaxIndicator(1);
         $.ajax({
           type: "POST",
@@ -367,10 +400,44 @@
         supressAjaxIndicator(0);
       }
 
+      function getTodaysTasksCount () {
+        supressAjaxIndicator(1);
+        var start_date = moment().startOf('day').format();
+        var end_date = moment().startOf('day').add(1, 'days').format();
+        $.ajax({
+          type: "POST",
+          url: "/api/task/get_task_count",
+          data: {
+            agent_id: <%= $self->stash('user')->{id} %>,
+            task_status: 'new',
+            start_date: start_date,
+            end_date: end_date,
+          },
+          complete: function () {}
+        })
+          .done(function (data, textStatus, jqXHR) {
+            if (data.status == 'success') {
+              if (data.count == 0) {              
+                $('#task-count-notifier').addClass('hidden');
+              } else {
+                $('#task-count-notifier').html(data.count);
+                $('#task-count-notifier').removeClass('hidden');
+              }
+            }
+          });
+        supressAjaxIndicator(0);        
+      }
+
+      getTodaysTasksCount();
+      setInterval(getTodaysTasksCount, 30000);
+
+      setTimeout(getClientNewCount, 3000);
+      setInterval(getClientNewCount, 60000);
+
       window.Rplus.Functions = { 
-        setClientNewCount: function () {
-          setClientNewCount();
-        }
+        getTodaysTasksCount: function () {
+          getTodaysTasksCount();
+        }        
       };
     </script>
   </body>

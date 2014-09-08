@@ -55,6 +55,8 @@ sub by_sms {
         return;
     }
 
+    my $sender = Rplus::Model::User::Manager->get_objects(query => [id => $self->stash('user')->{id}, delete_date => undef])->[0];
+
     # Prepare SMS for client
     if ($client->phone_num =~ /^9\d{9}$/) {
         # TODO: Add template settings
@@ -65,8 +67,8 @@ sub by_sms {
             push @parts, $realty->address_object->name.' '.$realty->address_object->short_type.($realty->address_object->name !~ /[()]/ && $realty->sublandmark ? ' ('.$realty->sublandmark->name.')' : '') if $realty->address_object;
             push @parts, ($realty->floor || '?').'/'.($realty->floors_count || '?').' эт.' if $realty->floor || $realty->floors_count;
             push @parts, $realty->price.' тыс. руб.' if $realty->price;
-            push @parts, $realty->agent->public_name || $realty->agent->name if $realty->agent;
-            push @parts, $realty->agent->public_phone_num || $realty->agent->phone_num if $realty->agent;
+            push @parts, $sender->public_name || $sender->name;
+            push @parts, $sender->public_phone_num || $sender->phone_num;
         }
         my $sms_body = join(', ', @parts);
         $sms_text = 'Вы интересовались: '.$sms_body.($sms_body =~ /\.$/ ? '' : '.').($config->{'contact_info'} ? $config->{'contact_info'} : '');

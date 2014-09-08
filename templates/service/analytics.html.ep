@@ -4,7 +4,7 @@
 
 % content_for header => begin
 %= css_once "$assets_url/typeahead.js/$typeaheadjs_ver/css/typeahead.js-bootstrap.css";
-%= css_once "/css/datepicker.css";
+%= css_once "$assets_url/bootstrap-datepicker/css/datepicker3.css";
 <style type="text/css">
   .demo-container {
     box-sizing: border-box;
@@ -46,11 +46,11 @@
 
 % content_for after_bootstrap => begin
 %= js_once "$assets_url/typeahead.js/$typeaheadjs_ver/js/typeahead.js";
-%= js_once "/js/bootstrap-datepicker.js";
-%= js_once "/js/flot/jquery.flot.js";
-%= js_once "/js/flot/jquery.flot.time.js";
-%= js_once "/js/flot/jquery.flot.resize.js";
-%= js_once "/js/flot/jquery.flot.navigate.js";
+%= js_once "$assets_url/bootstrap-datepicker/js/bootstrap-datepicker.js";
+%= js_once "$assets_url/flot/jquery.flot.js";
+%= js_once "$assets_url/flot/jquery.flot.time.js";
+%= js_once "$assets_url/flot/jquery.flot.resize.js";
+%= js_once "$assets_url/flot/jquery.flot.navigate.js";
 % end
 
 % content_for javascript => begin

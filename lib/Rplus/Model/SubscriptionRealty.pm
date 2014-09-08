@@ -40,7 +40,7 @@ __PACKAGE__->meta->setup(
           class      => 'Rplus::Model::ColorTag',
           column_map => { realty_id => 'realty_id' },
         },
-    ],
+    ],      
 );
 
 1;

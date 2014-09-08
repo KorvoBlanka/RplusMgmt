@@ -97,6 +97,46 @@
       return digest.join(', ');
     },
     
+    getDigestForTask: function (r) {
+      var digest = [];
+
+      digest.push('<a href="#" data-action="realty-open" data-id="' + r.id + '"><strong>' + Rplus.Table.realty_types[r.type_code].name + '</strong></a>');
+      if (r.rooms_count) digest.push(r.rooms_count + 'к');
+      if (r.address_object) {
+        digest.push(
+          Rplus.Util.escape(r.address_object.name + ' ' + r.address_object.short_type  + '. ' +  (r.house_num ? r.house_num : '') + (r.sublandmark ? ' (' + r.sublandmark.name + ')' : '')));
+        //digest.push(Rplus.Util.escape(r.address_object.addr_parts[1].name + ' ' + r.address_object.addr_parts[1].short_type));
+      }
+      if (r.ap_scheme_id) digest.push(Rplus.Table.Dict.ap_schemes[r.ap_scheme_id].metadata.description || Rplus.Table.Dict.ap_schemes[r.ap_scheme_id].name);
+      if (r.house_type_id) digest.push(Rplus.Table.Dict.house_types[r.house_type_id].metadata.description || Rplus.Table.Dict.house_types[r.house_type_id].name);
+      if (r.room_scheme_id) digest.push(Rplus.Table.Dict.room_schemes[r.room_scheme_id].metadata.description || Rplus.Table.Dict.room_schemes[r.room_scheme_id].name);
+      if (r.floor && r.floors_count) { digest.push(r.floor + '/' + r.floors_count + ' эт.') } else if (r.floor || r.floors_count) { digest.push((r.floor || r.floors_count) + ' эт.'); }
+      if (r.condition_id) digest.push(Rplus.Table.Dict.conditions[r.condition_id].metadata.description || Rplus.Table.Dict.conditions[r.condition_id].name);
+      if (r.balcony_id) digest.push(Rplus.Table.Dict.balconies[r.balcony_id].metadata.description || Rplus.Table.Dict.balconies[r.balcony_id].name);
+      if (r.bathroom_id) digest.push(Rplus.Table.Dict.bathrooms[r.bathroom_id].metadata.description || Rplus.Table.Dict.bathrooms[r.bathroom_id].name);
+      {
+        var squares = [];
+        if (r.square_total) squares.push(r.square_total);
+        if (r.square_living) squares.push(r.square_living);
+        if (r.square_kitchen) squares.push(r.square_kitchen);
+        if (squares.length) digest.push(squares.join('/') + ' кв. м.');
+      }
+      if (r.square_land && r.square_land_type) digest.push(r.square_land + ' ' + (r.square_land_type == 'ar' ? 'сот.' : 'га'));
+      //if (withDescription && r.description) digest.push(Rplus.Util.escape(r.description));
+      if (r.price) digest.push('<span class="text-primary">' + r.price + ' тыс. руб.' + '</span>');
+
+      if (r.owner_phones) {
+        var t = '<span>Тел:';
+        for (var i = 0; i < r.owner_phones.length; i++) {
+          var p = r.owner_phones[i];
+          t += ' ' + Rplus.Util.formatPhoneNum(p);
+        }
+        t += '</span>';
+        digest.push(t);
+      }
+      return digest.join(', ');
+    },
+
     getDigestDict: function (r) {
       var digest = {};
 

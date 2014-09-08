@@ -6,6 +6,7 @@
 % use Rplus::Model::Media::Manager;
 % use Rplus::Model::ColorTag::Manager;
 % use Rplus::Model::DictColorTag::Manager;
+% use Rplus::Model::DictTaskType::Manager;
 
 % use JSON;
 
@@ -21,7 +22,7 @@
 %= css_once "$assets_url/TreeGrid/css/jquery.treegrid.css";
 
 %= css_once "/css/context.css";
-<style tyle="text/css">
+<style type="text/css">
   
   .export-check-hidden {
     visibility: hidden;
@@ -319,20 +320,17 @@
 % content_for after_bootstrap => begin
 %= js_once "$assets_url/leaflet/$leafletjs_ver/leaflet.js";
 %= js_once "$assets_url/leaflet.fullscreen/$leafletjs_fullscreen_ver/Control.FullScreen.js";
-%= js_once "/js/leaflet/layer-2gis.js";
 %= js_once "$assets_url/typeahead.js/$typeaheadjs_ver/js/typeahead.js";
 %= js_once "$assets_url/jquery.webSpeech/jquery.webSpeech-1.0.1.js";
-%= js_once "/js/contextmenu/context.js";
-%= js_once "/js/modernizr/modernizr.js";
-
+%= js_once "$assets_url/modernizr/modernizr.js";
 %= js_once "$assets_url/TreeGrid/js/jquery.treegrid.js";
 %= js_once "$assets_url/TreeGrid/js/jquery.treegrid.bootstrap3.js";
 
+%= js_once "/js/contextmenu/context.js";
+%= js_once "/js/leaflet/layer-2gis.js";
 % end
 
 % content_for javascript => begin
-%= include 'javascript/rplus_table';
-%= include 'javascript/rplus_realty';
 <script type="application/javascript">
   "use strict";
 
@@ -470,7 +468,12 @@
           {text: '<span class="glyphicon glyphicon-ok"></span>&nbsp&nbspСМС', data_action: 'notify-sms', data_val: '', },
           {text: '<span class="glyphicon glyphicon-envelope"></span>&nbsp&nbspe-mail', data_action: 'notify-email', data_val: '', },
         ]},
-        {text: '<span class="glyphicon glyphicon-cog"></span> Задача'},
+        {text: '<span class="glyphicon glyphicon-cog"></span> Задача', subMenu: [
+          % my $iter = Rplus::Model::DictTaskType::Manager->get_objects_iterator(query => [or => [category => 'seller', category => 'both'], delete_date => undef,], sort_by => 'id');
+          % while (my $x = $iter->next) {
+            {text: '&nbsp<%= $x->name %>', data_action: 'task-create', data_val: '<%= $x->id %>', },
+          % }
+        ]},
         {text: '<span class="glyphicon glyphicon-export"></span>  <%= ucfloc q{advertisement} %>', element_id: 'el_export', subMenu: [
           % my $loc_id = $self->session('user')->{location_id};      # костыль!
           % for my $x (@{Rplus::Model::Media::Manager->get_objects(query => [type => 'export', delete_date => undef])}) {
@@ -505,7 +508,12 @@
           % }
         ]},
         % }
-        {text: '<span class="glyphicon glyphicon-cog"></span> Задача'},
+        {text: '<span class="glyphicon glyphicon-cog"></span> Задача', subMenu: [
+          % my $iter = Rplus::Model::DictTaskType::Manager->get_objects_iterator(query => [or => [category => 'buyer', category => 'both'], delete_date => undef,], sort_by => 'id');
+          % while (my $x = $iter->next) {
+            {text: '&nbsp<%= $x->name %>', data_action: 'task-create', data_val: '<%= $x->id %>', },
+          % }
+        ]},
         {divider: true},
         {header: '&nbspТеги...'},
         {header:  // '+' to concat strings, '' - to match last +
@@ -783,7 +791,6 @@
 
       if ($tr.length) {
         var page = $tr.data('page');
-        console.log(page);
         $tr.replaceWith(buildHtmlForRealty(realty, page));
         agents_ids[r.id] = r.agent_id;
         media_export[r.id] = r.export_media;
@@ -885,8 +892,6 @@
               var subscription_id = $('.subselected').data('subscription');
               var client_id = $('.tree > tbody > tr.cselected').data('id');
 
-              console.log(client_id);
-
               $.ajax({
                 type: "POST",
                 url: "/api/subscription/update",
@@ -901,7 +906,6 @@
 
               for (var i = 0; i < clients[client_id].subscriptions.length; i++) {
                 var subscription = clients[client_id].subscriptions[i];
-                console.log(subscription);
                 if (subscription.id == subscription_id) {
                   subscription.queries = [q];
                 }
@@ -1061,7 +1065,7 @@
         });
         
         $('.tree').on('click', 'tr.client-node', function (e) {
-          if (hasTouch()) return;
+          //if (hasTouch()) return;
           var $this = $(this);
           var id = $this.data('id');
           if (!e.altKey && !e.ctrlKey && !e.shiftKey && !cmd_down) {
@@ -1392,11 +1396,8 @@
         var $tr = $(this).closest('tr');
         var client = clients[$tr.data('id')];
 
-        console.log('!');
         var $selected = $('#realtyTable > tbody > tr.selected');
-        console.log($selected);
         $selected.each(function () {
-          console.log('!');
           realtyIds.push($(this).data('id'));
         });
 
@@ -1444,13 +1445,11 @@
               },
               async: false, // (!)
               success: function (data, textStatus, jqXHR) {
-                console.log(data);
                 if(data.status != 'success') {
                     alert('не удалось отправить sms');
                 } 
               },
               error: function (jqXHR, textStatus, errorThrown) {
-                console.log('fail');
                 alert('не удалось отправить СМС, проверьте настройки');
               },
             });
@@ -1483,7 +1482,6 @@
                 } 
               },
               error: function (jqXHR, textStatus, errorThrown) {
-                console.log('fail');
                 alert('не удалось отправить e-mail');
               },
             });
@@ -1759,6 +1757,161 @@
         });
       });
 
+      // Task modal
+      (function () {
+
+        $('#date-picker').datepicker({
+          todayHighlight: true,
+          format: 'yyyy-mm-dd',
+          language: 'ru',
+        });
+        $('#taskModal')
+          .modal({show: false, backdrop: true, keyboard: false})
+          .on('show.bs.modal', function () {
+            
+          })
+          .on('shown.bs.modal', function () {
+
+          })
+        ;
+
+        $('[data-action="incrementHours"]').click(function (e) {
+          var val = $('#timepicker-hour').text() * 1;
+          $('#timepicker-hour').text(val + 1);
+        });
+        $('[data-action="decrementHours"]').click(function (e) {
+          var val = $('#timepicker-hour').text() * 1;
+          $('#timepicker-hour').text(val - 1);
+        });
+        $('[data-action="incrementMinutes"]').click(function (e) {
+          var val = $('#timepicker-minute').text() * 1 + 1;
+          if (val > 59) val = 0;
+          var str_val = (val < 10 ? '0' : '') + val;
+          $('#timepicker-minute').text(str_val);
+        });
+        $('[data-action="decrementMinutes"]').click(function (e) {
+          var val = $('#timepicker-minute').text() * 1 - 1;
+          if (val < 0) val = 59;
+          var str_val = (val < 10 ? '0' : '') + val;
+          $('#timepicker-minute').text(str_val);
+        });
+
+        $('[data-action="task-create"]').click(function (e) {
+          $('#taskModal').data('task_type_id', $(this).data('val'));
+
+          var now = new Date()
+          $('#date-picker').datepicker('setDate', now);
+          $('#timepicker-hour').text(now.getHours());
+          $('#timepicker-minute').text((now.getMinutes() < 10 ? '0' : '') + now.getMinutes());
+
+          $('#taskModal').modal('show');
+        });
+
+        $('[data-action="task-save"]').click(function (e) {
+          var task_type_id = $('#taskModal').data('task_type_id');
+
+          var hr = $('#timepicker-hour').text();
+          var min = $('#timepicker-minute').text();
+          var date = $('#date-picker').datepicker('getDate').yyyymmdd();
+          var tz = '+11';
+          var dead_line = date + ' ' + hr + ':' + min + ':' + '00' + tz;
+
+          // если выбрано несколько клиентов, игнорируем выбранную недвижимость
+          // 
+          var $cselected = $('.tree > tbody > tr.cselected');
+          var $selected = $('#realtyTable > tbody > tr.selected');
+
+          if ($cselected.length > 1 || $selected.length == 0) {    // создадим задачу по каждому клиенту
+            $cselected.each(function () {
+              var $this = $(this);
+              var client_id = $this.data('id');
+              var client = clients[client_id];
+              var agent_id = client.agent_id ? client.agent_id : <%= $self->stash('user')->{id} %>;
+
+              $.ajax({
+                type: "POST",
+                url: "/api/task/save",
+                data: {
+                  task_type_id: task_type_id, 
+                  assigned_user_id: agent_id, 
+                  dead_line: dead_line, 
+                  client_id: client.id,
+                  description: '<br>' + (client.name || '') + ' <strong>' + Rplus.Util.formatPhoneNum(client.phone_num) + '</strong> '},
+              })
+                .done(function (data, textStatus, jqXHR) {
+                  if (data.status == 'success') {
+
+                  } else {
+
+                  }
+                }).fail(function (jqXHR, textStatus, errorThrown) {
+                   
+                });
+
+            });            
+          } else if($cselected.length == 1) {
+            var $node = $($cselected[0]);
+            var client_id = $node.data('id');
+            var client = clients[client_id];
+            var client_agent_id = client.agent_id ? client.agent_id : <%= $self->stash('user')->{id} %>;
+            var client_description = '<br>' + (client.name || '') + ' <strong>' + Rplus.Util.formatPhoneNum(client.phone_num) + '</strong> ';
+
+            $selected.each(function () {
+              var $this = $(this);
+              var id = $this.data('id');
+              var r = $this.data('obj');
+              var agent_id = r.agent_id && r.agent_id != 10000 ? r.agent_id : <%= $self->stash('user')->{id} %>;
+
+              var description = client_description + '<br>' + Rplus.Realty.getDigestForTask(r);
+
+              // задача для агента объекта недвижимости
+              $.ajax({
+                type: "POST",
+                url: "/api/task/save",
+                data: {
+                  task_type_id: task_type_id, 
+                  assigned_user_id: agent_id, 
+                  dead_line: dead_line, 
+                  client_id: client.id,
+                  realty_id: r.id,
+                  description: description},
+              })
+                .done(function (data, textStatus, jqXHR) {
+                  if (data.status == 'success') {
+
+                  } else {
+
+                  }
+                }).fail(function (jqXHR, textStatus, errorThrown) {
+                   
+                });
+
+              if (agent_id != client_agent_id) {
+                $.ajax({
+                  type: "POST",
+                  url: "/api/task/save",
+                  data: {
+                    task_type_id: task_type_id, 
+                    assigned_user_id: client_agent_id, 
+                    dead_line: dead_line,                     
+                    description: description},
+                })
+                  .done(function (data, textStatus, jqXHR) {
+                    if (data.status == 'success') {
+
+                    } else {
+
+                    }
+                  }).fail(function (jqXHR, textStatus, errorThrown) {
+                     
+                  });
+              }
+            });
+          }
+          $('#taskModal').modal('hide');
+        });
+      })();
+
       // Geo
       (function () {
         var geoMap, markerLG;
@@ -1937,6 +2090,67 @@
 
 % content_for modals => begin
 
+<!-- Modal:Task creation -->
+<div class="modal" id="taskModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header" id="realty-card-header">
+        <a href="#" class="ctrl-button" data-dismiss="modal" data-action="task-cancel">Отменить</a>
+        <a href="#" class="ctrl-button pull-right" data-action="task-save">Готово</a>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="col-md-6">
+            <div id="date-picker">
+            </div>
+          </div>
+          <div class="col-md-6">
+            <table class="table-condensed" style="text-align: center;font-size: 38px;font-weight: 100;font-style: inherit;margin-top: 10px;margin-left: 20px;">
+              <tbody>
+                <tr>
+                  <td>
+                    <a href="#" class="btn" data-action="incrementHours">
+                      <i class="fa fa-chevron-up"></i>
+                    </a>
+                  </td>
+                  <td class="separator"></td>
+                  <td>
+                    <a href="#" class="btn" data-action="incrementMinutes">
+                      <i class="fa fa-chevron-up"></i>
+                    </a>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <span id="timepicker-hour" class="timepicker-hour">8</span>
+                  </td> 
+                  <td class="separator">:</td>
+                  <td>
+                    <span id="timepicker-minute" class="timepicker-minute">42</span>
+                  </td> 
+                </tr>
+                <tr>
+                  <td>
+                    <a href="#" class="btn" data-action="decrementHours" style="vertical-align: top;">
+                      <i class="fa fa-chevron-down"></i>
+                    </a>
+                  </td>
+                  <td class="separator"></td>
+                  <td>
+                    <a href="#" class="btn" data-action="decrementMinutes" style="vertical-align: top;">
+                      <i class="fa fa-chevron-down"></i>
+                    </a>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
 <!-- Modal:Geo -->
 <div class="modal fade" id="geoModal" tabindex="-1" role="dialog" aria-hidden="true">
   <div class="modal-dialog">
@@ -2079,7 +2293,7 @@
             </ul>
           </li>
 
-          <li style="width: 142px; height: 1px;"></li>
+          <li style="width: 130px; height: 1px;"></li>
 
           <li><a href="#" data-action="realty-geo"><span class="glyphicon glyphicon-globe"></span> <%= ucfloc 'geo' %></a></li>
 

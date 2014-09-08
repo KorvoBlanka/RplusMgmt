@@ -1,0 +1,320 @@
+% layout 'default';
+% use Rplus::Model::DictTaskType::Manager;
+
+
+% content_for header => begin
+<style type="text/css">
+  #taskTypesList {
+    overflow-y: auto;
+  }
+
+  #taskTypesList a.selected {
+    background-color: #428bca !important;
+    border-color: #428bca;
+    color: #fff;
+  }
+
+  .simpleColorDisplay {
+    border: 0 !important;
+    height: 32px !important;
+  }
+
+  .simpleColorChooser {
+    border: 0 !important;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    -webkit-transform: translate3d(0, 0, 0);
+  }
+
+  .simpleColorCell {
+
+  }
+</style>
+% end
+
+% content_for after_bootstrap => begin
+%= js_once "$assets_url/jquery-simple-color/jquery.simple-color.min.js";
+% end
+
+% content_for javascript => begin
+<script type="text/javascript">
+  "use strict";
+
+  registerGlobalAjaxEvents();
+
+  (function () {
+
+    var $form = $('#taskTypeCard_taskTypeForm');
+    var $modal = $('#taskTypeModal');
+    $('#taskTypeModal')
+      .modal({show: false, backdrop: true, keyboard: false})
+      .on('show.bs.modal', function () {
+        
+      })
+      .on('shown.bs.modal', function () {
+
+      })
+    ;
+    $('.simple_color').simpleColor({
+        cellWidth: 25,
+        cellHeight: 25,
+        cellMargin: 5,
+        columns: 4,
+        livePreview: true,
+        //boxWidth: 16 * 4 + 5 * 5,
+        colors: [
+          'B1D5EB',
+          'ADEDEF',
+          'A6E0D4',
+          'D7E8B2',
+          'FFEDB3',
+          'FBC193',
+          'FD8F7F',
+          'D63758',          
+          'EFC8FD',
+          'AF8AB6',
+          'AD4A9A',
+          'E22172',
+        ],
+    });
+
+    $('.simpleColorDisplay').click(function() {
+
+      console.log('!');
+
+      var off_1 = $(this).offset();
+      var off_2 = $('.modal-dialog').offset();
+      var width = $('.simpleColorDisplay').width();
+      var pos_y = off_1.top - off_2.top;
+      var pos_x = (off_1.left - off_2.left) + width;
+
+      var iOS = /(iPad|iPhone|iPod)/g.test( navigator.userAgent );
+
+      if (iOS) {
+        $('.simpleColorChooser').css({top: 0, left: width, position: 'fixed'});
+      } else {
+        $('.simpleColorChooser').css({top: pos_y, left: pos_x, position: 'fixed'});
+      }
+    });
+
+
+    function listTaskTypes() {
+      $.ajax({
+        type: "POST",
+        url: "/api/task_type/list",
+        data: {},
+      })
+        .done(function (data, textStatus, jqXHR) {
+          var xhtml = '';
+          for (var i = 0; i < data.list.length; i++) {
+            var t = data.list[i];
+            xhtml += '<a href="#" class="list-group-item" data-id="' + t.id + '" style="background-color: ' + t.color + '">' + t.name + '</a>';
+          }
+          $('#taskTypesList').html(xhtml);
+
+          for (var i = 0; i < data.list.length; i++) {
+            var t = data.list[i];
+            $('[data-id=' + t.id + ']').data('obj', t);
+          }
+        });      
+    }
+
+    function createTaskType() {
+      $('#inputId', $form).val('');
+      $('#inputName', $form).val('');
+      $('#selectCategory', $form).val('both');
+      $('.simple_color').setColor('#B1D5EB');
+
+      $modal.modal('show');
+    }
+
+    function openTaskType() {
+      $('#taskTypesList a.selected').each(function () {
+        var obj = $('[data-id=' +   $(this).data('id') + ']').data('obj');
+
+        $('#inputId', $form).val(obj.id);
+        $('#inputName', $form).val(obj.name);
+        $('#selectCategory', $form).val(obj.category);
+        //$('#selectColor', $form).val(obj.color);
+        if (obj.color) {
+          $('.simple_color').setColor(obj.color);
+        } else {
+          $('.simple_color').setColor('#B1D5EB');
+        }
+
+        $modal.modal('show');
+      });
+    }
+
+    function saveTaskType() {
+      var id = $('#inputId', $form).val(),
+          name = $('#inputName', $form).val(),
+          category = $('#selectCategory', $form).val(),
+          color = $('.simple_color').val();
+
+      $.ajax({
+        type: "POST",
+        url: "/api/task_type/save",
+        data: {id: id, name: name, category: category, color: color}
+      })
+        .done(function (data, textStatus, jqXHR) {
+          console.log(data);
+
+          if (data.status == 'success') {
+
+            if ($('[data-id=' +   data.task_type.id + ']').length) {
+              $('[data-id=' +   data.task_type.id + ']').text(data.task_type.name);
+              $('[data-id=' +   data.task_type.id + ']').css({'background-color': data.task_type.color,});
+            } else {
+              var xhtml = '<a href="#" class="list-group-item" data-id="' + data.task_type.id + '" style="background-color: ' + data.task_type.color + '">' + data.task_type.name + '</a>';
+              $('#taskTypesList').append(xhtml);
+            }
+            $('[data-id=' + data.task_type.id  + ']').data('obj', data.task_type);
+            $modal.modal('hide');
+          } else {
+            // wtf?!
+          }
+
+        })
+        .fail(function (jqXHR, textStatus, errorThrown) {
+          alert('При сохранении задачи произошла ошибка');
+        })
+      ;
+    }
+
+    function deleteTaskType(id) {
+      $.ajax({
+        type: "POST",
+        url: "/api/task_type/delete",
+        data: {id: id,}
+      })
+        .done(function (data, textStatus, jqXHR) {
+          if (data.status == 'success') {
+            $('[data-id=' + data.id + ']').addClass('hidden');
+          } else {
+            // wtf?!
+          }
+
+        })
+        .fail(function (jqXHR, textStatus, errorThrown) {
+          alert('При удалении задачи произошла ошибка');
+        })
+      ;      
+    }
+
+    $('#taskTypesList').on('click', 'a', function (e) {
+        $('#taskTypesList a.selected').removeClass('selected');
+        $(this).addClass('selected');
+    });
+
+    $('[data-action="task-type-create"]').click(function() {
+      createTaskType();
+    });
+
+    $('[data-action="task-type-open"]').click(function() {
+      openTaskType();
+    });
+
+    $('[data-action="task-type-delete"]').click(function() {
+      $('#taskTypesList a.selected').each(function () {
+        deleteTaskType($(this).data('id'));
+      });
+    });
+
+    $('[data-action="task-type-save"]').click(function() {
+      saveTaskType();
+    });
+
+    listTaskTypes();
+  })();
+</script>
+% end
+
+% content_for modals => begin
+
+<!-- Modal:Task creation -->
+<div class="modal" id="taskTypeModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header" id="realty-card-header">
+        <a href="#" class="ctrl-button" data-dismiss="modal">Отменить</a>
+        <a href="#" class="ctrl-button pull-right" data-action="task-type-save">Готово</a>
+      </div>
+      <div class="modal-body" style="padding: 10px; overflow: hidden;">
+
+
+        <form class="form-horizontal" role="form" id="taskTypeCard_taskTypeForm">
+
+          <div class="form-group hidden">
+            <label for="inputId" class="col-sm-4 control-label">id</label>
+            <div class="col-sm-8">
+              <input type="text" class="form-control" id="inputId">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="inputName" class="col-sm-4 control-label">Название задачи</label>
+            <div class="col-sm-8">
+              <input type="text" class="form-control" id="inputName" placeholder="Название задачи">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="selectCategory" class="col-sm-4 control-label">Категория</label>
+            <div class="col-sm-8">
+              <select class="form-control" id="selectCategory">
+                <option value="both" style="background:purple">Купцы + Продавцы</option>
+                <option value="buyer" style="background:red">Купцы</option>
+                <option value="seller" style="background:yellow">Продавцы</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="selectColor" class="col-sm-4 control-label">Цвет</label>
+            <div class="col-sm-8">
+              <input class="simple_color form-control"/>
+            </div>
+          </div>
+
+
+        </form>
+
+
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+% end
+
+<div class="row">
+  <div class="col-sm-offset-8 col-sm-4">
+    <form role="search">
+      <div class="form-group">
+        <input type="text" name="filter" class="form-control input-sm" placeholder="<%= ucfloc 'search' %>">
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-sm-3">
+    <div class="list-group list-compact" id="taskTypesList">
+    </div>
+  </div>
+  <div class="col-sm-9">
+
+
+
+</div>
+
+<nav class="navbar navbar-default navbar-fixed-bottom">
+  <div class="container">
+    <ul class="nav navbar-nav">
+      <li><a href="#" data-action="task-type-create"><span class="glyphicon glyphicon-plus"></span> <%= ucfloc 'add' %></a></li>
+      <li><a href="#" data-action="task-type-open"><span class="glyphicon glyphicon-file"></span> <%= ucfloc 'open' %></a></li>
+      <li><a href="#" data-action="task-type-delete"><span class="glyphicon glyphicon-trash"></span> <%= ucfloc 'delete' %></a></li>
+    </ul>
+  </div>
+</nav>
+

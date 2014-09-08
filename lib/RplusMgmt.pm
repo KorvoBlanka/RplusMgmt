@@ -42,7 +42,7 @@ sub startup {
     $self->defaults(
         jquery_ver => '2.0.3',
         bootstrap_ver => '3.0.2',
-        momentjs_ver => '2.2.1',
+        momentjs_ver => '2.8.2',
         holderjs_ver => '2.2.0',
         leafletjs_ver => '0.7',
         leafletjs_draw_ver => '0.2.3-dev',

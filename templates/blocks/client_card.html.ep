@@ -2,7 +2,7 @@
 % use Rplus::Model::DictColorTag::Manager;
 
 % content_for header => begin
-%= css_once "$assets_url/bootstrap-datepicker/2013.11.26/css/datepicker3.css";
+%= css_once "$assets_url/bootstrap-datepicker/css/datepicker3.css";
   
 <style type="text/css">
   
@@ -15,12 +15,12 @@
   }
   
   #clientCard_modal .modal-dialog {
-    width: 480px !important;    
+    width: 480px !important;
   }
-
-  #clientCard_modal .modal-content {
-    
-    border-radius: 0px;   
+  
+  #client-card-body {
+    height: 560px !important;
+    padding: 0px;
   }
   
   .ctrl-button {
@@ -41,20 +41,6 @@
   .subscription-container > div > div > p {
     margin-bottom: 0px;
     margin-top: 5px;    
-  }
-
-  #client-card-header {
-    background-color: #eaeaea;
-  }
-  
-  #client-card-body {
-    height: 560px !important;
-    overflow-y: scroll;
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
-    
-    padding: 0px;
-    border-radius: 0px;
   }
   
   hr {
@@ -239,7 +225,7 @@
 % end
 
 % content_for after_bootstrap => begin
-%= js_once "/js/bootstrap-datepicker.js";
+%= js_once "$assets_url/bootstrap-datepicker/js/bootstrap-datepicker.js";
 % end
 
 % content_for javascript => begin
@@ -528,6 +514,9 @@
       if (cache_it) {
         cached_client = jQuery.extend(true, {}, client);
       }
+
+      console.log(client);
+
       $('#phone-num-alert', $modal).addClass('hidden');
       $('#query-alert', $modal).addClass('nodispaly');
       $('#clientCard_clientForm [name="id"]:input', $modal).val(client.id);
@@ -537,7 +526,11 @@
       $('#clientCard_clientForm [name="skype"]:input', $modal).val(client.skype);
       $('#clientCard_clientForm [name="description"]:input', $modal).val(client.description);
       //$('#clientCard_addDate', $modal).text(moment(client.add_date).format('DD.MM.YYYY'));
-      $('#clientCard_clientForm [name="send_owner_phone"]', $modal).prop('checked', client.send_owner_phone);
+      if (client.send_owner_phone == true) {
+        $('#clientCard_clientForm [name="send_owner_phone"]', $modal).prop('checked', true);
+      } else {
+        $('#clientCard_clientForm [name="send_owner_phone"]', $modal).prop('checked', false);
+      }
       $('#clientCard_clientForm [name="agent_id"]', $modal).val(client.agent_id);
       
       if (subscription_mode == 'rent') {
@@ -766,7 +759,7 @@
 
 <div class="modal " id="clientCard_modal" role="dialog" tabindex="-1"  style="display: none;" data-focus-on="input:first" aria-labelledby="myModalLabel" aria-hidden="true">
   <div class="modal-dialog">
-    <div class="modal-content flipbox">
+    <div class="modal-content">
       <div class="modal-header" id="client-card-header">
         <a href="#" class="ctrl-button emode-btn" data-dismiss="modal">Отменить</a>
         <a href="#" class="ctrl-button smode-btn hidden" data-action="client-cancel">Отменить</a>

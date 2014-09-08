@@ -8,24 +8,21 @@ __PACKAGE__->meta->setup(
     table   => 'tasks',
 
     columns => [
-        id               => { type => 'serial', not_null => 1 },
-        parent_task_id   => { type => 'integer', remarks => 'Родительская задача' },
-        creator_id       => { type => 'integer', remarks => 'Сотрудник, создавший задачу, либо система (null)' },
-        assigned_user_id => { type => 'integer', not_null => 1, remarks => 'Сотрудник, отвечающий за выполнение задачи' },
-        add_date         => { type => 'timestamp with time zone', default => 'now()', not_null => 1, remarks => 'Дата/время добавления задачи' },
-        delete_date      => { type => 'timestamp with time zone', remarks => 'Дата/время удаления' },
-        deadline_date    => { type => 'date', not_null => 1, remarks => 'Дата дедлайна' },
-        remind_date      => { type => 'timestamp with time zone', remarks => 'Дата/время напоминания' },
-        description      => { type => 'text', not_null => 1, remarks => 'Описание задачи' },
-        status           => { type => 'varchar', length => 10, not_null => 1, remarks => 'Статус задачи:
-      scheduled - запланировано,
-      finished - завершено,
-      cancelled - отменено' },
-        realty_id        => { type => 'integer', remarks => 'Объект недвижимости, связанный с задачей' },
-        category         => { type => 'varchar', length => 32, not_null => 1, remarks => 'Категория задачи (realty, other)' },
-        type             => { type => 'varchar', length => 3, not_null => 1, remarks => 'Тип задачи:
-      in - входящая
-      out - исходящая' },
+        id                => { type => 'integer', not_null => 1, sequence => 'tasks_id_seq1' },
+        task_type_id      => { type => 'integer', not_null => 1 },
+        creator_user_id   => { type => 'integer', not_null => 1 },
+        assigned_user_id  => { type => 'integer' },
+        add_date          => { type => 'timestamp with time zone', default => 'now()', not_null => 1 },
+        remind_date       => { type => 'timestamp with time zone' },
+        dead_line         => { type => 'timestamp with time zone' },
+        description       => { type => 'varchar' },
+        metadata          => { type => 'scalar', default => '{}', not_null => 1 },
+        delete_date       => { type => 'timestamp with time zone' },
+        status            => { type => 'varchar', default => 'new', not_null => 1 },
+        change_date       => { type => 'timestamp with time zone', default => 'now()', not_null => 1 },
+        chaged_by_user_id => { type => 'integer' },
+        client_id         => { type => 'integer' },
+        realty_id         => { type => 'integer' },
     ],
 
     primary_key_columns => [ 'id' ],
@@ -38,27 +35,14 @@ __PACKAGE__->meta->setup(
             key_columns => { assigned_user_id => 'id' },
         },
 
-        creator => {
+        creator_user => {
             class       => 'Rplus::Model::User',
-            key_columns => { creator_id => 'id' },
+            key_columns => { creator_user_id => 'id' },
         },
 
-        parent_task => {
-            class       => 'Rplus::Model::Task',
-            key_columns => { parent_task_id => 'id' },
-        },
-
-        realty => {
-            class       => 'Rplus::Model::Realty',
-            key_columns => { realty_id => 'id' },
-        },
-    ],
-
-    relationships => [
-        tasks => {
-            class      => 'Rplus::Model::Task',
-            column_map => { id => 'parent_task_id' },
-            type       => 'one to many',
+        task_type => {
+            class       => 'Rplus::Model::DictTaskType',
+            key_columns => { task_type_id => 'id' },
         },
     ],
 );

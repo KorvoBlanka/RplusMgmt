@@ -430,7 +430,6 @@ sub save {
     $self->validation->required('client_id')->like(qr/^\d+$/);
     $self->validation->required('offer_type_code')->in(qw(sale rent));
     $self->validation->required('end_date')->is_datetime;
-    #$self->validation->required('queries[]');
     $self->validation->optional('realty_limit')->like(qr/^\d+$/);
     $self->validation->optional('send_owner_phone')->in(qw(0 1 true false));
 
