@@ -699,6 +699,13 @@
     $('#date-picker').datepicker('setDate', calendar_start_date.format('YYYY-MM-DD'));
     setInterval(drawCurrentTime, 30);
 
+    var now = moment();
+    var offset_y = (now.hour() - calendar_start_hour) * 100;
+    offset_y += (now.minute()) * (100 / 60);
+    offset_y -= $('.simple-calendar-body').height() / 2; 
+    $('.simple-calendar-body').scrollTop(offset_y);
+
+
   })();
 </script>
 % end
