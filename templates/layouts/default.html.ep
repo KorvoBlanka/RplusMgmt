@@ -437,6 +437,9 @@
       window.Rplus.Functions = { 
         getTodaysTasksCount: function () {
           getTodaysTasksCount();
+        },
+        getClientNewCount: function () {
+          getClientNewCount();
         }        
       };
     </script>
