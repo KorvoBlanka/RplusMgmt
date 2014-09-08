@@ -17,6 +17,7 @@ if (1) {
 $dbh->do(q{BEGIN;
 DELETE FROM "public"."tasks";
 DELETE FROM "public"."dict_task_types";
+
 INSERT INTO "public"."dict_task_types" VALUES ('1', 'Первичный контакт', '2014-08-25 17:27:31.933352+11', null, 'both', '#B1D5EB');
 INSERT INTO "public"."dict_task_types" VALUES ('2', 'Заключение договора', '2014-08-25 17:28:02.568272+11', null, 'both', '#D7E8B2');
 INSERT INTO "public"."dict_task_types" VALUES ('3', 'Показ', '2014-08-28 14:41:52.960611+11', null, 'both', '#A6E0D4');

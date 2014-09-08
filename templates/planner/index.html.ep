@@ -469,6 +469,9 @@
       var now = moment();
       var offset_y = (now.hour() - calendar_start_hour) * 100;
       offset_y += (now.minute()) * (100 / 60);
+      if ($('.simple-calendar-marker').hasClass('hidden')) {
+        $('.simple-calendar-marker').removeClass('hidden');
+      }
       $('.simple-calendar-marker').css('top', offset_y);
       $('.simple-calendar-time-display').text(now.format('HH:mm'));
     }
@@ -844,7 +847,7 @@
             </tbody>
           </table>
         </div>
-        <div class="simple-calendar-marker" style="position: absolute; top: 0px; left: 0px; width: 100%; height: 8px; z-index: 10;">
+        <div class="simple-calendar-marker hidden" style="position: absolute; top: 0px; left: 0px; width: 100%; height: 8px; z-index: 10;">
           <div class="simple-calendar-time-display" style="float: left; width: 6%; height: 12px; background-color: #f00; font-size: 11px; color: #fff; text-align: center; line-height: 12px;">
             08:00
           </div>
