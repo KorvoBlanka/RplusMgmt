@@ -1,0 +1,94 @@
+#!/usr/bin/env perl
+
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+
+use Rplus::Modern;
+
+use Rplus::DB;
+
+my $dbh = Rplus::DB->new_or_cached->dbh;
+
+if (1) {
+
+$dbh->do(q{DROP TABLE IF EXISTS "public"."tasks";});
+$dbh->do(q{DROP TABLE IF EXISTS "public"."dict_task_types"});
+
+#-- ----------------------------
+#--  Table structure for dict_task_types
+#-- ----------------------------
+$dbh->do(q{CREATE TABLE "public"."dict_task_types" (
+	"id" serial NOT NULL,
+	"name" varchar NOT NULL COLLATE "default",
+	"add_date" timestamp(6) WITH TIME ZONE NOT NULL DEFAULT now(),
+	"delete_date" timestamp(6) WITH TIME ZONE,
+	"category" varchar NOT NULL DEFAULT 'both'::character varying COLLATE "default",
+	"color" varchar COLLATE "default"
+);});
+
+$dbh->do(q{COMMENT ON COLUMN "public"."dict_task_types"."category" IS 'seller|buyer|both'});;
+
+#-- ----------------------------
+#--  Records of dict_task_types
+#-- ----------------------------
+$dbh->do(q{BEGIN;
+INSERT INTO "public"."dict_task_types" VALUES ('1', 'Первичный контакт', '2014-08-25 17:27:31.933352+11', null, 'both', '#B1D5EB');
+INSERT INTO "public"."dict_task_types" VALUES ('2', 'Заключение сделки', '2014-08-25 17:28:02.568272+11', null, 'both', '#D7E8B2');
+INSERT INTO "public"."dict_task_types" VALUES ('3', 'Показ', '2014-08-28 14:41:52.960611+11', null, 'both', '#A6E0D4');
+INSERT INTO "public"."dict_task_types" VALUES ('5', 'Сделка', '2014-08-28 21:49:30.526505+11', null, 'both', '#FD8F7F');
+INSERT INTO "public"."dict_task_types" VALUES ('4', 'Принятие решения', '2014-08-28 21:47:41.479708+11', null, 'both', '#FBC193');
+INSERT INTO "public"."dict_task_types" VALUES ('6', 'Другое', '2014-08-28 21:50:26.213206+11', null, 'both', '#D63758');
+COMMIT;});
+
+#-- ----------------------------
+#--  Primary key structure for table dict_task_types
+#-- ----------------------------
+$dbh->do(q{ALTER TABLE "public"."dict_task_types" ADD PRIMARY KEY ("id") NOT DEFERRABLE INITIALLY IMMEDIATE;});
+
+#-- ----------------------------
+#--  Indexes structure for table dict_task_types
+#-- ----------------------------
+$dbh->do(q{CREATE UNIQUE INDEX  "dict_task_types_id_key" ON "public"."dict_task_types" USING btree("id" ASC NULLS LAST);});
+
+
+#-- ----------------------------
+#--  Table structure for tasks
+#-- ----------------------------
+$dbh->do(q{CREATE TABLE "public"."tasks" (
+	"id" serial NOT NULL,
+	"task_type_id" int4 NOT NULL,
+	"creator_user_id" int4 NOT NULL,
+	"assigned_user_id" int4,
+	"add_date" timestamp(6) WITH TIME ZONE NOT NULL DEFAULT now(),
+	"remind_date" timestamp(6) WITH TIME ZONE,
+	"dead_line" timestamp(6) WITH TIME ZONE,
+	"description" varchar COLLATE "default",
+	"metadata" json NOT NULL DEFAULT '{}'::json,
+	"delete_date" timestamp(6) WITH TIME ZONE,
+	"status" varchar NOT NULL DEFAULT 'new'::character varying COLLATE "default",
+	"change_date" timestamp(6) WITH TIME ZONE NOT NULL DEFAULT now(),
+	"chaged_by_user_id" int4,
+	"client_id" int4,
+	"realty_id" int4
+);});
+
+#-- ----------------------------
+#--  Primary key structure for table tasks
+#-- ----------------------------
+$dbh->do(q{ALTER TABLE "public"."tasks" ADD PRIMARY KEY ("id") NOT DEFERRABLE INITIALLY IMMEDIATE;});
+
+#-- ----------------------------
+#--  Indexes structure for table tasks
+#-- ----------------------------
+$dbh->do(q{CREATE INDEX  "task_type_id_idx" ON "public"."tasks" USING btree(task_type_id ASC NULLS LAST);});
+
+#-- ----------------------------
+#--  Foreign keys structure for table tasks
+#-- ----------------------------
+$dbh->do(q{ALTER TABLE "public"."tasks" ADD CONSTRAINT "task_type_fk" FOREIGN KEY ("task_type_id") REFERENCES "public"."dict_task_types" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION NOT DEFERRABLE INITIALLY IMMEDIATE;});
+$dbh->do(q{ALTER TABLE "public"."tasks" ADD CONSTRAINT "creator_user_fk" FOREIGN KEY ("creator_user_id") REFERENCES "public"."users" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION NOT DEFERRABLE INITIALLY IMMEDIATE;});
+$dbh->do(q{ALTER TABLE "public"."tasks" ADD CONSTRAINT "assigned_user_fk" FOREIGN KEY ("assigned_user_id") REFERENCES "public"."users" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION NOT DEFERRABLE INITIALLY IMMEDIATE;});
+
+}
+
+exit 1;

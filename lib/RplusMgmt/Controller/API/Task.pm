@@ -207,7 +207,7 @@ sub get_piramid_data {  # вынести всю аналитику в отдел
     my $task_iter = Rplus::Model::Task::Manager->get_objects_iterator(
         query => [
             '!realty_id' => undef,
-            task_type_id => [25, 2, 32, 30],
+            task_type_id => [1, 2, 3, 4, 5],
             delete_date => undef,
         ], 
     );
@@ -226,10 +226,11 @@ sub get_piramid_data {  # вынести всю аналитику в отдел
     my @res = (0,0,0,0);
     while( my ($k, $v) = each %groups ) {
         given ($v->{task_type_id}) {
-            when (25) {$res[0] ++;}
+            when (1) {$res[0] ++;}
             when (2) {$res[0] ++; $res[1] ++;}
-            when (32) {$res[0] ++; $res[1] ++; $res[2] ++;}
-            when (30) {$res[0] ++; $res[1] ++; $res[2] ++; $res[3] ++;}
+            when (3) {$res[0] ++; $res[1] ++; $res[2] ++;}
+            when (4) {$res[0] ++; $res[1] ++; $res[2] ++; $res[3] ++;}
+            when (5) {$res[0] ++; $res[1] ++; $res[2] ++; $res[3] ++; $res[4] ++;}
         } 
     }
 

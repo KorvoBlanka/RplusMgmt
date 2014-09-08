@@ -63,13 +63,13 @@ $(function() {
   .done(function (data, textStatus, jqXHR) {
     var x = data.data;
     console.log(x[0]);
-    var data = [["Контакт", x[0]], ["Показ", x[1]], ["Перговоры", x[2]], ["Сделка", x[3]],];
+    var data = [["Контакт", x[0]], ["Заключение договора", x[1]], ["Показ", x[2]], ["Принятие решения", x[3]], ["Сделка", x[4]],];
 
     $.plot("#placeholder", [data], {
       series: {
         bars: {
           show: true,
-          barWidth: 0.6,
+          barWidth: 0.5,
           align: "center"
         }
       },
