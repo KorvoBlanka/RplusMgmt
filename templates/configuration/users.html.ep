@@ -85,7 +85,12 @@
 % end
 
 
+% content_for after_bootstrap => begin
+%= js_once "/js/pyphone/pyphone.js";
+% end
+
 % content_for javascript => begin
+
 <script type="text/javascript">
   "use strict";
 
@@ -94,7 +99,7 @@
   (function () {
     var $modal, $form;
     var previous_role;
-    
+
     $('#userCard_userForm_inputRole').on("focus", function (){
       previous_role = this.value;
     })
@@ -250,6 +255,11 @@
 
       initUserSave();
       listUsers();
+      if (!pyPhone.checkService()) {
+        $('#pyPhoneNotice').removeClass('hidden');
+      } else {
+        $('#pyPhoneNotice').addClass('hidden');
+      }
     });
     
     $('[data-action="user-delete"]').click(function (e) {
@@ -487,32 +497,36 @@
             </form>
           </div>
           <div class="tab-pane" id="userCard_telephonyTab">
-            <form role="form">
-              <div class="row">
-                <div class="col-md-6">
+            <div class="col-md-6">
+              <form role="form">
+                <div class="row">
                   <div class="form-group form-group-sm">
                     <label for="userCard_userForm_inputSipHost"><%= loc q{sip host} %></label>
                     <input type="text" class="form-control input-sm" name="sip_host" id="userCard_userForm_inputSipHost" form="userCard_userForm" placeholder="<%= ucfloc q{sip host} %>">
                   </div>
                 </div>
-              </div>
-              <div class="row">
-                <div class="col-md-6">
+                <div class="row">
                   <div class="form-group form-group-sm">
                     <label for="userCard_userForm_inputSipLogin"><%= loc q{sip login} %></label>
                     <input type="text" class="form-control input-sm" name="sip_login" id="userCard_userForm_inputSipLogin" form="userCard_userForm" placeholder="<%= ucfloc q{sip login} %>">
                   </div>
                 </div>
-              </div>
-              <div class="row">
-                <div class="col-md-6">
+                <div class="row">
                   <div class="form-group form-group-sm">
                     <label for="userCard_userForm_inputSipPassword"><%= loc q{sip password} %></label>
                     <input type="password" class="form-control input-sm" name="sip_password" id="userCard_userForm_inputSipPassword" form="userCard_userForm" placeholder="<%= ucfloc q{sip password} %>">
                   </div>
                 </div>
+              </form>
+            </div>
+            <div class="col-md-6">
+              <div class="row">
+                <div id="pyPhoneNotice" class="hidden" style="margin-left: 35px;">
+                  <p>Для работы IP телефонии необходимо установить дополнительный компонент</p>
+                  <button class="btn btn-primary btn-sm" href="<%= $assets_url %>/install/win/pyphone_setup.exe">скачать компонент</button>
+                </div>
               </div>
-            </form>
+            </div>
           </div>          
         </div>
 

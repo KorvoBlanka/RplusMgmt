@@ -346,77 +346,52 @@
 % content_for after_bootstrap => begin
 %= js_once "$assets_url/leaflet/$leafletjs_ver/leaflet.js";
 %= js_once "$assets_url/leaflet.fullscreen/$leafletjs_fullscreen_ver/Control.FullScreen.js";
-%= js_once "/js/leaflet/layer-2gis.js";
 %= js_once "$assets_url/typeahead.js/$typeaheadjs_ver/js/typeahead.js";
 %= js_once "$assets_url/jquery.webSpeech/jquery.webSpeech-1.0.1.js";
+%= js_once "/js/leaflet/layer-2gis.js";
+%= js_once "/js/pyphone/pyphone.js";
 % end
 
 % content_for javascript => begin
 %= include 'javascript/rplus_table';
 %= include 'javascript/rplus_realty';
-<script src="http://rtckit.com/api/swfobject.js"></script>
-<script src="http://rtckit.com/api/rtckit.js"></script>
+
 <script type="application/javascript">
   "use strict";
 
   $('#offer-type-filter').data('val', Rplus.Variables['User'].offer_mode);
   $('#offer-type-filter > a > span').text(Rplus.Variables['User'].offer_mode == 'sale' ? 'Продажа' : 'Аренда');
 
-  function sipSetup() {
-    console.log('sip setup');
+  function phoneSetup() {
+    console.log('phone setup');
     var phone_num = '';
     var call_time = 0;
     var call_timer_id;
 
-    var authToken = {
-        // публичный ключ (не путать с приватным!)
-        key: 'hzp915OzlIeuIqLqWW5d',
-        // куда можно звонить: * - любая последовательность, запятая - ИЛИ
-        mask: '*',
-        // время до которого дествует токен в формате UNIX
-        expires: 1922646919,
-        // подпись: SHA1(mask + expires + private_key) в шеснадцатеричном
-        // представлении
-        signature: 'b5bcb68e78dcbdb08e6555fae8a5f7194439e5d5'
+    pyPhone.initDone = function() {
+      pyPhone.register({
+        % my $user = Rplus::Model::User::Manager->get_objects(query => [id => $self->stash('user')->{id}, delete_date => undef])->[0];
+        % my $sip = from_json($user->ip_telephony);      
+        host: '<%= $sip->{sip_host} %>',
+        user: '<%= $sip->{sip_login} %>',
+        password: '<%= $sip->{sip_password} %>',
+        proxy: '',
+      });      
     }
 
-    RTCKit.webPhone.onConnectStateChanged = function(connectInfo) {
-      % my $user = Rplus::Model::User::Manager->get_objects(query => [id => $self->stash('user')->{id}, delete_date => undef])->[0];
-      % my $sip = from_json($user->ip_telephony);
-      console.log(connectInfo);
-      if (connectInfo.connected) {
-        RTCKit.webPhone.register({
-          registrar: '<%= $sip->{sip_host} %>',
-          username: '<%= $sip->{sip_login} %>',
-          password: '<%= $sip->{sip_password} %>',
-          auth: authToken,
-        });
-        RTCKit.webPhone.showSettings();
-      }
-    }
-
-    RTCKit.webPhone.onRegStateChanged = function(regInfo) {
-      console.log(regInfo);
+    pyPhone.onRegStateChanged = function(regInfo) {
       if (regInfo.registered) {
         $('#show-phone-button > span').removeClass('hidden');
       }
     }
 
-    RTCKit.webPhone.onMicStateChanged = function(micInfo) {
-      console.log(micInfo);
-      if (micInfo.allowed) {
-        $('#rtckit-container').css('z-index', 0);
-      } else {
-        $('#rtckit-container').css('z-index', 1000);
-        //RTCKit.webPhone.showMicDialog();
-      }
-    }
-
     // обработчик состояния звонка
-    RTCKit.webPhone.onCallStateChanged = function(callInfo) {
+    pyPhone.onCallStateChanged = function(callInfo) {
       // 'IDLE', 'INCOMING', 'OUTGOING', 'CONNECTED'
-      console.log(callInfo);
+      var sound = document.getElementById("ringSound");
       if (callInfo.state == 'INCOMING') {
+        sound.loop = true;
+        sound.play();
         $('.phone-screen').removeClass('hidden');
         $('#answer-button').addClass('disabled-button');
         $('#reject-button').addClass('disabled-button');
@@ -436,6 +411,9 @@
           $('#user-pic > img').attr('src', '');
           $('#user-pic').addClass('hidden');
         }
+      } else {
+        sound.pause();
+        sound.currentTime = 0;
       }
 
       if (callInfo.state == 'CONNECTED') {
@@ -479,19 +457,18 @@
     }    
 
     $('[data-action="call-answer"]').click(function (e) {
-      if (RTCKit.webPhone.callState() == 'INCOMING') {
-        RTCKit.webPhone.answer({video: false});
+      if (pyPhone.callState() == 'INCOMING') {
+        pyPhone.answer();
       }
 
-      if(RTCKit.webPhone.callState() == 'IDLE') {
-        var uri = 'sip:' + phone_num + '@rplusmgmt.com'
-        RTCKit.webPhone.call({'uri': uri});
+      if(pyPhone.callState() == 'IDLE') {
+        pyPhone.call({'number': phone_num});
       }
     });
 
     $('[data-action="call-reject"]').click(function (e) {
       //if (RTCKit.webPhone.callState() == '') {
-        RTCKit.webPhone.hangup();
+        pyPhone.hangup();
       //}
     });
 
@@ -652,8 +629,7 @@
       return r;
     }
 
-    RTCKit.webPhone.embed({container: 'container'});
-    RTCKit.webPhone.connect()
+    pyPhone.init();
   };
 
   registerGlobalAjaxEvents();
@@ -917,7 +893,7 @@
 
       initSpeech();
       listRealty(1);
-      sipSetup();
+      phoneSetup();
 
       
         var guid;
@@ -1025,6 +1001,9 @@
   </tr>
 </table>
 <div class="phone-screen hidden" style="">
+  <audio id="ringSound">
+    <source src="<%= $assets_url %>/sound/telephone-ring-04.mp3"></source>
+  </audio>
   <div class="hidden" id="user-pic">
     <img src="" style="width: 160px; height: 160px;">
   </div>
@@ -1183,9 +1162,6 @@
     </div>
   </div>
   <div class="col-md-6" style="padding-left: 0; position: relative;">
-    <div id="rtckit-container" style="position: absolute; top: 25px; right: 25px;">
-      <div id='container' style='width: 217px; height: 140px;'></div>
-    </div>
     <div class="geo-map" id="geoMap"></div>
   </div>
 </div>
