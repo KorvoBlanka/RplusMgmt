@@ -22,7 +22,7 @@ say "Running hg pull && hg update";
 
 chdir "$FindBin::Bin/..";
 system(qw/hg pull/) == 0 or die "hg pull failed";
-system(qw/hg update/) == 0 or die "hg update failed";
+system(qw/hg update --clean/) == 0 or die "hg update failed";
 
 $version_new = get_version();
 
