@@ -523,7 +523,9 @@
               <div class="row">
                 <div id="pyPhoneNotice" class="hidden" style="margin-left: 35px;">
                   <p>Для работы IP телефонии необходимо установить дополнительный компонент</p>
-                  <button class="btn btn-primary btn-sm" href="<%= $assets_url %>/install/win/pyphone_setup.exe">скачать компонент</button>
+                  <form method="get" action="<%= $assets_url %>/install/win/pyphone_setup.exe">
+                    <button type="submit" class="btn btn-primary btn-sm">скачать компонент</button>
+                  </form>
                 </div>
               </div>
             </div>
