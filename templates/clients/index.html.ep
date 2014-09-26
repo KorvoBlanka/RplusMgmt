@@ -1801,7 +1801,7 @@
 
           var now = new Date()
           $('#date-picker').datepicker('setDate', now);
-          $('#timepicker-hour').text(now.getHours());
+          $('#timepicker-hour').text((now.getHours() < 10 ? '0' : '') + now.getHours());
           $('#timepicker-minute').text((now.getMinutes() < 10 ? '0' : '') + now.getMinutes());
 
           $('#taskModal').modal('show');
@@ -1812,10 +1812,10 @@
 
           var hr = $('#timepicker-hour').text();
           var min = $('#timepicker-minute').text();
-          var date = $('#date-picker').datepicker('getDate').yyyymmdd();
-          var tz = '+11';
-          var dead_line = date + ' ' + hr + ':' + min + ':' + '00' + tz;
-
+          var start_date = moment($('#date-picker').datepicker('getDate'));
+          start_date.hours(hr);
+          start_date.minutes(min);
+          var end_date = start_date.clone().add(30, 'minutes');
           // если выбрано несколько клиентов, игнорируем выбранную недвижимость
           // 
           var $cselected = $('.tree > tbody > tr.cselected');
@@ -1827,6 +1827,8 @@
               var client_id = $this.data('id');
               var client = clients[client_id];
               var agent_id = client.agent_id ? client.agent_id : <%= $self->stash('user')->{id} %>;
+              var summary = (client.name || '') + ' ' + Rplus.Util.formatPhoneNum(client.phone_num);
+              var description = '';
 
               $.ajax({
                 type: "POST",
@@ -1834,9 +1836,12 @@
                 data: {
                   task_type_id: task_type_id, 
                   assigned_user_id: agent_id, 
-                  dead_line: dead_line, 
+                  start_date: start_date.format(),
+                  end_date: end_date.format(),
                   client_id: client.id,
-                  description: '<br>' + (client.name || '') + ' <strong>' + Rplus.Util.formatPhoneNum(client.phone_num) + '</strong> '},
+                  summary: summary,
+                  description: description,
+                },
               })
                 .done(function (data, textStatus, jqXHR) {
                   if (data.status == 'success') {
@@ -1862,7 +1867,8 @@
               var r = $this.data('obj');
               var agent_id = r.agent_id && r.agent_id != 10000 ? r.agent_id : <%= $self->stash('user')->{id} %>;
 
-              var description = client_description + '<br>' + Rplus.Realty.getDigestForTask(r);
+              var summary = client_description + ' ' + Rplus.Realty.getDigestForTask(r);
+              var description = '';
 
               // задача для агента объекта недвижимости
               $.ajax({
@@ -1874,7 +1880,9 @@
                   dead_line: dead_line, 
                   client_id: client.id,
                   realty_id: r.id,
-                  description: description},
+                  summary: summary,
+                  description: description,
+                },
               })
                 .done(function (data, textStatus, jqXHR) {
                   if (data.status == 'success') {
@@ -1893,8 +1901,10 @@
                   data: {
                     task_type_id: task_type_id, 
                     assigned_user_id: client_agent_id, 
-                    dead_line: dead_line,                     
-                    description: description},
+                    dead_line: dead_line,
+                    summary: summary,
+                    description: description,
+                  },
                 })
                   .done(function (data, textStatus, jqXHR) {
                     if (data.status == 'success') {
@@ -2212,15 +2222,6 @@
       </table>
       </div>
     </div>
-
-    <!--<div style="
-      width: 2px;
-      height: 100%;
-      position: absolute;
-      left: 39.55%;
-      border-right: 1px double #ffffff;
-      border-left: 1px solid #E0E0E0;">
-    </div>-->
 
     <div class="col-md-7 col-lg-8" style="padding-left: 11px;">
       <div class="table-responsive" id="realtyTableWrapper">

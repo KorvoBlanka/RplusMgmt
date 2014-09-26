@@ -5,6 +5,8 @@ use Mojo::Base 'Mojolicious::Controller';
 use Rplus::Model::Task;
 use Rplus::Model::Task::Manager;
 
+use Rplus::Util::GoogleCalendar;
+
 use Mojo::Collection;
 
 use JSON;
@@ -22,6 +24,13 @@ sub list {
     my $assigned_user_id = $self->param('assigned_user_id') || 'all';
     my $task_type_id = $self->param('task_type_id') || 'all';
 
+    # sync with google
+    if ($assigned_user_id eq 'all') {
+        Rplus::Util::GoogleCalendar::syncAll();
+    } else {
+        Rplus::Util::GoogleCalendar::sync($assigned_user_id);
+    }
+
     # "where" query
     my @query;
     {
@@ -29,18 +38,14 @@ sub list {
             push @query, status => $status;
         }
         if ($assigned_user_id ne 'all') {
-            if ($assigned_user_id eq 'own') {
-                push @query, assigned_user_id => $self->stash('user')->{id};
-            } else {
-                push @query, assigned_user_id => $assigned_user_id;
-            }
+            push @query, assigned_user_id => $assigned_user_id;
         }
         if ($task_type_id ne 'all') {
             push @query, task_type_id => $task_type_id;
         }
         if ($start_date ne 'any' && $end_date ne 'any') {
-            push @query, dead_line => {gt => $start_date};
-            push @query, dead_line => {le => $end_date}
+            push @query, start_date => {gt => $start_date};
+            push @query, start_date => {le => $end_date}
         }
     }
 
@@ -49,7 +54,7 @@ sub list {
             @query,
             delete_date => undef,
         ], 
-        sort_by => 'dead_line DESC'
+        sort_by => 'start_date DESC'
     );
 
     my $res = {
@@ -63,13 +68,17 @@ sub list {
             task_type => $task->task_type->name,
             creator_user_id => $task->creator_user_id,
             assigned_user_id => $task->assigned_user_id,
-            add_date => $task->assigned_user_id,
+            add_date => $task->add_date,
+            start_date => $task->start_date,
+            end_date => $task->end_date,
             remind_date => $task->remind_date,
-            dead_line => $task->dead_line,
+            summary => $task->summary,
             description => $task->description,
             status => $task->status,
             category => $task->task_type->category,
             color => $task->task_type->color,
+            realty_id => $task->realty_id,
+            client_id => $task->client_id,            
         };
 
         push @{$res->{list}}, $x;
@@ -102,8 +111,8 @@ sub get_task_count {
             push @query, task_type_id => $task_type_id;
         }
         if ($start_date ne 'any' && $end_date ne 'any') {
-            push @query, dead_line => {gt => $start_date};
-            push @query, dead_line => {le => $end_date}
+            push @query, start_date => {gt => $start_date};
+            push @query, start_date => {le => $end_date}
         }
     }
 
@@ -114,7 +123,7 @@ sub get_task_count {
         ], 
     );
 
-    return $self->render(json => {status => 'success', count => $task_count},);
+    return $self->render(json => {status => 'success', count => $task_count});
 }
 
 sub get {
@@ -131,11 +140,15 @@ sub get {
         assigned_user_id => $task->assigned_user_id,
         add_date => $task->assigned_user_id,
         remind_date => $task->remind_date,
-        dead_line => $task->dead_line,
+        start_date => $task->start_date,
+        end_date => $task->end_date,
+        summary => $task->summary,
         description => $task->description,
         status => $task->status,
         category => $task->task_type->category,
         color => $task->task_type->color,
+        realty_id => $task->realty_id,
+        client_id => $task->client_id,
     };
 
     return $self->render(json => {status => 'success', task => $x},);    
@@ -146,21 +159,40 @@ sub update {
 
     my $id = $self->param('id');
 
-
     my $task = Rplus::Model::Task::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $task;    
 
-    for ($self->param) {
-        if ($_ eq 'status') {
-            $task->status($self->param('status'));
-        } elsif ($_ eq 'dead_line') {
-            $task->dead_line($self->param('dead_line'));
+    my $result;
+
+    my $status = $self->param('status');
+    my $start_date = $self->param('start_date');
+    my $end_date = $self->param('end_date');
+
+    if ($status) {
+        $task->status($status);
+
+        if ($task->google_id) {
+            my $g_status = '';
+            if ($self->param('status') eq 'new') {
+                $g_status = 'confirmed';
+            } elsif ($self->param('status') eq 'done') {
+                $g_status = 'cancelled';
+            }
+
+            $result = Rplus::Util::GoogleCalendar::setStatus($task->assigned_user_id, $task->google_id, $g_status);
+        }        
+    }
+    if ($start_date && $end_date) {
+        $task->start_date($start_date);
+        $task->end_date($end_date);
+
+        if ($task->google_id) {
+            $result = Rplus::Util::GoogleCalendar::setStartEndDate($task->assigned_user_id, $task->google_id, $start_date, $end_date);
         }
     }
 
     $task->change_date('now()');
     $task->save(changes_only => 1);
-    # Not Implemented
     return $self->render(json => {status => 'success', id => $task->id},);
 }
 
@@ -169,30 +201,69 @@ sub save {
 
     #return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(subscriptions => 'write');
     my $task_type_id = $self->param('task_type_id');
-    my $dead_line = $self->param('dead_line');    
     my $assigned_user_id = $self->param('assigned_user_id');
+    my $start_date = $self->param('start_date');    
+    my $end_date = $self->param('end_date');
+    my $summary = $self->param('summary');
     my $description = $self->param('description');
     my $client_id = $self->param('client_id');
     my $realty_id = $self->param('realty_id');
-
-    my $creator_user_id = $self->stash('user')->{id};
 
     my $task;
     if (my $id = $self->param('id')) {
         $task = Rplus::Model::Task::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
     } else {
-        $task = Rplus::Model::Task->new(task_type_id => $task_type_id, creator_user_id => $creator_user_id);
+        $task = Rplus::Model::Task->new(task_type_id => $task_type_id, creator_user_id => $self->stash('user')->{id});
         $task->client_id($client_id);
-        $task->realty_id($realty_id);        
+        $task->realty_id($realty_id);
     }
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $task;
 
-    $task->assigned_user_id($assigned_user_id);
+    $task->summary($summary);
     $task->description($description);
-    $task->dead_line($dead_line);
+    $task->start_date($start_date);
+    $task->end_date($end_date);
+
+    my $result;
+    my $gdata = Rplus::Util::GoogleCalendar::getGoogleData($assigned_user_id);
+    if ($gdata->{permission_granted}) {
+        my $task_type = Rplus::Model::DictTaskType::Manager->get_objects(query => [id => $task_type_id, delete_date => undef])->[0];
+        if ($task->id && $task->google_id) {
+            if ($task->assigned_user_id == $assigned_user_id) {     # если исполнитель не изменился, просто внесем изменения
+                $result = Rplus::Util::GoogleCalendar::patch($assigned_user_id, $task->google_id, {
+                    summary => $task_type->name . ': ' . $summary,
+                    description => $description,
+                    start_date => $start_date,
+                    end_date => $end_date,
+                });
+            } else {    # если изменился, удалим задачу у старого и назначим новому
+                # удалить задачу у старого исполнителя
+
+                # назначить новому
+                $result = Rplus::Util::GoogleCalendar::insert($assigned_user_id, {
+                    summary => $task_type->name . ': ' . $summary,
+                    description => $description,
+                    start_date => $start_date,
+                    end_date => $end_date,
+                });
+            }
+        } else {
+            $result = Rplus::Util::GoogleCalendar::insert($assigned_user_id, {
+                summary => $task_type->name . ': ' . $summary,
+                description => $description,
+                start_date => $start_date,
+                end_date => $end_date,
+            });
+        }
+    }
+
+    if ($result->{id}) {
+        $task->google_id($result->{id});
+    }
+    $task->assigned_user_id($assigned_user_id);
     $task->save(changes_only => 1);
 
-    return $self->render(json => {status => 'success', id => $task->id});
+    return $self->render(json => {status => 'success', id => $task->id, google_id => $task->google_id, result => Dumper $result});
 }
 
 sub delete {

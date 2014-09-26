@@ -29,6 +29,7 @@ sub signin {
 
     my $user = Rplus::Model::User::Manager->get_objects(query => [login => $login, password => $password, delete_date => undef])->[0];
 
+    return $self->render(json => {status => 'failed', reason => 'no_connection'}) if $acc_data->{no_connection} == 1;
     return $self->render(json => {status => 'failed', reason => 'not_found'}) unless $user;
     return $self->render(json => {status => 'failed', reason => 'not_found'}) unless $acc_data;
     return $self->render(json => {status => 'failed', reason => 'no_money'}) if $acc_data->{blocked} == 1;

@@ -61,6 +61,22 @@
         columns: 4,
         livePreview: true,
         //boxWidth: 16 * 4 + 5 * 5,
+
+        colors: [
+          '7BD148',
+          '5484ed',
+          'a4bdfc',
+          '6d6dbd',
+          '7ae7bf',
+          '51b749',
+          'fbd75b',
+          'ffb878',
+          'ff887c',
+          'dc2127',
+          'dbadff',
+          'e1e1e1',
+        ],
+        /*
         colors: [
           'B1D5EB',
           'ADEDEF',
@@ -74,7 +90,8 @@
           'AF8AB6',
           'AD4A9A',
           'E22172',
-        ],
+        ],*/
+
     });
 
     $('.simpleColorDisplay').click(function() {
@@ -313,7 +330,7 @@
     <ul class="nav navbar-nav">
       <li><a href="#" data-action="task-type-create"><span class="glyphicon glyphicon-plus"></span> <%= ucfloc 'add' %></a></li>
       <li><a href="#" data-action="task-type-open"><span class="glyphicon glyphicon-file"></span> <%= ucfloc 'open' %></a></li>
-      <li><a href="#" data-action="task-type-delete"><span class="glyphicon glyphicon-trash"></span> <%= ucfloc 'delete' %></a></li>
+      <li><a href="#" class="hidden" data-action="task-type-delete"><span class="glyphicon glyphicon-trash"></span> <%= ucfloc 'delete' %></a></li>
     </ul>
   </div>
 </nav>

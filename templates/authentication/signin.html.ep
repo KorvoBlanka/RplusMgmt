@@ -77,7 +77,9 @@
             .done(function (data, textStatus, jqXHR) {
               if (data.status == 'failed') {
                 $('.form-signin button[type="submit"]').button('reset');
-                if(data.reason == 'no_money') {
+                if(data.reason == 'no_connection') {
+                  $('#message').html('Нет связи с сервером');
+                } else if(data.reason == 'no_money') {
                   $('#message').html('Недостаточно средств на счету. <a href="http://rplusmgmt.com/cabinet" target="_blank">Перейти в кабинет</a>');
                 } else if(data.reason == 'not_found') {
                   $('#message').html('Неверный логин или пароль');

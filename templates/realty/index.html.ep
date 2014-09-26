@@ -18,8 +18,8 @@
 %= css_once "$assets_url/leaflet.fullscreen/$leafletjs_fullscreen_ver/Control.FullScreen.css";
 %= css_once "$assets_url/typeahead.js/$typeaheadjs_ver/css/typeahead.js-bootstrap.css";
 %= css_once "$assets_url/jquery.webSpeech/jquery.webSpeech-1.0.1.css";
-%= css_once "/css/context.css";
 %= css_once "$assets_url/bootstrap-datepicker/css/datepicker3.css";
+%= css_once "/css/context.css";
 <style type="text/css">
   .export-check-hidden {
     visibility: hidden;
@@ -1282,7 +1282,7 @@
 
           var now = new Date()
           $('#date-picker').datepicker('setDate', now);
-          $('#timepicker-hour').text(now.getHours());
+          $('#timepicker-hour').text((now.getHours() < 10 ? '0' : '') + now.getHours());
           $('#timepicker-minute').text((now.getMinutes() < 10 ? '0' : '') + now.getMinutes());
 
           $('#taskModal').modal('show');
@@ -1293,9 +1293,10 @@
 
           var hr = $('#timepicker-hour').text();
           var min = $('#timepicker-minute').text();
-          var date = $('#date-picker').datepicker('getDate').yyyymmdd();
-          var tz = '+11';
-          var dead_line = date + ' ' + hr + ':' + min + ':' + '00' + tz;
+          var start_date = moment($('#date-picker').datepicker('getDate'));
+          start_date.hours(hr);
+          start_date.minutes(min);
+          var end_date = start_date.clone().add(30, 'minutes');
 
           var $selected = $('#realtyTable > tbody > tr.selected');
           $selected.each(function () {
@@ -1303,15 +1304,21 @@
             var id = $this.data('id');
             var r = $this.data('obj');
             var agent_id = r.agent_id && r.agent_id != 10000 ? r.agent_id : <%= $self->stash('user')->{id} %>;
+            var summary = Rplus.Realty.getDigestForTask(r);
+            var description = '';
+
             $.ajax({
               type: "POST",
               url: "/api/task/save",
               data: {
                 task_type_id: task_type_id, 
                 assigned_user_id: agent_id, 
-                dead_line: dead_line, 
+                start_date: start_date.format(),
+                end_date: end_date.format(),
                 realty_id: r.id,
-                description: '<br>' + Rplus.Realty.getDigestForTask(r),},
+                summary: summary,
+                description: description,
+              },
             })
               .done(function (data, textStatus, jqXHR) {
                 if (data.status == 'success') {

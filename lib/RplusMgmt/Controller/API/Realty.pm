@@ -19,9 +19,11 @@ use Rplus::Util::PhoneNum;
 use Rplus::Util::Query;
 use Rplus::Util::Realty;
 use Rplus::Util::Mediator qw(add_mediator);
+use Rplus::Util::Task;
 
 use JSON;
 use Mojo::Collection;
+use Time::Piece;
 
 no warnings 'experimental::smartmatch';
 
@@ -335,6 +337,8 @@ sub save {
 
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => 'write');
     
+    my $create_event = 0;
+
     my $realty;
     if (my $id = $self->param('id')) {
         $realty = Rplus::Model::Realty::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
@@ -346,6 +350,16 @@ sub save {
     }
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $realty;
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => write => $realty->agent_id) || $self->has_permission(realty => 'write')->{can_assign} && $realty->agent_id == undef;
+
+    if ($realty->id) {
+        if ($self->param('agent_id') && $realty->agent_id != $self->param('agent_id')) {
+            $create_event = 1;
+        }
+    } else {
+        if ($realty->agent_id) {
+            $create_event = 1;
+        }
+    }
 
     # Input validation
     $self->validation->required('type_code'); # TODO: check value
@@ -487,35 +501,61 @@ sub save {
         #($similar_realty ? (similar_realty => $_serialize->($self, $similar_realty)) : ()),
     };
 
-    # назначения планировки для объектов в том же доме
-    if(($self->stash('user')->{id} == 2 || $self->stash('user')->{id} == 1) && !($self->param('address_object_id') eq '') && !($self->param('house_num') eq '')) {
-        if(!($self->param('ap_scheme_id') eq '')) {
-          my $num_realty_updated = Rplus::Model::Realty::Manager->update_objects(
-              set => {ap_scheme_id => $self->param('ap_scheme_id'), change_date => \'now()'},
-              where => [
-                  address_object_id => $self->param('address_object_id'),
-                  house_num => $self->param('house_num'),
-              ],
-          );
-          
-          my $meta = from_json($realty->metadata);
-          $meta->{hack} = 1;
-          $realty->metadata(encode_json($meta));
-          $realty->save(changes_only => 1);
-          
-        } else {
-            my $r = Rplus::Model::Realty::Manager->get_objects(query => [address_object_id => $self->param('address_object_id'), house_num => $self->param('house_num'), \"metadata->>'hack' = '1'", delete_date => undef])->[0];
-            if ($r) {           
-              my $num_realty_updated = Rplus::Model::Realty::Manager->update_objects(
-                set => {ap_scheme_id => $r->ap_scheme_id, change_date => \'now()'},
-                where => [
-                    address_object_id => $self->param('address_object_id'),
-                    house_num => $self->param('house_num'),
-                ],
-              );
-            }
+    if ($create_event) {
+        my $start_date = localtime;
+        my $end_date = $start_date + 15 * 60;
+        my $start_date_str = $start_date->datetime . '+' . ($start_date->tzoffset / (60 * 60));
+        my $end_date_str = $end_date->datetime . '+' . ($start_date->tzoffset / (60 * 60));
+
+        my @parts;
+        {
+            push @parts, $realty->type->name;
+            push @parts, $realty->rooms_count.'к' if $realty->rooms_count;
+            push @parts, $realty->address_object->name.' '.$realty->address_object->short_type.($realty->house_num ? ', '.$realty->house_num : '') if $realty->address_object;
+            push @parts, $realty->price.' тыс. руб.' if $realty->price;
         }
+        my $summary = join(', ', @parts);
+
+        Rplus::Util::Task::qcreate($self, {
+                task_type_id => 9, # назначен объект
+                assigned_user_id => $realty->agent_id,
+                start_date => $start_date_str,
+                end_date => $end_date_str,
+                summary => $summary,
+                client_id => undef,
+                realty_id => $realty->id,
+            });        
     }
+
+    # назначения планировки для объектов в том же доме
+    #if(($self->stash('user')->{id} == 2 || $self->stash('user')->{id} == 1) && !($self->param('address_object_id') eq '') && !($self->param('house_num') eq '')) {
+    #    if(!($self->param('ap_scheme_id') eq '')) {
+    #      my $num_realty_updated = Rplus::Model::Realty::Manager->update_objects(
+    #          set => {ap_scheme_id => $self->param('ap_scheme_id'), change_date => \'now()'},
+    #          where => [
+    #              address_object_id => $self->param('address_object_id'),
+    #              house_num => $self->param('house_num'),
+    #          ],
+    #      );
+    #      
+    #      my $meta = from_json($realty->metadata);
+    #      $meta->{hack} = 1;
+    #      $realty->metadata(encode_json($meta));
+    #      $realty->save(changes_only => 1);
+    #      
+    #    } else {
+    #        my $r = Rplus::Model::Realty::Manager->get_objects(query => [address_object_id => $self->param('address_object_id'), house_num => $self->param('house_num'), \"metadata->>'hack' = '1'", delete_date => undef])->[0];
+    #        if ($r) {           
+    #          my $num_realty_updated = Rplus::Model::Realty::Manager->update_objects(
+    #            set => {ap_scheme_id => $r->ap_scheme_id, change_date => \'now()'},
+    #            where => [
+    #                address_object_id => $self->param('address_object_id'),
+    #                house_num => $self->param('house_num'),
+    #            ],
+    #          );
+    #        }
+    #    }
+    #}
 
     $self->render(json => $res);
 }
@@ -526,7 +566,7 @@ sub update {
     #return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => 'write');
 
     my $id = $self->param('id');
-
+    my $create_event = 0;
     my $realty = Rplus::Model::Realty::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $realty;
 
@@ -537,6 +577,9 @@ sub update {
             return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => write => $realty->agent_id) || ($self->has_permission(realty => 'write')->{can_assign} && $realty->agent_id == undef);
             # if agent_id changed - set 'assign_date'
             $realty->assign_date('now()');
+            if ($self->param('agent_id') && $self->param('agent_id') != $realty->agent_id) {
+                $create_event = 1
+            }
             if ($self->param('agent_id') eq '') {
                 $realty->agent_id(undef);
             } else {
@@ -597,6 +640,32 @@ sub update {
         id => $realty->id,
         realty => $_serialize->($self, $realty),
     };
+
+    if ($create_event) {
+        my $start_date = localtime;
+        my $end_date = $start_date + 15 * 60;
+        my $start_date_str = $start_date->datetime . '+' . ($start_date->tzoffset / (60 * 60));
+        my $end_date_str = $end_date->datetime . '+' . ($start_date->tzoffset / (60 * 60));
+
+        my @parts;
+        {
+            push @parts, $realty->type->name;
+            push @parts, $realty->rooms_count.'к' if $realty->rooms_count;
+            push @parts, $realty->address_object->name.' '.$realty->address_object->short_type.($realty->house_num ? ', '.$realty->house_num : '') if $realty->address_object;
+            push @parts, $realty->price.' тыс. руб.' if $realty->price;
+        }
+        my $summary = join(', ', @parts);
+
+        Rplus::Util::Task::qcreate($self, {
+                task_type_id => 9, # назначен объект
+                assigned_user_id => $realty->agent_id,
+                start_date => $start_date_str,
+                end_date => $end_date_str,
+                summary => $summary,
+                client_id => undef,
+                realty_id => $realty->id,
+            });        
+    }
     
     return $self->render(json => $res);
 }

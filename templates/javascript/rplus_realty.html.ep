@@ -100,7 +100,7 @@
     getDigestForTask: function (r) {
       var digest = [];
 
-      digest.push('<a href="#" data-action="realty-open" data-id="' + r.id + '"><strong>' + Rplus.Table.realty_types[r.type_code].name + '</strong></a>');
+      digest.push(Rplus.Table.realty_types[r.type_code].name);
       if (r.rooms_count) digest.push(r.rooms_count + 'к');
       if (r.address_object) {
         digest.push(
@@ -123,15 +123,14 @@
       }
       if (r.square_land && r.square_land_type) digest.push(r.square_land + ' ' + (r.square_land_type == 'ar' ? 'сот.' : 'га'));
       //if (withDescription && r.description) digest.push(Rplus.Util.escape(r.description));
-      if (r.price) digest.push('<span class="text-primary">' + r.price + ' тыс. руб.' + '</span>');
+      if (r.price) digest.push(r.price + ' тыс. руб.');
 
       if (r.owner_phones) {
-        var t = '<span>Тел:';
+        var t = 'Тел:';
         for (var i = 0; i < r.owner_phones.length; i++) {
           var p = r.owner_phones[i];
           t += ' ' + Rplus.Util.formatPhoneNum(p);
         }
-        t += '</span>';
         digest.push(t);
       }
       return digest.join(', ');

@@ -16,7 +16,7 @@
     <link rel="stylesheet" href="<%= $assets_url %>/bootstrap/<%= $bootstrap_ver %>/css/bootstrap.min.css">
     <!-- Pines Notify -->
     <link rel="stylesheet" href="<%= $assets_url %>/pnotify/1.2.2/jquery.pnotify.default.css">
-    <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet"> -->
 
     <style type="text/css">
       body {
@@ -217,7 +217,7 @@
         padding: 15px;
         border-radius: 0px;
       }
-      
+
     </style>
 
     <%= content_for 'header' %>
@@ -335,13 +335,10 @@
       "use strict";
 
       moment.locale('ru');
-
-      Date.prototype.yyyymmdd = function() {
-         var yyyy = this.getFullYear().toString();
-         var mm = (this.getMonth()+1).toString(); // getMonth() is zero-based
-         var dd  = this.getDate().toString();
-         return yyyy + '-' + (mm[1]?mm:"0" + mm[0]) + '-' + (dd[1]?dd:"0" + dd[0]); // padding
-        };
+      moment._months = [
+              "Января", "Февраля", "Марта", "Апреля", "Мая", "Июня", "Июля",
+              "Августа", "Сентября", "Октября", "Ноября", "Декабря",
+          ];
 
       var globalAjaxEventsRegistered = 0;
       var show_ajax_indicator = 1;

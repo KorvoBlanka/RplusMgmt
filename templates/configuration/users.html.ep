@@ -195,6 +195,12 @@
             $('#user-photo').attr('data-src', 'holder.js/200x200/text:<%= ucfloc q{no photo} %>');
             Holder.run({images: "#user-photo"});
           }
+
+          if (data.sync_google == 'no') {
+            $('#googleSyncCb').prop('checked', false);
+          } else {
+            $('#googleSyncCb').prop('checked', true);
+          }
         })
         .fail(function (jqXHR, textStatus, errorThrown) {
           alert('Cannot open user card');
@@ -381,6 +387,29 @@
         });
     });
 
+    $('#googleSyncCb').change(function () {
+      var user_id = $("#userCard_userForm_userId").val();
+      console.log(user_id);
+      var val = 'no';
+      if ($(this).is(':checked')) {
+        val = 'ask';
+      }
+      $.ajax({
+        type: "POST",
+        url: "/api/user/set_sync_google",
+        data: {
+          user_id: user_id,
+          val: val,
+        },
+      })
+        .done(function (data, textStatus, jqXHR) {
+
+        })
+        .fail(function (jqXHR, textStatus, errorThrown) {
+          alert('Не удалось выполнить операцию, попробуйте позже или обратитесь в тех. поддержку');
+        });      
+    });
+
   })();
 </script>
 % end
@@ -494,6 +523,15 @@
                   </div>
                 </div>
               </div>
+              <div class="row">
+                <div class="col-md-12">
+                  <div class="checkbox">
+                    <label>&nbsp;&nbsp;Синхронизация с календарем Google
+                      <input type="checkbox" id="googleSyncCb">
+                    </label>
+                  </div>
+                </div>
+              </div>              
             </form>
           </div>
           <div class="tab-pane" id="userCard_telephonyTab">

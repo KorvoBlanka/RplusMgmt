@@ -7,6 +7,8 @@ use Rplus::Model::User::Manager;
 use Rplus::Model::Realty;
 use Rplus::Model::Realty::Manager;
 
+use Rplus::Util::GoogleCalendar;
+
 use File::Path qw(make_path);
 use Image::Magick;
 
@@ -73,6 +75,7 @@ sub get {
         sip_password => $sip->{sip_password} ? $sip->{sip_password} : '',
         photo_url => $user->photo_url ? $self->config->{'storage'}->{'url'} . $user->photo_url . '?ts=' . time : '',
         offer_mode => $user->offer_mode,
+        sync_google => $user->sync_google,
     };
 
     return $self->render(json => $res);
@@ -245,7 +248,7 @@ sub remove_photo {
 
     my $user_id = $self->param('user_id');
     my $user = Rplus::Model::User::Manager->get_objects(query => [id => $user_id, delete_date => undef])->[0];
-    return $self->render(json => {error => 'Not Found'}, status => 404) unless $user;    
+    return $self->render(json => {error => 'Not Found'}, status => 404) unless $user;
 
     $user->photo_url(undef);
     $user->save(changes_only => 1);
@@ -272,15 +275,40 @@ sub delete {
 sub set_offer_mode {
     my $self = shift;
 
-    my $user_id = $self->param('id');
+    my $id = $self->param('id');
     my $offer_mode = $self->param('offer_mode');
-    my $user = Rplus::Model::User::Manager->get_objects(query => [id => $user_id, delete_date => undef])->[0];
-    return $self->render(json => {error => 'Not Found'}, status => 404) unless $user;    
+    my $user = Rplus::Model::User::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
+    return $self->render(json => {error => 'Not Found'}, status => 404) unless $user;
 
     $user->offer_mode($offer_mode);
     $user->save(changes_only => 1);
 
-    return $self->render(json => {status => 'success'});    
+    return $self->render(json => {status => 'success'});
+}
+
+sub set_google_token {
+    my $self = shift;
+    my $id = $self->param('id');
+    my $refresh_token = $self->param('refresh_token');
+
+    Rplus::Util::GoogleCalendar::setRefreshToken($id, $refresh_token);
+    return $self->render(json => {status => 'success'});
+}
+
+sub set_sync_google {
+    my $self = shift;
+    my $user_id = $self->param('user_id');
+    my $val = $self->param('val');
+
+    my $user = Rplus::Model::User::Manager->get_objects(query => [id => $user_id, delete_date => undef])->[0];
+    return $self->render(json => {error => 'Not Found'}, status => 404) unless $user;
+
+    $user->sync_google($val);
+    $user->save(changes_only => 1);
+
+    Rplus::Util::GoogleCalendar::setGoogleData($user_id, {});
+
+    return $self->render(json => {status => 'success'});
 }
 
 1;

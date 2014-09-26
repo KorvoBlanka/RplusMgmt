@@ -18,10 +18,12 @@ use Rplus::Model::RuntimeParam;
 use Rplus::Model::RuntimeParam::Manager;
 
 use Rplus::Util::Query;
+use Rplus::Util::Task;
 
 use JSON;
 use Mojo::Util qw(trim);
 use Mojo::Collection;
+use Time::Piece;
 
 
 sub list {
@@ -87,14 +89,18 @@ sub list {
         page => $page,
         per_page => $per_page,
     );
-    
+
     while (my $client = $clients_iter->next) {
+        my $phone_num = ' ';
+        if (($client->agent_id && $client->agent_id == $self->stash('user')->{id}) || ($client->agent_id && $self->has_permission(clients => 'read')->{others}) || (!$client->agent_id && $self->has_permission(clients => 'read')->{nobody})) {
+            $phone_num = $client->phone_num;
+        }        
         my $x = {
             id => $client->id,
             add_date => $self->format_datetime($client->add_date),
             change_date => $self->format_datetime($client->change_date),
             name => $client->name,
-            phone_num => $self->has_permission(clients => 'read') || $client->agent_id == $self->stash('user')->{id} ? $client->phone_num : ' ',
+            phone_num => $phone_num,
             email => $client->email,
             skype => $client->skype,
             description => $client->description,
@@ -164,10 +170,14 @@ sub get {
     }
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $client;
 
+    my $phone_num = '';
+    if (($client->agent_id && $client->agent_id == $self->stash('user')->{id}) || ($client->agent_id && $self->has_permission(clients => 'read')->{others}) || (!$client->agent_id && $self->has_permission(clients => 'read')->{nobody})) {
+        $phone_num = $client->phone_num;
+    }
     my $res = {
         id => $client->id,
         name => $client->name,
-        phone_num => $self->has_permission(clients => 'read') || $client->agent_id == $self->stash('user')->{id} ? $client->phone_num : ' ',
+        phone_num => $phone_num,
         email => $client->email,
         skype => $client->skype,
         add_date => $self->format_datetime($client->add_date),
@@ -510,19 +520,44 @@ sub subscribe {
                 Rplus::Model::SmsMessage->new(phone_num => $phone_num, text => $sms_text, db => $db)->save;
             }
 
-            # Prepare SMS for agent
-            if ($realty->agent && ($realty->agent->phone_num || '') =~ /^9\d{9}$/) {
-                # TODO: Add template settings
+            if ($realty->agent) {
+                my $start_date = localtime;
+                my $end_date = $start_date + 15 * 60;
+                my $start_date_str = $start_date->datetime . '+' . ($start_date->tzoffset / (60 * 60));
+                my $end_date_str = $end_date->datetime . '+' . ($start_date->tzoffset / (60 * 60));
+
                 my @parts;
                 {
+                    push @parts, $self->format_phone_num($phone_num) . ' ' . ($client->name ? $client->name : '');
                     push @parts, $realty->type->name;
                     push @parts, $realty->rooms_count.'к' if $realty->rooms_count;
                     push @parts, $realty->address_object->name.' '.$realty->address_object->short_type.($realty->house_num ? ', '.$realty->house_num : '') if $realty->address_object;
                     push @parts, $realty->price.' тыс. руб.' if $realty->price;
-                    push @parts, 'Клиент: '.$self->format_phone_num($phone_num);
                 }
-                my $sms_text = join(', ', @parts);
-                Rplus::Model::SmsMessage->new(phone_num => $realty->agent->phone_num, text => $sms_text, db => $db)->save;
+                my $summary = join(', ', @parts);
+
+                Rplus::Util::Task::qcreate($self, {
+                        task_type_id => 10, # спрос
+                        assigned_user_id => $realty->agent_id,
+                        start_date => $start_date_str,
+                        end_date => $end_date_str,
+                        summary => $summary,
+                        client_id => $client->id,
+                        realty_id => $realty->id,
+                    });
+                if (($realty->agent->phone_num || '') =~ /^9\d{9}$/) {
+                    # TODO: Add template settings
+                    my @parts;
+                    {
+                        push @parts, $realty->type->name;
+                        push @parts, $realty->rooms_count.'к' if $realty->rooms_count;
+                        push @parts, $realty->address_object->name.' '.$realty->address_object->short_type.($realty->house_num ? ', '.$realty->house_num : '') if $realty->address_object;
+                        push @parts, $realty->price.' тыс. руб.' if $realty->price;
+                        push @parts, 'Клиент: '.$self->format_phone_num($phone_num);
+                    }
+                    my $sms_text = join(', ', @parts);
+                    Rplus::Model::SmsMessage->new(phone_num => $realty->agent->phone_num, text => $sms_text, db => $db)->save;
+                }
             }
         }
     }

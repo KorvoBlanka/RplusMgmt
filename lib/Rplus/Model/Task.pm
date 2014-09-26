@@ -8,13 +8,13 @@ __PACKAGE__->meta->setup(
     table   => 'tasks',
 
     columns => [
-        id                => { type => 'integer', not_null => 1, sequence => 'tasks_id_seq1' },
+        id                => { type => 'serial', not_null => 1 },
         task_type_id      => { type => 'integer', not_null => 1 },
         creator_user_id   => { type => 'integer', not_null => 1 },
         assigned_user_id  => { type => 'integer' },
         add_date          => { type => 'timestamp with time zone', default => 'now()', not_null => 1 },
         remind_date       => { type => 'timestamp with time zone' },
-        dead_line         => { type => 'timestamp with time zone' },
+        start_date        => { type => 'timestamp with time zone', not_null => 1 },
         description       => { type => 'varchar' },
         metadata          => { type => 'scalar', default => '{}', not_null => 1 },
         delete_date       => { type => 'timestamp with time zone' },
@@ -23,6 +23,9 @@ __PACKAGE__->meta->setup(
         chaged_by_user_id => { type => 'integer' },
         client_id         => { type => 'integer' },
         realty_id         => { type => 'integer' },
+        google_id         => { type => 'varchar' },
+        end_date          => { type => 'timestamp with time zone' },
+        summary           => { type => 'varchar' },
     ],
 
     primary_key_columns => [ 'id' ],

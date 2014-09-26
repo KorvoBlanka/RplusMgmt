@@ -1,63 +1,147 @@
 % layout 'default';
 % use Rplus::Model::DictTaskType::Manager;
+% use Rplus::Model::DictColorTag::Manager;
+% use Rplus::Util::GoogleCalendar;
 
-%= include 'blocks/client_card';
 %= include 'blocks/realty_card';
 
 % content_for header => begin
 %= css_once "$assets_url/bootstrap-datepicker/css/datepicker3.css";
+%= css_once "$assets_url/bootstrap-select/dist/css/bootstrap-select.min.css";
+%= css_once "$assets_url/powerange/dist/powerange.min.css";
+%= css_once "/css/context.css";
 
 <style type="text/css">
 
-.table>thead>tr>th, .table>tbody>tr>th, .table>tfoot>tr>th, .table>thead>tr>td, .table>tbody>tr>td, .table>tfoot>tr>td {
-  padding: 0;
+.simple-calendar-lbar {
+  margin-top: 55px;
 }
 
-.cell-today {
-  background-color: #A6E0D4;
-  opacity: 0.2;
+.simple-calendar > .caption {
+  cursor: pointer;
+  text-align: center;
+  font-size: 36px;
+  font-weight: 100;
+  position: relative;
+  height: 55px;
 }
 
-.simple-calendar-body {
-  -webkit-user-select: none;  /* Chrome all / Safari all */
-  -moz-user-select: none;     /* Firefox all */
-  -ms-user-select: none;      /* IE 10+ */
+.simple-calendar > .caption > .control {
+  width: 425px;
+  margin: 0 auto;
+  /*
+  position: absolute;
+  bottom: 0px;
+  left: 50%;
+  margin-left: -215px;
+  */
+}
 
-  /* No support for these yet, use at own risk */
-  -o-user-select: none;
+.simple-calendar > .caption > .year {
+  font-size: 48px;
+  line-height: 1;
+  color: rgb(202, 0, 0);
+  position: absolute;
+  right: 20px;
+  bottom: 0px;
+}
+
+.simple-calendar > .body {
+  position: relative;
+  width: 100%; 
+  height: 600px; 
+  overflow: auto; 
+  -webkit-overflow-scrolling: touch;  
+  -webkit-user-select: none;
   user-select: none; 
 }
 
-.simple-calendar-event {
+.simple-calendar > .body > .timeline > table > tbody > tr > th {
+  padding: 0;
+}
+
+.simple-calendar > .body > .timeline {
+  width: 5%;
+  float: left;
+}
+
+.simple-calendar > .body > .events-container {
+  width: 95%;
+  float: right;
+  position: relative;
+}
+
+.simple-calendar .events-container > .event {
   cursor: pointer;
   z-index: 2;
   position: absolute; 
   overflow: hidden;
   border: 1px solid #eee; 
-  opacity: 0.7;
   border-radius: 6px;
-
-  height: 50px;
-  white-space: nowrap;
+  min-height: 25px;
 
   -webkit-user-select: none;  /* Chrome all / Safari all */
-  -moz-user-select: none;     /* Firefox all */
-  -ms-user-select: none;      /* IE 10+ */
-
-  /* No support for these yet, use at own risk */
-  -o-user-select: none;
   user-select: none;   
+}
+
+.simple-calendar .time-marker {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  width: 100%;
+  height: 8px;
+  z-index: 10;
+}
+
+.simple-calendar .time-marker > .time-display {
+  float: left;
+  width: 5%;
+  height: 12px;
+  background-color: #f00;
+  font-size: 11px;
+  color: #fff;
+  text-align: center;
+  line-height: 12px;
+}
+
+.simple-calendar .time-marker > .time-line {
+  float: left;
+  width: 95%;
+  height: 2px;
+  background-color: #f00;
+}
+
+.cell-today {
+  background-color: #FFFFE6;
+}
+
+.cell-week-end {
+  background-color: #F8F8F8;  
+}
+
+.simple-calendar .event-body {
+  width: 100%;
+  float: left;
+}
+
+.simple-calendar .event-description {
+  margin: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .event-selected {
   z-index: 3 !important;
   opacity: 1;
-  height: auto;
-  min-height: 50px;
   white-space: normal;
 }
 
-.task-complete-button {
+.event .status-button-wrapper {
+  width: 38px; 
+  float: left; 
+}
+
+.event .status-button {
   width: 20px;
   height: 20px;
   float: left;
@@ -67,20 +151,155 @@
   border: 1px solid #aaa;
 }
 
-.task-complete-button:hover > .task-complete-check {
-  color: #8EC448 !important;
-  -webkit-animation-duration: 0.5s; /* Chrome, Safari, Opera */
-  animation-duration: 0.5s;
+.event .status-check {
+  margin: 0 3px;
+  color: #b2b2b2;
 }
 
-.task-done {
-  background-color: #eee !important;
+.event-done {
+  opacity: 0.35;
   z-index: 1;
 }
 
-.task-new .task-complete-check {
+.event-new .status-check {
   display: none!important;
   visibility: hidden!important;
+}
+
+.event .resizer {
+  margin: 3px;
+  width: 100%;
+  float: left;
+  text-align: center;
+}
+
+.gb_Fa {
+  display: block;
+  background-image: url('//ssl.gstatic.com/gb/images/v1_2e543709.png');
+  background-position: 0 -138px;
+  height: 33px;
+  width: 92px;
+}
+
+.pep-active {
+  z-index: 5;
+}
+
+.datepicker table tr td.day, .datepicker table tr th.dow {
+  height: 24px !important;
+  width: 36px !important;
+  border-radius: 0px;
+}
+
+.datepicker table tr td span.month, .datepicker table tr td span.year {
+ border-radius: 0px; 
+}
+
+.datepicker table thead tr > th:nth-child(6), .datepicker table thead tr > th:nth-child(7) {
+  /*background-color: #eee;*/
+  color: rgb(180,0,0);
+}
+
+.datepicker table tr td.active {
+  background-color: #013669 !important;
+  color: #fff !important;
+}
+
+.datepicker table tr td span.active {
+  background-color: #013669 !important;
+  color: #fff !important;
+}
+
+.datepicker table tbody tr > td:nth-child(6) {
+  border-right: 1px solid #fff;
+  background-color: #fafafa;
+}
+
+.datepicker table tbody tr > td:nth-child(7) {
+  background-color: #fafafa;
+}
+
+.datepicker table tr td.today {
+  background-color: rgba(0,0,0,0) !important;
+  color: #000 !important;
+  border: 1px solid #013669;
+}
+
+.datepicker table tr td.active {
+  background-color: #013669 !important;
+  color: #fff !important;
+}
+
+.datepicker table thead .dow {
+  color: #aaa;
+  font-weight: 200;
+}
+
+.datepicker table thead .datepicker-switch {
+  font-weight: 200;
+  font-size: 16px;  
+}
+
+.datepicker table thead tr:nth-child(2) > th {
+  padding-top: 8px;
+  border-bottom: 1px solid #aaa;
+}
+
+.datepicker table tbody tr:nth-child(1) > td {
+  padding-top: 8px;
+}
+
+.datepicker table tbody tr:nth-child(6) > td {
+  padding-bottom: 1px;
+}
+
+.datepicker table tfoot th.today {
+  background: #fafafa !important;
+  border-top: 2px solid #fff;
+  color: #999;
+  font-weight: 400;
+}
+
+.datepicker table tfoot th.today:hover {
+  background: #eeeeee !important;
+}
+
+.simple-calendar-header {
+  font-weight:  200;
+}
+
+.range-quantity {
+  background-color: #013669 !important;
+}
+
+.bootstrap-select > .dropdown-toggle {
+  border-radius: 0px;
+}
+
+.bootstrap-select .btn:focus, .bootstrap-select .btn:active {
+  outline: none !important;
+}
+
+.btn-default:hover, .btn-default:focus, .btn-default:active, .btn-default.active, .open .dropdown-toggle.btn-default {
+  background-color: #fff;
+}
+
+a:focus {
+  outline: none !important;
+}
+
+.ctrl-button {
+  text-decoration: none !important;
+  font-size: 15px;
+  color: #428bca !important;
+}
+
+.ctrl-button:hover {
+  color: #3070b0 !important;
+}
+
+::-webkit-input-placeholder {
+    color:    #fff;
 }
 
 </style>
@@ -91,67 +310,93 @@
 %= js_once "$assets_url/bootstrap-datepicker/js/locales/bootstrap-datepicker.ru.js";
 %= js_once "$assets_url/jquery-pep-js/src/jquery.pep.js";
 %= js_once "$assets_url/modernizr/modernizr.js";
+%= js_once "$assets_url/bootstrap-select/dist/js/bootstrap-select.min.js";
+%= js_once "$assets_url/powerange/dist/powerange.min.js";
+
 % end
 
 % content_for javascript => begin
 <script type="application/javascript">
   "use strict";
 
+  var task_types_dict = {
+  % for my $x (@{Rplus::Model::DictTaskType::Manager->get_objects(query => [delete_date => undef,], sort_by => 'id')}) {
+   <%= $x->id %>: "<%= $x->name %>",
+  % }
+  };
+
+  var task_types_colors = {
+  % for my $x (@{Rplus::Model::DictTaskType::Manager->get_objects(query => [delete_date => undef,], sort_by => 'id')}) {
+   <%= $x->id %>: "<%= $x->color %>",
+  % }
+  };
+
+  var task_types_dict_reverse = {
+  % for my $x (@{Rplus::Model::DictTaskType::Manager->get_objects(query => [delete_date => undef,], sort_by => 'id')}) {
+   "<%= $x->name %>": <%= $x->id %>,
+  % }
+  };
+
+  var redirect_uri = 'http://rplusmgmt.com/api/googleauth/callback';
+  var client_id = '18830375155-q1bh1fhapui07fp7drs6fcgp4vca4hn4.apps.googleusercontent.com';  
+  var scopes = 'https://www.googleapis.com/auth/calendar';
+  var state = <%= $self->stash('user')->{id} %> + '@' + document.domain
+  var google_auth_uri = 'https://accounts.google.com/o/oauth2/auth?response_type=code&approval_prompt=force&redirect_uri=' + redirect_uri + '&client_id=' + client_id + '&access_type=offline&scope=' + scopes + '&state=' + state;
+
+  var calendar_start_hour = 0;
+  var calendar_hours_count = 24;
+
+  var calendar_days_count = 1;
+  var calendar_start_date = moment().startOf('day');;
+
+  var task_type_id = 'all';
+  var assigned_user_id = 'all';
+
+  var time_slider = document.querySelector('#timeSlider');
+
   registerGlobalAjaxEvents();
 
   (function () {
+    % my $u = Rplus::Model::User::Manager->get_objects(query => [delete_date => undef, id => $self->stash('user')->{id}])->[0];
+    % my $x = Rplus::Util::GoogleCalendar::getGoogleData($self->stash('user')->{id});
+    % if ($u->{sync_google} eq 'ask') {
+      $('#enableGoogleSync').removeClass('hidden');
+    % } elsif ($u->{sync_google} eq 'yes' && !$x->{permission_granted}) {
+      window.open(google_auth_uri, "", "width=500, height=300");
+    % }
+
     function hasTouch() {
       return Modernizr.touch;
     }
 
-    //var calendar_start_date = moment().startOf('day');
-    var calendar_start_hour = 0;
-    var calendar_hours_count = 24;
-
-    var calendar_days_count = null;
-    var t = localStorage.getItem('calendar_days_count');
-    if (t) {
-      calendar_days_count = t;
-      switch (calendar_days_count) {
-        case '1':
-          $('[data-filter="calendar-mode"] span[role="display"]').text(' день');
-          $('[data-filter="calendar-mode"]').data('val', '1');
-          break;
-        case '2':
-          $('[data-filter="calendar-mode"] span[role="display"]').text(' два дня');
-          $('[data-filter="calendar-mode"]').data('val', '2');
-          break;
-        case '7':
-          $('[data-filter="calendar-mode"] span[role="display"]').text(' неделя');
-          $('[data-filter="calendar-mode"]').data('val', '7');
-          break;
-        case '30':
-          $('[data-filter="calendar-mode"] span[role="display"]').text(' месяц');
-          $('[data-filter="calendar-mode"]').data('val', '30');
-          break;
-      }
-    }
-    else {
-      calendar_days_count = 1;
-    }
-
-    var calendar_start_date = null;
-    t = localStorage.getItem('calendar_start_date');
+    var t = localStorage.getItem('calendar_start_date');
     if (t) {
       calendar_start_date = moment(t);
     }
-    else {
-      calendar_start_date = moment().startOf('day');
-    }
-    //localStorage.getItem('calendar_days_count');
+    
+    t = localStorage.getItem('nav-items');
+    if (t) {
+      var nav_items = JSON.parse(t);
 
+      $('[data-filter="task_status"] span[role="display"]').text(nav_items['task_status'][0]);
+      $('[data-filter="task_status"]').data('val', nav_items['task_status'][1]);
+
+      $('[data-filter="task_type_id"] span[role="display"]').text(nav_items['task_type'][0]);
+      $('[data-filter="task_type_id"]').data('val', nav_items['task_type'][1]);
+
+      $('[data-filter="assigned_user_id"] span[role="display"]').text(nav_items['assigned_user'][0]);
+      $('[data-filter="assigned_user_id"]').data('val', nav_items['assigned_user'][1]);
+
+      $('[data-filter="days_count"] span[role="display"]').text(nav_items['days_count'][0]);
+      $('[data-filter="days_count"]').data('val', nav_items['days_count'][1]);
+      calendar_days_count = nav_items['days_count'][1];
+    }
 
     $('#date-picker').datepicker({
       todayHighlight: true,
       format: 'yyyy-mm-dd',
       language: 'ru',
       todayBtn: 'linked',
-      //multidate: true,
     });
 
     $('#date-picker').datepicker()
@@ -169,26 +414,29 @@
       end_date.add(calendar_days_count - 1, 'days');
 
       if (calendar_days_count != 1) {
-        var xhtml = start_date.date() + ' - ' + end_date.date() + ' ' + moment.months(start_date.month());
+        var xhtml = start_date.date() + ' - ' + end_date.date() + ' ' + moment._months[start_date.month()];
       } else {
-        var xhtml = start_date.date() + ' ' + moment.months(start_date.month());
+        var xhtml = start_date.date() + ' ' + moment._months[start_date.month()];
       }
-      $('.simple-calendar-caption-text').html(xhtml);
-      $('.simple-calendar-caption-days-count').html(calendar_days_count);
+      $('.simple-calendar > .caption .text').html(xhtml);
+      $('.simple-calendar > .caption .days-count').html(calendar_days_count);
+
+      $('.simple-calendar > .caption .year').html(start_date.year() + '<span style="font-size: 36px;"> г.</span>');
     }
 
     function drawCalendarHeader(start_date) {
-      var xhtml = '<tr><th class="" style="width: 6%; text-align: center;">&nbsp;</th>';
+      var xhtml = '<tr><th class="" style="width: 5%; text-align: center;">&nbsp;</th>';
       var t = start_date.clone();
+      var w = (100 - 5) / calendar_days_count;
       for (var i = 0; i < calendar_days_count; i++) {
 
-        xhtml += '<th class="" style="text-align: center;">' + t.date() + ' ' + moment.weekdaysShort(t.day()) + '</th>';
+        xhtml += '<th class="" style="width: ' + w + '%; text-align: center; font-weight: 400;">' + t.date() + ' ' + moment.weekdaysShort(t.day()) + '</th>';
 
         t.add(1, 'days');
       }
 
       xhtml += '</tr>';
-      $('.simple-calendar-header > table > tbody').html(xhtml);
+      $('.simple-calendar .header > table > tbody').html(xhtml);
     }
 
     function drawCalendarBody(start_hour, hour_count) {
@@ -197,68 +445,117 @@
       for (var i = 0; i < hour_count; i++) {
         var h = start_hour + i;
         xhtml += '<tr class="" style="height: 100px;">';
-        xhtml += '<th class="" style="vertical-align: middle; text-align: center;">' + (h < 10 ? '0' : '') + h + ':00' + '</th>';
+        xhtml += '<th class="" style="width: 5%; vertical-align: middle; text-align: center; font-weight: 400;">' + (h < 10 ? '0' : '') + h + ':00' + '</th>';
         xhtml += '</tr>';
       }
 
-      $('.simple-calendar-body-timeline > table > tbody').html(xhtml);
+      $('.simple-calendar .body .timeline > table > tbody').html(xhtml);
 
       //cells
-      var marker = moment().date() - calendar_start_date.date();
-
+      var now = moment().startOf('day');
       xhtml = '';
       for (var i = 0; i < hour_count; i++) {
-        var h = start_hour + i;
         xhtml += '<tr class="" style="height: 50px;">';
+        var t = calendar_start_date.clone().startOf('day');
         for (var j = 0; j < calendar_days_count; j++) {
-          if (j == marker) {
+          if (now.isSame(t)) {
             xhtml += '<th class="cell-today">&nbsp;</th>';
+          } else if (t.day() == 0 || t.day() == 6) {
+              xhtml += '<th class="cell-week-end">&nbsp;</th>';
           } else {
             xhtml += '<th class="">&nbsp;</th>';
           }
+          t.add(1, 'days');
         }
         xhtml += '</tr>';
         xhtml += '<tr class="" style="height: 50px;">';
+        var t = calendar_start_date.clone().startOf('day');
         for (var j = 0; j < calendar_days_count; j++) {
-          if (j == marker) {
+          if (now.isSame(t)) {
             xhtml += '<th class="cell-today">&nbsp;</th>';
+          } else if (t.day() == 0 || t.day() == 6) {
+              xhtml += '<th class="cell-week-end">&nbsp;</th>';
           } else {
             xhtml += '<th class="">&nbsp;</th>';
           }
+          t.add(1, 'days');
         }
         xhtml += '</tr>';      
       }
-      $('.simple-calendar-body-cells > table > tbody').html(xhtml);
+      $('.simple-calendar .body .cells > table > tbody').html(xhtml);
 
       var body_height = $(window).height();
-      body_height -= $('.navbar-fixed-top').height();
-      body_height -= $('.navbar-fixed-bottom').height();
-      body_height -= $('.simple-calendar-caption').height();
-      body_height -= 60;
+      body_height -= $('.navbar-fixed-top').outerHeight();
+      body_height -= $('.navbar-fixed-bottom').outerHeight();
+      body_height -= $('.simple-calendar > .caption').outerHeight();
 
-      $('.simple-calendar-body').height(body_height);
+      $('.simple-calendar .body').height(body_height);
+    }
+
+    function toggleEventSelect($this) {
+      if (!$this.hasClass('event-selected')) {
+        $('.event-selected').each(function () {
+          toggleEventSelect($(this));
+        });
+      }
+
+      var table_width = $('.simple-calendar .body .cells').width();
+
+      var old_width = $this.css('width');
+      var old_left = $this.css('left');
+
+      var width = $this.data('width');
+      var left = $this.data('left');
+
+      $this.data('width', old_width);
+      $this.data('left', old_left);
+
+      $this.css('width', width);
+      $this.css('left', left);
+
+      if (calendar_days_count > 2) {
+        if ($this.position().left + width * 2 <= table_width) {
+          $this.css('width', width * 2);
+        }
+      }
+
+      $this.toggleClass('event-selected');
+      $('.status-button-wrapper', $this).toggleClass('hidden');
+      $('.resizer', $this).toggleClass('hidden');
+
+      if ($this.hasClass('event-selected')) {
+        if ($('.description', $this).height() + 14 + 14 > $this.height()) {
+          var old_height = $this.height();
+          $this.data('height', old_height);
+          $this.height($('.description', $this).height() + 14 + 14);
+        }
+      } else {
+        if ($this.data('height')) {
+          $this.height($this.data('height'));
+        }
+      }
     }
 
     function drawEvents(event_list) {
       var xhtml = '';
       var groups = {};
 
-      $('.simple-calendar-event').remove();
+      $('.simple-calendar .event').remove();
 
       var reverse_list = event_list.reverse();
       var last_ts = null;
       var group_idx = 0;
       for (var i = 0; i < reverse_list.length; i++) {
         var event = reverse_list[i];
-        var dead_line = moment(event.dead_line);
+        var start_date = moment(event.start_date);
         if (last_ts) {
-          if (dead_line.diff(last_ts, 'minutes') > 15) {
+          if (start_date.diff(last_ts, 'minutes') > 15) {
             group_idx ++;
           } else {
 
           }
         }
-        last_ts = dead_line;
+        last_ts = start_date;
         if (!groups[group_idx]) {
           groups[group_idx] = [];
         } 
@@ -269,47 +566,65 @@
         var events = groups[idx];
         for (var i = 0; i < events.length; i++) {
           var event = events[i];
-          var dead_line = moment(event.dead_line);
+          var start_date = moment(event.start_date);
+          var end_date = moment(event.end_date);
 
-          var table_width = $('.simple-calendar-body-cells').width();
-          var column = dead_line.clone().startOf('day').diff(calendar_start_date, 'days');
-          var cell_count = events.length;
+          var realty_ref = '';
+          if (event.realty_id) {
+            realty_ref = ' <a class="nopep" href="#" data-action="realty-open" data-id="' + event.realty_id + '">ссылка...</a>';
+          }
+
+          var table_width = $('.simple-calendar .body .cells').width();
+          var column = start_date.clone().startOf('day').diff(calendar_start_date, 'days');
+          var events_count = events.length;
 
           var column_width = table_width / calendar_days_count;
-          var cell_width = column_width/ cell_count;
+          var event_width = column_width / events_count;
 
           if (column >= 0 && column < calendar_days_count) {
-            var offset_x = column * column_width + cell_width * i;
-            var offset_y = (dead_line.hour() - calendar_start_hour) * 100;
-            offset_y += (dead_line.minute()) * (100 / 60);
-            xhtml += '<div data-date="' + dead_line.format('YYYY-MM-DD') + '" data-status="' + event.status + '" data-left=' + (column * column_width) + ' data-width=' + column_width + ' data-column=' + column + ' data-id="' + event.id + '" class="simple-calendar-event task-' + event.status + '" style="top: ' + offset_y + 'px; left: ' + offset_x + 'px; width: ' + cell_width + 'px; background-color: ' + event.color + ';">';
-            xhtml +=  '<a data-action="task-complete"><div class="task-complete-button-wrapper hidden" style="float: left; width: 38px; height: 100%;">';
-            xhtml +=   '<div class="task-complete-button">';
-            xhtml +=    '<span class="glyphicon glyphicon-ok task-complete-check" style="margin: 0 3px; color: #b2b2b2;"></span>';
+            var offset_x = column * column_width + event_width * i;
+            var offset_y = (start_date.hour() - calendar_start_hour) * 100;
+            offset_y += (start_date.minute()) * (100 / 60);
+
+            var y1 = (end_date.hour() - calendar_start_hour) * 100;
+            y1 += (end_date.minute()) * (100 / 60);
+            var event_height = y1 - offset_y;
+
+            if (event_height < 25) {
+              event_height = 25;
+            }
+
+            xhtml += '<div class="event event-' + event.status + '" data-date="' + start_date.format('YYYY-MM-DD') + '" data-left=' + (column * column_width) + ' data-width=' + column_width + ' data-column=' + column + ' data-id="' + event.id + '" class="simple-calendar-event task-' + event.status + '" style="top: ' + offset_y + 'px; left: ' + offset_x + 'px; height: ' + event_height + 'px; width: ' + event_width + 'px; background-color: ' + event.color + ';">';
+            xhtml +=  '<div class="event-body">'
+            xhtml +=   '<div class="status-button-wrapper hidden">';
+            xhtml +=    '<div class="status-button nopep" data-action="event-set-status">';
+            xhtml +=     '<span class="glyphicon glyphicon-ok status-check"></span>';
+            xhtml +=    '</div>';
             xhtml +=   '</div>';
-            xhtml +=  '</div></a>';
-            xhtml +=  '<div class="simple-calendar-event-description" style="margin: 3px; overflow: hidden; text-overflow: ellipsis;">';
-            xhtml +=   '<strong class="dead-line">' + dead_line.format('HH:mm') + '</strong> ' + event.task_type + ': ' + event.description;
+            xhtml +=  '<div class="description">';
+            xhtml +=   '<strong class="event-start-date">' + start_date.format('HH:mm') + '</strong> ' + event.task_type + ': ' + event.summary + '&nbsp;&nbsp;' + realty_ref;
+            xhtml +=  '</div>';
+            xhtml +=  '</div>';
+            xhtml +=  '<div class="resizer nopep hidden" style="position: absolute; bottom: 0px; left: 46%; width: 24px;">';
+            xhtml +=   '<span class="glyphicon glyphicon-chevron-down"></span>';
             xhtml +=  '</div>';
             xhtml += '</div>';
           }
         }
       }
-      $('.simple-calendar-events-container').append(xhtml);
-        
-      $('a[data-action="realty-open"]').click(function (event) {
+      $('.simple-calendar .events-container').append(xhtml);
+
+      $('a[data-action="realty-open"]').click(function (e) {
         var realty_id = $(this).data('id');
-        event.stopPropagation();
         openRealtyCard(realty_id);
       });
 
-      $('a[data-action="task-complete"]').click(function (){
-        var $event = $(this).closest('.simple-calendar-event');
+      $('[data-action="event-set-status"]').click(function (e){
+        var $event = $(this).closest('.event');
         var task_id = $event.data('id');
-        var event_status = $event.data('status');
 
         var new_status = 'done';
-        if (event_status == 'done') {
+        if ($event.hasClass('event-done')) {
           new_status = 'new';
         }
 
@@ -322,120 +637,202 @@
           },
         })
         .done(function (data, textStatus, jqXHR) {
-          var $event = $('.simple-calendar-event[data-id="' + task_id + '"]');
-          $event.data('status', new_status);
+          var $event = $('.simple-calendar .event[data-id="' + task_id + '"]');
           if (new_status == 'done') {
-            $event.addClass('task-done');
-            $event.removeClass('task-new');
+            $event.addClass('event-done');
+            $event.removeClass('event-new');
           } else {
-            $event.removeClass('task-done');
-            $event.addClass('task-new');
+            $event.removeClass('event-done');
+            $event.addClass('event-new');
           }
+          toggleEventSelect($event);
           Rplus.Functions.getTodaysTasksCount();
         });
       });
 
-      function toggleEventSelect($this) {
-        var old_width = $this.css('width');
-        var old_left = $this.css('left');
-
-        var width = $this.data('width');
-        var left = $this.data('left');
-
-        $this.data('width', old_width);
-        $this.data('left', old_left);
-
-        $this.css('width', width);
-        $this.css('left', left);
-
-        if (calendar_days_count > 2) {
-          $this.css('width', width * 2);
-        }
-
-        $this.toggleClass('event-selected');
-        $('.task-complete-button-wrapper', $this).toggleClass('hidden');
-      }
-
       var drag = false;
-      $('.simple-calendar-event').click(function () {
-        var $this = $(this);
+      var resize = false;
+      var deselect = true;
 
-        if (!$this.hasClass('event-selected')) {  // открываем событие, надо закрыть предыдущее открытое
-          $('.event-selected').click();
+      var timer1 = null;
+      var timer2 = null;
 
-          toggleEventSelect($this);
+      $('.simple-calendar .event .resizer').pep({
+        allowDragEventPropagation: false,
+        deferPlacement: true,
+        shouldEase: false,
+        axis: 'y',
+        initiate: function (event, obj) {
 
-          if ($this.data('status') != 'done') {
-            $this.pep({
-              constrainTo: 'parent',
-              shouldEase: false,
-              useCSSTranslation: false,
-              elementsWithInteraction: 'a',
-              start: function () {
-                drag = true;
+        },
+        start: function (event, obj) {
+
+        },
+        drag: function (event, obj) {
+          resize = true;
+          var $this = obj.$el.closest('.event');
+          var h = obj.pos.y + 14 + 10;
+          $this.height(h);
+
+          var pos_y = $this.position().top;
+          var hour = Math.floor(pos_y / 100) + calendar_start_hour;
+          var min = Math.floor((pos_y % 100) * (60 / 100));
+          var start_time = (hour < 10 ? '0' : '') + hour + ':' + (min < 10 ? '0' : '') + min;
+
+          pos_y = $this.position().top + $this.height();
+          hour = Math.floor(pos_y / 100) + calendar_start_hour;
+          min = Math.floor((pos_y % 100) * (60 / 100));
+          var end_time = (hour < 10 ? '0' : '') + hour + ':' + (min < 10 ? '0' : '') + min;
+
+          $this.find('.event-start-date').html(start_time + ' - ' + end_time);
+
+        },
+        stop: function (event, obj) {
+          var $this = obj.$el.closest('.event');
+          if (resize) {
+            resize = false;                
+            var pos_y = $this.position().top;
+            var hour = Math.floor(pos_y / 100) + calendar_start_hour;
+            var min = Math.floor((pos_y % 100) * (60 / 100));
+            var time = (hour < 10 ? '0' : '') + hour + ':' + (min < 10 ? '0' : '') + min;
+            var start_date = moment($this.data('date') + ' ' + time);
+
+            pos_y = $this.position().top + $this.height();
+            hour = Math.floor(pos_y / 100) + calendar_start_hour;
+            min = Math.floor((pos_y % 100) * (60 / 100));
+            time = (hour < 10 ? '0' : '') + hour + ':' + (min < 10 ? '0' : '') + min;
+            var end_date = moment($this.data('date') + ' ' + time);
+            $.ajax({
+              type: "POST",
+              url: "/api/task/update",
+              data: {
+                id: $this.data('id'),
+                start_date: start_date.format(),
+                end_date: end_date.format(),
               },
-              drag: function (event, obj) {
-                var pos_y = obj.pos.y;
-                if (!pos_y) return;
-                var hour = Math.floor(pos_y / 100) + calendar_start_hour;
-                var min = Math.floor((pos_y % 100) * (60 / 100));
-                var time = (hour < 10 ? '0' : '') + hour + ':' + (min < 10 ? '0' : '') + min;
-                obj.$el.find('.dead-line').html(time);
+            })
+            .done(function (data, textStatus, jqXHR) {
+              listEvents();
+            })
+            .fail(function (jqXHR, textStatus, errorThrown) {
 
-                if (obj.$el.hasClass('event-selected')) {
-                  toggleEventSelect(obj.$el);
-                }
-              },
-              stop: function (event, obj) {
-                var $this = $(obj.$el);
-
-                if (drag) {
-                  var pos_y = obj.pos.y;
-                  var pos_x = obj.pos.x;
-
-                  var hour = Math.floor(pos_y / 100) + calendar_start_hour;
-                  var min = Math.floor((pos_y % 100) * (60 / 100));
-                  var time = (hour < 10 ? '0' : '') + hour + ':' + (min < 10 ? '0' : '') + min;
-
-                  var table_width = $('.simple-calendar-body-cells').width();
-                  var cell_width = table_width / calendar_days_count;
-
-                  var old_column = $this.data('column');
-                  var column = Math.round((pos_x + 70 + parseFloat($this.css('width')) / 2) / cell_width) - 1;  // fixme: 70 - костыль, посчитать
-                  var add_days = column - old_column;
-
-                  var task_id = obj.$el.data('id');
-                  var dead_line = moment(obj.$el.data('date') + ' ' + time);
-                  dead_line.add(add_days, 'days');
-                  $this.addClass('hidden');
-                  $.ajax({
-                    type: "POST",
-                    url: "/api/task/update",
-                    data: {
-                      id: task_id,
-                      dead_line: dead_line.format("YYYY-MM-DD HH:mm"),
-                    },
-                  })
-                  .done(function (data, textStatus, jqXHR) {
-                    Rplus.Functions.getTodaysTasksCount();
-                    listEvents();
-                  })
-                  .fail(function (jqXHR, textStatus, errorThrown) {
-                    $this.removeClass('hidden');
-                  });
-                } else {
-                  if (hasTouch()) {   // костыль, на девайсах с тачем клики после анбинда не приходит, на десктопе - приходит
-                    toggleEventSelect($this);
-                    $.pep.unbind($this);
-                  }
-                }
-              },
             });
           }
-        } else {
-          toggleEventSelect($this);
-          $.pep.unbind($this);
         }
+      });
+
+      var timer_dc = null;
+      var dbl_click = false;
+      $('.simple-calendar .event').pep({
+        allowDragEventPropagation: false,
+        constrainTo: 'parent',
+        shouldEase: false,
+        elementsWithInteraction: '.nopep',
+        initiate: function (event, obj) {
+          // mousedown || touchstart
+          if (obj.$el.hasClass('event-done') || !obj.$el.hasClass('event-selected')) {
+            obj.moveDisabled = true;
+          } else {
+            obj.moveDisabled = false;
+          }
+          // запустить таймер
+          timer1 = setTimeout(function(e){
+            if (!obj.$el.hasClass('event-selected')) {
+              toggleEventSelect(obj.$el);
+            }
+          }, 300);
+          timer2 = setTimeout(function(e){
+            deselect = false;
+            openTaskCard(obj.$el.data('id'));
+          }, 600);
+          if (timer_dc) {
+            dbl_click = true;
+          } else {
+            timer_dc = setTimeout(function(e){
+              dbl_click = false;
+              timer_dc = null;
+            }, 300);
+          } 
+        },
+        start: function (event, obj) {
+          clearTimeout(timer1);
+          clearTimeout(timer2);
+          drag = true;
+        },
+        drag: function (event, obj) {
+          clearTimeout(timer1);
+          clearTimeout(timer2);          
+          var pos_y = obj.pos.y;
+          if (!pos_y) return;
+          var hour = Math.floor(pos_y / 100) + calendar_start_hour;
+          var min = Math.floor((pos_y % 100) * (60 / 100));
+          var time = (hour < 10 ? '0' : '') + hour + ':' + (min < 10 ? '0' : '') + min;
+          obj.$el.find('.event-start-date').html(time);
+
+          if (obj.$el.hasClass('event-selected')) {
+            toggleEventSelect(obj.$el);
+          }
+        },
+        stop: function (event, obj) {
+          clearTimeout(timer1);
+          clearTimeout(timer2);
+          if (drag) {
+            drag = false;
+            var pos_y = obj.pos.y;
+            var pos_x = obj.pos.x;
+
+            var hour = Math.floor(pos_y / 100) + calendar_start_hour;
+            var min = Math.floor((pos_y % 100) * (60 / 100));
+            var time = (hour < 10 ? '0' : '') + hour + ':' + (min < 10 ? '0' : '') + min;
+
+            var table_width = $('.simple-calendar .body .cells').width();
+            var cell_width = table_width / calendar_days_count;
+
+            var old_column = obj.$el.data('column');
+            var column = Math.floor((pos_x + parseFloat(obj.$el.css('width')) / 2) / cell_width);
+            var add_days = column - old_column;
+
+            var task_id = obj.$el.data('id');
+            var start_date = moment(obj.$el.data('date') + ' ' + time);
+            start_date.add(add_days, 'days');
+            
+            pos_y = obj.$el.position().top + obj.$el.height();
+            hour = Math.floor(pos_y / 100) + calendar_start_hour;
+            min = Math.floor((pos_y % 100) * (60 / 100));
+            time = (hour < 10 ? '0' : '') + hour + ':' + (min < 10 ? '0' : '') + min;
+            var end_date = moment(obj.$el.data('date') + ' ' + time);
+            end_date.add(add_days, 'days');
+
+            $.ajax({
+              type: "POST",
+              url: "/api/task/update",
+              data: {
+                id: task_id,
+                start_date: start_date.format(),
+                end_date: end_date.format(),
+              },
+            })
+            .done(function (data, textStatus, jqXHR) {
+              Rplus.Functions.getTodaysTasksCount();
+              listEvents();
+            })
+            .fail(function (jqXHR, textStatus, errorThrown) {
+
+            });
+          } else {
+            if (dbl_click) {
+              openTaskCard(obj.$el.data('id'));
+            } else {
+              if (deselect) {
+                toggleEventSelect(obj.$el);
+              } else {
+                deselect = true;
+              }
+            }
+            clearTimeout(timer1);
+            clearTimeout(timer2);
+          }
+        },
       });
     }
 
@@ -469,24 +866,25 @@
       var now = moment();
       var offset_y = (now.hour() - calendar_start_hour) * 100;
       offset_y += (now.minute()) * (100 / 60);
-      if ($('.simple-calendar-marker').hasClass('hidden')) {
-        $('.simple-calendar-marker').removeClass('hidden');
+      if ($('.simple-calendar .time-marker').hasClass('hidden')) {
+        $('.simple-calendar .time-marker').removeClass('hidden');
       }
-      $('.simple-calendar-marker').css('top', offset_y);
-      $('.simple-calendar-time-display').text(now.format('HH:mm'));
+      $('.simple-calendar .time-marker').css('top', offset_y);
+      $('.simple-calendar .time-display').text(now.format('HH:mm'));
     }
 
     function calendarSetStartDay() {
       if (calendar_start_date.isSame(moment().startOf('Day')) && (calendar_days_count == 1 || calendar_days_count == 2)) {
-        $('.simple-calendar-marker').removeClass('hidden');
+        $('.simple-calendar .time-marker').removeClass('hidden');
       } else {
-        $('.simple-calendar-marker').addClass('hidden');
+        $('.simple-calendar .time-marker').addClass('hidden');
       }
       localStorage.setItem('calendar_start_date', calendar_start_date.format('YYYY-MM-DD'));
     }
 
     function calendarSetMode() {
       if (calendar_days_count == '1') {
+        $('.simple-calendar > .caption > .year').addClass('hidden');
         // показать календарь
         $('.simple-calendar-lbar').removeClass('hidden');
         $('.simple-calendar').addClass('col-lg-9');
@@ -495,6 +893,7 @@
         $('.simple-calendar').removeClass('col-md-12');
         calendar_start_date = moment().startOf('day');;
       } else if (calendar_days_count == '2') {
+        $('.simple-calendar > .caption > .year').addClass('hidden');
         // показать календарь
         $('.simple-calendar-lbar').removeClass('hidden');
         $('.simple-calendar').addClass('col-lg-9');
@@ -503,6 +902,7 @@
         $('.simple-calendar').removeClass('col-md-12');
         calendar_start_date = moment().startOf('day');
       } else if (calendar_days_count == '7') {
+        $('.simple-calendar > .caption > .year').removeClass('hidden');
         //
         $('.simple-calendar-lbar').addClass('hidden');
         $('.simple-calendar').removeClass('col-lg-9');
@@ -559,92 +959,84 @@
       })
     ;
 
-    $('[data-action="incrementHours"]').click(function (e) {
-      var val = $('#timepicker-hour').text() * 1 + 1;
-      if (val > 23) val = 0;
-      var str_val = (val < 10 ? '0' : '') + val;
-      $('#timepicker-hour').text(str_val);
-    });
-    $('[data-action="decrementHours"]').click(function (e) {
-      var val = $('#timepicker-hour').text() * 1 - 1;
-      if (val < 0) val = 23;
-      var str_val = (val < 10 ? '0' : '') + val;      
-      $('#timepicker-hour').text(str_val);
-    });
-    $('[data-action="incrementMinutes"]').click(function (e) {
-      var val = $('#timepicker-minute').text() * 1 + 1;
-      if (val > 59) val = 0;
-      var str_val = (val < 10 ? '0' : '') + val;
-      $('#timepicker-minute').text(str_val);
-    });
-    $('[data-action="decrementMinutes"]').click(function (e) {
-      var val = $('#timepicker-minute').text() * 1 - 1;
-      if (val < 0) val = 59;
-      var str_val = (val < 10 ? '0' : '') + val;
-      $('#timepicker-minute').text(str_val);
-    });
-
     $('[data-action="task-open"]').click(function() {
       $('.event-selected').each(function() {
-        var id = $(this).data('id');
-        $.ajax({
-          type: "POST",
-          url: "/api/task/get",
-          data: {id: id},
-        })
-          .done(function (data, textStatus, jqXHR) {
-            if (data.status == 'success') {
-              var dead_line = moment(data.task.dead_line);
-
-              $('#taskIdInput').val(data.task.id);
-
-              $('#card-date-picker').datepicker('setDate', dead_line.format('YYYY-MM-DD'));
-              $('#timepicker-hour').text(dead_line.format('HH'));
-              $('#timepicker-minute').text(dead_line.format('mm'));
-
-              $('#taskTypeInput').val(data.task.task_type_id);
-              $('#assignedUserIdInput').val(data.task.assigned_user_id);
-              $('#taskDescriptionInput').html(data.task.description);
-
-              $('#taskModal').modal('show');
-            } else {
-
-            }
-          }).fail(function (jqXHR, textStatus, errorThrown) {
-
-          });
+        openTaskCard($(this).data('id'));
       });
     });
 
     $('[data-action="task-create"]').click(function() {
-      $('#taskIdInput').val('');
-
-      var now = new Date();
-      $('#card-date-picker').datepicker('setDate', now);
-      $('#timepicker-hour').text(now.getHours());
-      $('#timepicker-minute').text((now.getMinutes() < 10 ? '0' : '') + now.getMinutes());
-
-      $('#assignedUserIdInput').val(<%= $self->stash('user')->{id} %>);
-      $('#taskDescriptionInput').html('');
-
-      $('#taskModal').modal('show');
+      newTaskCard(moment());
     });
 
+    var press_timer;
+    $('.simple-calendar .events-container').on('mouseup touchend', function(){
+      clearTimeout(press_timer);
+    }).on('mousemove touchmove', function(){
+      clearTimeout(press_timer);
+    }).on('mousedown', function(e){
+      press_timer = setTimeout(function() { 
+
+        var table_width = $('.simple-calendar .body .cells').width();
+        var column_width = table_width / calendar_days_count;      
+
+        var pos_x = e.target.offsetLeft + e.offsetX;
+        var days = Math.floor(pos_x / column_width);
+
+        var event_date = calendar_start_date.clone().add(days, 'days');
+
+        var pos_y = e.target.offsetTop + e.offsetY;
+        event_date.hours(Math.floor(pos_y / 100) + calendar_start_hour);
+        event_date.minutes(Math.floor((pos_y % 100) * (60 / 100)));
+
+        newTaskCard(event_date);
+
+      }, 800)
+    }).on('touchstart', function(e){
+      press_timer = setTimeout(function() { 
+        var touch = e.originalEvent.touches[0]
+
+        var table_width = $('.simple-calendar .body .cells').width();
+        var column_width = table_width / calendar_days_count;      
+        var pos_x = e.target.offsetLeft;
+        var days = Math.floor(pos_x / column_width);
+        var event_date = calendar_start_date.clone().add(days, 'days');
+
+        var pos_y = e.target.offsetTop;
+        event_date.hours(Math.floor(pos_y / 100) + calendar_start_hour);
+        event_date.minutes(Math.floor((pos_y % 100) * (60 / 100)));
+
+        newTaskCard(event_date);
+
+      }, 800)
+    });
+
+
     $('[data-action="task-save"]').click(function (e) {
-      var hr = $('#timepicker-hour').text();
-      var min = $('#timepicker-minute').text();
-      var date = $('#card-date-picker').datepicker('getDate').yyyymmdd();
-      var tz = '+11';
-      var dead_line = date + ' ' + hr + ':' + min + ':' + '00' + tz;
+      var start_date = moment($('#card-date-picker').datepicker('getDate'));
+      var t = timeSliderGetTime()
+      start_date.hours(t[0]);
+      start_date.minutes(t[1]);
+      var duration = $('#durationInput').val();
+      var end_date = start_date.clone().add(duration, 'minutes');
+
       var task_id = $('#taskIdInput').val();
       var task_type_id = $('#taskTypeInput').val();
       var assigned_user_id = $('#assignedUserIdInput').val();
+      var summary = $('#taskSummaryInput').val();
       var description = $('#taskDescriptionInput').html();
 
       $.ajax({
         type: "POST",
         url: "/api/task/save",
-        data: {id: task_id, task_type_id: task_type_id, assigned_user_id: assigned_user_id, dead_line: dead_line, description: description,},
+        data: {
+          id: task_id,
+          task_type_id: task_type_id,
+          assigned_user_id: assigned_user_id,
+          start_date: start_date.format(),
+          end_date: end_date.format(),
+          summary: summary, 
+          description: description,},
       })
         .done(function (data, textStatus, jqXHR) {
           if (data.status == 'success') {
@@ -657,12 +1049,67 @@
         }).fail(function (jqXHR, textStatus, errorThrown) {
 
         });
+    });
 
-    });    
+    function newTaskCard(event_date) {
+      $('#taskIdInput').val('');
+      $('#card-date-picker').datepicker('setDate', event_date.format('YYYY-MM-DD'));
+      timeSliderSetTime(event_date.hours(), event_date.minutes());
+      $('#durationInput').val(15);    // 15 min
 
+      $('#assignedUserIdInput').val(<%= $self->stash('user')->{id} %>);
+      $('#assignedUserIdInput').change();
+
+      $('#taskSummaryInput').val('');
+      $('#taskDescriptionInput').html('');
+
+      console.log(task_types_colors);
+      $('#taskSummaryDiv').css('background-color', task_types_colors[1]);
+
+      $('#taskModal').modal('show');
+    }
+
+    function openTaskCard(id) {
+      $.ajax({
+        type: "POST",
+        url: "/api/task/get",
+        data: {id: id},
+      })
+        .done(function (data, textStatus, jqXHR) {
+          if (data.status == 'success') {
+            var start_date = moment(data.task.start_date);
+            var end_date = moment(data.task.end_date);
+
+            $('#taskIdInput').val(data.task.id);
+
+            $('#card-date-picker').datepicker('setDate', start_date.format('YYYY-MM-DD'));
+            timeSliderSetTime(start_date.hours(), start_date.minutes());
+
+            var duration = end_date.diff(start_date, 'minutes');
+            if (duration <= 0) duration = 15;
+            $('#durationInput').val();
+
+            $('#taskTypeInput').val(data.task.task_type_id);
+            $('#taskTypeInput').change();
+            $('#assignedUserIdInput').val(data.task.assigned_user_id);
+            $('#assignedUserIdInput').change();
+
+            $('#taskSummaryInput').val(data.task.summary);
+            $('#taskDescriptionInput').html(data.task.description);
+
+            $('#taskSummaryDiv').css('background-color', task_types_colors[data.task.task_type_id]);
+
+            $('#taskModal').modal('show');
+          } else {
+
+          }
+        }).fail(function (jqXHR, textStatus, errorThrown) {
+
+        });
+    }
 
     // Open realty object card
-    function openRealtyCard(id) {      
+    function openRealtyCard(id) {
       var card = RealtyCard({
         loaded: function (r) {
 
@@ -685,15 +1132,32 @@
       }
     }
 
-
-
     // Filters
     $('[data-filter] > ul > li > a').click(function (e) {
       var $display = $(this).closest('[data-filter]').data('val', $(this).data('val')).find('> a [role="display"]');
       if ($(this).data('type') == 'text') { $display.text($(this).text()) } else { $display.html($(this).html()) };
 
-      calendar_days_count = $('[data-filter="calendar-mode"]').data('val');
-      localStorage.setItem('calendar_days_count', calendar_days_count);
+      var task_status = $('[data-filter="task_status"]').data('val');
+      var task_status_display = $('[data-filter="task_status"] span[role="display"]').text();
+
+      var task_type_id = $('[data-filter="task_type_id"]').data('val');
+      var task_type_id_display = $('[data-filter="task_type_id"] span[role="display"]').text();
+
+      var assigned_user_id = $('[data-filter="assigned_user_id"]').data('val');
+      var assigned_user_id_display = $('[data-filter="assigned_user_id"] span[role="display"]').text();
+
+      var days_count = $('[data-filter="days_count"]').data('val');
+      var days_count_display = $('[data-filter="days_count"] span[role="display"]').text();
+
+      calendar_days_count = days_count;
+
+      localStorage.setItem('nav-items', JSON.stringify({
+        task_status: [task_status_display, task_status],
+        task_type: [task_type_id_display, task_type_id],
+        assigned_user: [assigned_user_id_display, assigned_user_id],
+        days_count: [days_count_display, days_count],
+      }));
+
       calendarSetMode();
       $('#date-picker').datepicker('setDate', calendar_start_date.format('YYYY-MM-DD'));
     });
@@ -705,17 +1169,90 @@
     var now = moment();
     var offset_y = (now.hour() - calendar_start_hour) * 100;
     offset_y += (now.minute()) * (100 / 60);
-    offset_y -= $('.simple-calendar-body').height() / 2; 
-    $('.simple-calendar-body').scrollTop(offset_y);
+    offset_y -= $('.simple-calendar .body').height() / 2; 
+    $('.simple-calendar .body').scrollTop(offset_y);
 
+    $('[data-action=set-google-sync]').click(function (e) {
+      var val = $(this).data('val');
+      console.log(val);
+
+      $.ajax({
+        type: "POST",
+        url: "/api/user/set_sync_google",
+        data: {
+          user_id: <%= $self->stash('user')->{id} %>,
+          val: val,
+        },
+      })
+        .done(function (data, textStatus, jqXHR) {
+          if (data.status == 'success') {
+            $('#enableGoogleSync').addClass('hidden');
+            if (val == 'yes') {
+              window.open(google_auth_uri, "", "width=500, height=300");
+            }
+            
+          } else {
+
+          }
+        }).fail(function (jqXHR, textStatus, errorThrown) {
+
+        });
+    });
+
+    function leadingZero(val) {
+      return (val < 10 ? '0' : '') + val;
+    }
+
+    // timeSlider
+    var init = new Powerange(time_slider, {
+      callback: function () {
+        var t = timeSliderGetTime();
+        var time_str = leadingZero(t[0]) + ':' + leadingZero(t[1]);
+        $('.card-time-display').html(time_str);
+      },
+      decimal: true,
+      hideRange: true,
+      min: 0,
+      max: 23.95,
+    });
+
+    function timeSliderSetTime(hour, min) {
+      // !!! powerange недопилен, не умеет setValue по-человечьи
+      var max = 23.95;
+      var max_px = 510;
+
+      var val = hour + min / 60;
+
+      var p = max_px * (val / max);
+
+      init.setPosition(p);
+      init.setValue(p, max_px);
+    }
+
+    function timeSliderGetTime() {
+        var hour = Math.floor(time_slider.value);
+        var min = Math.floor(60 * (time_slider.value - hour));
+        var r = min % 5;
+        min -= r;
+        return [hour, min];
+    }
+
+    $('#taskTypeInput').change(function () {
+      console.log(task_types_colors[this.value]);
+      $('#taskSummaryDiv').css('background-color', task_types_colors[this.value]);
+    });
+
+    $('.selectpicker').selectpicker();
 
   })();
+
 </script>
+
 % end
 
 % content_for modals => begin
 
-<!-- Modal:Task creation -->
+<!-- Modal:Task  -->
 <div class="modal" id="taskModal" tabindex="-1" role="dialog" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -723,7 +1260,7 @@
         <a href="#" class="ctrl-button" data-dismiss="modal" data-action="task-cancel">Отменить</a>
         <a href="#" class="ctrl-button pull-right" data-action="task-save">Готово</a>
       </div>
-      <div class="modal-body" style="padding: 15px;">
+      <div class="modal-body" style="padding: 15px 15px 0px 15px;">
 
         <div class="row hidden">
           <div class="col-lg-12 col-md-12">
@@ -737,68 +1274,52 @@
             </div>
           </div>
           <div class="col-md-6">
-            <table class="table-condensed" style="text-align: center;font-size: 38px;font-weight: 100;font-style: inherit;margin-top: 10px;margin-left: 20px;">
-              <tbody>
-                <tr>
-                  <td>
-                    <a href="#" class="btn" data-action="incrementHours">
-                      <i class="fa fa-chevron-up"></i>
-                    </a>
-                  </td>
-                  <td class="separator"></td>
-                  <td>
-                    <a href="#" class="btn" data-action="incrementMinutes">
-                      <i class="fa fa-chevron-up"></i>
-                    </a>
-                  </td>
-                </tr>
-                <tr>
-                  <td>
-                    <span id="timepicker-hour" class="timepicker-hour">8</span>
-                  </td> 
-                  <td class="separator">:</td>
-                  <td>
-                    <span id="timepicker-minute" class="timepicker-minute">42</span>
-                  </td> 
-                </tr>
-                <tr>
-                  <td>
-                    <a href="#" class="btn" data-action="decrementHours" style="vertical-align: top;">
-                      <i class="fa fa-chevron-down"></i>
-                    </a>
-                  </td>
-                  <td class="separator"></td>
-                  <td>
-                    <a href="#" class="btn" data-action="decrementMinutes" style="vertical-align: top;">
-                      <i class="fa fa-chevron-down"></i>
-                    </a>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+            <div style="margin-top: 70px;">
+            <span class="card-time-display" style="font-size: 62px; font-weight: 100;"></span>
+            </div>
           </div>
         </div>
+
         <div class="row">
+          <div class="" style="margin: 10px 20px 0px 20px;">
+            <span style="float: left;">00:00</span>
+            <span style="float: right;">23:55</span>
+          </div>        
+          <div class="" style="margin: 30px 20px 0px 20px;">
+            <input id="timeSlider" type="text"/>
+          </div>
+        </div>
+
+        <div class="row hidden">
+          <input id="durationInput" type="text"/>
+        </div>
+
+        <div class="row" style="border-top: 1px solid #aaa; margin-top: 25px;">
           <div class="col-lg-12 col-md-12" style="padding-top: 15px;">
-            <select class="form-control input-sm" name="assignedUserId" id="assignedUserIdInput">
+            <select class="form-control input-sm selectpicker" data-size="7" name="assignedUserId" id="assignedUserIdInput">
             % for my $x (@{Rplus::Model::User::Manager->get_objects(query => [delete_date => undef,], sort_by => 'id')}) {
               <option value="<%= $x->id %>"><%= $x->name %></option>
             % }
             </select>
           </div>
-        </div>        
+        </div>
         <div class="row">
           <div class="col-lg-12 col-md-12" style="padding-top: 15px;">
-            <select class="form-control input-sm" name="taskType" id="taskTypeInput">
+            <select class="form-control input-sm selectpicker" data-size="5" name="taskType" id="taskTypeInput">
             % for my $x (@{Rplus::Model::DictTaskType::Manager->get_objects(query => [delete_date => undef,], sort_by => 'id')}) {
               <option value="<%= $x->id %>"><%= $x->name %></option>
             % }
             </select>
           </div>
         </div>
-        <div class="row">
+        <div class="row" id="taskSummaryDiv" style="border-top: 1px solid #eee; margin-top: 15px;">
           <div class="col-lg-12 col-md-12" style="padding-top: 15px;">
-            <div name="taskDescription" id="taskDescriptionInput" class="div-editable" style="height: 125px; width: 100%; border: 1px solid #eee;" contenteditable="true"></div>
+            <textarea name="taskSummary" id="taskSummaryInput" placeholder="Описание задачи" autofocus style="outline: none; height: 125px; width: 100%; background-color: rgba(0,0,0,0); border: 0"></textarea>
+          </div>
+        </div>
+        <div class="row hidden" style="">
+          <div class="col-lg-12 col-md-12" style="padding-top: 15px;">
+            <div name="taskDescription" id="taskDescriptionInput" class="div-editable" style="height: 125px; width: 100%; /*border: 1px solid #eee;*/" contenteditable="true"></div>
           </div>
         </div>
       </div>
@@ -808,50 +1329,71 @@
 
 % end
 
+<div class="container hidden" id="enableGoogleSync" style="position: fixed; width: 400px; height: 240px; top: 50%; left: 50%; margin-top: -100px; margin-left: -200px; background-color: #fff; z-index: 100; box-shadow:inset 0 1px 0 rgba(255,255,255,.6), 0 22px 70px 4px rgba(0,0,0,0.56), 0 0 0 1px rgba(0, 0, 0, 0.05);">
+  <div class="row" style="text-align: center;">
+    <p style="font-size: 18px; line-height: 32px; margin: 30px;">
+      Включить синхронизацию с календарем&nbsp;&nbsp;<a target="_blank" href="https://www.google.com/calendar"><span class="gb_Fa" style="display: inline-block; top: 10px; position: relative;"></span></a> ?
+    </p>
+  </div>
+  <div class="" data-action="set-google-sync" data-val="ask" style="position: absolute; bottom: 85px; right: 25px; cursor: pointer;">
+    <span><a style="text-decoration: none;">Спросить позже</a></span>
+  </div>  
+  <div class="row" style="position: absolute; bottom: 0px; width: 100%;  border-top: 1px solid rgba(0,0,0,0.15); cursor: pointer;">
+    <div class="col-lg-6 col-md-6" data-action="set-google-sync" data-val="yes" style="text-align: center; padding: 20px 0; background-color: rgb(123, 209, 72);">
+      <span style="font-size: 18px; color: #555;">Да</span>
+    </div>
+    <div class="col-lg-6 col-md-6" data-action="set-google-sync" data-val="no" style="text-align: center; padding: 20px 0; background-color: rgb(255, 136, 124);">
+      <span style="font-size: 18px; color: #555;">Нет</span>
+    </div>
+    <div class="col-lg-4 col-md-4 hidden" data-action="set-google-sync" data-val="ask" style="text-align: center; padding: 20px 0; background-color: rgb(225, 225, 225);">
+      <span>Спросить позже</span>
+    </div>
+  </div>
+</div>
+
 <div class="row">
   <div class="col-lg-12 col-md-12">
 
-    <div class="simple-calendar-caption" style="cursor: pointer; text-align: center; font-size: 36px; font-weight: 100; margin-bottom: 15px;">
-      <div class="" style="width: 345px; margin: 0 auto;">
-        <div style="float: left;" data-action="day-minus">&lt;</div>
-        <div style="float: right;" data-action="day-plus">&gt;</div>
-        <span class="simple-calendar-caption-text"></span>
-      </div>
-    </div>
-
-    <div class="simple-calendar-lbar col-lg-3 col-md-3" style="">
+    <div class="simple-calendar-lbar col-lg-3 col-md-3">
       <div class="calendar" style="">
         <div id="date-picker">
         </div>
       </div>
     </div>
-    <div class="simple-calendar col-lg-9 col-md-9" style="">
 
-      <div class="simple-calendar-header">
+    <div class="simple-calendar col-lg-9 col-md-9" style="">
+      <div class="caption">
+        <div class="control">
+          <div style="float: left;" data-action="day-minus">&lt;</div>
+          <div style="float: right;" data-action="day-plus">&gt;</div>
+          <span class="text"></span>
+        </div>
+        <span class="year">
+        </span>
+      </div>    
+      <div class="header">
         <table class="" style="width:100%">
           <tbody>
           </tbody>
         </table>
       </div>
-
-      <div class="simple-calendar-body" style="position: relative; width: 100%; height: 600px; overflow: auto; -webkit-overflow-scrolling: touch;">
-        <div class="simple-calendar-body-timeline" style="width: 6%; float: left;">
-          <table class="table table-striped" style="">
+      <div class="body">
+        <div class="timeline">
+          <table class="table">
             <tbody>
             </tbody>
           </table>
         </div>
-        <div class="simple-calendar-body-cells simple-calendar-events-container" style="width: 94%; float: right; position: relative;">
-          <table class="table table-bordered" style="">
+        <div class="cells events-container">
+          <table class="table table-bordered">
             <tbody style="">
             </tbody>
           </table>
         </div>
-        <div class="simple-calendar-marker hidden" style="position: absolute; top: 0px; left: 0px; width: 100%; height: 8px; z-index: 10;">
-          <div class="simple-calendar-time-display" style="float: left; width: 6%; height: 12px; background-color: #f00; font-size: 11px; color: #fff; text-align: center; line-height: 12px;">
-            08:00
+        <div class="time-marker hidden">
+          <div class="time-display">
           </div>
-          <div style="float: left; width: 94%; height: 2px; background-color: #f00;">
+          <div class="time-line">
           </div>
         </div>
       </div>
@@ -894,14 +1436,14 @@
 
         <!-- Agent filter -->
         % if ($self->stash('user')->{role} ne 'manager') {
-        <li class="dropdown" data-filter="assigned_user_id" data-val="own">
+        <li class="dropdown" data-filter="assigned_user_id" data-val="<%= $self->stash('user')->{id} %>">
           <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-user"></span><span role="display"> <%= $self->stash('user')->{name} %></span> <b class="caret"></b></a>
           <ul class="dropdown-menu">
-            <li><a href="#" data-val="own" data-type="text"><strong> <%= $self->stash('user')->{name} %></strong></a></li>
+            <li><a href="#" data-val="<%= $self->stash('user')->{id} %>" data-type="text"><strong> <%= $self->stash('user')->{name} %></strong></a></li>
           </ul>
         </li>
         % } else {
-        <li class="dropdown" data-filter="assigned_user_id" data-val="own">
+        <li class="dropdown" data-filter="assigned_user_id" data-val="<%= $self->stash('user')->{id} %>">
           <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-user"></span><span role="display"> <%= $self->stash('user')->{name} %></span> <b class="caret"></b></a>
           <ul class="dropdown-menu">
             <li><a href="#" data-val="all" data-type="text"><strong> Все</strong></a></li>
@@ -914,13 +1456,13 @@
         </li>
         % }
 
-        <li class="dropdown" data-filter="calendar-mode" data-val="1">
+        <li class="dropdown" data-filter="days_count" data-val="1">
           <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-calendar"></span><span role="display">день </span><b class="caret"></b></a>
           <ul class="dropdown-menu">
             <li><a href="#" data-val="1">день </a></li>
             <li><a href="#" data-val="2">два дня </a></li>
             <li><a href="#" data-val="7">неделя </a></li>
-            <li><a href="#" data-val="30">месяц </a></li>
+            <!--<li><a href="#" data-val="30">месяц </a></li>-->
           </ul>
         </li>
 
@@ -931,3 +1473,5 @@
     </div>
   </div>
 </nav>
+
+

@@ -56,7 +56,7 @@ sub startup {
         my $acc_data_str = $fmap->get('acc_data');
 
         if (time - $acc_data_str->{'ts'} > 15) {
-            my $acc_data = {blocked => 1};
+            my $acc_data = {no_connection => 1};
             my $tx = $ua->get('http://rplusmgmt.com/api/account/get_by_domain?subdomain=' . $self->config->{'subdomain'});
             if (my $res = $tx->success) {
                 $acc_data = $res->json;
@@ -308,6 +308,8 @@ sub startup {
     # API namespace
     $r->route('/api/:controller')->bridge->to(cb => sub {
         my $self = shift;
+
+        return 1; # убрать проверку авторизации для api/user/set_google_token
 
         return 1 if $self->stash('user') && $self->session_check($self->session->{'user'}->{id});
         $self->render(json => {error => 'Unauthorized'}, status => 401);
