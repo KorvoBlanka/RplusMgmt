@@ -92,6 +92,7 @@
 
 % content_for after_bootstrap => begin
 %= js_once "$assets_url/bootstrap-datepicker/js/bootstrap-datepicker.js";
+%= js_once "$assets_url/bootstrap-datepicker/js/locales/bootstrap-datepicker.ru.js";
 %= js_once "$assets_url/powerange/dist/powerange.min.js";
 % end
 
@@ -134,7 +135,6 @@
       var max_px = 510;
 
       var val = hour + min / 60;
-
       var p = max_px * (val / max);
 
       init.setPosition(p);

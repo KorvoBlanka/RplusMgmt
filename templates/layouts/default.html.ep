@@ -257,7 +257,7 @@
             <li class="<%= $controller eq 'realty' && 'active' %>"><a href="/realty"><span class="glyphicon glyphicon-home"></span> <%= ucfloc q{realty} %></a></li>
           % }
           % if (has_permission(clients => 'read') || 1) {
-            <li class="<%= $controller eq 'clients' && 'active' %>"><span id="client-count-notifier" class="badge badge-default quick-notifier hidden"></span><a href="/clients"><span class="glyphicon glyphicon-user"></span> <%= ucfloc q{clients} %></a></li>
+            <li class="<%= $controller eq 'clients' && 'active' %>"><span id="client-count-notifier" class="badge badge-default quick-notifier hidden"></span><a href="/clients"><span class="glyphicon glyphicon-user"></span> Спрос</a></li>
           % }
           % if (has_permission(realty => 'export') || has_permission(realty => 'analyse')) {
             <li class="dropdown <%= $controller eq 'service' && 'active' %>">

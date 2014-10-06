@@ -226,6 +226,7 @@
 
 % content_for after_bootstrap => begin
 %= js_once "$assets_url/bootstrap-datepicker/js/bootstrap-datepicker.js";
+%= js_once "$assets_url/bootstrap-datepicker/js/locales/bootstrap-datepicker.ru.js";
 % end
 
 % content_for javascript => begin
@@ -594,6 +595,7 @@
       $('[name="end_date"]:input', $row).val(subscription.end_date ? moment(subscription.end_date).format('DD.MM.YYYY') : null).datepicker({
         format: "dd.mm.yyyy",
         weekStart: 1,
+        language: 'ru',
         autoclose: true
       });
 
