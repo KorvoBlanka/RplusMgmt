@@ -3,6 +3,7 @@
 % use Rplus::Model::DictColorTag::Manager;
 % use Rplus::Util::GoogleCalendar;
 
+%= include 'blocks/client_card';
 %= include 'blocks/realty_card';
 
 % content_for header => begin
@@ -29,12 +30,6 @@
 .simple-calendar > .caption > .control {
   width: 425px;
   margin: 0 auto;
-  /*
-  position: absolute;
-  bottom: 0px;
-  left: 50%;
-  margin-left: -215px;
-  */
 }
 
 .simple-calendar > .caption > .year {
@@ -44,6 +39,10 @@
   position: absolute;
   right: 20px;
   bottom: 0px;
+}
+
+.simple-calendar > .header {
+  font-weight: 200;
 }
 
 .simple-calendar > .header .day-header:hover {
@@ -277,10 +276,6 @@
   background: #eeeeee !important;
 }
 
-.simple-calendar-header {
-  font-weight:  200;
-}
-
 .range-quantity {
   background-color: #013669 !important;
 }
@@ -325,7 +320,6 @@ a:focus {
 %= js_once "$assets_url/modernizr/modernizr.js";
 %= js_once "$assets_url/bootstrap-select/dist/js/bootstrap-select.min.js";
 %= js_once "$assets_url/powerange/dist/powerange.min.js";
-
 % end
 
 % content_for javascript => begin
@@ -1108,7 +1102,6 @@ a:focus {
       $('#taskSummaryInput').val('');
       $('#taskDescriptionInput').html('');
 
-      console.log(task_types_colors);
       $('#taskSummaryDiv').css('background-color', task_types_colors[1]);
 
       $('#taskModal').modal('show');
@@ -1219,7 +1212,6 @@ a:focus {
 
     $('[data-action=set-google-sync]').click(function (e) {
       var val = $(this).data('val');
-      console.log(val);
 
       $.ajax({
         type: "POST",

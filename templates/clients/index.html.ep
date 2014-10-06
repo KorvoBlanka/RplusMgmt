@@ -10,6 +10,7 @@
 
 % use JSON;
 
+%= include 'blocks/event_card';
 %= include 'blocks/client_card';
 %= include 'blocks/realty_card';
 
@@ -1757,151 +1758,34 @@
         });
       });
 
-      // Task modal
-      (function () {
+      $('[data-action="task-create"]').click(function (e) {
+        var task_type_id = $(this).data('val');
+        var card = TaskCard({
+          saved: function (start_date) {
+            var end_date = start_date.clone().add(30, 'minutes');
+            // если выбрано несколько клиентов, игнорируем выбранную недвижимость
+            // 
+            var $cselected = $('.tree > tbody > tr.cselected');
+            var $selected = $('#realtyTable > tbody > tr.selected');
 
-        $('#date-picker').datepicker({
-          todayHighlight: true,
-          format: 'yyyy-mm-dd',
-          language: 'ru',
-        });
-        $('#taskModal')
-          .modal({show: false, backdrop: true, keyboard: false})
-          .on('show.bs.modal', function () {
-            
-          })
-          .on('shown.bs.modal', function () {
+            if ($cselected.length > 1 || $selected.length == 0) {    // создадим задачу по каждому клиенту
+              $cselected.each(function () {
+                var $this = $(this);
+                var client_id = $this.data('id');
+                var client = clients[client_id];
+                var agent_id = client.agent_id ? client.agent_id : <%= $self->stash('user')->{id} %>;
+                var summary = (client.name || '') + ' ' + Rplus.Util.formatPhoneNum(client.phone_num);
+                var description = '';
 
-          })
-        ;
-
-        $('[data-action="incrementHours"]').click(function (e) {
-          var val = $('#timepicker-hour').text() * 1;
-          $('#timepicker-hour').text(val + 1);
-        });
-        $('[data-action="decrementHours"]').click(function (e) {
-          var val = $('#timepicker-hour').text() * 1;
-          $('#timepicker-hour').text(val - 1);
-        });
-        $('[data-action="incrementMinutes"]').click(function (e) {
-          var val = $('#timepicker-minute').text() * 1 + 1;
-          if (val > 59) val = 0;
-          var str_val = (val < 10 ? '0' : '') + val;
-          $('#timepicker-minute').text(str_val);
-        });
-        $('[data-action="decrementMinutes"]').click(function (e) {
-          var val = $('#timepicker-minute').text() * 1 - 1;
-          if (val < 0) val = 59;
-          var str_val = (val < 10 ? '0' : '') + val;
-          $('#timepicker-minute').text(str_val);
-        });
-
-        $('[data-action="task-create"]').click(function (e) {
-          $('#taskModal').data('task_type_id', $(this).data('val'));
-
-          var now = new Date()
-          $('#date-picker').datepicker('setDate', now);
-          $('#timepicker-hour').text((now.getHours() < 10 ? '0' : '') + now.getHours());
-          $('#timepicker-minute').text((now.getMinutes() < 10 ? '0' : '') + now.getMinutes());
-
-          $('#taskModal').modal('show');
-        });
-
-        $('[data-action="task-save"]').click(function (e) {
-          var task_type_id = $('#taskModal').data('task_type_id');
-
-          var hr = $('#timepicker-hour').text();
-          var min = $('#timepicker-minute').text();
-          var start_date = moment($('#date-picker').datepicker('getDate'));
-          start_date.hours(hr);
-          start_date.minutes(min);
-          var end_date = start_date.clone().add(30, 'minutes');
-          // если выбрано несколько клиентов, игнорируем выбранную недвижимость
-          // 
-          var $cselected = $('.tree > tbody > tr.cselected');
-          var $selected = $('#realtyTable > tbody > tr.selected');
-
-          if ($cselected.length > 1 || $selected.length == 0) {    // создадим задачу по каждому клиенту
-            $cselected.each(function () {
-              var $this = $(this);
-              var client_id = $this.data('id');
-              var client = clients[client_id];
-              var agent_id = client.agent_id ? client.agent_id : <%= $self->stash('user')->{id} %>;
-              var summary = (client.name || '') + ' ' + Rplus.Util.formatPhoneNum(client.phone_num);
-              var description = '';
-
-              $.ajax({
-                type: "POST",
-                url: "/api/task/save",
-                data: {
-                  task_type_id: task_type_id, 
-                  assigned_user_id: agent_id, 
-                  start_date: start_date.format(),
-                  end_date: end_date.format(),
-                  client_id: client.id,
-                  summary: summary,
-                  description: description,
-                },
-              })
-                .done(function (data, textStatus, jqXHR) {
-                  if (data.status == 'success') {
-
-                  } else {
-
-                  }
-                }).fail(function (jqXHR, textStatus, errorThrown) {
-                   
-                });
-
-            });            
-          } else if($cselected.length == 1) {
-            var $node = $($cselected[0]);
-            var client_id = $node.data('id');
-            var client = clients[client_id];
-            var client_agent_id = client.agent_id ? client.agent_id : <%= $self->stash('user')->{id} %>;
-            var client_description = '<br>' + (client.name || '') + ' <strong>' + Rplus.Util.formatPhoneNum(client.phone_num) + '</strong> ';
-
-            $selected.each(function () {
-              var $this = $(this);
-              var id = $this.data('id');
-              var r = $this.data('obj');
-              var agent_id = r.agent_id && r.agent_id != 10000 ? r.agent_id : <%= $self->stash('user')->{id} %>;
-
-              var summary = client_description + ' ' + Rplus.Realty.getDigestForTask(r);
-              var description = '';
-
-              // задача для агента объекта недвижимости
-              $.ajax({
-                type: "POST",
-                url: "/api/task/save",
-                data: {
-                  task_type_id: task_type_id, 
-                  assigned_user_id: agent_id, 
-                  dead_line: dead_line, 
-                  client_id: client.id,
-                  realty_id: r.id,
-                  summary: summary,
-                  description: description,
-                },
-              })
-                .done(function (data, textStatus, jqXHR) {
-                  if (data.status == 'success') {
-
-                  } else {
-
-                  }
-                }).fail(function (jqXHR, textStatus, errorThrown) {
-                   
-                });
-
-              if (agent_id != client_agent_id) {
                 $.ajax({
                   type: "POST",
                   url: "/api/task/save",
                   data: {
                     task_type_id: task_type_id, 
-                    assigned_user_id: client_agent_id, 
-                    dead_line: dead_line,
+                    assigned_user_id: agent_id, 
+                    start_date: start_date.format(),
+                    end_date: end_date.format(),
+                    client_id: client.id,
                     summary: summary,
                     description: description,
                   },
@@ -1915,12 +1799,77 @@
                   }).fail(function (jqXHR, textStatus, errorThrown) {
                      
                   });
-              }
-            });
-          }
-          $('#taskModal').modal('hide');
-        });
-      })();
+
+              });            
+            } else if($cselected.length == 1) {
+              var $node = $($cselected[0]);
+              var client_id = $node.data('id');
+              var client = clients[client_id];
+              var client_agent_id = client.agent_id ? client.agent_id : <%= $self->stash('user')->{id} %>;
+              var client_description = '<br>' + (client.name || '') + ' <strong>' + Rplus.Util.formatPhoneNum(client.phone_num) + '</strong> ';
+
+              $selected.each(function () {
+                var $this = $(this);
+                var id = $this.data('id');
+                var r = $this.data('obj');
+                var agent_id = r.agent_id && r.agent_id != 10000 ? r.agent_id : <%= $self->stash('user')->{id} %>;
+
+                var summary = client_description + ' ' + Rplus.Realty.getDigestForTask(r);
+                var description = '';
+
+                // задача для агента объекта недвижимости
+                $.ajax({
+                  type: "POST",
+                  url: "/api/task/save",
+                  data: {
+                    task_type_id: task_type_id, 
+                    assigned_user_id: agent_id, 
+                    start_date: start_date.format(),
+                    end_date: end_date.format(),
+                    client_id: client.id,
+                    realty_id: r.id,
+                    summary: summary,
+                    description: description,
+                  },
+                })
+                  .done(function (data, textStatus, jqXHR) {
+                    if (data.status == 'success') {
+
+                    } else {
+
+                    }
+                  }).fail(function (jqXHR, textStatus, errorThrown) {
+                     
+                  });
+
+                if (agent_id != client_agent_id) {
+                  $.ajax({
+                    type: "POST",
+                    url: "/api/task/save",
+                    data: {
+                      task_type_id: task_type_id, 
+                      assigned_user_id: client_agent_id, 
+                      dead_line: dead_line,
+                      summary: summary,
+                      description: description,
+                    },
+                  })
+                    .done(function (data, textStatus, jqXHR) {
+                      if (data.status == 'success') {
+
+                      } else {
+
+                      }
+                    }).fail(function (jqXHR, textStatus, errorThrown) {
+                       
+                    });
+                }
+              });
+            }
+            card.close();
+          },
+        }).open();
+      });
 
       // Geo
       (function () {

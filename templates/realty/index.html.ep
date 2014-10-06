@@ -12,13 +12,13 @@
 
 %= include 'blocks/client_card';
 %= include 'blocks/realty_card';
+%= include 'blocks/event_card';
 
 % content_for header => begin
 %= css_once "$assets_url/leaflet/$leafletjs_ver/leaflet.css";
 %= css_once "$assets_url/leaflet.fullscreen/$leafletjs_fullscreen_ver/Control.FullScreen.css";
 %= css_once "$assets_url/typeahead.js/$typeaheadjs_ver/css/typeahead.js-bootstrap.css";
 %= css_once "$assets_url/jquery.webSpeech/jquery.webSpeech-1.0.1.css";
-%= css_once "$assets_url/bootstrap-datepicker/css/datepicker3.css";
 %= css_once "/css/context.css";
 <style type="text/css">
   .export-check-hidden {
@@ -216,8 +216,6 @@
 %= js_once "$assets_url/leaflet.fullscreen/$leafletjs_fullscreen_ver/Control.FullScreen.js";
 %= js_once "$assets_url/typeahead.js/$typeaheadjs_ver/js/typeahead.js";
 %= js_once "$assets_url/jquery.webSpeech/jquery.webSpeech-1.0.1.js";
-%= js_once "$assets_url/bootstrap-datepicker/js/bootstrap-datepicker.js";
-%= js_once "$assets_url/bootstrap-datepicker/js/locales/bootstrap-datepicker.ru.js";
 %= js_once "$assets_url/modernizr/modernizr.js";
 %= js_once "/js/leaflet/layer-2gis.js";
 %= js_once "/js/contextmenu/context.js";
@@ -1123,6 +1121,7 @@
                   var f = realtyTableConf.fields[j];
                   $('td:nth-child(' + (j + 1) + ')', $this).html(f.val(r));
                 }
+                $this.data('obj', r);
                 agents_ids[r.id] = agentId;
                 $this.removeClass('selected').addClass('modified');
                 putToHistory(id, "selected", 0);
@@ -1239,100 +1238,49 @@
         });
       });
 
-      // Task modal
-      (function () {
-        $('#date-picker').datepicker({
-          todayHighlight: true,
-          format: 'yyyy-mm-dd',
-          language: 'ru',
-        });
-        $('#taskModal')
-          .modal({show: false, backdrop: true, keyboard: false})
-          .on('show.bs.modal', function () {
-            
-          })
-          .on('shown.bs.modal', function () {
+      $('[data-action="task-create"]').click(function (e) {
+        var task_type_id = $(this).data('val');
+        var card = TaskCard({
+          saved: function (start_date) {
 
-          })
-        ;
+            var end_date = start_date.clone().add(30, 'minutes');
 
-        $('[data-action="incrementHours"]').click(function (e) {
-          var val = $('#timepicker-hour').text() * 1;
-          $('#timepicker-hour').text(val + 1);
-        });
-        $('[data-action="decrementHours"]').click(function (e) {
-          var val = $('#timepicker-hour').text() * 1;
-          $('#timepicker-hour').text(val - 1);
-        });
-        $('[data-action="incrementMinutes"]').click(function (e) {
-          var val = $('#timepicker-minute').text() * 1 + 1;
-          if (val > 59) val = 0;
-          var str_val = (val < 10 ? '0' : '') + val;
-          $('#timepicker-minute').text(str_val);
-        });
-        $('[data-action="decrementMinutes"]').click(function (e) {
-          var val = $('#timepicker-minute').text() * 1 - 1;
-          if (val < 0) val = 59;
-          var str_val = (val < 10 ? '0' : '') + val;
-          $('#timepicker-minute').text(str_val);
-        });
+            var $selected = $('#realtyTable > tbody > tr.selected');
+            $selected.each(function () {
+              var $this = $(this);
+              var id = $this.data('id');
+              var r = $this.data('obj');
+              var agent_id = r.agent_id && r.agent_id != 10000 ? r.agent_id : <%= $self->stash('user')->{id} %>;
+              var summary = Rplus.Realty.getDigestForTask(r);
+              var description = '';
 
-        $('[data-action="task-create"]').click(function (e) {
-          $('#taskModal').data('task_type_id', $(this).data('val'));
+              $.ajax({
+                type: "POST",
+                url: "/api/task/save",
+                data: {
+                  task_type_id: task_type_id, 
+                  assigned_user_id: agent_id, 
+                  start_date: start_date.format(),
+                  end_date: end_date.format(),
+                  realty_id: r.id,
+                  summary: summary,
+                  description: description,
+                },
+              })
+                .done(function (data, textStatus, jqXHR) {
+                  if (data.status == 'success') {
+                    $('#taskModal').modal('hide');
+                  } else {
 
-          var now = new Date()
-          $('#date-picker').datepicker('setDate', now);
-          $('#timepicker-hour').text((now.getHours() < 10 ? '0' : '') + now.getHours());
-          $('#timepicker-minute').text((now.getMinutes() < 10 ? '0' : '') + now.getMinutes());
+                  }
+                }).fail(function (jqXHR, textStatus, errorThrown) {
 
-          $('#taskModal').modal('show');
-        });
-
-        $('[data-action="task-save"]').click(function (e) {
-          var task_type_id = $('#taskModal').data('task_type_id');
-
-          var hr = $('#timepicker-hour').text();
-          var min = $('#timepicker-minute').text();
-          var start_date = moment($('#date-picker').datepicker('getDate'));
-          start_date.hours(hr);
-          start_date.minutes(min);
-          var end_date = start_date.clone().add(30, 'minutes');
-
-          var $selected = $('#realtyTable > tbody > tr.selected');
-          $selected.each(function () {
-            var $this = $(this);
-            var id = $this.data('id');
-            var r = $this.data('obj');
-            var agent_id = r.agent_id && r.agent_id != 10000 ? r.agent_id : <%= $self->stash('user')->{id} %>;
-            var summary = Rplus.Realty.getDigestForTask(r);
-            var description = '';
-
-            $.ajax({
-              type: "POST",
-              url: "/api/task/save",
-              data: {
-                task_type_id: task_type_id, 
-                assigned_user_id: agent_id, 
-                start_date: start_date.format(),
-                end_date: end_date.format(),
-                realty_id: r.id,
-                summary: summary,
-                description: description,
-              },
-            })
-              .done(function (data, textStatus, jqXHR) {
-                if (data.status == 'success') {
-                  $('#taskModal').modal('hide');
-                } else {
-
-                }
-              }).fail(function (jqXHR, textStatus, errorThrown) {
-
-              });
-          });
-        });
-
-      })();
+                });
+            });              
+            card.close();
+          },
+        }).open();
+      });
 
       // Geo
       (function () {
@@ -1486,67 +1434,6 @@
 % end
 
 % content_for modals => begin
-
-<!-- Modal:Task creation -->
-<div class="modal" id="taskModal" tabindex="-1" role="dialog" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <a href="#" class="ctrl-button" data-dismiss="modal" data-action="task-cancel">Отменить</a>
-        <a href="#" class="ctrl-button pull-right" data-action="task-save">Готово</a>
-      </div>
-      <div class="modal-body">
-        <div class="row">
-          <div class="col-md-6">
-            <div id="date-picker">
-            </div>
-          </div>
-          <div class="col-md-6">
-            <table class="table-condensed" style="text-align: center;font-size: 38px;font-weight: 100;font-style: inherit;margin-top: 10px;margin-left: 20px;">
-              <tbody>
-                <tr>
-                  <td>
-                    <a href="#" class="btn" data-action="incrementHours">
-                      <i class="fa fa-chevron-up"></i>
-                    </a>
-                  </td>
-                  <td class="separator"></td>
-                  <td>
-                    <a href="#" class="btn" data-action="incrementMinutes">
-                      <i class="fa fa-chevron-up"></i>
-                    </a>
-                  </td>
-                </tr>
-                <tr>
-                  <td>
-                    <span id="timepicker-hour" class="timepicker-hour">8</span>
-                  </td> 
-                  <td class="separator">:</td>
-                  <td>
-                    <span id="timepicker-minute" class="timepicker-minute">42</span>
-                  </td> 
-                </tr>
-                <tr>
-                  <td>
-                    <a href="#" class="btn" data-action="decrementHours" style="vertical-align: top;">
-                      <i class="fa fa-chevron-down"></i>
-                    </a>
-                  </td>
-                  <td class="separator"></td>
-                  <td>
-                    <a href="#" class="btn" data-action="decrementMinutes" style="vertical-align: top;">
-                      <i class="fa fa-chevron-down"></i>
-                    </a>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div><!-- /.modal-content -->
-  </div><!-- /.modal-dialog -->
-</div><!-- /.modal -->
 
 <!-- Modal:Geo -->
 <div class="modal" id="geoModal" tabindex="-1" role="dialog" aria-hidden="true">

@@ -515,8 +515,6 @@
         cached_client = jQuery.extend(true, {}, client);
       }
 
-      console.log(client);
-
       $('#phone-num-alert', $modal).addClass('hidden');
       $('#query-alert', $modal).addClass('nodispaly');
       $('#clientCard_clientForm [name="id"]:input', $modal).val(client.id);
