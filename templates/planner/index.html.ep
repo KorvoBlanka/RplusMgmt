@@ -46,6 +46,11 @@
   bottom: 0px;
 }
 
+.simple-calendar > .header .day-header:hover {
+  color: rgb(202,0,0);
+  cursor: pointer;
+}
+
 .simple-calendar > .body {
   position: relative;
   width: 100%; 
@@ -65,6 +70,14 @@
   float: left;
 }
 
+.simple-calendar > .body > .cells .cell:hover {
+  background-color: #fafafa;
+}
+
+.simple-calendar > .body > .cells .cell-week-end:hover {
+  background-color: #fefefe !important;
+}
+
 .simple-calendar > .body > .events-container {
   width: 95%;
   float: right;
@@ -76,7 +89,7 @@
   z-index: 2;
   position: absolute; 
   overflow: hidden;
-  border: 1px solid #eee; 
+  border: 1px solid #eee;
   border-radius: 6px;
   min-height: 25px;
 
@@ -430,13 +443,21 @@ a:focus {
       var w = (100 - 5) / calendar_days_count;
       for (var i = 0; i < calendar_days_count; i++) {
 
-        xhtml += '<th class="" style="width: ' + w + '%; text-align: center; font-weight: 400;">' + t.date() + ' ' + moment.weekdaysShort(t.day()) + '</th>';
+        xhtml += '<th class="day-header" data-action="day-set" data-date="' + t.format('YYYY-MM-DD') + '" style="width: ' + w + '%; text-align: center; font-weight: 400;">' + t.date() + ' ' + moment.weekdaysShort(t.day()) + '</th>';
 
         t.add(1, 'days');
       }
 
       xhtml += '</tr>';
       $('.simple-calendar .header > table > tbody').html(xhtml);
+
+      $('[data-action="day-set"]').click(function() {
+        calendar_days_count = 1;
+        calendarSetMode();
+        var new_start_date_str = $(this).data('date');
+        calendar_start_date = moment(new_start_date_str);        
+        $('#date-picker').datepicker('setDate', calendar_start_date.format('YYYY-MM-DD'));
+      });      
     }
 
     function drawCalendarBody(start_hour, hour_count) {
@@ -459,11 +480,11 @@ a:focus {
         var t = calendar_start_date.clone().startOf('day');
         for (var j = 0; j < calendar_days_count; j++) {
           if (now.isSame(t)) {
-            xhtml += '<th class="cell-today">&nbsp;</th>';
+            xhtml += '<th class="cell cell-today">&nbsp;</th>';
           } else if (t.day() == 0 || t.day() == 6) {
-              xhtml += '<th class="cell-week-end">&nbsp;</th>';
+              xhtml += '<th class="cell cell-week-end">&nbsp;</th>';
           } else {
-            xhtml += '<th class="">&nbsp;</th>';
+            xhtml += '<th class="cell">&nbsp;</th>';
           }
           t.add(1, 'days');
         }
@@ -472,11 +493,11 @@ a:focus {
         var t = calendar_start_date.clone().startOf('day');
         for (var j = 0; j < calendar_days_count; j++) {
           if (now.isSame(t)) {
-            xhtml += '<th class="cell-today">&nbsp;</th>';
+            xhtml += '<th class="cell cell-today">&nbsp;</th>';
           } else if (t.day() == 0 || t.day() == 6) {
-              xhtml += '<th class="cell-week-end">&nbsp;</th>';
+              xhtml += '<th class="cell cell-week-end">&nbsp;</th>';
           } else {
-            xhtml += '<th class="">&nbsp;</th>';
+            xhtml += '<th class="cell">&nbsp;</th>';
           }
           t.add(1, 'days');
         }
@@ -536,11 +557,13 @@ a:focus {
       }
     }
 
+    function clearEvents() {
+      $('.simple-calendar .event').remove();
+    }
+
     function drawEvents(event_list) {
       var xhtml = '';
       var groups = {};
-
-      $('.simple-calendar .event').remove();
 
       var reverse_list = event_list.reverse();
       var last_ts = null;
@@ -883,7 +906,9 @@ a:focus {
     }
 
     function calendarSetMode() {
+      $('[data-filter="days_count"]').data('val', calendar_days_count);
       if (calendar_days_count == '1') {
+        $('[data-filter="days_count"] span[role="display"]').text(' день');
         $('.simple-calendar > .caption > .year').addClass('hidden');
         // показать календарь
         $('.simple-calendar-lbar').removeClass('hidden');
@@ -893,6 +918,7 @@ a:focus {
         $('.simple-calendar').removeClass('col-md-12');
         calendar_start_date = moment().startOf('day');;
       } else if (calendar_days_count == '2') {
+        $('[data-filter="days_count"] span[role="display"]').text(' два дня');
         $('.simple-calendar > .caption > .year').addClass('hidden');
         // показать календарь
         $('.simple-calendar-lbar').removeClass('hidden');
@@ -902,6 +928,7 @@ a:focus {
         $('.simple-calendar').removeClass('col-md-12');
         calendar_start_date = moment().startOf('day');
       } else if (calendar_days_count == '7') {
+        $('[data-filter="days_count"] span[role="display"]').text(' неделя');
         $('.simple-calendar > .caption > .year').removeClass('hidden');
         //
         $('.simple-calendar-lbar').addClass('hidden');
@@ -917,6 +944,8 @@ a:focus {
     }
 
     function drawPlanner() {
+      clearEvents();
+
       drawCalendarCaption(calendar_start_date);
       drawCalendarHeader(calendar_start_date);
       drawCalendarBody(calendar_start_hour, calendar_hours_count);
@@ -931,7 +960,7 @@ a:focus {
         calendar_start_date.add(-1, 'days');
       }
       calendarSetStartDay();
-      $('#date-picker').datepicker('setDate', calendar_start_date.format('YYYY-MM-DD'));      
+      $('#date-picker').datepicker('setDate', calendar_start_date.format('YYYY-MM-DD'));
     });
 
     $('[data-action="day-plus"]').click(function() {
@@ -1238,7 +1267,6 @@ a:focus {
     }
 
     $('#taskTypeInput').change(function () {
-      console.log(task_types_colors[this.value]);
       $('#taskSummaryDiv').css('background-color', task_types_colors[this.value]);
     });
 

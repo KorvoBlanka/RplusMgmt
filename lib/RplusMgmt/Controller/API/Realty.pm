@@ -351,16 +351,6 @@ sub save {
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $realty;
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => write => $realty->agent_id) || $self->has_permission(realty => 'write')->{can_assign} && $realty->agent_id == undef;
 
-    if ($self->param('agent_id')) {
-        if ($realty->id) {
-            if ($realty->agent_id != $self->param('agent_id')) {
-                $create_event = 1;
-            }
-        } else {
-            $create_event = 1;
-        }
-    }
-
     # Input validation
     $self->validation->required('type_code'); # TODO: check value
     $self->validation->required('offer_type_code')->in(qw(sale rent));
@@ -436,6 +426,16 @@ sub save {
     # Find similar realty
     #my $similar_realty_id = Rplus::Util::Realty->find_similar(%data, state_code => ['raw', 'work', 'suspended']);
     #my $similar_realty = Rplus::Model::Realty->new(id => $similar_realty_id)->load(with => ['address_object']) if $similar_realty_id;
+
+    if ($data{agent_id} && $data{agent_id} != 10000) {
+        if ($realty->id) {
+            if ($realty->agent_id != $data{agent_id}) {
+                $create_event = 1;
+            }
+        } else {
+            $create_event = 1;
+        }
+    }
 
     # if agent_id changed - set 'assign_date'
     $realty->assign_date('now()') if $realty->agent_id != $data{agent_id};
@@ -577,7 +577,7 @@ sub update {
             return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => write => $realty->agent_id) || ($self->has_permission(realty => 'write')->{can_assign} && $realty->agent_id == undef);
             # if agent_id changed - set 'assign_date'
             $realty->assign_date('now()');
-            if ($self->param('agent_id') && $self->param('agent_id') != $realty->agent_id) {
+            if ($self->param('agent_id') && $self->param('agent_id') != 10000 && $self->param('agent_id') != $realty->agent_id) {
                 $create_event = 1
             }
             unless ($self->param('agent_id')) {
