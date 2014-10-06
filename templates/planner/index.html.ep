@@ -557,6 +557,19 @@ a:focus {
       }
     }
 
+    function toggleEventMove($this) {
+
+      var table_width = $('.simple-calendar .body .cells').width();
+      var cell_width = table_width / calendar_days_count;
+
+      $this.css('width', cell_width);
+      $this.height($this.data('height'));
+      
+      $this.removeClass('event-selected');
+      $('.status-button-wrapper', $this).addClass('hidden');
+      $('.resizer', $this).addClass('hidden');
+    }
+
     function clearEvents() {
       $('.simple-calendar .event').remove();
     }
@@ -564,6 +577,8 @@ a:focus {
     function drawEvents(event_list) {
       var xhtml = '';
       var groups = {};
+
+      clearEvents();
 
       var reverse_list = event_list.reverse();
       var last_ts = null;
@@ -793,7 +808,8 @@ a:focus {
           obj.$el.find('.event-start-date').html(time);
 
           if (obj.$el.hasClass('event-selected')) {
-            toggleEventSelect(obj.$el);
+            //toggleEventSelect(obj.$el);
+            toggleEventMove(obj.$el);
           }
         },
         stop: function (event, obj) {
