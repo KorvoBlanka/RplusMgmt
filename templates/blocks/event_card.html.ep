@@ -1,0 +1,231 @@
+% use Rplus::Model::ColorTag::Manager;
+% use Rplus::Model::DictColorTag::Manager;
+
+% content_for header => begin
+%= css_once "$assets_url/bootstrap-datepicker/css/datepicker3.css";
+%= css_once "$assets_url/powerange/dist/powerange.min.css";
+<style type="text/css">
+  .datepicker table tr td.day, .datepicker table tr th.dow {
+    height: 24px !important;
+    width: 36px !important;
+    border-radius: 0px;
+  }
+
+  .datepicker table tr td span.month, .datepicker table tr td span.year {
+   border-radius: 0px; 
+  }
+
+  .datepicker table thead tr > th:nth-child(6), .datepicker table thead tr > th:nth-child(7) {
+    /*background-color: #eee;*/
+    color: rgb(180,0,0);
+  }
+
+  .datepicker table tr td.active {
+    background-color: #013669 !important;
+    color: #fff !important;
+  }
+
+  .datepicker table tr td span.active {
+    background-color: #013669 !important;
+    color: #fff !important;
+  }
+
+  .datepicker table tbody tr > td:nth-child(6) {
+    border-right: 1px solid #fff;
+    background-color: #fafafa;
+  }
+
+  .datepicker table tbody tr > td:nth-child(7) {
+    background-color: #fafafa;
+  }
+
+  .datepicker table tr td.today {
+    background-color: rgba(0,0,0,0) !important;
+    color: #000 !important;
+    border: 1px solid #013669;
+  }
+
+  .datepicker table tr td.active {
+    background-color: #013669 !important;
+    color: #fff !important;
+  }
+
+  .datepicker table thead .dow {
+    color: #aaa;
+    font-weight: 200;
+  }
+
+  .datepicker table thead .datepicker-switch {
+    font-weight: 200;
+    font-size: 16px;  
+  }
+
+  .datepicker table thead tr:nth-child(2) > th {
+    padding-top: 8px;
+    border-bottom: 1px solid #aaa;
+  }
+
+  .datepicker table tbody tr:nth-child(1) > td {
+    padding-top: 8px;
+  }
+
+  .datepicker table tbody tr:nth-child(6) > td {
+    padding-bottom: 1px;
+  }
+
+  .datepicker table tfoot th.today {
+    background: #fafafa !important;
+    border-top: 2px solid #fff;
+    color: #999;
+    font-weight: 400;
+  }
+
+  .datepicker table tfoot th.today:hover {
+    background: #eeeeee !important;
+  }
+
+  .range-quantity {
+    background-color: #013669 !important;
+  }  
+</style>
+% end
+
+% content_for after_bootstrap => begin
+%= js_once "$assets_url/bootstrap-datepicker/js/bootstrap-datepicker.js";
+%= js_once "$assets_url/powerange/dist/powerange.min.js";
+% end
+
+% content_for javascript => begin
+<script type="text/javascript">
+  "use strict";
+
+  var TaskCard = (function () {
+
+    var time_slider = document.querySelector('#timeSlider');
+    var $modal = $('#taskModal').modal({show: false, backdrop: false});
+    var events = {};
+
+    $('#taskDatePicker').datepicker({
+      todayHighlight: true,
+      format: 'yyyy-mm-dd',
+      language: 'ru',
+    });
+
+    function leadingZero(val) {
+      return (val < 10 ? '0' : '') + val;
+    }
+
+    // timeSlider
+    var init = new Powerange(time_slider, {
+      callback: function () {
+        var t = timeSliderGetTime();
+        var time_str = leadingZero(t[0]) + ':' + leadingZero(t[1]);
+        $('.card-time-display').html(time_str);
+      },
+      decimal: true,
+      hideRange: true,
+      min: 0,
+      max: 23.95,
+    });
+
+    function timeSliderSetTime(hour, min) {
+      // !!! powerange недопилен, не умеет setValue по-человечьи
+      var max = 23.95;
+      var max_px = 510;
+
+      var val = hour + min / 60;
+
+      var p = max_px * (val / max);
+
+      init.setPosition(p);
+      init.setValue(p, max_px);
+    }
+
+    function timeSliderGetTime() {
+        var hour = Math.floor(time_slider.value);
+        var min = Math.floor(60 * (time_slider.value - hour));
+        var r = min % 5;
+        min -= r;
+        return [hour, min];
+    }
+
+    $('[data-action="task-save"]').click(function () {
+      var start_date = moment($('#taskDatePicker').datepicker('getDate'));
+      var t = timeSliderGetTime()
+      start_date.hours(t[0]);
+      start_date.minutes(t[1]);
+
+      if ($.isFunction(events.saved)) {
+        events.saved(start_date);
+      }
+    });
+
+    return function (options) {
+      if (!options) options = {};
+
+      // Set events
+      events = {
+        saved: options.saved,
+      };
+
+      var $this = {
+        // Methods
+        open: function (id) {
+          $('#taskDatePicker').datepicker('setDate', moment().format('YYYY-MM-DD'));
+          timeSliderSetTime(moment().hours(), moment().minutes());
+          $modal.modal('toggle');
+          return $this;
+        },
+
+        close: function () {
+          $modal.modal('toggle');
+          return $this;
+        }
+      };
+
+      return $this;
+    }    
+  })();
+</script>
+% end
+
+% content_for modals => begin
+<!-- Modal:Task creation -->
+<div class="modal" id="taskModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <a href="#" class="ctrl-button" data-dismiss="modal" data-action="task-cancel">Отменить</a>
+        <a href="#" class="ctrl-button pull-right" data-action="task-save">Готово</a>
+      </div>
+      <div class="modal-body">
+
+        <div class="row">
+          <div class="col-md-6">
+            <div id="taskDatePicker">
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div style="margin-top: 70px;">
+            <span class="card-time-display" style="font-size: 62px; font-weight: 100;"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="" style="margin: 10px 20px 0px 20px;">
+            <span style="float: left;">00:00</span>
+            <span style="float: right;">23:55</span>
+          </div>        
+          <div class="" style="margin: 30px 20px 0px 20px;">
+            <input id="timeSlider" type="text"/>
+          </div>
+        </div>
+        <div class="row">
+          <span>&nbsp;</span>
+        </div>
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+% end
