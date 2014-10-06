@@ -351,12 +351,12 @@ sub save {
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $realty;
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => write => $realty->agent_id) || $self->has_permission(realty => 'write')->{can_assign} && $realty->agent_id == undef;
 
-    if ($realty->id) {
-        if ($self->param('agent_id') && $realty->agent_id != $self->param('agent_id')) {
-            $create_event = 1;
-        }
-    } else {
-        if ($realty->agent_id) {
+    if ($self->param('agent_id')) {
+        if ($realty->id) {
+            if ($realty->agent_id != $self->param('agent_id')) {
+                $create_event = 1;
+            }
+        } else {
             $create_event = 1;
         }
     }
@@ -580,7 +580,7 @@ sub update {
             if ($self->param('agent_id') && $self->param('agent_id') != $realty->agent_id) {
                 $create_event = 1
             }
-            if ($self->param('agent_id') eq '') {
+            unless ($self->param('agent_id')) {
                 $realty->agent_id(undef);
             } else {
                 my $agent_id = $self->param_n('agent_id');
