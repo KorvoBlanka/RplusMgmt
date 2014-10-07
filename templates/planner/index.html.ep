@@ -50,6 +50,10 @@
   cursor: pointer;
 }
 
+.month-day {
+  height: 100%;
+}
+
 .simple-calendar > .body {
   position: relative;
   width: 100%; 
@@ -64,6 +68,17 @@
   padding: 0;
 }
 
+.simple-calendar > .month > table > thead > tr > th {
+  padding: 0;
+  text-align: center;
+}
+
+.simple-calendar > .month > table > tbody > tr > td {
+  padding: 0;
+  height: 130px;    /* рассчитать высоту? */
+  border: 1px solid #eee;
+}
+
 .simple-calendar > .body > .timeline {
   width: 5%;
   float: left;
@@ -75,6 +90,50 @@
 
 .simple-calendar > .body > .cells .cell-week-end:hover {
   background-color: #fefefe !important;
+}
+
+.simple-calendar > .body > .cells .cell-today:hover {
+  background-color: #ffffdb !important;
+}
+
+.simple-calendar > .month-body .cell:hover {
+  background-color: #fafafa;
+}
+
+.simple-calendar > .month-body .cell-today:hover {
+  background-color: #ffffdb !important;
+}
+
+.simple-calendar > .month-body .cell-inactive {
+  color: #eee !important;
+  background-color: #fcfcfc;
+}
+
+.simple-calendar > .month-body .cell-week-end {
+  background-color: #fafafa !important;
+}
+
+.simple-calendar > .month-body .cell-week-end:hover {
+  background-color: #fefefe !important;
+}
+
+.simple-calendar > .month-body .month-cell {
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.simple-calendar > .month-body .month-cell > .cell-wrapper {
+  overflow: hidden;
+}
+
+.simple-calendar > .month-body .month-event {
+  overflow: hidden;
+  width: 140px;
+  margin: 0;
+  font-weight: 200;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .simple-calendar > .body > .events-container {
@@ -109,7 +168,7 @@
   float: left;
   width: 5%;
   height: 12px;
-  background-color: #f00;
+  background-color: #ca0000;
   font-size: 11px;
   color: #fff;
   text-align: center;
@@ -120,7 +179,7 @@
   float: left;
   width: 95%;
   height: 2px;
-  background-color: #f00;
+  background-color: #ca0000;
 }
 
 .cell-today {
@@ -149,8 +208,14 @@
 }
 
 .event .status-button-wrapper {
-  width: 38px; 
+  width: 30px; 
+  height: 100%;
   float: left; 
+}
+
+.event .description {
+  margin-left: 3px;
+  margin-right: 5px;
 }
 
 .event .status-button {
@@ -411,19 +476,29 @@ a:focus {
         var date = $('#date-picker').datepicker('getDate');
         if (date != 'Invalid Date') {
           calendar_start_date = moment(date);
-          localStorage.getItem('calendar_start_date', calendar_start_date.format('YYYY-MM-DD'));
+          localStorage.setItem('calendar_start_date', calendar_start_date.format('YYYY-MM-DD'));
           drawPlanner();
         }
       });
+
+    function capitaliseFirstLetter(str)
+    {
+      return str.charAt(0).toUpperCase() + str.slice(1);
+    }
 
     function drawCalendarCaption(start_date) {
       var end_date = start_date.clone();
       end_date.add(calendar_days_count - 1, 'days');
 
-      if (calendar_days_count != 1) {
-        var xhtml = start_date.date() + ' - ' + end_date.date() + ' ' + moment._months[start_date.month()];
-      } else {
+      if (calendar_days_count == 1) {
         var xhtml = start_date.date() + ' ' + moment._months[start_date.month()];
+        
+      } else {
+        if (calendar_days_count != 30) {
+          var xhtml = start_date.date() + ' - ' + end_date.date() + ' ' + moment._months[start_date.month()];
+        } else {
+          var xhtml = capitaliseFirstLetter(moment.months(start_date.month()));
+        }
       }
       $('.simple-calendar > .caption .text').html(xhtml);
       $('.simple-calendar > .caption .days-count').html(calendar_days_count);
@@ -432,79 +507,129 @@ a:focus {
     }
 
     function drawCalendarHeader(start_date) {
-      var xhtml = '<tr><th class="" style="width: 5%; text-align: center;">&nbsp;</th>';
-      var t = start_date.clone();
-      var w = (100 - 5) / calendar_days_count;
-      for (var i = 0; i < calendar_days_count; i++) {
+      var xhtml = '<tr>';
+      if  (calendar_days_count == 30) {
+        var w = (100 - 5) / 7;
+        for (var i = 0; i < 7; i++) {
+          xhtml += '<th class="" data-action="" style="width: ' + w + '%; text-align: center; font-weight: 400;">' + ' ' + moment.weekdaysShort(i + 1) + '</th>';
+        }
+        xhtml += '</tr>';
+        $('.simple-calendar .header > table > tbody').html(xhtml);
+      } else {
+        var t = start_date.clone();
+        xhtml += '<th class="" style="width: 5%; text-align: center;">&nbsp;</th>';
+        var w = (100 - 5) / calendar_days_count;
+        for (var i = 0; i < calendar_days_count; i++) {
+          xhtml += '<th class="day-header" data-action="day-set" data-date="' + t.format('YYYY-MM-DD') + '" style="width: ' + w + '%; text-align: center; font-weight: 400;">' + t.date() + ' ' + moment.weekdaysShort(t.day()) + '</th>';
+          t.add(1, 'days');
+        }
 
-        xhtml += '<th class="day-header" data-action="day-set" data-date="' + t.format('YYYY-MM-DD') + '" style="width: ' + w + '%; text-align: center; font-weight: 400;">' + t.date() + ' ' + moment.weekdaysShort(t.day()) + '</th>';
+        xhtml += '</tr>';
+        $('.simple-calendar .header > table > tbody').html(xhtml);
 
-        t.add(1, 'days');
+        $('[data-action="day-set"]').click(function() {
+          calendar_days_count = 1;
+          calendarSetMode();
+          var new_start_date_str = $(this).data('date');
+          calendar_start_date = moment(new_start_date_str);        
+          $('#date-picker').datepicker('setDate', calendar_start_date.format('YYYY-MM-DD'));
+        });
       }
-
-      xhtml += '</tr>';
-      $('.simple-calendar .header > table > tbody').html(xhtml);
-
-      $('[data-action="day-set"]').click(function() {
-        calendar_days_count = 1;
-        calendarSetMode();
-        var new_start_date_str = $(this).data('date');
-        calendar_start_date = moment(new_start_date_str);        
-        $('#date-picker').datepicker('setDate', calendar_start_date.format('YYYY-MM-DD'));
-      });      
     }
 
     function drawCalendarBody(start_hour, hour_count) {
-      // timeline
       var xhtml = '';
-      for (var i = 0; i < hour_count; i++) {
-        var h = start_hour + i;
-        xhtml += '<tr class="" style="height: 100px;">';
-        xhtml += '<th class="" style="width: 5%; vertical-align: middle; text-align: center; font-weight: 400;">' + (h < 10 ? '0' : '') + h + ':00' + '</th>';
-        xhtml += '</tr>';
-      }
-
-      $('.simple-calendar .body .timeline > table > tbody').html(xhtml);
-
-      //cells
-      var now = moment().startOf('day');
-      xhtml = '';
-      for (var i = 0; i < hour_count; i++) {
-        xhtml += '<tr class="" style="height: 50px;">';
-        var t = calendar_start_date.clone().startOf('day');
-        for (var j = 0; j < calendar_days_count; j++) {
-          if (now.isSame(t)) {
-            xhtml += '<th class="cell cell-today">&nbsp;</th>';
-          } else if (t.day() == 0 || t.day() == 6) {
-              xhtml += '<th class="cell cell-week-end">&nbsp;</th>';
-          } else {
-            xhtml += '<th class="cell">&nbsp;</th>';
-          }
-          t.add(1, 'days');
-        }
-        xhtml += '</tr>';
-        xhtml += '<tr class="" style="height: 50px;">';
-        var t = calendar_start_date.clone().startOf('day');
-        for (var j = 0; j < calendar_days_count; j++) {
-          if (now.isSame(t)) {
-            xhtml += '<th class="cell cell-today">&nbsp;</th>';
-          } else if (t.day() == 0 || t.day() == 6) {
-              xhtml += '<th class="cell cell-week-end">&nbsp;</th>';
-          } else {
-            xhtml += '<th class="cell">&nbsp;</th>';
-          }
-          t.add(1, 'days');
-        }
-        xhtml += '</tr>';      
-      }
-      $('.simple-calendar .body .cells > table > tbody').html(xhtml);
-
       var body_height = $(window).height();
       body_height -= $('.navbar-fixed-top').outerHeight();
       body_height -= $('.navbar-fixed-bottom').outerHeight();
       body_height -= $('.simple-calendar > .caption').outerHeight();
+      body_height -= $('.navbar-fixed-bottom').outerHeight();      
+      if (calendar_days_count == 30) {
+        var now = moment().startOf('day');
+        var t = calendar_start_date.clone().startOf('week');
+        var weeks = 5;
+        var days = 7;
+        var cell_height = body_height / weeks; // 5 недель
+        var cell_width = 100 / 7;
+        for (var i = 0; i < weeks; i++) {
+          xhtml += '<tr class="" style="height: 100px;">';
+          for (var k = 0; k < days; k++) {
+            var classes = 'cell';
+            if (now.isSame(t)) {
+              classes += ' cell-today';
+            }
+            if (t.day() == 0 || t.day() == 6) {
+              classes += ' cell-week-end';
+            }
+            if (!calendar_start_date.isSame(t, 'month')) {
+              classes += ' cell-inactive';
+            }
 
-      $('.simple-calendar .body').height(body_height);
+            xhtml += '<td class="month-cell ' + classes + '" style="height: ' + cell_height +'px; width: ' + cell_width + '%;" data-action="day-set" data-date="' + t.format('YYYY-MM-DD') + '">';
+            xhtml += '<div class="cell-wrapper" style="height: ' + cell_height * 0.86 +'px;"><span>';
+            xhtml += '<div style="text-align: right; font-weight: 400;"><span>';
+            xhtml += t.date();
+            xhtml += '</span></div></div>';
+            xhtml += '</td>';
+
+            t.add(1, 'day');
+          }
+          xhtml += '</tr>';
+        }
+        $('.simple-calendar .month-body > table > tbody').html(xhtml);
+        $('.simple-calendar .month-body').height(body_height);
+        $('[data-action="day-set"]').click(function() {
+          calendar_days_count = 1;
+          calendarSetMode();
+          var new_start_date_str = $(this).data('date');
+          calendar_start_date = moment(new_start_date_str);        
+          $('#date-picker').datepicker('setDate', calendar_start_date.format('YYYY-MM-DD'));
+        });        
+      } else {
+        // timeline
+        for (var i = 0; i < hour_count; i++) {
+          var h = start_hour + i;
+          xhtml += '<tr class="" style="height: 100px;">';
+          xhtml += '<th class="" style="width: 5%; vertical-align: middle; text-align: center; font-weight: 400;">' + (h < 10 ? '0' : '') + h + ':00' + '</th>';
+          xhtml += '</tr>';
+        }
+
+        $('.simple-calendar .body .timeline > table > tbody').html(xhtml);
+
+        //cells
+        var now = moment().startOf('day');
+        xhtml = '';
+        for (var i = 0; i < hour_count; i++) {
+          xhtml += '<tr class="" style="height: 50px;">';
+          var t = calendar_start_date.clone().startOf('day');
+          for (var j = 0; j < calendar_days_count; j++) {
+            var classes = 'cell';
+            if (now.isSame(t)) {
+              classes += ' cell-today';
+            } else if (t.day() == 0 || t.day() == 6) {
+              classes += ' cell-week-end';
+            }
+            xhtml += '<th class="' + classes + '">&nbsp;</th>';
+            t.add(1, 'days');
+          }
+          xhtml += '</tr>';
+          xhtml += '<tr class="" style="height: 50px;">';
+          var t = calendar_start_date.clone().startOf('day');
+          for (var j = 0; j < calendar_days_count; j++) {
+            var classes = 'cell';
+            if (now.isSame(t)) {
+              classes += ' cell-today';
+            } else if (t.day() == 0 || t.day() == 6) {
+              classes += ' cell-week-end';
+            }
+            xhtml += '<th class="' + classes + '">&nbsp;</th>';
+            t.add(1, 'days');
+          }
+          xhtml += '</tr>';      
+        }
+        $('.simple-calendar .body .cells > table > tbody').html(xhtml);
+        $('.simple-calendar .body').height(body_height);
+      }
     }
 
     function toggleEventSelect($this) {
@@ -573,300 +698,320 @@ a:focus {
       var groups = {};
 
       clearEvents();
-
       var reverse_list = event_list.reverse();
-      var last_ts = null;
-      var group_idx = 0;
-      for (var i = 0; i < reverse_list.length; i++) {
-        var event = reverse_list[i];
-        var start_date = moment(event.start_date);
-        if (last_ts) {
-          if (start_date.diff(last_ts, 'minutes') > 15) {
-            group_idx ++;
-          } else {
-
-          }
-        }
-        last_ts = start_date;
-        if (!groups[group_idx]) {
-          groups[group_idx] = [];
-        } 
-        groups[group_idx].push(event);
-      }
-
-      for (var idx in groups) { 
-        var events = groups[idx];
-        for (var i = 0; i < events.length; i++) {
-          var event = events[i];
+      if (calendar_days_count == 30)
+      {
+        var t_date = calendar_start_date.clone().startOf('week');
+        for (var i = 0; i < reverse_list.length; i++) {
+          var event = reverse_list[i];        
           var start_date = moment(event.start_date);
-          var end_date = moment(event.end_date);
+          var offset = start_date.diff(t_date, 'day');
+          
+          var row = Math.floor(offset / 7);
+          var col = offset % 7;
+          console.log(row);
+          console.log(col);
+          var xhtml = '<div class="month-event">';
+          xhtml += '<div style="width: 15px; height: 15px; display: inline-block; background-color: ' + event.color + '; top: 2px; position: relative;">';
+          xhtml += '</div>';
+          xhtml += ' ' + start_date.format('HH:mm') + ' ' + event.task_type;
+          xhtml += '</div>';
+          $('.month-body > table tr:eq(' + row + ') td:eq(' + col + ') > .cell-wrapper').append(xhtml);
+        }
+      } else {
+        var last_ts = null;
+        var group_idx = 0;
+        for (var i = 0; i < reverse_list.length; i++) {
+          var event = reverse_list[i];
+          var start_date = moment(event.start_date);
+          if (last_ts) {
+            if (start_date.diff(last_ts, 'minutes') > 15) {
+              group_idx ++;
+            } else {
 
-          var realty_ref = '';
-          if (event.realty_id) {
-            realty_ref = ' <a class="nopep" href="#" data-action="realty-open" data-id="' + event.realty_id + '">ссылка...</a>';
+            }
           }
+          last_ts = start_date;
+          if (!groups[group_idx]) {
+            groups[group_idx] = [];
+          } 
+          groups[group_idx].push(event);
+        }
 
-          var table_width = $('.simple-calendar .body .cells').width();
-          var column = start_date.clone().startOf('day').diff(calendar_start_date, 'days');
-          var events_count = events.length;
+        for (var idx in groups) { 
+          var events = groups[idx];
+          for (var i = 0; i < events.length; i++) {
+            var event = events[i];
+            var start_date = moment(event.start_date);
+            var end_date = moment(event.end_date);
 
-          var column_width = table_width / calendar_days_count;
-          var event_width = column_width / events_count;
-
-          if (column >= 0 && column < calendar_days_count) {
-            var offset_x = column * column_width + event_width * i;
-            var offset_y = (start_date.hour() - calendar_start_hour) * 100;
-            offset_y += (start_date.minute()) * (100 / 60);
-
-            var y1 = (end_date.hour() - calendar_start_hour) * 100;
-            y1 += (end_date.minute()) * (100 / 60);
-            var event_height = y1 - offset_y;
-
-            if (event_height < 25) {
-              event_height = 25;
+            var realty_ref = '';
+            if (event.realty_id) {
+              realty_ref = ' <a class="nopep" href="#" data-action="realty-open" data-id="' + event.realty_id + '">ссылка...</a>';
             }
 
-            xhtml += '<div class="event event-' + event.status + '" data-date="' + start_date.format('YYYY-MM-DD') + '" data-left=' + (column * column_width) + ' data-width=' + column_width + ' data-column=' + column + ' data-id="' + event.id + '" class="simple-calendar-event task-' + event.status + '" style="top: ' + offset_y + 'px; left: ' + offset_x + 'px; height: ' + event_height + 'px; width: ' + event_width + 'px; background-color: ' + event.color + ';">';
-            xhtml +=  '<div class="event-body">'
-            xhtml +=   '<div class="status-button-wrapper hidden">';
-            xhtml +=    '<div class="status-button nopep" data-action="event-set-status">';
-            xhtml +=     '<span class="glyphicon glyphicon-ok status-check"></span>';
-            xhtml +=    '</div>';
-            xhtml +=   '</div>';
-            xhtml +=  '<div class="description">';
-            xhtml +=   '<strong class="event-start-date">' + start_date.format('HH:mm') + '</strong> ' + event.task_type + ': ' + event.summary + '&nbsp;&nbsp;' + realty_ref;
-            xhtml +=  '</div>';
-            xhtml +=  '</div>';
-            xhtml +=  '<div class="resizer nopep hidden" style="position: absolute; bottom: 0px; left: 46%; width: 24px;">';
-            xhtml +=   '<span class="glyphicon glyphicon-chevron-down"></span>';
-            xhtml +=  '</div>';
-            xhtml += '</div>';
+            var table_width = $('.simple-calendar .body .cells').width();
+            var column = start_date.clone().startOf('day').diff(calendar_start_date, 'days');
+            var events_count = events.length;
+
+            var column_width = table_width / calendar_days_count;
+            var event_width = column_width / events_count;
+
+            if (column >= 0 && column < calendar_days_count) {
+              var offset_x = column * column_width + event_width * i;
+              var offset_y = (start_date.hour() - calendar_start_hour) * 100;
+              offset_y += (start_date.minute()) * (100 / 60);
+
+              var y1 = (end_date.hour() - calendar_start_hour) * 100;
+              y1 += (end_date.minute()) * (100 / 60);
+              var event_height = y1 - offset_y;
+
+              if (event_height < 25) {
+                event_height = 25;
+              }
+
+              xhtml += '<div class="event event-' + event.status + '" data-date="' + start_date.format('YYYY-MM-DD') + '" data-left=' + (column * column_width) + ' data-width=' + column_width + ' data-column=' + column + ' data-id="' + event.id + '" class="simple-calendar-event task-' + event.status + '" style="top: ' + offset_y + 'px; left: ' + offset_x + 'px; height: ' + event_height + 'px; width: ' + event_width + 'px; background-color: ' + event.color + ';">';
+              xhtml +=  '<div class="event-body">'
+              xhtml +=   '<div class="status-button-wrapper hidden" style="height: 1000px;">';
+              xhtml +=    '<div class="status-button nopep" data-action="event-set-status">';
+              xhtml +=     '<span class="glyphicon glyphicon-ok status-check"></span>';
+              xhtml +=    '</div>';
+              xhtml +=   '</div>';
+              xhtml +=  '<div class="description">';
+              xhtml +=   '<strong class="event-start-date">' + start_date.format('HH:mm') + '</strong> ' + event.task_type + ':<br>' + event.summary + '&nbsp;&nbsp;' + realty_ref;
+              xhtml +=  '</div>';
+              xhtml +=  '</div>';
+              xhtml +=  '<div class="resizer nopep hidden" style="position: absolute; bottom: 0px; left: 46%; width: 24px;">';
+              xhtml +=   '<span class="glyphicon glyphicon-chevron-down"></span>';
+              xhtml +=  '</div>';
+              xhtml += '</div>';
+            }
           }
         }
-      }
-      $('.simple-calendar .events-container').append(xhtml);
+        $('.simple-calendar .events-container').append(xhtml);
 
-      $('a[data-action="realty-open"]').click(function (e) {
-        var realty_id = $(this).data('id');
-        openRealtyCard(realty_id);
-      });
-
-      $('[data-action="event-set-status"]').click(function (e){
-        var $event = $(this).closest('.event');
-        var task_id = $event.data('id');
-
-        var new_status = 'done';
-        if ($event.hasClass('event-done')) {
-          new_status = 'new';
-        }
-
-        $.ajax({
-          type: "POST",
-          url: "/api/task/update",
-          data: {
-            id: task_id,
-            status: new_status,
-          },
-        })
-        .done(function (data, textStatus, jqXHR) {
-          var $event = $('.simple-calendar .event[data-id="' + task_id + '"]');
-          if (new_status == 'done') {
-            $event.addClass('event-done');
-            $event.removeClass('event-new');
-          } else {
-            $event.removeClass('event-done');
-            $event.addClass('event-new');
-          }
-          toggleEventSelect($event);
-          Rplus.Functions.getTodaysTasksCount();
+        $('a[data-action="realty-open"]').click(function (e) {
+          var realty_id = $(this).data('id');
+          openRealtyCard(realty_id);
         });
-      });
 
-      var drag = false;
-      var resize = false;
-      var deselect = true;
+        $('[data-action="event-set-status"]').click(function (e){
+          var $event = $(this).closest('.event');
+          var task_id = $event.data('id');
 
-      var timer1 = null;
-      var timer2 = null;
+          var new_status = 'done';
+          if ($event.hasClass('event-done')) {
+            new_status = 'new';
+          }
 
-      $('.simple-calendar .event .resizer').pep({
-        allowDragEventPropagation: false,
-        deferPlacement: true,
-        shouldEase: false,
-        axis: 'y',
-        initiate: function (event, obj) {
+          $.ajax({
+            type: "POST",
+            url: "/api/task/update",
+            data: {
+              id: task_id,
+              status: new_status,
+            },
+          })
+          .done(function (data, textStatus, jqXHR) {
+            var $event = $('.simple-calendar .event[data-id="' + task_id + '"]');
+            if (new_status == 'done') {
+              $event.addClass('event-done');
+              $event.removeClass('event-new');
+            } else {
+              $event.removeClass('event-done');
+              $event.addClass('event-new');
+            }
+            toggleEventSelect($event);
+            Rplus.Functions.getTodaysTasksCount();
+          });
+        });
 
-        },
-        start: function (event, obj) {
+        var drag = false;
+        var resize = false;
+        var deselect = true;
 
-        },
-        drag: function (event, obj) {
-          resize = true;
-          var $this = obj.$el.closest('.event');
-          var h = obj.pos.y + 14 + 10;
-          $this.height(h);
+        var timer1 = null;
+        var timer2 = null;
 
-          var pos_y = $this.position().top;
-          var hour = Math.floor(pos_y / 100) + calendar_start_hour;
-          var min = Math.floor((pos_y % 100) * (60 / 100));
-          var start_time = (hour < 10 ? '0' : '') + hour + ':' + (min < 10 ? '0' : '') + min;
+        $('.simple-calendar .event .resizer').pep({
+          allowDragEventPropagation: false,
+          deferPlacement: true,
+          shouldEase: false,
+          axis: 'y',
+          initiate: function (event, obj) {
 
-          pos_y = $this.position().top + $this.height();
-          hour = Math.floor(pos_y / 100) + calendar_start_hour;
-          min = Math.floor((pos_y % 100) * (60 / 100));
-          var end_time = (hour < 10 ? '0' : '') + hour + ':' + (min < 10 ? '0' : '') + min;
+          },
+          start: function (event, obj) {
 
-          $this.find('.event-start-date').html(start_time + ' - ' + end_time);
+          },
+          drag: function (event, obj) {
+            resize = true;
+            var $this = obj.$el.closest('.event');
+            var h = obj.pos.y + 14 + 10;
+            $this.height(h);
 
-        },
-        stop: function (event, obj) {
-          var $this = obj.$el.closest('.event');
-          if (resize) {
-            resize = false;                
             var pos_y = $this.position().top;
             var hour = Math.floor(pos_y / 100) + calendar_start_hour;
             var min = Math.floor((pos_y % 100) * (60 / 100));
-            var time = (hour < 10 ? '0' : '') + hour + ':' + (min < 10 ? '0' : '') + min;
-            var start_date = moment($this.data('date') + ' ' + time);
+            var start_time = (hour < 10 ? '0' : '') + hour + ':' + (min < 10 ? '0' : '') + min;
 
             pos_y = $this.position().top + $this.height();
             hour = Math.floor(pos_y / 100) + calendar_start_hour;
             min = Math.floor((pos_y % 100) * (60 / 100));
-            time = (hour < 10 ? '0' : '') + hour + ':' + (min < 10 ? '0' : '') + min;
-            var end_date = moment($this.data('date') + ' ' + time);
-            $.ajax({
-              type: "POST",
-              url: "/api/task/update",
-              data: {
-                id: $this.data('id'),
-                start_date: start_date.format(),
-                end_date: end_date.format(),
-              },
-            })
-            .done(function (data, textStatus, jqXHR) {
-              listEvents();
-            })
-            .fail(function (jqXHR, textStatus, errorThrown) {
+            var end_time = (hour < 10 ? '0' : '') + hour + ':' + (min < 10 ? '0' : '') + min;
 
-            });
-          }
-        }
-      });
+            $this.find('.event-start-date').html(start_time + ' - ' + end_time);
 
-      var timer_dc = null;
-      var dbl_click = false;
-      $('.simple-calendar .event').pep({
-        allowDragEventPropagation: false,
-        constrainTo: 'parent',
-        shouldEase: false,
-        elementsWithInteraction: '.nopep',
-        initiate: function (event, obj) {
-          // mousedown || touchstart
-          if (obj.$el.hasClass('event-done') || !obj.$el.hasClass('event-selected')) {
-            obj.moveDisabled = true;
-          } else {
-            obj.moveDisabled = false;
-          }
-          // запустить таймер
-          timer1 = setTimeout(function(e){
-            if (!obj.$el.hasClass('event-selected')) {
-              toggleEventSelect(obj.$el);
+          },
+          stop: function (event, obj) {
+            var $this = obj.$el.closest('.event');
+            if (resize) {
+              resize = false;                
+              var pos_y = $this.position().top;
+              var hour = Math.floor(pos_y / 100) + calendar_start_hour;
+              var min = Math.floor((pos_y % 100) * (60 / 100));
+              var time = (hour < 10 ? '0' : '') + hour + ':' + (min < 10 ? '0' : '') + min;
+              var start_date = moment($this.data('date') + ' ' + time);
+
+              pos_y = $this.position().top + $this.height();
+              hour = Math.floor(pos_y / 100) + calendar_start_hour;
+              min = Math.floor((pos_y % 100) * (60 / 100));
+              time = (hour < 10 ? '0' : '') + hour + ':' + (min < 10 ? '0' : '') + min;
+              var end_date = moment($this.data('date') + ' ' + time);
+              $.ajax({
+                type: "POST",
+                url: "/api/task/update",
+                data: {
+                  id: $this.data('id'),
+                  start_date: start_date.format(),
+                  end_date: end_date.format(),
+                },
+              })
+              .done(function (data, textStatus, jqXHR) {
+                listEvents();
+              })
+              .fail(function (jqXHR, textStatus, errorThrown) {
+
+              });
             }
-          }, 300);
-          timer2 = setTimeout(function(e){
-            deselect = false;
-            openTaskCard(obj.$el.data('id'));
-          }, 600);
-          if (timer_dc) {
-            dbl_click = true;
-          } else {
-            timer_dc = setTimeout(function(e){
-              dbl_click = false;
-              timer_dc = null;
-            }, 300);
-          } 
-        },
-        start: function (event, obj) {
-          clearTimeout(timer1);
-          clearTimeout(timer2);
-          drag = true;
-        },
-        drag: function (event, obj) {
-          clearTimeout(timer1);
-          clearTimeout(timer2);          
-          var pos_y = obj.pos.y;
-          if (!pos_y) return;
-          var hour = Math.floor(pos_y / 100) + calendar_start_hour;
-          var min = Math.floor((pos_y % 100) * (60 / 100));
-          var time = (hour < 10 ? '0' : '') + hour + ':' + (min < 10 ? '0' : '') + min;
-          obj.$el.find('.event-start-date').html(time);
-
-          if (obj.$el.hasClass('event-selected')) {
-            //toggleEventSelect(obj.$el);
-            toggleEventMove(obj.$el);
           }
-        },
-        stop: function (event, obj) {
-          clearTimeout(timer1);
-          clearTimeout(timer2);
-          if (drag) {
-            drag = false;
-            var pos_y = obj.pos.y;
-            var pos_x = obj.pos.x;
+        });
 
+        var timer_dc = null;
+        var dbl_click = false;
+        $('.simple-calendar .event').pep({
+          allowDragEventPropagation: false,
+          constrainTo: 'parent',
+          shouldEase: false,
+          elementsWithInteraction: '.nopep',
+          initiate: function (event, obj) {
+            // mousedown || touchstart
+            if (obj.$el.hasClass('event-done') || !obj.$el.hasClass('event-selected')) {
+              obj.moveDisabled = true;
+            } else {
+              obj.moveDisabled = false;
+            }
+            // запустить таймер
+            timer1 = setTimeout(function(e){
+              if (!obj.$el.hasClass('event-selected')) {
+                toggleEventSelect(obj.$el);
+              }
+            }, 300);
+            timer2 = setTimeout(function(e){
+              deselect = false;
+              openTaskCard(obj.$el.data('id'));
+            }, 600);
+            if (timer_dc) {
+              dbl_click = true;
+            } else {
+              timer_dc = setTimeout(function(e){
+                dbl_click = false;
+                timer_dc = null;
+              }, 300);
+            } 
+          },
+          start: function (event, obj) {
+            clearTimeout(timer1);
+            clearTimeout(timer2);
+            drag = true;
+          },
+          drag: function (event, obj) {
+            clearTimeout(timer1);
+            clearTimeout(timer2);          
+            var pos_y = obj.pos.y;
+            if (!pos_y) return;
             var hour = Math.floor(pos_y / 100) + calendar_start_hour;
             var min = Math.floor((pos_y % 100) * (60 / 100));
             var time = (hour < 10 ? '0' : '') + hour + ':' + (min < 10 ? '0' : '') + min;
+            obj.$el.find('.event-start-date').html(time);
 
-            var table_width = $('.simple-calendar .body .cells').width();
-            var cell_width = table_width / calendar_days_count;
-
-            var old_column = obj.$el.data('column');
-            var column = Math.floor((pos_x + parseFloat(obj.$el.css('width')) / 2) / cell_width);
-            var add_days = column - old_column;
-
-            var task_id = obj.$el.data('id');
-            var start_date = moment(obj.$el.data('date') + ' ' + time);
-            start_date.add(add_days, 'days');
-            
-            pos_y = obj.$el.position().top + obj.$el.height();
-            hour = Math.floor(pos_y / 100) + calendar_start_hour;
-            min = Math.floor((pos_y % 100) * (60 / 100));
-            time = (hour < 10 ? '0' : '') + hour + ':' + (min < 10 ? '0' : '') + min;
-            var end_date = moment(obj.$el.data('date') + ' ' + time);
-            end_date.add(add_days, 'days');
-
-            $.ajax({
-              type: "POST",
-              url: "/api/task/update",
-              data: {
-                id: task_id,
-                start_date: start_date.format(),
-                end_date: end_date.format(),
-              },
-            })
-            .done(function (data, textStatus, jqXHR) {
-              Rplus.Functions.getTodaysTasksCount();
-              listEvents();
-            })
-            .fail(function (jqXHR, textStatus, errorThrown) {
-
-            });
-          } else {
-            if (dbl_click) {
-              openTaskCard(obj.$el.data('id'));
-            } else {
-              if (deselect) {
-                toggleEventSelect(obj.$el);
-              } else {
-                deselect = true;
-              }
+            if (obj.$el.hasClass('event-selected')) {
+              //toggleEventSelect(obj.$el);
+              toggleEventMove(obj.$el);
             }
+          },
+          stop: function (event, obj) {
             clearTimeout(timer1);
             clearTimeout(timer2);
-          }
-        },
-      });
+            if (drag) {
+              drag = false;
+              var pos_y = obj.pos.y;
+              var pos_x = obj.pos.x;
+
+              var hour = Math.floor(pos_y / 100) + calendar_start_hour;
+              var min = Math.floor((pos_y % 100) * (60 / 100));
+              var time = (hour < 10 ? '0' : '') + hour + ':' + (min < 10 ? '0' : '') + min;
+
+              var table_width = $('.simple-calendar .body .cells').width();
+              var cell_width = table_width / calendar_days_count;
+
+              var old_column = obj.$el.data('column');
+              var column = Math.floor((pos_x + parseFloat(obj.$el.css('width')) / 2) / cell_width);
+              var add_days = column - old_column;
+
+              var task_id = obj.$el.data('id');
+              var start_date = moment(obj.$el.data('date') + ' ' + time);
+              start_date.add(add_days, 'days');
+              
+              pos_y = obj.$el.position().top + obj.$el.height();
+              hour = Math.floor(pos_y / 100) + calendar_start_hour;
+              min = Math.floor((pos_y % 100) * (60 / 100));
+              time = (hour < 10 ? '0' : '') + hour + ':' + (min < 10 ? '0' : '') + min;
+              var end_date = moment(obj.$el.data('date') + ' ' + time);
+              end_date.add(add_days, 'days');
+
+              $.ajax({
+                type: "POST",
+                url: "/api/task/update",
+                data: {
+                  id: task_id,
+                  start_date: start_date.format(),
+                  end_date: end_date.format(),
+                },
+              })
+              .done(function (data, textStatus, jqXHR) {
+                Rplus.Functions.getTodaysTasksCount();
+                listEvents();
+              })
+              .fail(function (jqXHR, textStatus, errorThrown) {
+
+              });
+            } else {
+              if (dbl_click) {
+                openTaskCard(obj.$el.data('id'));
+              } else {
+                if (deselect) {
+                  toggleEventSelect(obj.$el);
+                } else {
+                  deselect = true;
+                }
+              }
+              clearTimeout(timer1);
+              clearTimeout(timer2);
+            }
+          },
+        });
+      }
     }
 
     function listEvents() {
@@ -896,14 +1041,20 @@ a:focus {
     }
 
     function drawCurrentTime() {
-      var now = moment();
-      var offset_y = (now.hour() - calendar_start_hour) * 100;
-      offset_y += (now.minute()) * (100 / 60);
-      if ($('.simple-calendar .time-marker').hasClass('hidden')) {
-        $('.simple-calendar .time-marker').removeClass('hidden');
+      if (calendar_days_count == 30) {
+        if (!$('.simple-calendar .time-marker').hasClass('hidden')) {
+          $('.simple-calendar .time-marker').addClass('hidden');
+        }
+      } else {
+        var now = moment();
+        var offset_y = (now.hour() - calendar_start_hour) * 100;
+        offset_y += (now.minute()) * (100 / 60);
+        if ($('.simple-calendar .time-marker').hasClass('hidden')) {
+          $('.simple-calendar .time-marker').removeClass('hidden');
+        }
+        $('.simple-calendar .time-marker').css('top', offset_y);
+        $('.simple-calendar .time-display').text(now.format('HH:mm'));
       }
-      $('.simple-calendar .time-marker').css('top', offset_y);
-      $('.simple-calendar .time-display').text(now.format('HH:mm'));
     }
 
     function calendarSetStartDay() {
@@ -921,6 +1072,8 @@ a:focus {
         $('[data-filter="days_count"] span[role="display"]').text(' день');
         $('.simple-calendar > .caption > .year').addClass('hidden');
         // показать календарь
+        $('.simple-calendar > .body').removeClass('hidden');
+        $('.simple-calendar > .month-body').addClass('hidden');
         $('.simple-calendar-lbar').removeClass('hidden');
         $('.simple-calendar').addClass('col-lg-9');
         $('.simple-calendar').addClass('col-md-9');
@@ -931,6 +1084,8 @@ a:focus {
         $('[data-filter="days_count"] span[role="display"]').text(' два дня');
         $('.simple-calendar > .caption > .year').addClass('hidden');
         // показать календарь
+        $('.simple-calendar > .body').removeClass('hidden');
+        $('.simple-calendar > .month-body').addClass('hidden');
         $('.simple-calendar-lbar').removeClass('hidden');
         $('.simple-calendar').addClass('col-lg-9');
         $('.simple-calendar').addClass('col-md-9');
@@ -941,6 +1096,8 @@ a:focus {
         $('[data-filter="days_count"] span[role="display"]').text(' неделя');
         $('.simple-calendar > .caption > .year').removeClass('hidden');
         //
+        $('.simple-calendar > .body').removeClass('hidden');
+        $('.simple-calendar > .month-body').addClass('hidden');
         $('.simple-calendar-lbar').addClass('hidden');
         $('.simple-calendar').removeClass('col-lg-9');
         $('.simple-calendar').removeClass('col-md-9');
@@ -948,12 +1105,25 @@ a:focus {
         $('.simple-calendar').addClass('col-md-12');
         calendar_start_date = calendar_start_date.startOf('week');
       } else if (calendar_days_count == '30') {
-
+        $('[data-filter="days_count"] span[role="display"]').text(' месяц');
+        $('.simple-calendar > .caption > .year').removeClass('hidden');
+        //
+        $('.simple-calendar > .body').addClass('hidden');
+        $('.simple-calendar > .month-body').removeClass('hidden');
+        $('.simple-calendar-lbar').addClass('hidden');
+        $('.simple-calendar').removeClass('col-lg-9');
+        $('.simple-calendar').removeClass('col-md-9');
+        $('.simple-calendar').addClass('col-lg-12');
+        $('.simple-calendar').addClass('col-md-12');
+        calendar_start_date = calendar_start_date.startOf('month');
       }
       calendarSetStartDay();
     }
 
     function drawPlanner() {
+
+      console.log(calendar_start_date.format());
+
       clearEvents();
 
       drawCalendarCaption(calendar_start_date);
@@ -964,8 +1134,10 @@ a:focus {
     }
 
     $('[data-action="day-minus"]').click(function() {
-      if (calendar_days_count == 7) {
-        calendar_start_date.add(-7, 'days');
+      if (calendar_days_count == 30) {
+        calendar_start_date.add(-1, 'month');
+      } else if (calendar_days_count == 7) {
+        calendar_start_date.add(-1, 'week');
       } else {
         calendar_start_date.add(-1, 'days');
       }
@@ -974,8 +1146,10 @@ a:focus {
     });
 
     $('[data-action="day-plus"]').click(function() {
-      if (calendar_days_count == 7) {
-        calendar_start_date.add(7, 'days');
+      if (calendar_days_count == 30) {
+        calendar_start_date.add(1, 'month');
+      } else if (calendar_days_count == 7) {
+        calendar_start_date.add(1, 'week');
       } else {
         calendar_start_date.add(1, 'days');
       }
@@ -1227,7 +1401,6 @@ a:focus {
             if (val == 'yes') {
               window.open(google_auth_uri, "", "width=500, height=300");
             }
-            
           } else {
 
           }
@@ -1406,11 +1579,17 @@ a:focus {
         </div>
         <span class="year">
         </span>
-      </div>    
+      </div>
       <div class="header">
         <table class="" style="width:100%">
           <tbody>
           </tbody>
+        </table>
+      </div>
+      <div class="month-body">
+        <table class="table table-bordered">
+          <tbody>
+          </tbody>        
         </table>
       </div>
       <div class="body">
@@ -1498,7 +1677,7 @@ a:focus {
             <li><a href="#" data-val="1">день </a></li>
             <li><a href="#" data-val="2">два дня </a></li>
             <li><a href="#" data-val="7">неделя </a></li>
-            <!--<li><a href="#" data-val="30">месяц </a></li>-->
+            <li><a href="#" data-val="30">месяц </a></li>
           </ul>
         </li>
 
