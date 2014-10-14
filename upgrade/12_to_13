@@ -94,7 +94,7 @@ if (1) {
             write => 1,
             subscribe => 1,
         },
-    $config->{roles}->{agent}->{dispatcher} = {
+    $config->{roles}->{dispatcher}->{clients} = {
             read => {others => 1, nobody => 1},
             write => 1,
             subscribe => 1,

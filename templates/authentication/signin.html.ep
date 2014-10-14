@@ -38,22 +38,43 @@
             <fieldset>
               <legend><%= loc 'Please Sign In' %></legend>
               <div id="message" class="alert alert-danger alert-sm hidden"><%= ucfloc 'invalid login or password' %></div>
-              <div class="form-group">
-                <input type="text" class="form-control" name="login" placeholder="<%= ucfloc 'login' %>" required autofocus>
-              </div>
-              <div class="form-group">
-                <input type="password" class="form-control" name="password" placeholder="<%= ucfloc 'password' %>">
-              </div>
-              <div class="checkbox">
-                <label>
-                  <input type="checkbox" name="remember_me"> <%= ucfloc 'remember me' %>
-                </label>
-              </div>
+              % if (account_type() ne 'demo') {
+                <div class="form-group">
+                  <input type="text" class="form-control" name="login" placeholder="<%= ucfloc 'login' %>" required autofocus>
+                </div>
+                <div class="form-group">
+                  <input type="password" class="form-control" name="password" placeholder="<%= ucfloc 'password' %>">
+                </div>
+                <div class="checkbox">
+                  <label>
+                    <input type="checkbox" name="remember_me"> <%= ucfloc 'remember me' %>
+                  </label>
+                </div>
+              % } else {
+                <div class="form-group">
+                  <input type="text" class="form-control" name="login" value="manager"  placeholder="<%= ucfloc 'login' %>" required>
+                </div>
+                <div class="form-group">
+                  <input type="password" class="form-control" name="password" value="12345"  placeholder="<%= ucfloc 'password' %>">
+                </div>
+                <div class="checkbox">
+                  <label>
+                    <input type="checkbox" name="remember_me"> <%= ucfloc 'remember me' %>
+                  </label>
+                </div>
+              % }
               <button type="submit" class="btn btn-primary" data-loading-text="<%= ucfloc 'loading...' %>"><%= ucfloc 'sign in' %></button>
             </fieldset>
           </form>
         </div>
       </div>
+      % if (account_type() eq 'demo') {
+      <div class="jumbotron">
+        <p style="font-weight: 400;">Добро пожаловать в демонстрационную версию RplusMgmt!</p>
+        <p style="font-size: 18px;">Стоимость рабочей версии составляет 40 рублей в сутки, для приобретения подписки зарегистрируйтесь на сайте <a href="http://rplusmgmt.com" target="_blank">rplusmgmt.com</a></p>
+        <p style="font-size: 18px;">По всем вопросам пишите: <a href="mailto:info@rplusmgmt.com">info@rplusmgmt.com</a></p>
+      </div>
+      % }
     </div> <!-- /container -->
 
     <!-- JavaScript -->

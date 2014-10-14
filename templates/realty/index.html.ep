@@ -515,7 +515,7 @@
         {text: '<span class="glyphicon glyphicon-export"></span>  <%= ucfloc q{advertisement} %>', element_id: 'el_export', subMenu: [
           % my $loc_id = $self->session('user')->{location_id};      # костыль!
           % for my $x (@{Rplus::Model::Media::Manager->get_objects(query => [type => 'export', delete_date => undef])}) {
-          % next if $loc_id == 2 && ($x->id == 2 || $x->id == 3);
+          % next if $loc_id == 2 && ($x->id == 2 || $x->id == 3) || $loc_id == 3 && ($x->id == 2 || $x->id == 3);
             {text: '<span class="export-check export-check<%= $x->id %> glyphicon glyphicon-ok"></span>&nbsp&nbsp<%= $x->name %>', data_action: 'realty-set-export', data_val: '<%= $x->id %>', },
           % }
         ]},

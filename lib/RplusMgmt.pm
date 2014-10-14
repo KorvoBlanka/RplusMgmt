@@ -72,7 +72,7 @@ sub startup {
     $self->helper(session_check => sub {
         my ($self, $login) = @_;
 
-        return 1 if 0;  # if dev
+        return 1 if $self->config->{account_type} eq 'demo' || $self->config->{account_type} eq 'dev';
 
         my $acc_data = $self->get_acc_data();
         my $max_users = $acc_data->{user_count} * 1;
@@ -286,6 +286,12 @@ sub startup {
         my $hidden_navs = $self->config->{force_hide_nav}->{$self->stash('user')->{role}} || [];
         my %hidden_navs_h = (map { $_ => 1 } @$hidden_navs);
         return $hidden_navs_h{$nav};
+    });
+
+    # Hidden nav
+    $self->helper(account_type => sub {
+        my $account_type = $self->config->{account_type} || '';
+        return $account_type;
     });
 
     # Localization

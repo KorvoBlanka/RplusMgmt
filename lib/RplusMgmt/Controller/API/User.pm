@@ -143,6 +143,8 @@ sub save {
     my $self = shift;
 
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(users => 'manage');
+    return $self->render(json => {error => 'Forbidden'}, status => 403) if ($self->account_type() eq 'demo');
+        
 
     # Retrieve user
     my $user;
@@ -260,6 +262,7 @@ sub delete {
     my $self = shift;
 
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(users => 'manage');
+    return $self->render(json => {error => 'Forbidden'}, status => 403) if ($self->account_type() eq 'demo');
 
     my $id = $self->param('id');
 
