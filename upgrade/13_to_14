@@ -16,4 +16,4 @@ if (1) {
     $dbh->do(q{UPDATE public.subscription_realty SET offered = TRUE WHERE state_code = 'offered';});
 }
 
-exit 0;
+exit 1;
