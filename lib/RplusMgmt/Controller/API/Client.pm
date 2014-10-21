@@ -206,7 +206,6 @@ sub get {
                 client_id => $client->id,
                 delete_date => undef,                
                 #'!end_date' => undef,
-                'subscription_realty.delete_date' => undef,
             ],
             require_objects => ['client'],
             with_objects => ['subscription_realty'],

@@ -47,7 +47,7 @@ sub run {
         );
         my $sub_new_count = 0;
         while (my $subscr = $subscription_iter->next) {
-            my $realty_count = Rplus::Model::SubscriptionRealty::Manager->get_objects_count(query => [subscription_id => $subscr->id, state_code => 'offered', delete_date => undef]);
+            my $realty_count = Rplus::Model::SubscriptionRealty::Manager->get_objects_count(query => [subscription_id => $subscr->id, offered => 1]);
             next if ($subscr->realty_limit > 0 && $realty_count >= $subscr->realty_limit);      # Check realty limit
 
             for my $q (@{$subscr->queries}) {
@@ -55,15 +55,29 @@ sub run {
                 # Skip FTS data
                 my @query = map { ref($_) eq 'SCALAR' && $$_ =~ /^t1\.fts/ ? () : $_ } (Rplus::Util::Query->parse($q, $c));
 
-                my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
+                my $t_count = Rplus::Model::Realty::Manager->get_objects_count(
                     query => [
                         offer_type_code => $subscr->offer_type_code,
                         state_code => ['work', 'raw'],
+                        [\"t1.id NOT IN (SELECT SR.realty_id FROM subscription_realty SR WHERE SR.subscription_id = ? AND SR.state_code != 'new')" => $subscr->id],
+                        delete_date => undef,
+                        @query
+                    ],
+                    with_objects => ['address_object', 'agent', 'type', 'sublandmark'],
+                );
+                if ($t_count > 0) {
+                    $sub_new_count ++;
+                }
+
+                my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
+                    query => [
+                        offer_type_code => $subscr->offer_type_code,
+                        state_code => ['work'],
                         or => [
                             state_change_date => {gt => $subscr->add_date},
                             price_change_date => {gt => ($subscr->last_check_date || $subscr->add_date)},
                         ],
-                        [\"t1.id NOT IN (SELECT SR.realty_id FROM subscription_realty SR WHERE SR.subscription_id = ? AND SR.state_code = 'offered' AND SR.delete_date IS NULL)" => $subscr->id],
+                        [\"t1.id NOT IN (SELECT SR.realty_id FROM subscription_realty SR WHERE SR.subscription_id = ? AND SR.offered = TRUE)" => $subscr->id],
                         delete_date => undef,
                         @query
                     ],
@@ -72,13 +86,11 @@ sub run {
                 my $found = 0;
                 while (my $realty = $realty_iter->next) {
                     $found++;
-                    next if $realty->state_code ne 'work';
-
                     my $sr = Rplus::Model::SubscriptionRealty::Manager->get_objects(query => [subscription_id => $subscr->id, realty_id => $realty->id])->[0];
                     if (!$sr) {
                       $sr = Rplus::Model::SubscriptionRealty->new(subscription_id => $subscr->id, realty_id => $realty->id);
                     }
-                    $sr->state_code('offered');
+                    $sr->offered(1);
                     $sr->save;
 
                     # Prepare SMS for client
@@ -117,9 +129,6 @@ sub run {
                         my $sms_text = 'Подобрано: '.join(', ', @parts);
                         Rplus::Model::SmsMessage->new(phone_num => $realty->agent->phone_num, text => $sms_text)->save;
                     }
-                }
-                if ($found > 0) {
-                    $sub_new_count ++;
                 }
             }
             $subscr->last_check_date('now()');

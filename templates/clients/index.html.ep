@@ -619,13 +619,19 @@
       var photo = r.main_photo_thumbnail ? '<a href="#" data-action="photos-show"><span class="glyphicon glyphicon-camera"></span></a>' : '';
       var state_class = '';
       var label = '';
-      if (r.sr_state_code && r.sr_state_code == 'new') {
+
+      if (r.sr_offered == '1') {
+        label = '<span style="border-radius: 0px; font-size: 12px;" class="label label-warning">SMS</span>';
+      } else if (r.sr_state_code && r.sr_state_code == 'new') {
         label = '<span style="border-radius: 0px; font-size: 12px;" class="label label-danger">New</span>';
-      } else if (r.sr_state_code && r.sr_state_code == 'shown') {
+      }
+
+      if (r.sr_state_code && r.sr_state_code == 'shown') {
         state_class = 'shown';
       } else if (r.sr_state_code && r.sr_state_code == 'attention') {
         state_class = 'deleted';
       }
+
 
       var xhtml = '<tr class="' + state_class + '" data-id="' + r.id + '" data-page="' + page + '" data-lat="' + r.latitude + '" data-lng="' + r.longitude + '">';
       xhtml += '<td style="width: 28px;">' + tag + '</td>';

@@ -53,6 +53,7 @@ my $_serialize = sub {
             main_photo_thumbnail => undef,
             mediator_company => ($realty->mediator_company && $realty->agent_id == 10000) ? $realty->mediator_company->name : '',
             sr_state_code => $realty->{sr_state_code},
+            sr_offered => $realty->{sr_offered},
         };
 
         if($realty->color_tags) {
@@ -169,7 +170,6 @@ sub list {
             ($client_id ? (client_id => $client_id) : ()),
             ($phone_num ? ('client.phone_num' => $phone_num) : ()),
             ($skip_null_end_date ? ('!end_date' => undef) : ()),
-            'subscription_realty.delete_date' => undef,
         ],
         require_objects => ['client'],
         with_objects => ['subscription_realty'],
@@ -228,7 +228,7 @@ sub realty_set_state {
     my $subscription_id = $self->param('subscription_id');
     my $state_code = $self->param('state_code');
 
-    my $realty_record = Rplus::Model::SubscriptionRealty::Manager->get_objects(query => [realty_id => $realty_id, subscription_id => $subscription_id, delete_date => undef])->[0];
+    my $realty_record = Rplus::Model::SubscriptionRealty::Manager->get_objects(query => [realty_id => $realty_id, subscription_id => $subscription_id])->[0];
 
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $realty_record;
 
@@ -243,15 +243,13 @@ sub realty_clear_list {
     my $subscription_id = $self->param('subscription_id');
     
     my $subscription = Rplus::Model::Subscription::Manager->get_objects(query => [id => $subscription_id, delete_date => undef])->[0];
+    return $self->render(json => {error => 'Not Found'}, status => 404) unless $subscription;
 
-    my $num_rows_updated = Rplus::Model::SubscriptionRealty::Manager->update_objects(
-        set => {delete_date => \'now()'},
+    Rplus::Model::SubscriptionRealty::Manager->delete_objects(
         where => [
             subscription_id => $subscription_id,
-            delete_date => undef
         ],
     );
-    return $self->render(json => {error => 'Not Found'}, status => 404) unless $num_rows_updated;
 
     return $self->render(json => {status => 'success'});
 }
@@ -267,6 +265,7 @@ sub realty_list {
     my $color_tag_id = $self->param("color_tag_id") || 'any';
     my $realty_state_code = $self->param("state_code") || 'any';
     my $sr_state_code = $self->param("sr_state_code") || 'any';
+    my $sr_offered = $self->param("sr_offered") || 'any';
 
     my $update_subscription_realty = $self->param("update_realty") || '0';
 
@@ -281,6 +280,13 @@ sub realty_list {
         if ($sr_state_code ne 'any') {
             push @query, 'state_code' => $sr_state_code;
         }
+        if ($sr_offered ne 'any') {
+            if ($sr_offered eq '1' || $sr_offered eq 'true' || $sr_offered eq 'TRUE') {
+                push @query, 'offered' => 1;
+            } else {
+                push @query, 'offered' => 0;
+            }
+        }        
         if ($agent_id ne 'any') {
             if ($agent_id eq 'all' && $self->has_permission(realty => 'read')->{others}) {
                 push @query, and => ['!realty.agent_id' => undef, '!realty.agent_id' => 10000];
@@ -307,10 +313,9 @@ sub realty_list {
     };
 
     my $realty_iter = Rplus::Model::SubscriptionRealty::Manager->get_objects_iterator(
-        select => ['subscription_realty.id', 'subscription_realty.state_code', 'realty.*'],
+        select => ['subscription_realty.id', 'subscription_realty.state_code', 'subscription_realty.offered', 'realty.*'],
         query => [
             @query,
-            delete_date => undef,
             '!state_code' => 'del',
         ],
         require_objects => ['realty'],
@@ -323,7 +328,6 @@ sub realty_list {
     my $count = Rplus::Model::SubscriptionRealty::Manager->get_objects_count(
         query => [
             @query,
-            delete_date => undef,
             '!state_code' => 'del',
         ],
         require_objects => ['realty'],
@@ -334,6 +338,7 @@ sub realty_list {
     my $realty_objs = [];
     while (my $realty = $realty_iter->next) {
         $realty->realty->{sr_state_code} = $realty->state_code;
+        $realty->realty->{sr_offered} = $realty->offered;
         push @{$realty_objs}, $realty->realty;
         if ($realty->state_code eq 'new') {
             $realty->state_code('old');
@@ -362,7 +367,7 @@ sub realty_update {
                   state_code => 'suspended',
                   state_code => 'raw',
                 ],
-                [\"t1.id NOT IN (SELECT SR.realty_id FROM subscription_realty SR WHERE SR.subscription_id = ? AND SR.delete_date IS NULL)" => $subscription->id],
+                [\"t1.id NOT IN (SELECT SR.realty_id FROM subscription_realty SR WHERE SR.subscription_id = ?)" => $subscription->id],
                 delete_date => undef,
                 @query
             ],
@@ -389,18 +394,16 @@ sub update {
 
     my $id = $self->param('id');
     my $subscription = Rplus::Model::Subscription::Manager->get_objects(query => [id => $id, '!end_date' => undef, delete_date => undef])->[0];
-
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $subscription;
 
     my $queries = Mojo::Collection->new($self->param('queries[]'))->map(sub { trim $_ })->compact->uniq;
     $subscription->queries($queries);
+    $subscription->add_date('now()');
     $subscription->save(changes_only => 1);
 
-    my $num_rows_updated = Rplus::Model::SubscriptionRealty::Manager->update_objects(
-        set => {delete_date => \'now()'},
+    Rplus::Model::SubscriptionRealty::Manager->delete_objects(
         where => [
             subscription_id => $subscription->id,
-            delete_date => undef,
         ],
     );
 
@@ -500,7 +503,7 @@ sub save {
             with_objects => ['address_object', 'agent', 'type', 'sublandmark'],
         )->[0];
         if ($realty) {
-            Rplus::Model::SubscriptionRealty->new(subscription_id => $subscription->id, realty_id => $realty->id, state_code => 'offered')->save;
+            Rplus::Model::SubscriptionRealty->new(subscription_id => $subscription->id, realty_id => $realty->id, offered => 'true')->save;
 
             # Prepare SMS for client
             if ($client->phone_num =~ /^9\d{9}$/) {

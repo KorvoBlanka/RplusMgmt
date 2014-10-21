@@ -13,8 +13,8 @@ __PACKAGE__->meta->setup(
         realty_id       => { type => 'integer', not_null => 1, remarks => 'Объект недвижимости' },
         metadata        => { type => 'scalar', default => '{}', not_null => 1, remarks => 'Метаданные' },
         add_date        => { type => 'timestamp with time zone', default => 'now()', not_null => 1, remarks => 'Дата/время добавления' },
-        delete_date     => { type => 'timestamp with time zone', remarks => 'Дата/время удаления' },
         state_code      => { type => 'varchar', default => 'new', not_null => 1 },
+        offered         => { type => 'boolean', default => 'false', not_null => 1 },
     ],
 
     primary_key_columns => [ 'id' ],
@@ -38,7 +38,7 @@ __PACKAGE__->meta->setup(
             column_map => { id => 'realty_id' },
             type       => 'one to many',
         },
-    ],
+    ],    
 );
 
 1;
