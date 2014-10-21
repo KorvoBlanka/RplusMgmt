@@ -380,16 +380,16 @@
         supressAjaxIndicator(1);
         $.ajax({
           type: "POST",
-          url: "/api/client/get_new_count",
+          url: "/api/client/get_count",
           data: {offer_type_code: Rplus.Variables['User'].offer_mode},
           complete: function () {}
         })
           .done(function (data, textStatus, jqXHR) {
             if (data.status == 'success') {
-              if (data.new_count == 0) {              
+              if (data.clients_count == 0) {              
                 $('#client-count-notifier').addClass('hidden');
               } else {
-                $('#client-count-notifier').html(data.new_count);
+                $('#client-count-notifier').html(data.clients_count);
                 $('#client-count-notifier').removeClass('hidden');
               }
             }

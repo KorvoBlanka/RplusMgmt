@@ -403,14 +403,20 @@ sub delete {
 
     my $id = $self->param('id');
 
-    # Delete client
-    my $num_rows_updated = Rplus::Model::Client::Manager->update_objects(
+    # Удалим подписки
+    my $num_rows_updated = Rplus::Model::Subscription::Manager->update_objects(
+        set => {delete_date => \'now()'},
+        where => [client_id => $id, delete_date => undef],        
+    );
+
+    # Удалим клиента
+    $num_rows_updated = Rplus::Model::Client::Manager->update_objects(
         set => {delete_date => \'now()'},
         where => [id => $id, delete_date => undef],
     );
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $num_rows_updated;
 
-    # I think, it's unnecessary to delete subscription realty & client owned realty
+    # Не удаляем недвижимость на этой подписке?
 
     return $self->render(json => {status => 'success'});
 }
@@ -567,15 +573,15 @@ sub subscribe {
     return $self->render(json => {status => 'success'});
 }
 
-sub get_new_count {
+sub get_count {
     my $self = shift;
 
     my $offer_type_code = $self->param('offer_type_code') || 'none';
 
-    my $new_count = 0;
+    my $clients_count = 0;
 
     my @query;
-    if ($self->stash('user')->{role} ne 'manager') {
+    if ($self->stash('user') && $self->stash('user')->{role} ne 'manager') {
         push @query, agent_id => $self->stash('user')->{id};
     }
     my $clients_iter = Rplus::Model::Client::Manager->get_objects_iterator(
@@ -588,75 +594,16 @@ sub get_new_count {
             delete_date => undef,
         ],
         sort_by => 'change_date desc',
-        limit => 99,
     );
 
     while (my $client = $clients_iter->next) {
-        my $subscription_iter = Rplus::Model::Subscription::Manager->get_objects_iterator(
-            query => [
-                client_id => $client->id,
-                offer_type_code => $offer_type_code,
-                delete_date => undef,
-                #end_date => {gt => \'now()'},
-            ],
-        );
-        my $sub_new_count = 0;
-        while (my $subscription = $subscription_iter->next) {
-            #realty_update($self, $subscription->id);
-            $sub_new_count += Rplus::Model::SubscriptionRealty::Manager->get_objects_count(
-                query => [
-                    subscription_id => $subscription->id,
-                    state_code => 'new',
-                    delete_date => undef,
-                ],
-            );
-        }
-        if ($sub_new_count > 0) {
-            $new_count ++;
-        }        
-    }
-
-    return $self->render(json => {status => 'success', new_count => $new_count});
-}
-
-sub realty_update {
-    my ($self, $subscription_id) = @_;
-    my $subscription = Rplus::Model::Subscription::Manager->get_objects(query => [id => $subscription_id, delete_date => undef])->[0];
-
-    for my $q (@{$subscription->queries}) {
-        # Skip FTS data
-        my @query = map { ref($_) eq 'SCALAR' && $$_ =~ /^t1\.fts/ ? () : $_ } (Rplus::Util::Query->parse($q, $self));
-
-        my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
-            query => [
-                offer_type_code => $subscription->offer_type_code,
-                or => [
-                  state_code => 'work',
-                  state_code => 'suspended',
-                  state_code => 'raw',
-                ],
-                #or => [
-                #    state_change_date => {gt => $subscription->add_date},
-                #    price_change_date => {gt => ($subscription->last_check_date || $subscription->add_date)},
-                #],
-                [\"t1.id NOT IN (SELECT SR.realty_id FROM subscription_realty SR WHERE SR.subscription_id = ? AND SR.delete_date IS NULL)" => $subscription->id],
-                delete_date => undef,
-                @query
-            ],
-        );
-
-        my $values_str = '';
-        my $sid = $subscription->id;
-        while (my $realty = $realty_iter->next) {
-            #Rplus::Model::SubscriptionRealty->new(subscription_id => $subscription->id, realty_id => $realty->id)->save;
-            my $realty_id = $realty->id; 
-            $values_str .= "($sid, $realty_id),";
-        }
-        if (length $values_str > 0) {
-            chop $values_str;
-            Rplus::DB->new_or_cached->dbh->do("INSERT INTO subscription_realty (subscription_id, realty_id) VALUES $values_str;");
+        my $meta = decode_json $client->{metadata};
+        if ($meta->{subscription_with_new_realty} > 0) {
+            $clients_count ++;
         }
     }
+
+    return $self->render(json => {status => 'success', clients_count => $clients_count});
 }
 
 1;

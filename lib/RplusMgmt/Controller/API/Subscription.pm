@@ -362,10 +362,6 @@ sub realty_update {
                   state_code => 'suspended',
                   state_code => 'raw',
                 ],
-                #or => [
-                #    state_change_date => {gt => $subscription->add_date},
-                #    price_change_date => {gt => ($subscription->last_check_date || $subscription->add_date)},
-                #],
                 [\"t1.id NOT IN (SELECT SR.realty_id FROM subscription_realty SR WHERE SR.subscription_id = ? AND SR.delete_date IS NULL)" => $subscription->id],
                 delete_date => undef,
                 @query
@@ -409,7 +405,6 @@ sub update {
     );
 
     realty_update($self, $subscription->id);
-
     return $self->render(json => {status => 'success', id => $subscription->id});
 }
 
