@@ -1,0 +1,19 @@
+#!/usr/bin/env perl
+
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+
+use Rplus::Modern;
+
+use Rplus::DB;
+
+my $dbh = Rplus::DB->new_or_cached->dbh;
+
+# Database scruct changes
+if (1) {
+    $dbh->do(q{ALTER TABLE public.subscription_realty ADD COLUMN offered BOOL NOT NULL DEFAULT FALSE;});
+    $dbh->do(q{ALTER TABLE public.subscription_realty DROP COLUMN delete_date;});
+    $dbh->do(q{UPDATE public.subscription_realty SET offered = TRUE WHERE state_code = 'offered';});
+}
+
+exit 0;
