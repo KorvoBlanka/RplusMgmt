@@ -302,6 +302,8 @@ sub realty_list {
         }
         if ($state_code ne 'any') {
             push @query, 'realty.state_code' => $state_code;
+        } else {
+            push @query, '!realty.state_code' => 'deleted';
         }
     }
 
@@ -320,7 +322,7 @@ sub realty_list {
         ],
         require_objects => ['realty'],
         with_objects => ['color_tag'],
-        sort_by => 'subscription_realty.state_code ASC, realty.last_seen_date DESC',
+        sort_by => 'subscription_realty.state_code ASC',
         page => $page,
         per_page => $per_page,
     );
@@ -362,11 +364,7 @@ sub realty_update {
         my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
             query => [
                 offer_type_code => $subscription->offer_type_code,
-                or => [
-                  state_code => 'work',
-                  state_code => 'suspended',
-                  state_code => 'raw',
-                ],
+                state_code => ['work', 'raw', 'suspended'],
                 [\"t1.id NOT IN (SELECT SR.realty_id FROM subscription_realty SR WHERE SR.subscription_id = ?)" => $subscription->id],
                 delete_date => undef,
                 @query
@@ -401,14 +399,14 @@ sub update {
     $subscription->add_date('now()');
     $subscription->save(changes_only => 1);
 
-    Rplus::Model::SubscriptionRealty::Manager->delete_objects(
+    my $num_del = Rplus::Model::SubscriptionRealty::Manager->delete_objects(
         where => [
             subscription_id => $subscription->id,
         ],
     );
-
     realty_update($self, $subscription->id);
-    return $self->render(json => {status => 'success', id => $subscription->id});
+
+    return $self->render(json => {status => 'success', id => $subscription->id, del => $num_del});
 }
 
 sub save {

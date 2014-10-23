@@ -1524,7 +1524,7 @@
             }
             saved = true;
           },
-        }).createWithSubscription(q, offerTypeCode, realtyIds);
+        }).createWithSubscription(q, offerTypeCode, realtyIds, '<%= $self->stash('user')->{id} %>');
       });
       
       $('[data-action="client-delete"]').click(function (e) {

@@ -57,11 +57,11 @@ sub run {
 
                 my $t_count = Rplus::Model::Realty::Manager->get_objects_count(
                     query => [
+                        @query,
                         offer_type_code => $subscr->offer_type_code,
-                        state_code => ['work', 'raw'],
-                        [\"t1.id NOT IN (SELECT SR.realty_id FROM subscription_realty SR WHERE SR.subscription_id = ? AND SR.state_code != 'new')" => $subscr->id],
                         delete_date => undef,
-                        @query
+                        #state_code => ['work', 'raw', 'suspended'],
+                        [\"t1.id NOT IN (SELECT SR.realty_id FROM subscription_realty SR WHERE SR.subscription_id = ? AND SR.state_code != 'new')" => $subscr->id],
                     ],
                     with_objects => ['address_object', 'agent', 'type', 'sublandmark'],
                 );

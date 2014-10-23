@@ -161,6 +161,15 @@ sub save {
     return $self->render(json => {status => 'success', num_realty_deleted => $num_realty_deleted, reload_company_list => $reload_company_list});
 }
 
+sub get_obj_count {
+    my $self = shift;
+    my $id = $self->param('id');
+    my $mediator = Rplus::Model::Mediator::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
+    my $realty_count = Rplus::Model::Realty::Manager->get_objects_count(query => [delete_date => undef, \("owner_phones && '{".$mediator->phone_num."}'")]);
+
+    return $self->render(json => {count => $realty_count, status => 'success'});
+}
+
 sub delete {
     my $self = shift;
 
@@ -168,8 +177,18 @@ sub delete {
 
     my $id = $self->param('id');
 
+    my $cant_delete = 0;
     my $mediator = Rplus::Model::Mediator::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
     my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(query => [delete_date => undef, \("owner_phones && '{".$mediator->phone_num."}'")]);
+    while (my $realty = $realty_iter->next) {
+        if (scalar $realty->owner_phones > 1) {
+            $cant_delete = 1;
+            last;
+        }
+    }
+    return $self->render(json => {error => 'Forbidden', description => 'Есть объекты недвижимости с таким телефоном'}) if $cant_delete;
+
+    $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(query => [delete_date => undef, \("owner_phones && '{".$mediator->phone_num."}'")]);
     while (my $realty = $realty_iter->next) {
         $realty->agent_id(undef);
         $realty->mediator_company_id(undef);

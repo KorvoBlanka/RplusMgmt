@@ -62,8 +62,8 @@ __PACKAGE__->meta->setup(
         metadata            => { type => 'scalar', default => '{}', not_null => 1, remarks => 'Метаданные' },
         fts                 => { type => 'scalar', remarks => 'tsvector описания' },
         last_seen_date      => { type => 'timestamp with time zone', default => 'now()', not_null => 1 },
-        mediator_company_id => { type => 'integer', remarks => 'id посредника, null - частный объект' },
         assign_date         => { type => 'timestamp with time zone', remarks => 'дата-время назначения агента на объект' },
+        mediator_company_id => { type => 'integer' },
     ],
 
     primary_key_columns => [ 'id' ],

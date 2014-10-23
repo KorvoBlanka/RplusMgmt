@@ -884,7 +884,7 @@
             $('#sfPhoneNum').val(client.phone_num);
             card.close();
           },
-        }).findOrCreate(phoneNum);
+        }).findOrCreate(phoneNum, null);
       });
 
       var height = $(window).height() - $('#searchTable').get(0).getBoundingClientRect().top - 50/*$('.navbar-fixed-bottom').height()*/

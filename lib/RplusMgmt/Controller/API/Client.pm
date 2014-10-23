@@ -264,19 +264,17 @@ sub save {
     my $self = shift;
 
     # Retrieve client
-    my $new_client = 0;
+    my $create_event = 0;
     my $client;
     if (my $id = $self->param('id')) {
         $client = Rplus::Model::Client::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
     } else {
         $client = Rplus::Model::Client->new;
-        $new_client = 1;
     }
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $client;
-
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(clients => 'write' => $client->agent_id) ||
                                                                                                         $client->agent_id == $self->stash('user')->{id} ||
-                                                                                                        $new_client && $self->param('agent_id') == $self->stash('user')->{id};
+                                                                                                        !$client->id && $self->param('agent_id') == $self->stash('user')->{id};
 
     # Validation
     $self->validation->required('phone_num')->is_phone_num;
@@ -298,6 +296,8 @@ sub save {
     my $agent_id = $self->param('agent_id');
     my $subscription_offer_types = $self->param('subscription_offer_types');
     
+
+
     # Save
     $client->name($name);
     $client->phone_num($phone_num);
@@ -310,10 +310,13 @@ sub save {
         #$agent_id = $self->stash('user')->{id};
     }
 
-    if ($agent_id eq '') {
-        $client->agent_id(undef);
+    if ($agent_id) {
+        if ($client->agent_id != $agent_id) {
+            $client->agent_id($agent_id);
+            $create_event = 1;
+        }
     } else {
-        $client->agent_id($agent_id);
+        $client->agent_id(undef);
     }
 
     $client->change_date('now()');
@@ -343,6 +346,29 @@ sub save {
         $color_tag->save(insert => 1);
     }
 
+    if ($create_event) {
+        my $start_date = localtime;
+        my $end_date = $start_date + 15 * 60;
+        my $start_date_str = $start_date->datetime . '+' . ($start_date->tzoffset / (60 * 60));
+        my $end_date_str = $end_date->datetime . '+' . ($start_date->tzoffset / (60 * 60));
+
+        my @parts;
+        {
+            push @parts, $self->format_phone_num($client->phone_num) . ' ' . ($client->name ? $client->name : '');
+        }
+        my $summary = join(', ', @parts);
+
+        Rplus::Util::Task::qcreate($self, {
+                task_type_id => 11, # добавлен клиент
+                assigned_user_id => $client->agent_id,
+                start_date => $start_date_str,
+                end_date => $end_date_str,
+                summary => $summary,
+                client_id => $client->id,
+                realty_id => undef,
+            });
+    }
+
     return $self->render(json => {status => 'success', id => $client->id});
 }
 
@@ -350,6 +376,7 @@ sub update {
     my $self = shift;
 
     #return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(clients => 'write') || $client->agent_id == $self->stash('user')->{id};
+    my $create_event = 0;
 
     # Retrieve client
     my $id = $self->param('id');
@@ -361,10 +388,13 @@ sub update {
     for ($self->param) {
         if ($_ eq 'agent_id') {
             my $agent_id = $self->param('agent_id');
-            if ($agent_id eq '') {
-                $client->agent_id(undef);
+            if ($agent_id) {
+                if ($client->agent_id != $agent_id) {
+                    $client->agent_id($agent_id);
+                    $create_event = 1;
+                }
             } else {
-                $client->agent_id($agent_id);
+                $client->agent_id(undef);                
             }
         } elsif ($_ eq 'color_tag_id') {
             $permission_granted = 1;
@@ -391,6 +421,29 @@ sub update {
     # Check that we can rewrite 
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $permission_granted;
     $client->save(changes_only => 1);
+
+    if ($create_event) {
+        my $start_date = localtime;
+        my $end_date = $start_date + 15 * 60;
+        my $start_date_str = $start_date->datetime . '+' . ($start_date->tzoffset / (60 * 60));
+        my $end_date_str = $end_date->datetime . '+' . ($start_date->tzoffset / (60 * 60));
+
+        my @parts;
+        {
+            push @parts, $self->format_phone_num($client->phone_num) . ' ' . ($client->name ? $client->name : '');
+        }
+        my $summary = join(', ', @parts);
+
+        Rplus::Util::Task::qcreate($self, {
+                task_type_id => 11, # добавлен клиент
+                assigned_user_id => $client->agent_id,
+                start_date => $start_date_str,
+                end_date => $end_date_str,
+                summary => $summary,
+                client_id => $client->id,
+                realty_id => undef,
+            });
+    }
 
     return $self->render(json => {status => 'success', id => $client->id});
 }

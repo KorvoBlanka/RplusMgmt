@@ -701,7 +701,7 @@
             error: function (jqXHR, textStatus, errorThrown) {
               setClientView({
                 phone_num: phoneNum, 
-                agent_id: '<%= $self->stash('user')->{id} %>',
+                //agent_id: '<%= $self->stash('user')->{id} %>',
               }, 1, true);
               $modal.modal({show: true, backdrop: false});
             },
@@ -709,7 +709,7 @@
           return $this;
         },
         
-        createWithSubscription: function (query, typeCode, realtyIds) {
+        createWithSubscription: function (query, typeCode, realtyIds, agent_id) {
           var skel = {};
           skel.id = null;
           
@@ -719,7 +719,7 @@
           skel.email = '';
           skel.skype = '';
           skel.description = '';
-          skel.agent_id = '<%= $self->stash('user')->{id} %>',
+          skel.agent_id = agent_id,
           skel.subscriptions = [];
           //skel.realty => []
           

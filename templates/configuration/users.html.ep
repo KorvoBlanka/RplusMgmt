@@ -105,9 +105,9 @@
     })
     .change(function() {
       var role = this.value;
-      if (role == 'dispatcher') {
-        var uid = $("#userCard_userForm_userId").val();
-        var uname = $("#userCard_userForm_inputName").val();
+      var uid = $("#userCard_userForm_userId").val();
+      var uname = $("#userCard_userForm_inputName").val();      
+      if (uid && role == 'dispatcher') {
         $.ajax({
           type: "POST",
           url: "/api/user/get_realty_count",

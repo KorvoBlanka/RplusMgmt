@@ -13,7 +13,7 @@ use Rplus::Model::MediatorCompany;
 use Rplus::Model::MediatorCompany::Manager;
 
 use Rplus::Util::Config qw(get_config);
-use Rplus::Util::Mediator qw(delete_mediator add_mediator remove_obsolete_mediators);
+use Rplus::Util::Mediator qw(delete_mediator add_mediator);
 
 use Mojo::UserAgent;
 use List::Flatten;
@@ -96,9 +96,6 @@ sub run {
 	    	delete_mediator($attributes->{id});
 	    }
 	}
-
-    # удалим "устаревших" пользовательских посредников (от которых не поступало объектов в течении obs_period)
-    say remove_obsolete_mediators($obs_period) . ' obsolete mediators removed';
 
     my $mediator_company_iter = Rplus::Model::MediatorCompany::Manager->get_objects_iterator(query => [delete_date => undef]);
     while (my $x = $mediator_company_iter->next) {

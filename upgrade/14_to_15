@@ -1,0 +1,17 @@
+#!/usr/bin/env perl
+
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+
+use Rplus::Modern;
+
+use Rplus::DB;
+
+my $dbh = Rplus::DB->new_or_cached->dbh;
+
+# fixing seq
+if (1) {
+    $dbh->do(q{ALTER SEQUENCE dict_task_types_id_seq RESTART WITH 13;});
+}
+
+exit 1;

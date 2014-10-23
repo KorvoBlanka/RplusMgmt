@@ -330,7 +330,7 @@
     <ul class="nav navbar-nav">
       <li><a href="#" data-action="task-type-create"><span class="glyphicon glyphicon-plus"></span> <%= ucfloc 'add' %></a></li>
       <li><a href="#" data-action="task-type-open"><span class="glyphicon glyphicon-file"></span> <%= ucfloc 'open' %></a></li>
-      <li><a href="#" class="hidden" data-action="task-type-delete"><span class="glyphicon glyphicon-trash"></span> <%= ucfloc 'delete' %></a></li>
+      <li><a href="#" class="" data-action="task-type-delete"><span class="glyphicon glyphicon-trash"></span> <%= ucfloc 'delete' %></a></li>
     </ul>
   </div>
 </nav>
