@@ -35,7 +35,7 @@ __PACKAGE__->meta->setup(
     relationships => [
         color_tag => {
             class      => 'Rplus::Model::ColorTag',
-            column_map => { id => 'realty_id' },
+            column_map => { realty_id => 'realty_id' },
             type       => 'one to many',
         },
     ],    

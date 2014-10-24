@@ -61,7 +61,7 @@ my $_serialize = sub {
         my $vals = from_json($realty->metadata);
         $x->{reference} = $vals->{'reference'};
 
-        if($realty->color_tags) {
+        if ($realty->color_tags) {
             foreach($realty->color_tags) {
                 if ($_->{user_id} == $self->stash('user')->{id}) {
                     $x->{color_tag_id} = $_->{color_tag_id};

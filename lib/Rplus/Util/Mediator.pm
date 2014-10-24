@@ -43,7 +43,6 @@ sub delete_mediator {
 }
 
 sub add_mediator {
-
     # Prepare data
     my $company_name = shift;
     my $phone_num = shift;
@@ -64,7 +63,7 @@ sub add_mediator {
         $company = Rplus::Model::MediatorCompany->new(name => $company_name);
         $company->save;
     }
-    $mediator->company($company);
+    $mediator->company_id($company->id);
     $mediator->save;
 
     # Search for additional mediator phones

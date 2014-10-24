@@ -21,6 +21,19 @@ for my $x (@{Rplus::Model::DictTaskType::Manager->get_objects(query => [delete_d
     $task_types_dict->{$x->name} = $x->id;
 }
 
+sub getAssetAsJSON {
+    my $asset = shift;
+    my $t_str;
+    if ($asset->{content}) {
+        $t_str = $asset->{content};
+    } else {    # ответ "большой", читаем файл
+        open FILE, $asset->{path};
+        $t_str = join("", <FILE>);
+        close FILE;
+    }
+    return decode_json $t_str;
+}
+
 # помогайки для работы с json 
 sub getGoogleData {
     my ($user_id) = @_;
@@ -141,16 +154,8 @@ sub sync {
             }
         );
 
-        my $asset;
         if (my $res = $tx->success) {
-            my $t_str;
-            if ($res->content->asset->{content}) {
-                $t_str = $res->content->asset->{content};
-            } else {    # ответ "большой", читаем файл
-                open FILE, $res->content->asset->{path};
-                $t_str = join("", <FILE>);
-            }
-            $asset = decode_json $t_str;
+            my $asset = getAssetAsJSON($res->content->asset);
             $next_page_token = $asset->{nextPageToken};
             if ($asset->{nextSyncToken}) {
                 updateGoogleData($user_id, {next_sync_token => $asset->{nextSyncToken}});
