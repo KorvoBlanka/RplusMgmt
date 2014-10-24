@@ -143,7 +143,14 @@ sub sync {
 
         my $asset;
         if (my $res = $tx->success) {
-            $asset = decode_json $res->content->asset->{content};
+            my $t_str;
+            if ($res->content->asset->{content}) {
+                $t_str = $res->content->asset->{content};
+            } else {    # ответ "большой", читаем файл
+                open FILE, $res->content->asset->{path};
+                $t_str = join("", <FILE>);
+            }
+            $asset = decode_json $t_str;
             $next_page_token = $asset->{nextPageToken};
             if ($asset->{nextSyncToken}) {
                 updateGoogleData($user_id, {next_sync_token => $asset->{nextSyncToken}});
