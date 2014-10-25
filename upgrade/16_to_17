@@ -1,0 +1,23 @@
+#!/usr/bin/env perl
+
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+
+use Rplus::Modern;
+
+use Rplus::DB;
+
+my $dbh = Rplus::DB->new_or_cached->dbh;
+
+# fixing seq
+if (1) {
+    eval {
+        $dbh->do(q{INSERT INTO "public"."dict_task_types" VALUES ('11', 'Назначен купец', '2014-08-28 21:50:26.213206+11', null, 'both', '#a4bdfc');});
+    } or do {
+        say 'updating';
+        $dbh->do(q{UPDATE "public"."dict_task_types" SET name = 'Назначен купец' WHERE id = 11;});
+    };
+    $dbh->do(q{ALTER SEQUENCE dict_task_types_id_seq RESTART WITH 13;});
+}
+say 'ok';
+exit 1;

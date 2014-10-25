@@ -11,20 +11,6 @@ my $dbh = Rplus::DB->new_or_cached->dbh;
 
 # fixing seq
 if (1) {
-    $dbh->do(q{BEGIN;
-        DELETE FROM "public"."dict_task_types";
-        INSERT INTO "public"."dict_task_types" VALUES ('1', 'Первичный контакт', '2014-08-25 17:27:31.933352+11', null, 'both', '#B1D5EB');
-        INSERT INTO "public"."dict_task_types" VALUES ('2', 'Заключение договора', '2014-08-25 17:28:02.568272+11', null, 'both', '#D7E8B2');
-        INSERT INTO "public"."dict_task_types" VALUES ('3', 'Показ', '2014-08-28 14:41:52.960611+11', null, 'both', '#A6E0D4');
-        INSERT INTO "public"."dict_task_types" VALUES ('5', 'Сделка', '2014-08-28 21:49:30.526505+11', null, 'both', '#FD8F7F');
-        INSERT INTO "public"."dict_task_types" VALUES ('4', 'Принятие решения', '2014-08-28 21:47:41.479708+11', null, 'both', '#FBC193');
-        INSERT INTO "public"."dict_task_types" VALUES ('6', 'Другое', '2014-08-28 21:50:26.213206+11', null, 'both', '#D63758');
-        INSERT INTO "public"."dict_task_types" VALUES ('7', 'Сдано до...', '2014-08-28 21:50:26.213206+11', null, 'both', '#D63758');
-        INSERT INTO "public"."dict_task_types" VALUES ('8', 'Снято с продажи до...', '2014-08-28 21:50:26.213206+11', null, 'both', '#D63758');
-        INSERT INTO "public"."dict_task_types" VALUES ('9', 'Назначен объект', '2014-08-28 21:50:26.213206+11', null, 'both', '#fbd75b');
-        INSERT INTO "public"."dict_task_types" VALUES ('10', 'Спрос', '2014-08-28 21:50:26.213206+11', null, 'both', '#a4bdfc');
-        INSERT INTO "public"."dict_task_types" VALUES ('11', 'Назначен купец', '2014-08-28 21:50:26.213206+11', null, 'both', '#a4bdfc');
-    COMMIT;});
     $dbh->do(q{ALTER SEQUENCE dict_task_types_id_seq RESTART WITH 13;});
 }
 
