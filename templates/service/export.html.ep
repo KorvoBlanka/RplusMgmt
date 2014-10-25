@@ -31,7 +31,6 @@
   !function () {
 
     $('[data-action="export-avito"]').on('click', function (e) {
-
         var sale_realty_types = [];
         var rent_realty_types = [];
         $('#formExportAvito #sale-column [type="checkbox"]:input').each( function () {
@@ -66,17 +65,23 @@
     });
 
     $('[data-action="export-farpost"]').on('click', function (e) {
-        var offer_type = $('#formExportFarpost [name="offer_type_code"]:input').val();
-        var realty_types = [];
-        $('#formExportFarpost [type="checkbox"]:input').each( function () {
+        var sale_realty_types = [];
+        var rent_realty_types = [];
+        $('#formExportFarpost #sale-column [type="checkbox"]:input').each( function () {
           if(this.checked) {
-            realty_types.push(this.id);
+            sale_realty_types.push(this.id);
           }
         });
+        $('#formExportFarpost #rent-column [type="checkbox"]:input').each( function () {
+          if(this.checked) {
+            rent_realty_types.push(this.id);
+          }
+        });
+
         $('<form action="/export/farpost" method="POST">' + 
-          '<input type="hidden" name="offer_type_code" value="' + offer_type + '">' +
-          '<input type="hidden" name="realty_types" value="' + realty_types.join() + '">' +
-          '</form>').submit();        
+          '<input type="hidden" name="sale_realty_types" value="' + sale_realty_types.join() + '">' +
+          '<input type="hidden" name="rent_realty_types" value="' + rent_realty_types.join() + '">' +
+          '</form>').submit();
     });
 
     $('[data-action="export-present"]').on('click', function (e) {
@@ -160,46 +165,46 @@
   <div class="tab-pane active" id="export-avito">
     <div class="" role="form" id="formExportAvito">
       <div class="row">
-      <div class="col-lg-4" id="sale-column">
-        <label class="type-column-header">
-          <span>Продажа</span>
-        </label>
-        <div class="checkbox">
-          <label>
-            <input type="checkbox" checked="checked" id="rooms"> Комнаты
+        <div class="col-lg-4" id="sale-column">
+          <label class="type-column-header">
+            <span>Продажа</span>
           </label>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" checked="checked" id="rooms"> Комнаты
+            </label>
+          </div>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" checked="checked" id="apartments"> Квартиры
+            </label>
+          </div>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" checked="checked" id="houses"> Дома, коттеджи
+            </label>
+          </div>          
         </div>
-        <div class="checkbox">
-          <label>
-            <input type="checkbox" checked="checked" id="apartments"> Квартиры
-          </label>
+        <div class="col-lg-4" id="rent-column">
+          <label class="type-column-header">
+            <span>Аренда</span>
+          </label>      
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" checked="checked" id="rooms"> Комнаты
+            </label>
+          </div>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" checked="checked" id="apartments"> Квартиры
+            </label>
+          </div>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" checked="checked" id="houses"> Дома, коттеджи
+            </label>
+          </div>
         </div>
-        <div class="checkbox">
-          <label>
-            <input type="checkbox" checked="checked" id="houses"> Дома, коттеджи
-          </label>
-        </div>          
-      </div>
-      <div class="col-lg-4" id="rent-column">
-        <label class="type-column-header">
-          <span>Аренда</span>
-        </label>      
-        <div class="checkbox">
-          <label>
-            <input type="checkbox" checked="checked" id="rooms"> Комнаты
-          </label>
-        </div>
-        <div class="checkbox">
-          <label>
-            <input type="checkbox" checked="checked" id="apartments"> Квартиры
-          </label>
-        </div>
-        <div class="checkbox">
-          <label>
-            <input type="checkbox" checked="checked" id="houses"> Дома, коттеджи
-          </label>
-        </div>          
-      </div>
       </div>
       <div class="form-group">
         <button type="" class="btn btn-primary btn-save" data-action="export-avito" style="margin-top: 15px">Экспорт</button>
@@ -248,22 +253,33 @@
 
   <div class="tab-pane" id="export-farpost">
     <div class="" role="form" id="formExportFarpost">
-      <div class="row" style="padding-top: 15px;">
-        <div class="col-lg-2">
-          <select class="form-control" name="offer_type_code">
-            <option value="sale">Продажа</option>
-            <option value="rent">Аренда</option>
-          </select>
+      <div class="row" style="">
+      
+        <div class="col-lg-4" id="sale-column">
+          <label class="type-column-header">
+            <span>Продажа</span>
+          </label>
+          % for my $c (@{Rplus::Model::RealtyCategory::Manager->get_objects(query => [], sort_by => 'id')}) {
+          <div class="checkbox" id="<%= $c->code %>">
+            <label>
+              <input type="checkbox" checked="checked"> <%= $c->name %>
+            </label>
+          </div>
+          % }        
+        </div>
+        <div class="col-lg-4" id="rent-column">
+          <label class="type-column-header">
+            <span>Аренда</span>
+          </label>      
+          % for my $c (@{Rplus::Model::RealtyCategory::Manager->get_objects(query => [], sort_by => 'id')}) {
+          <div class="checkbox" id="<%= $c->code %>">
+            <label>
+              <input type="checkbox" checked="checked"> <%= $c->name %>
+            </label>
+          </div>
+          % }
         </div>
       </div>
-      % for my $c (@{Rplus::Model::RealtyCategory::Manager->get_objects(query => [], sort_by => 'id')}) {
-      <div class="checkbox" id="<%= $c->code %>">
-        <label>
-          <input type="checkbox" checked="checked"> <%= $c->name %>
-        </label>
-      </div>
-      % }          
-      
       <div class="form-group">
         <button type="submit" class="btn btn-primary btn-save" data-action="export-farpost" style="margin-top: 15px">Экспорт</button>
       </div>          
