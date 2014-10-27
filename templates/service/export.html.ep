@@ -45,8 +45,8 @@
         });
 
         $('<form action="/export/avito" method="POST">' + 
-          '<input type="hidden" name="sale_realty_types" value="' + sale_realty_types.join() + '">' +
-          '<input type="hidden" name="rent_realty_types" value="' + rent_realty_types.join() + '">' +
+          '<input name="sale_realty_types" value="' + sale_realty_types.join() + '">' +
+          '<input name="rent_realty_types" value="' + rent_realty_types.join() + '">' +
           '</form>').submit();
     });
 
@@ -59,28 +59,28 @@
           }
         });
         $('<form action="/export/vnh" method="POST">' + 
-          '<input type="hidden" name="offer_type_code" value="' + offer_type + '">' +
-          '<input type="hidden" name="realty_types" value="' + realty_types.join() + '">' +
+          '<input name="offer_type_code" value="' + offer_type + '">' +
+          '<input name="realty_types" value="' + realty_types.join() + '">' +
           '</form>').submit();
     });
 
     $('[data-action="export-farpost"]').on('click', function (e) {
         var sale_realty_types = [];
         var rent_realty_types = [];
-        $('#formExportFarpost #sale-column [type="checkbox"]:input').each( function () {
+        $('#formExportFarpost #farpost-sale-column [type="checkbox"]:input').each( function () {
           if(this.checked) {
             sale_realty_types.push(this.id);
           }
         });
-        $('#formExportFarpost #rent-column [type="checkbox"]:input').each( function () {
+        $('#formExportFarpost #farpost-rent-column [type="checkbox"]:input').each( function () {
           if(this.checked) {
             rent_realty_types.push(this.id);
           }
         });
 
         $('<form action="/export/farpost" method="POST">' + 
-          '<input type="hidden" name="sale_realty_types" value="' + sale_realty_types.join() + '">' +
-          '<input type="hidden" name="rent_realty_types" value="' + rent_realty_types.join() + '">' +
+          '<input name="sale_realty_types" value="' + sale_realty_types.join() + '">' +
+          '<input name="rent_realty_types" value="' + rent_realty_types.join() + '">' +
           '</form>').submit();
     });
 
@@ -93,8 +93,8 @@
           }
         });
         $('<form action="/export/present" method="POST">' + 
-          '<input type="hidden" name="offer_type_code" value="' + offer_type + '">' +
-          '<input type="hidden" name="realty_types" value="' + realty_types.join() + '">' +
+          '<input name="offer_type_code" value="' + offer_type + '">' +
+          '<input name="realty_types" value="' + realty_types.join() + '">' +
           '</form>').submit();
     });
 
@@ -108,8 +108,8 @@
           realty_types.push(this.id);
           setTimeout( function (realty_type) {
             $('<form action="/export/irr" method="POST">' + 
-                '<input type="hidden" name="offer_type_code" value="' + offer_type + '">' +
-                '<input type="hidden" name="realty_type" value="' + realty_type + '">' +
+                '<input name="offer_type_code" value="' + offer_type + '">' +
+                '<input name="realty_type" value="' + realty_type + '">' +
                 '</form>').submit();
           }, 1500 * i, this.id);
           i ++;
@@ -118,9 +118,9 @@
 
       setTimeout(function(realty_types_str) {
       $('<form action="/export/irr" method="POST">' + 
-          '<input type="hidden" name="offer_type_code" value="' + offer_type + '">' +
-          '<input type="hidden" name="realty_type" value="' + realty_types_str + '">' +
-          '<input type="hidden" name="pictures" value="1">' +
+          '<input name="offer_type_code" value="' + offer_type + '">' +
+          '<input name="realty_type" value="' + realty_types_str + '">' +
+          '<input name="pictures" value="1">' +
           '</form>').submit();
       }, 1500 * i, realty_types.join());
 
@@ -237,7 +237,7 @@
         <label>
           <input type="checkbox" checked="checked" id="houses"> Дома, коттеджи
         </label>
-      </div>          
+      </div>
       <div class="row hidden" style="padding-top: 15px;">
         <label class="col-lg-2 control-label">Телефоны</label>
         <div class="col-lg-5">
@@ -255,29 +255,55 @@
     <div class="" role="form" id="formExportFarpost">
       <div class="row" style="">
       
-        <div class="col-lg-4" id="sale-column">
+        <div class="col-lg-4" id="farpost-sale-column">
           <label class="type-column-header">
             <span>Продажа</span>
           </label>
-          % for my $c (@{Rplus::Model::RealtyCategory::Manager->get_objects(query => [], sort_by => 'id')}) {
-          <div class="checkbox" id="<%= $c->code %>">
-            <label>
-              <input type="checkbox" checked="checked"> <%= $c->name %>
-            </label>
-          </div>
-          % }        
+            <div class="checkbox">
+              <label>
+                <input type="checkbox" id="room" checked="checked"> Комнаты
+              </label>
+            </div>
+            <div class="checkbox">
+              <label>
+                <input type="checkbox" id="apartment_small" checked="checked"> Малосемейки
+              </label>
+            </div>
+            <div class="checkbox">
+              <label>
+                <input type="checkbox" id="apartment" checked="checked"> Квартиры
+              </label>
+            </div>
+            <div class="checkbox">
+              <label>
+                <input type="checkbox" id="house" checked="checked"> Дома и коттеджи
+              </label>
+            </div>
         </div>
-        <div class="col-lg-4" id="rent-column">
+        <div class="col-lg-4" id="farpost-rent-column">
           <label class="type-column-header">
             <span>Аренда</span>
           </label>      
-          % for my $c (@{Rplus::Model::RealtyCategory::Manager->get_objects(query => [], sort_by => 'id')}) {
-          <div class="checkbox" id="<%= $c->code %>">
-            <label>
-              <input type="checkbox" checked="checked"> <%= $c->name %>
-            </label>
-          </div>
-          % }
+            <div class="checkbox">
+              <label>
+                <input type="checkbox" id="room" checked="checked"> Комнаты
+              </label>
+            </div>
+            <div class="checkbox">
+              <label>
+                <input type="checkbox" id="apartment_small" checked="checked"> Малосемейки
+              </label>
+            </div>
+            <div class="checkbox">
+              <label>
+                <input type="checkbox" id="apartment" checked="checked"> Квартиры
+              </label>
+            </div>
+            <div class="checkbox">
+              <label>
+                <input type="checkbox" id="house" checked="checked"> Дома и коттеджи
+              </label>
+            </div>
         </div>
       </div>
       <div class="form-group">

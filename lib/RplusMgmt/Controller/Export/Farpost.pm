@@ -17,6 +17,7 @@ use Mojo::Util qw(trim);
 use File::Temp qw(tmpnam);
 use Spreadsheet::WriteExcel;
 use JSON;
+use Data::Dumper;
 
 sub index {
     my $self = shift;
@@ -29,11 +30,16 @@ sub index {
 
     my $meta = from_json($media->metadata);
 
-    my $offer_type_code = $self->param('offer_type_code');
-    my $realty_types = $self->param('realty_types');
-
     my @sale_realty_types = split ',', $self->param('sale_realty_types');
     my @rent_realty_types = split ',', $self->param('rent_realty_types');
+
+    my %query_apartments;
+    my %query_houses;
+    $query_apartments{sale} = [grep { $_ =~ /apartment|apartment_small|room/ } @sale_realty_types];
+    $query_apartments{rent} = [grep { $_ =~ /apartment|apartment_small|room/ } @rent_realty_types];
+    $query_houses{sale} = [grep { $_ !~ /apartment|apartment_small|room/ } @sale_realty_types];
+    $query_houses{rent} = [grep { $_ !~ /apartment|apartment_small|room/ } @rent_realty_types];
+
 
     my $conf_phones = '';
     my $agent_phone = 0;
@@ -51,7 +57,6 @@ sub index {
 
     $media->metadata(encode_json($meta));
     $media->save(changes_only => 1);
-
     {
         my $workbook = Spreadsheet::WriteExcel->new($file);
 
@@ -90,57 +95,62 @@ sub index {
             my $txt_fmt = $workbook->add_format(num_format => '@');
             my $txt_fmt2 = $workbook->add_format(); $txt_fmt2->set_text_wrap();
 
-            my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
-                query => [
-                    state_code => 'work',
-                    offer_type_code => $offer_type_code,
-                    or => [
-                      type_code => 'apartment',
-                      type_code => 'apartment_small',
-                      type_code => 'room',
-                    ],
-                    export_media => {'&&' => $media->id},
-                ],
-                sort_by => 'address_object.expanded_name',
-                require_objects => ['type', 'offer_type'],
-                with_objects => ['address_object', 'sublandmark', 'condition', 'agent'],
-            );
-            my $row_num = 1;
-            while(my $realty = $realty_iter->next) {
-                my $area = Rplus::Model::Landmark::Manager->get_objects(query => [id => scalar($realty->landmarks), type => 'farpost', delete_date => undef], limit => 1)->[0] if @{$realty->landmarks};
-                my $phones = $conf_phones;
-                if ($agent_phone == 1 && $realty->agent) {
-                    my $x = $realty->agent->public_phone_num || $realty->agent->phone_num;
-                    $phones =  $x . ', ' . $phones;
-                }
-                my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $realty->id, delete_date => undef])};
+            foreach (keys %query_apartments) {
+                my $offer_type_code = $_;
+                my $types = $query_apartments{$offer_type_code};
+                next unless scalar @$types;
 
-                my $row = [
-                    $realty->offer_type->name,
-                    $realty->type->name,
-                    $realty->rooms_count || '',
-                    $area ? $area->name : '',
-                    $realty->address_object ? $realty->address_object->name.($realty->address_object->short_type ne 'ул' ? ' '.$realty->address_object->short_type : '') : '',
-                    $realty->house_num || '',
-                    $realty->square_total || '',
-                    $realty->floor || '',
-                    $realty->floors_count || '',
-                    $realty->description,
-                    @photos ? {type => 'photo_list', body => join("\n", map { $self->config->{'storage'}->{'url'}.'/photos/'.$_->realty_id.'/'.$_->filename } @photos)} : '',
-                    $realty->price * 1000,
-                ];
-                for my $col_num (0..(scalar(@$row)-1)) {
-                    my $x = $row->[$col_num];
-                    if (ref($x) eq 'HASH') {
-                        if ($x->{'type'} eq 'photo_list') {
-                            $worksheet->set_row($row_num, 60);
-                            $worksheet->write_string($row_num, $col_num, $x->{'body'}, $txt_fmt2);
-                        }
-                    } else {
-                        $worksheet->write($row_num, $col_num, $x);
+                say Dumper $types;
+
+                my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
+                    query => [
+                        state_code => 'work',
+                        offer_type_code => $offer_type_code,
+                        type_code => $types,
+                        export_media => {'&&' => $media->id},
+                    ],
+                    sort_by => 'address_object.expanded_name',
+                    require_objects => ['type', 'offer_type'],
+                    with_objects => ['address_object', 'sublandmark', 'condition', 'agent'],
+                );
+                my $row_num = 1;
+                while(my $realty = $realty_iter->next) {
+                    say '!';
+                    my $area = Rplus::Model::Landmark::Manager->get_objects(query => [id => scalar($realty->landmarks), type => 'farpost', delete_date => undef], limit => 1)->[0] if @{$realty->landmarks};
+                    my $phones = $conf_phones;
+                    if ($agent_phone == 1 && $realty->agent) {
+                        my $x = $realty->agent->public_phone_num || $realty->agent->phone_num;
+                        $phones =  $x . ', ' . $phones;
                     }
+                    my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $realty->id, delete_date => undef])};
+
+                    my $row = [
+                        $realty->offer_type->name,
+                        $realty->type->name,
+                        $realty->rooms_count || '',
+                        $area ? $area->name : '',
+                        $realty->address_object ? $realty->address_object->name.($realty->address_object->short_type ne 'ул' ? ' '.$realty->address_object->short_type : '') : '',
+                        $realty->house_num || '',
+                        $realty->square_total || '',
+                        $realty->floor || '',
+                        $realty->floors_count || '',
+                        $realty->description,
+                        @photos ? {type => 'photo_list', body => join("\n", map { $self->config->{'storage'}->{'url'}.'/photos/'.$_->realty_id.'/'.$_->filename } @photos)} : '',
+                        $realty->price * 1000,
+                    ];
+                    for my $col_num (0..(scalar(@$row)-1)) {
+                        my $x = $row->[$col_num];
+                        if (ref($x) eq 'HASH') {
+                            if ($x->{'type'} eq 'photo_list') {
+                                $worksheet->set_row($row_num, 60);
+                                $worksheet->write_string($row_num, $col_num, $x->{'body'}, $txt_fmt2);
+                            }
+                        } else {
+                            $worksheet->write($row_num, $col_num, $x);
+                        }
+                    }
+                    $row_num++;
                 }
-                $row_num++;
             }
         }
 
