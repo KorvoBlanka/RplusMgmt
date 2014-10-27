@@ -268,10 +268,8 @@ sub realty_list {
     my $sr_state_code = $self->param("sr_state_code") || 'any';
     my $sr_offered = $self->param("sr_offered") || 'any';
 
-    my $update_subscription_realty = $self->param("update_realty") || '0';
-
     my $subscription = Rplus::Model::Subscription::Manager->get_objects(query => [id => $subscription_id, delete_date => undef])->[0];
-    if ($update_subscription_realty eq '1') {
+    if ($page eq '1') {
         realty_update($self, $subscription->id);
     }
 
@@ -321,9 +319,8 @@ sub realty_list {
             @query,
             '!state_code' => 'del',
         ],
-        require_objects => ['realty'],
-        with_objects => ['color_tag'],
-        sort_by => 'subscription_realty.state_code ASC',
+        with_objects => ['realty', 'color_tag'],
+        sort_by => 'subscription_realty.id DSC',
         page => $page,
         per_page => $per_page,
     );
