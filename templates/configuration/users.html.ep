@@ -110,13 +110,13 @@
       if (uid && role == 'dispatcher') {
         $.ajax({
           type: "POST",
-          url: "/api/user/get_realty_count",
+          url: "/api/user/get_obj_count",
           data: {id :uid},
         })
           .done(function (data, textStatus, jqXHR) {
-            if (data.count > 0) {
+            if (data.realty_count > 0 || data.client_count > 0) {
               $("#userCard_userForm_inputRole").val(previous_role);
-              alert("Пользователю " + uname + " присвоено " + data.count + " объектов недвижимости, для изменения роли пользователя на 'Диспетчер' необходимо снять объекты с пользователя");
+              alert("Пользователю " + uname + " присвоено " + data.realty_count + " объектов недвижимости и " + data.client_count + " купцов, для изменения роли пользователя на 'Диспетчер' необходимо снять объекты с пользователя");
             }
             
           })
@@ -275,13 +275,12 @@
       
       $.ajax({
         type: "POST",
-        url: "/api/user/get_realty_count",
+        url: "/api/user/get_obj_count",
         data: {id :uid},
       })
         .done(function (data, textStatus, jqXHR) {
-          if (data.count > 0) {
-            $("#userCard_userForm_inputRole").val(previous_role);
-            alert("Пользователю " + uname + " присвоено " + data.count + " объектов недвижимости, перед удалением необходимо снять объекты с пользователя");
+          if (data.realty_count > 0 || data.client_count > 0) {
+            alert("Пользователю " + uname + " присвоено " + data.realty_count + " объектов недвижимости и " + data.client_count + " купцов, для удаления необходимо снять объекты с пользователя");
           } else {
             $.ajax({
               type: "POST",

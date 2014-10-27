@@ -6,6 +6,8 @@ use Rplus::Model::User;
 use Rplus::Model::User::Manager;
 use Rplus::Model::Realty;
 use Rplus::Model::Realty::Manager;
+use Rplus::Model::Client;
+use Rplus::Model::Client::Manager;
 
 use Rplus::Util::GoogleCalendar;
 
@@ -125,7 +127,7 @@ sub find {
     return $self->render(json => $res);
 }
 
-sub get_realty_count {
+sub get_obj_count {
     my $self = shift;
 
     my $user_id = $self->param('id');
@@ -133,9 +135,10 @@ sub get_realty_count {
     my $user = Rplus::Model::User::Manager->get_objects(query => [id => $user_id, delete_date => undef])->[0];
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $user;
     
-    my $realty_count = Rplus::Model::Realty::Manager->get_objects_count(query => [agent_id => $user_id, delete_date => undef], with_objects => ['address_object']);
-    
-    return $self->render(json => {count => $realty_count});
+    my $realty_count = Rplus::Model::Realty::Manager->get_objects_count(query => [agent_id => $user_id, delete_date => undef]);
+    my $client_count = Rplus::Model::Client::Manager->get_objects_count(query => [agent_id => $user_id, delete_date => undef]);
+
+    return $self->render(json => {realty_count => $realty_count, client_count => $client_count});
 }
 
 

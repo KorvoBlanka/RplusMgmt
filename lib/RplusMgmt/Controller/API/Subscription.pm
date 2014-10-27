@@ -17,6 +17,7 @@ use Rplus::Model::ColorTag::Manager;
 use JSON;
 use Mojo::Util qw(trim);
 use Mojo::Collection;
+use Date::Parse;
 
 use Rplus::Util::Query;
 use Rplus::Util::Realty;
@@ -391,12 +392,18 @@ sub update {
     #return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(subscriptions => 'write');    
 
     my $id = $self->param('id');
-    my $subscription = Rplus::Model::Subscription::Manager->get_objects(query => [id => $id, '!end_date' => undef, delete_date => undef])->[0];
+    my $subscription = Rplus::Model::Subscription::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $subscription;
 
     my $queries = Mojo::Collection->new($self->param('queries[]'))->map(sub { trim $_ })->compact->uniq;
     $subscription->queries($queries);
     $subscription->add_date('now()');
+    say $subscription->end_date;
+
+    if (str2time($subscription->end_date) <= time()) {
+        $subscription->end_date(undef);
+    }
+    
     $subscription->save(changes_only => 1);
 
     my $num_del = Rplus::Model::SubscriptionRealty::Manager->delete_objects(
@@ -416,7 +423,7 @@ sub save {
 
     my $subscription;
     if (my $id = $self->param('id')) {
-        $subscription = Rplus::Model::Subscription::Manager->get_objects(query => [id => $id, '!end_date' => undef, delete_date => undef])->[0];
+        $subscription = Rplus::Model::Subscription::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
     } else {
         $subscription = Rplus::Model::Subscription->new(user_id => $self->session->{user}->{id});
     }

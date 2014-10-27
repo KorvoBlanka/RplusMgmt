@@ -1103,7 +1103,7 @@ a:focus {
         $('.simple-calendar').removeClass('col-md-9');
         $('.simple-calendar').addClass('col-lg-12');
         $('.simple-calendar').addClass('col-md-12');
-        calendar_start_date = calendar_start_date.startOf('week');
+        calendar_start_date = moment().startOf('week');
       } else if (calendar_days_count == '30') {
         $('[data-filter="days_count"] span[role="display"]').text(' месяц');
         $('.simple-calendar > .caption > .year').removeClass('hidden');
@@ -1115,7 +1115,7 @@ a:focus {
         $('.simple-calendar').removeClass('col-md-9');
         $('.simple-calendar').addClass('col-lg-12');
         $('.simple-calendar').addClass('col-md-12');
-        calendar_start_date = calendar_start_date.startOf('month');
+        calendar_start_date = moment().startOf('month');
       }
       calendarSetStartDay();
     }

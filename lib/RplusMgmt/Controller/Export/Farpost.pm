@@ -32,6 +32,9 @@ sub index {
     my $offer_type_code = $self->param('offer_type_code');
     my $realty_types = $self->param('realty_types');
 
+    my @sale_realty_types = split ',', $self->param('sale_realty_types');
+    my @rent_realty_types = split ',', $self->param('rent_realty_types');
+
     my $conf_phones = '';
     my $agent_phone = 0;
 
