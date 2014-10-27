@@ -320,7 +320,7 @@ sub realty_list {
             '!state_code' => 'del',
         ],
         with_objects => ['realty', 'color_tag'],
-        sort_by => 'subscription_realty.id DSC',
+        sort_by => 'subscription_realty.id DESC',
         page => $page,
         per_page => $per_page,
     );
