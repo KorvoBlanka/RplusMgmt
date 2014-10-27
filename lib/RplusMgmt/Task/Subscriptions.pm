@@ -60,7 +60,7 @@ sub run {
                         @query,
                         offer_type_code => $subscr->offer_type_code,
                         delete_date => undef,
-                        #state_code => ['work', 'raw', 'suspended'],
+                        state_code => ['work', 'raw', 'suspended'],
                         [\"t1.id NOT IN (SELECT SR.realty_id FROM subscription_realty SR WHERE SR.subscription_id = ? AND SR.state_code != 'new')" => $subscr->id],
                     ],
                     with_objects => ['address_object', 'agent', 'type', 'sublandmark'],

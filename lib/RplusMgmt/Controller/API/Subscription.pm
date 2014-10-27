@@ -361,25 +361,25 @@ sub realty_update {
 
         my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
             query => [
+                @query,
                 offer_type_code => $subscription->offer_type_code,
-                state_code => ['work', 'raw', 'suspended'],
-                [\"t1.id NOT IN (SELECT SR.realty_id FROM subscription_realty SR WHERE SR.subscription_id = ?)" => $subscription->id],
                 delete_date => undef,
-                @query
+                state_code => ['work', 'raw', 'suspended'],                
+                [\"t1.id NOT IN (SELECT SR.realty_id FROM subscription_realty SR WHERE SR.subscription_id = ?)" => $subscription->id],
             ],
         );
 
         my $values_str = '';
         my $sid = $subscription->id;
         while (my $realty = $realty_iter->next) {
-            #Rplus::Model::SubscriptionRealty->new(subscription_id => $subscription->id, realty_id => $realty->id)->save;
-            my $realty_id = $realty->id; 
-            $values_str .= "($sid, $realty_id),";
+            Rplus::Model::SubscriptionRealty->new(subscription_id => $subscription->id, realty_id => $realty->id)->save;
+            #my $realty_id = $realty->id; 
+            #$values_str .= "($sid, $realty_id),";
         }
-        if (length $values_str > 0) {
-            chop $values_str;
-            Rplus::DB->new_or_cached->dbh->do("INSERT INTO subscription_realty (subscription_id, realty_id) VALUES $values_str;");
-        }
+        #if (length $values_str > 0) {
+        #    chop $values_str;
+        #    Rplus::DB->new_or_cached->dbh->do("INSERT INTO subscription_realty (subscription_id, realty_id) VALUES $values_str;");
+        #}
     }
 }
 
