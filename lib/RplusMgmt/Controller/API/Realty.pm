@@ -428,7 +428,7 @@ sub save {
         }
     }
     my $aref = $realty->owner_phones;
-    if ($data{owner_phones}->size == scalar @$aref) {
+    if ($aref && $data{owner_phones}->size == scalar @$aref) {
         for (my $i = 0; $i < $data{owner_phones}->size; $i++) {
             if ($data{owner_phones}[$i] ne $realty->owner_phones->[$i]) {
                 $changed = 1;
