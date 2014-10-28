@@ -25,6 +25,8 @@ use JSON;
 use Mojo::Collection;
 use Time::Piece;
 
+use Data::Dumper;
+
 no warnings 'experimental::smartmatch';
 
 # Private function: serialize realty object(s)
@@ -411,12 +413,29 @@ sub save {
     for (@fields) {
         $data{$_} = $self->param_n($_);
         $data{$_} =~ s/,/./ if $data{$_} && $_ =~ /^square_/;
+        $data{$_} =~ s/,/./ if $data{$_} && $_ =~ /_price$/;
     }
 
     # Owner phones
     $data{owner_phones} = Mojo::Collection->new($self->param('owner_phones[]'))->map(sub { $self->parse_phone_num($_) })->compact->uniq;
     push @errors, {owner_phones => 'Empty phones'} unless @{$data{owner_phones}};
-    
+
+    my $changed = 0;
+    foreach (keys %data) {
+        if ($realty->$_ ne $data{$_}) {
+            $changed = 1;
+            last;
+        }
+    }
+    my $aref = $realty->owner_phones;
+    if ($data{owner_phones}->size == scalar @$aref) {
+        for (my $i = 0; $i < $data{owner_phones}->size; $i++) {
+            if ($data{owner_phones}[$i] ne $realty->owner_phones->[$i]) {
+                $changed = 1;
+            }
+        }
+    }
+
     # Tags
     my $tags_ok = Rplus::DB->new_or_cached->dbh->selectall_hashref(q{SELECT T.id, T.name FROM tags T WHERE T.delete_date IS NULL}, 'id');
     $data{tags} = Mojo::Collection->new($self->param('tags[]'))->grep(sub { exists $tags_ok->{$_} })->uniq;
@@ -445,9 +464,12 @@ sub save {
 
     # if agent_id changed - set 'assign_date'
     $realty->assign_date('now()') if $realty->agent_id != $data{agent_id};
+
     # Save data
     $realty->$_($data{$_}) for keys %data;
-    $realty->change_date('now()');
+    if ($changed) {
+        $realty->change_date('now()');
+    }
 
     # check owner phones for mediators
     my @owner_phones = $realty->owner_phones;
@@ -533,36 +555,6 @@ sub save {
             });        
     }
 
-    # назначения планировки для объектов в том же доме
-    #if(($self->stash('user')->{id} == 2 || $self->stash('user')->{id} == 1) && !($self->param('address_object_id') eq '') && !($self->param('house_num') eq '')) {
-    #    if(!($self->param('ap_scheme_id') eq '')) {
-    #      my $num_realty_updated = Rplus::Model::Realty::Manager->update_objects(
-    #          set => {ap_scheme_id => $self->param('ap_scheme_id'), change_date => \'now()'},
-    #          where => [
-    #              address_object_id => $self->param('address_object_id'),
-    #              house_num => $self->param('house_num'),
-    #          ],
-    #      );
-    #      
-    #      my $meta = from_json($realty->metadata);
-    #      $meta->{hack} = 1;
-    #      $realty->metadata(encode_json($meta));
-    #      $realty->save(changes_only => 1);
-    #      
-    #    } else {
-    #        my $r = Rplus::Model::Realty::Manager->get_objects(query => [address_object_id => $self->param('address_object_id'), house_num => $self->param('house_num'), \"metadata->>'hack' = '1'", delete_date => undef])->[0];
-    #        if ($r) {           
-    #          my $num_realty_updated = Rplus::Model::Realty::Manager->update_objects(
-    #            set => {ap_scheme_id => $r->ap_scheme_id, change_date => \'now()'},
-    #            where => [
-    #                address_object_id => $self->param('address_object_id'),
-    #                house_num => $self->param('house_num'),
-    #            ],
-    #          );
-    #        }
-    #    }
-    #}
-
     $self->render(json => $res);
 }
 
@@ -598,10 +590,12 @@ sub update {
                 }
             }
             return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => write => $realty->agent_id);
+            $realty->change_date('now()');
         } elsif ($_ eq 'state_code') {
             return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => write => $realty->agent_id);
             return $self->render(json => {error => 'Forbidden'}, status => 403) if $realty->agent_id == 10000 && $self->param('state_code') eq 'work';
             $realty->state_code(scalar $self->param('state_code'));
+            $realty->change_date('now()');
         } elsif ($_ eq 'color_tag_id') {
             my $color_tag_id = $self->param('color_tag_id');
             my $color_tag = Rplus::Model::ColorTag::Manager->get_objects(query => [realty_id => $realty->id, user_id => $user_id,])->[0];
@@ -631,7 +625,6 @@ sub update {
     }
 
     # Save data
-    $realty->change_date('now()');
     eval {
         $realty->save(changes_only => 1);
         1;
@@ -674,59 +667,6 @@ sub update {
     }
     
     return $self->render(json => $res);
-}
-
-sub update_multiple {
-    my $self = shift;
-
-    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => 'write');
-
-    my $param_name = $self->param('param_name');
-    my @ids = $self->param('ids[]');
-
-    my $res = {
-        status => 'success',
-        list => [],
-    };
-
-    for (@ids) {
-        my $id = $_;
-
-        my $realty = Rplus::Model::Realty::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
-        return $self->render(json => {error => 'Not Found'}, status => 404) unless $realty;
-        return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => write => $realty->agent_id) || $self->has_permission(realty => 'write')->{can_assign} && $realty->agent_id == undef;        
-
-        if ($param_name eq 'agent_id') {
-            # if agent_id changed - set 'assign_date'
-            $realty->assign_date('now()');
-            if ($self->param('agent_id') eq '') {
-                $realty->agent_id(undef);
-            } else {
-                my $agent_id = $self->param_n('agent_id');
-                $realty->agent_id(scalar $self->param('agent_id'));
-                if ($agent_id == 10000) {
-                    my $company = 'ПОСРЕДНИК В НЕДВИЖИМОСТИ';
-                    add_mediator($company, $realty->owner_phones->[0], 'user_' . $self->stash('user')->{id});
-                }
-            }            
-        }
-
-        # Save data
-        $realty->change_date('now()');
-        eval {
-            $realty->save(changes_only => 1);
-            1;
-        } or do {
-            return $self->render(json => {error => $@}, status => 500) unless $realty;
-        };
-
-        $realty->load;
-
-        push $res->{list}, $_serialize->($self, $realty);
-    }
-
-    return $self->render(json => $res);
-
 }
 
 1;

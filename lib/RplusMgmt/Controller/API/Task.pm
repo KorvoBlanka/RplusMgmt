@@ -190,7 +190,7 @@ sub update {
             $result = Rplus::Util::GoogleCalendar::setStartEndDate($task->assigned_user_id, $task->google_id, $start_date, $end_date);
         }
     }
-
+    say $start_date;
     $task->change_date('now()');
     $task->save(changes_only => 1);
     return $self->render(json => {status => 'success', id => $task->id},);

@@ -709,8 +709,6 @@ a:focus {
           
           var row = Math.floor(offset / 7);
           var col = offset % 7;
-          console.log(row);
-          console.log(col);
           var xhtml = '<div class="month-event">';
           xhtml += '<div style="width: 15px; height: 15px; display: inline-block; background-color: ' + event.color + '; top: 2px; position: relative;">';
           xhtml += '</div>';
@@ -744,6 +742,9 @@ a:focus {
             var event = events[i];
             var start_date = moment(event.start_date);
             var end_date = moment(event.end_date);
+
+            console.log('---------------');
+            console.log(start_date);
 
             var realty_ref = '';
             if (event.realty_id) {
@@ -878,6 +879,9 @@ a:focus {
               min = Math.floor((pos_y % 100) * (60 / 100));
               time = (hour < 10 ? '0' : '') + hour + ':' + (min < 10 ? '0' : '') + min;
               var end_date = moment($this.data('date') + ' ' + time);
+
+              console.log(start_date);
+
               $.ajax({
                 type: "POST",
                 url: "/api/task/update",
@@ -979,6 +983,8 @@ a:focus {
               time = (hour < 10 ? '0' : '') + hour + ':' + (min < 10 ? '0' : '') + min;
               var end_date = moment(obj.$el.data('date') + ' ' + time);
               end_date.add(add_days, 'days');
+
+              console.log(start_date);
 
               $.ajax({
                 type: "POST",
