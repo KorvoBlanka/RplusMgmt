@@ -67,7 +67,8 @@ sub index {
 
             # Заголовок листа
             my $header_fmt1 = $workbook->add_format(border => 1, bold => 0, bg_color => 'silver', valign  => 'vcenter', align => 'center', text_wrap => 1);
-            my $header_fmt2 = $workbook->add_format(); $header_fmt2->copy($header_fmt1);
+            my $header_fmt2 = $workbook->add_format(); 
+            $header_fmt2->copy($header_fmt1);
             my $header = {
                 'A1' => { text => "Тип сделки", width => 15 },
                 'B1' => { text => "Тип недвижимости", width => 15 },
@@ -95,12 +96,11 @@ sub index {
             my $txt_fmt = $workbook->add_format(num_format => '@');
             my $txt_fmt2 = $workbook->add_format(); $txt_fmt2->set_text_wrap();
 
+            my $row_num = 1;
             foreach (keys %query_apartments) {
                 my $offer_type_code = $_;
                 my $types = $query_apartments{$offer_type_code};
                 next unless scalar @$types;
-
-                say Dumper $types;
 
                 my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
                     query => [
@@ -113,9 +113,7 @@ sub index {
                     require_objects => ['type', 'offer_type'],
                     with_objects => ['address_object', 'sublandmark', 'condition', 'agent'],
                 );
-                my $row_num = 1;
                 while(my $realty = $realty_iter->next) {
-                    say '!';
                     my $area = Rplus::Model::Landmark::Manager->get_objects(query => [id => scalar($realty->landmarks), type => 'farpost', delete_date => undef], limit => 1)->[0] if @{$realty->landmarks};
                     my $phones = $conf_phones;
                     if ($agent_phone == 1 && $realty->agent) {

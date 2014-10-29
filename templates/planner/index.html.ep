@@ -456,8 +456,11 @@ a:focus {
       $('[data-filter="task_type_id"] span[role="display"]').text(nav_items['task_type'][0]);
       $('[data-filter="task_type_id"]').data('val', nav_items['task_type'][1]);
 
-      $('[data-filter="assigned_user_id"] span[role="display"]').text(nav_items['assigned_user'][0]);
-      $('[data-filter="assigned_user_id"]').data('val', nav_items['assigned_user'][1]);
+      // не устанавливаем "assigned_user" если мы "агент" или "агент+"
+      % if ($self->stash('user')->{role} eq 'manager') {
+        $('[data-filter="assigned_user_id"] span[role="display"]').text(nav_items['assigned_user'][0]);
+        $('[data-filter="assigned_user_id"]').data('val', nav_items['assigned_user'][1]);
+      % }
 
       $('[data-filter="days_count"] span[role="display"]').text(nav_items['days_count'][0]);
       $('[data-filter="days_count"]').data('val', nav_items['days_count'][1]);
