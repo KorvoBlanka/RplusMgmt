@@ -11,6 +11,8 @@ use Rplus::Model::Mediator;
 use Rplus::Model::Mediator::Manager;
 use Rplus::Model::MediatorCompany;
 use Rplus::Model::MediatorCompany::Manager;
+use Rplus::Model::RuntimeParam;
+use Rplus::Model::RuntimeParam::Manager;
 
 use Rplus::Util::Config qw(get_config);
 use Rplus::Util::Mediator qw(delete_mediator add_mediator);
@@ -29,20 +31,6 @@ run(get_config());
 sub run {
     my $config = shift;
 
-    # Загрузим базу телефонов посредников
-    my %MEDIATOR_PHONES;
-    {
-        my $mediator_iter = Rplus::Model::Mediator::Manager->get_objects_iterator(query => [delete_date => undef], require_objects => ['company']);
-        while (my $x = $mediator_iter->next) {
-            $MEDIATOR_PHONES{$x->phone_num} = {
-                id => $x->id,
-                name => $x->name,
-                company => $x->company->name,
-                company_id => $x->company->id,
-            };
-        }
-    }
-
     my $ua = Mojo::UserAgent->new;    
 
     my $tx = $ua->get('http://rplusmgmt.com/api/account/get_by_domain?subdomain=' . $config->{'subdomain'});
@@ -51,17 +39,18 @@ sub run {
       $acc_data = $res->json;
     }
 
-    my $rt_param = Rplus::Model::RuntimeParam->new(key => 'sync_param')->load();
+    my $rt_param = Rplus::Model::RuntimeParam::Manager->get_objects(query => [key => 'sync_param'])->[0];
     if (!$rt_param) {
         $rt_param = Rplus::Model::RuntimeParam->new(key => 'sync_param', ts => 'now()')->save; # Create record
     }
     my $last_ts = $rt_param->ts;
 
     #if ($acc_data->{use_mediators_buffer}) {
-        my $tx = $ua->get($acc_data->{realty_buffer_url} . '/api/mediator/list_mediators_ex', form => {mode => 'new', ts => $ts});
+        $tx = $ua->get($acc_data->{realty_buffer_url} . '/api/mediator/list_mediators_ex', form => {mode => 'new', ts => $last_ts});
         if (my $res = $tx->success) {
             my $med_list = $res->json->{list};
             for my $mediator (@$med_list) {
+                say $mediator->{phone_num};
                 add_mediator($mediator->{company_name}, $mediator->{phone_num}, 'buffer');
             }
         }

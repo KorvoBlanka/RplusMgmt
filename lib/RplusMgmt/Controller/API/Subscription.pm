@@ -76,6 +76,12 @@ my $_serialize = sub {
             $x->{$_} = undef for @exclude_fields_agent_plus;
         }
 
+        # if it's a demo acc - hide refs and phones
+        if ($self->account_type() eq 'demo') {
+            $x->{reference} = '';
+            $x->{owner_phones} = ['ДЕМО ВЕРСИЯ'];
+        }
+
         if ($params{with_sublandmarks}) {
             if (@{$realty->landmarks} || $realty->sublandmark_id) {
                 my $sublandmarks = Rplus::Model::Landmark::Manager->get_objects(

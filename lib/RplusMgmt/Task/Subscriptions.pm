@@ -37,6 +37,7 @@ sub run {
     );
 
     while (my $client = $clients_iter->next) {
+        my $sub_new_count = 0;
         my $subscription_iter = Rplus::Model::Subscription::Manager->get_objects_iterator(     # Select active subscriptions
             query => [
                 client_id => $client->id,
@@ -45,7 +46,6 @@ sub run {
             ],
             sort_by => 'id'
         );
-        my $sub_new_count = 0;
         while (my $subscr = $subscription_iter->next) {
             my $realty_count = Rplus::Model::SubscriptionRealty::Manager->get_objects_count(query => [subscription_id => $subscr->id, offered => 1]);
             next if ($subscr->realty_limit > 0 && $realty_count >= $subscr->realty_limit);      # Check realty limit
@@ -66,7 +66,7 @@ sub run {
                     with_objects => ['address_object', 'agent', 'type', 'sublandmark'],
                 );
                 if ($t_count > 0) {
-                    $sub_new_count ++;
+                    $sub_new_count += $t_count;
                 }
 
                 my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
