@@ -388,6 +388,10 @@ sub save {
     $self->validation->optional('longitude')->like(qr/^\d+\.\d+$/);
     $self->validation->optional('sublandmark_id')->like(qr/^\d+$/);
 
+    if ($self->param('state_code') eq 'work' && !$self->param('agent_id')) {
+        return $self->render(json => {error => 'Forbidden'}, status => 403);
+    }
+
     # Fields to save
     my @fields = (
         'type_code', 'offer_type_code', 'state_code',
@@ -622,6 +626,10 @@ sub update {
             return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => write => $realty->agent_id);
             $realty->export_media(Mojo::Collection->new());
         }
+    }
+
+    if ($realty->state_code eq 'work' && !$realty->agent_id) {
+        return $self->render(json => {error => 'Forbidden'}, status => 403);
     }
 
     # Save data
