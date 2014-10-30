@@ -1275,6 +1275,8 @@ a:focus {
 
     function newTaskCard(event_date) {
       $('#taskIdInput').val('');
+      $('#taskTypeInput').val(1);
+      $('#taskTypeInput').change();      
       $('#card-date-picker').datepicker('setDate', event_date.format('YYYY-MM-DD'));
       timeSliderSetTime(event_date.hours(), event_date.minutes());
       $('#durationInput').val(15);    // 15 min

@@ -16,11 +16,6 @@ my $CLIENT_ID = '18830375155-q1bh1fhapui07fp7drs6fcgp4vca4hn4.apps.googleusercon
 my $CLIENT_SECRET = 'VZKzvmy9uqJRIx2ziuOFo2xF';
 my $REDIRECT_URI = 'http://rplusmgmt.com/api/googleauth/callback';
 
-my $task_types_dict = {};
-for my $x (@{Rplus::Model::DictTaskType::Manager->get_objects(query => [delete_date => undef,], sort_by => 'id')}) {
-    $task_types_dict->{$x->name} = $x->id;
-}
-
 sub getAssetAsJSON {
     my $asset = shift;
     my $t_str;
@@ -139,6 +134,11 @@ sub sync {
     my ($user_id) = @_;
     my $items = [];
 
+    my $task_types_dict = {};
+    for my $x (@{Rplus::Model::DictTaskType::Manager->get_objects(query => [delete_date => undef,], sort_by => 'id')}) {
+        $task_types_dict->{$x->name} = $x->id;
+    }
+
     my $data = getGoogleData($user_id);
     return [] unless $data->{permission_granted};
     my $authorization_str = getAuthorizationStr($user_id);
@@ -179,7 +179,7 @@ sub sync {
             my $summary;
             my $description;
             while (my ($key, $value) = each %$task_types_dict) {
-                if ($item->{summary} =~ /^$key/i) {
+                if ($item->{summary} =~ /^$key: /i) {
                     $item->{summary} =~ s/^$key: //i;     # вырежем из описания тип задачи
                     $task_type_id = $value;
                 }

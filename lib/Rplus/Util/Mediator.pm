@@ -53,10 +53,9 @@ sub add_mediator {
 		$mediator = Rplus::Model::Mediator::Manager->get_objects(query => [phone_num => $phone_num, delete_date => undef])->[0];
 	} else {
 		$mediator = Rplus::Model::Mediator->new;
+        $mediator->phone_num($phone_num);
 		$mediator->added_by($added_by);
 	}
-
-    $mediator->phone_num($phone_num);
 
     my $company = Rplus::Model::MediatorCompany::Manager->get_objects(query => [[\'lower(name) = ?' => lc($company_name)], delete_date => undef])->[0];
     unless ($company) {
