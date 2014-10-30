@@ -217,6 +217,8 @@ sub list {
     my $per_page = $self->param("per_page") || 30;
     my $color_tag_id = $self->param("color_tag_id") || 'any';
 
+    my $rq_id = $self->param("rq_id") || 42;
+
     # "where" query
     my @query;
     {
@@ -294,6 +296,7 @@ sub list {
         count => Rplus::Model::Realty::Manager->get_objects_count(query => [@query, delete_date => undef], with_objects => ['color_tags', @with_objects]),
         list => [],
         page => $page,
+        rq_id => $rq_id,
     };
 
     # Delete FTS data if no objects found
