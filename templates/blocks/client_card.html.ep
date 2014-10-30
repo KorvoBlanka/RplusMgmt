@@ -438,7 +438,9 @@
               subscription.queries.push($(this).val());
             });
 
-            subscription.end_date = moment($('[name="end_date"]:input', this).datepicker('getDate')).format('YYYY-MM-DD') + 'T' + moment(subscription.add_date).format('HH:mm:ssZZ');
+            if ($('[name="end_date"]:input', this).datepicker('getDate') != 'Invalid Date') {
+              subscription.end_date = moment($('[name="end_date"]:input', this).datepicker('getDate')).format('YYYY-MM-DD') + 'T' + moment(subscription.add_date).format('HH:mm:ssZZ');
+            }
 
             if (!subscription.client_id) subscription.client_id = client.id;
             $.ajax({

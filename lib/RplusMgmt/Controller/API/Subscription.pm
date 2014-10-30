@@ -401,7 +401,6 @@ sub update {
     my $queries = Mojo::Collection->new($self->param('queries[]'))->map(sub { trim $_ })->compact->uniq;
     $subscription->queries($queries);
     $subscription->add_date('now()');
-    say $subscription->end_date;
 
     if (str2time($subscription->end_date) <= time()) {
         $subscription->end_date(undef);
@@ -435,7 +434,7 @@ sub save {
     # Validation
     $self->validation->required('client_id')->like(qr/^\d+$/);
     $self->validation->required('offer_type_code')->in(qw(sale rent));
-    $self->validation->required('end_date')->is_datetime;
+    $self->validation->optional('end_date')->is_datetime;
     $self->validation->optional('realty_limit')->like(qr/^\d+$/);
     $self->validation->optional('send_owner_phone')->in(qw(0 1 true false));
 
@@ -467,7 +466,12 @@ sub save {
     $subscription->end_date($end_date);
     $subscription->realty_limit($realty_limit);
     $subscription->send_owner_phone($send_owner_phone);
-    #$subscription->proposed_realty($realty_ids);
+
+    $subscription->add_date('now()');
+
+    if (str2time($subscription->end_date) <= time()) {
+        $subscription->end_date(undef);
+    }
 
     eval {
         $subscription->save($subscription->id ? (changes_only => 1) : (insert => 1));
