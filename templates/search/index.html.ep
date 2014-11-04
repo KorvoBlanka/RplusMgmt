@@ -308,7 +308,7 @@
   }
 
   .numpad-key:active {
-    -webkit-transform: scale(0.92);
+    /*-webkit-transform: scale(0.92);*/
     background-color: rgba(255,255,255,0.40) !important;
   }
 

@@ -11,6 +11,8 @@ use Rplus::Model::Realty::Manager;
 
 use Mojo::Collection;
 
+use Data::Dumper;
+
 sub list {
     my $self = shift;
 
@@ -181,11 +183,12 @@ sub delete {
     my $mediator = Rplus::Model::Mediator::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
     my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(query => [delete_date => undef, \("owner_phones && '{".$mediator->phone_num."}'")]);
     while (my $realty = $realty_iter->next) {
-        if (scalar $realty->owner_phones > 1) {
+        if (scalar @{ $realty->owner_phones } > 1) {
             $cant_delete = 1;
             last;
         }
     }
+
     return $self->render(json => {error => 'Forbidden', description => 'Есть объекты недвижимости с таким телефоном'}) if $cant_delete;
 
     $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(query => [delete_date => undef, \("owner_phones && '{".$mediator->phone_num."}'")]);

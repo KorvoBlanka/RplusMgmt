@@ -451,6 +451,10 @@ sub save {
     my $export_media_ok = Rplus::DB->new_or_cached->dbh->selectall_hashref(q{SELECT M.id, M.name FROM media M WHERE M.type = 'export' AND M.delete_date IS NULL}, 'id');
     $data{export_media} = Mojo::Collection->new($self->param('export_media[]'))->grep(sub { exists $export_media_ok->{$_} })->uniq;
 
+    if (!$realty->agent_id || $realty->agent_id == 10000) {
+        $realty->export_media(Mojo::Collection->new());
+    }
+
     # Check for errors & check that we can rewrite agent
     return $self->render(json => {errors => \@errors}, status => 400) if @errors;
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => write => $data{agent_id});
@@ -633,6 +637,10 @@ sub update {
 
     if ($realty->state_code eq 'work' && !$realty->agent_id) {
         return $self->render(json => {error => 'Forbidden'}, status => 403);
+    }
+
+    if (!$realty->agent_id || $realty->agent_id == 10000) {
+        $realty->export_media(Mojo::Collection->new());
     }
 
     # Save data

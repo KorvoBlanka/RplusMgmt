@@ -374,6 +374,12 @@
       "use strict";
       $(function () {
         $(document).on('click', 'a[href="#"]', function (event) { event.preventDefault(); });
+        $(window).on('load', function (event) { 
+          if (!window.chrome) {
+            alert('Для корректной работы программы необходимо использовать браузер Google Chrome');
+          }
+        });
+        
       });
 
       function getClientNewCount() {

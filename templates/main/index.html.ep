@@ -4,7 +4,12 @@
   <div class="col-12 col-sm-12 col-lg-12">
     <div class="jumbotron">
       <h1>RplusMgmt</h1>
-      <p>Добро пожаловать в Rplus Managememt. Выберите один из пунктов меню.</p>
+      <p>Добро пожаловать в Rplus Managememt.</p>
+      <div style="font-size: 18px;">
+        <p>Для начала работы:</p>
+        <p>1 - Настройте имопрт объектов (<span class="glyphicon glyphicon-cog" style="position: relative; top: 4px;"></span> -> Импорт)</p>
+        <p>2 - Настройте пользователей (<span class="glyphicon glyphicon-cog" style="position: relative; top: 4px;"></span> -> Пользователи)</p>
+      </div>
     </div>
   </div>
 </div>
