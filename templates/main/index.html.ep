@@ -7,7 +7,7 @@
       <p>Добро пожаловать в Rplus Managememt.</p>
       <div style="font-size: 18px;">
         <p>Для начала работы:</p>
-        <p>1 - Настройте имопрт объектов (<span class="glyphicon glyphicon-cog" style="position: relative; top: 4px;"></span> -> Импорт)</p>
+        <p>1 - Настройте импорт объектов (<span class="glyphicon glyphicon-cog" style="position: relative; top: 4px;"></span> -> Импорт)</p>
         <p>2 - Настройте пользователей (<span class="glyphicon glyphicon-cog" style="position: relative; top: 4px;"></span> -> Пользователи)</p>
       </div>
     </div>

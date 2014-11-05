@@ -375,7 +375,8 @@
       $(function () {
         $(document).on('click', 'a[href="#"]', function (event) { event.preventDefault(); });
         $(window).on('load', function (event) { 
-          if (!window.chrome) {
+          var browser = /chrome/.test(navigator.userAgent.toLowerCase()) || /safari/.test(navigator.userAgent.toLowerCase());
+          if (!browser) {
             alert('Для корректной работы программы необходимо использовать браузер Google Chrome');
           }
         });
