@@ -224,9 +224,9 @@ sub save {
     $task->start_date($start_date);
     $task->end_date($end_date);
 
-    my $result;
     my $gdata = Rplus::Util::GoogleCalendar::getGoogleData($assigned_user_id);
     if ($gdata->{permission_granted}) {
+        my $result;
         my $task_type = Rplus::Model::DictTaskType::Manager->get_objects(query => [id => $task_type_id, delete_date => undef])->[0];
         if ($task->id && $task->google_id) {
             if ($task->assigned_user_id == $assigned_user_id) {     # если исполнитель не изменился, просто внесем изменения
@@ -255,15 +255,16 @@ sub save {
                 end_date => $end_date,
             });
         }
+        if ($result->{id}) {
+            $task->google_id($result->{id});
+        }        
     }
 
-    if ($result->{id}) {
-        $task->google_id($result->{id});
-    }
+    $task->task_type_id($task_type_id);
     $task->assigned_user_id($assigned_user_id);
     $task->save(changes_only => 1);
 
-    return $self->render(json => {status => 'success', id => $task->id, google_id => $task->google_id, result => Dumper $result});
+    return $self->render(json => {status => 'success', id => $task->id, google_id => $task->google_id});
 }
 
 sub delete {
