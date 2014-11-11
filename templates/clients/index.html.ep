@@ -370,18 +370,19 @@
     }
 
     var media_export = {};
-    var agents_ids = {};
     
     function createContextMenu() {
       var context_cb = function(e){
         var $menu_export = $("#el_export");
-        $menu_export.removeClass('disabled');
         var $menu_states = $("#el_states");
         $menu_states.removeClass('disabled');
+        $menu_export.removeClass('disabled');
         $("#el_assign").removeClass('disabled');
         $("#el_delete").removeClass('disabled');
         $("#el_open").removeClass('disabled');
         $("#el_agents").removeClass('disabled');
+        $('#el_task').removeClass('disabled');
+        $('#el_notify').removeClass('disabled');
 
         var $menu_el = $(".export-check");
         $menu_el.each(function () {
@@ -410,14 +411,16 @@
               $(".export-check" + id_key).removeClass("export-check-hidden").removeClass("export-check-visible").addClass("export-check-grayed");
             }
           }
-          var agent_id = agents_ids[id];
+          var agent_id = $this.data('obj').agent_id;
           if ('<%= $self->stash('user')->{role} %>' != 'manager') {   // fixme
             if (agent_id == null) {
+              console.log('null');
               $("#el_assign").removeClass('disabled');
 
               $menu_export.addClass('disabled');
               $menu_states.addClass('disabled');
               $("#el_delete").addClass('disabled');
+              $('#el_notify').addClass('disabled');
 
             } else {
               $("#el_assign").addClass('disabled');
@@ -425,6 +428,8 @@
                 $menu_export.addClass('disabled');
                 $menu_states.addClass('disabled');
                 $("#el_delete").addClass('disabled');
+                $('#el_task').addClass('disabled');
+                $('#el_notify').addClass('disabled');
               }
             }
           } 
@@ -465,11 +470,11 @@
           % }
         ]},
         % }
-        {text: '<span class="glyphicon glyphicon-send"></span> Уведомить', subMenu: [
+        {text: '<span class="glyphicon glyphicon-send"></span> Уведомить', element_id: 'el_notify', subMenu: [
           {text: '<span class="glyphicon glyphicon-ok"></span>&nbsp&nbspСМС', data_action: 'notify-sms', data_val: '', },
           {text: '<span class="glyphicon glyphicon-envelope"></span>&nbsp&nbspe-mail', data_action: 'notify-email', data_val: '', },
         ]},
-        {text: '<span class="glyphicon glyphicon-cog"></span> Задача', subMenu: [
+        {text: '<span class="glyphicon glyphicon-cog"></span> Задача', element_id: 'el_task', subMenu: [
           % my $iter = Rplus::Model::DictTaskType::Manager->get_objects_iterator(query => [or => [category => 'seller', category => 'both'], delete_date => undef,], sort_by => 'id');
           % while (my $x = $iter->next) {
             {text: '&nbsp<%= $x->name %>', data_action: 'task-create', data_val: '<%= $x->id %>', },
@@ -509,7 +514,7 @@
           % }
         ]},
         % }
-        {text: '<span class="glyphicon glyphicon-cog"></span> Задача', subMenu: [
+        {text: '<span class="glyphicon glyphicon-cog"></span> Задача',  element_id: 'el_task_client', subMenu: [
           % my $iter = Rplus::Model::DictTaskType::Manager->get_objects_iterator(query => [or => [category => 'buyer', category => 'both'], delete_date => undef,], sort_by => 'id');
           % while (my $x = $iter->next) {
             {text: '&nbsp<%= $x->name %>', data_action: 'task-create', data_val: '<%= $x->id %>', },
@@ -799,7 +804,6 @@
       if ($tr.length) {
         var page = $tr.data('page');
         $tr.replaceWith(buildHtmlForRealty(realty, page));
-        agents_ids[r.id] = r.agent_id;
         media_export[r.id] = r.export_media;
       }
     }

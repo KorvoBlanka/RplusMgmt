@@ -416,12 +416,13 @@
     function createContextMenu() {
       var context_cb = function(e){
         var $menu_export = $("#el_export");
-        $menu_export.removeClass('disabled');
         var $menu_states = $("#el_states");
-        $menu_states.removeClass('disabled');
+        var $menu_task = $("#el_task");
+
         $("#el_assign").removeClass('disabled');
         $("#el_delete").removeClass('disabled');
         $("#el_open").removeClass('disabled');
+        $('#el_task').removeClass('disabled');
         $("#el_agents").removeClass('disabled');
 
         var $menu_el = $(".export-check");
@@ -465,6 +466,7 @@
               if (agent_id != <%= $self->stash('user')->{id} %>) {
                 $menu_export.addClass('disabled');
                 $menu_states.addClass('disabled');
+                $menu_task.addClass('disabled');
                 $("#el_delete").addClass('disabled');
               }
             }
@@ -506,7 +508,7 @@
           % }
         ]},
         % }
-        {text: '<span class="glyphicon glyphicon-cog"></span> Задача', subMenu: [
+        {text: '<span class="glyphicon glyphicon-cog"></span> Задача', element_id: 'el_task', subMenu: [
           % my $iter = Rplus::Model::DictTaskType::Manager->get_objects_iterator(query => [or => [category => 'seller', category => 'both'], delete_date => undef,], sort_by => 'id');
           % while (my $x = $iter->next) {
             {text: '&nbsp<%= $x->name %>', data_action: 'task-create', data_val: '<%= $x->id %>', },
