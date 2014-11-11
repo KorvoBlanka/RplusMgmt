@@ -32,8 +32,7 @@ my $_serialize = sub {
     my @realty_objs = (ref($_[0]) eq 'ARRAY' ? @{shift()} : shift);
     my %params = @_;
 
-    my @exclude_fields = qw(ap_num source_media_id source_media_text owner_phones work_info);
-    my @exclude_fields_agent_plus = qw(ap_num source_media_text work_info);
+    my @exclude_fields = qw(ap_num source_media_id source_media_text owner_phones work_info reference);
 
     my (@serialized, %realty_h);
     for my $realty (@realty_objs) {
@@ -53,6 +52,7 @@ my $_serialize = sub {
             sublandmark => $realty->sublandmark ? {id => $realty->sublandmark->id, name => $realty->sublandmark->name} : undef,
             main_photo_thumbnail => undef,
             mediator_company => ($realty->mediator_company && $realty->agent_id == 10000) ? $realty->mediator_company->name : '',
+            reference => '',
             sr_state_code => $realty->{sr_state_code},
             sr_offered => $realty->{sr_offered},
         };

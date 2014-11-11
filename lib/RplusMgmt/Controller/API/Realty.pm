@@ -35,7 +35,7 @@ my $_serialize = sub {
     my @realty_objs = (ref($_[0]) eq 'ARRAY' ? @{shift()} : shift);
     my %params = @_;
 
-    my @exclude_fields = qw(ap_num source_media_id source_media_text owner_phones work_info);
+    my @exclude_fields = qw(ap_num source_media_id source_media_text owner_phones work_info reference);
 
     my (@serialized, %realty_h);
     for my $realty (@realty_objs) {
@@ -72,10 +72,9 @@ my $_serialize = sub {
         }
 
         # Exclude fields for read permission "2"
-        if ($self->has_permission(realty => read => $realty->agent_id) == 2) {
+        if ($self->has_permission(realty => read => $realty->agent_id) == 2 && $realty->agent_id != 10000) {
             $x->{$_} = undef for @exclude_fields;
-            
-            if ($realty->agent_id && $realty->agent_id != 10000) {
+            if ($realty->agent_id) {
                 my $user = Rplus::Model::User::Manager->get_objects(query => [id => $realty->agent_id, delete_date => undef])->[0];
                 $x->{owner_phones} = [$user->public_phone_num];
             }
