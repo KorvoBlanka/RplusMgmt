@@ -86,7 +86,8 @@
       if (r.price) digest.push('<br><span class="text-primary">' + r.price + ' тыс. руб.' + '</span>');
       if (r.agent_id) {
         if (r.agent_id == 10000) {
-          digest.push('<br><span>Посредник: ' + r.mediator_company + '</span>');
+          console.log(r.mediator_company);
+          digest.push('<br><span>Посредник: ' + r.mediator_company + ' ' + (r.owner_phones ? Rplus.Util.formatPhoneNum(r.owner_phones[0]) : '') + '</span>');
         } else {
           var agent = Rplus.Table.users[r.agent_id];
           digest.push('<br><span>Агент: ' + (agent.public_name || agent.name) + ', ' + (agent.public_phone_num || Rplus.Util.formatPhoneNum(Rplus.Table.users[r.agent_id].phone_num)) + '</span>');

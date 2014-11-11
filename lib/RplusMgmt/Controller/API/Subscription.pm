@@ -67,8 +67,12 @@ my $_serialize = sub {
         }
 
         # Exclude fields for read permission "2"
-        if ($self->has_permission(realty => read => $realty->agent_id) == 2) {
+        if ($self->has_permission(realty => read => $realty->agent_id) == 2 && $realty->agent_id != 10000) {
             $x->{$_} = undef for @exclude_fields;
+            if ($realty->agent_id) {
+                my $user = Rplus::Model::User::Manager->get_objects(query => [id => $realty->agent_id, delete_date => undef])->[0];
+                $x->{owner_phones} = [$user->public_phone_num];
+            }
         }
 
         # if it's a demo acc - hide refs and phones
