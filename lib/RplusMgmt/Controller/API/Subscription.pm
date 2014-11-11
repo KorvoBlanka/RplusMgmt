@@ -71,11 +71,6 @@ my $_serialize = sub {
             $x->{$_} = undef for @exclude_fields;
         }
 
-        # Exclude fields for read permission "3"
-        if ($self->has_permission(realty => read => $realty->agent_id) == 3) {
-            $x->{$_} = undef for @exclude_fields_agent_plus;
-        }
-
         # if it's a demo acc - hide refs and phones
         if ($self->account_type() eq 'demo') {
             $x->{reference} = '';

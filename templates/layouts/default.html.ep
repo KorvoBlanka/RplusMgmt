@@ -231,7 +231,7 @@
     <div style="background-color: #fff; border-radius: 50%;">
       <img style="width: 40px;" src="<%= $assets_url%>/loading-blue.gif">
     </div>
-  </div>  
+  </div>
     <!-- Navbar -->
     <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
       <div class="container">

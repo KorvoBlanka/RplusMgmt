@@ -36,7 +36,6 @@ my $_serialize = sub {
     my %params = @_;
 
     my @exclude_fields = qw(ap_num source_media_id source_media_text owner_phones work_info);
-    my @exclude_fields_agent_plus = qw(ap_num source_media_text work_info);
 
     my (@serialized, %realty_h);
     for my $realty (@realty_objs) {
@@ -73,19 +72,13 @@ my $_serialize = sub {
         }
 
         # Exclude fields for read permission "2"
-        if ($realty->agent_id && $realty->agent_id != 10000 && $self->has_permission(realty => read => $realty->agent_id) == 2) {
+        if ($self->has_permission(realty => read => $realty->agent_id) == 2) {
             $x->{$_} = undef for @exclude_fields;
             
-            my $user = Rplus::Model::User::Manager->get_objects(query => [id => $realty->agent_id, delete_date => undef])->[0];
-            $x->{owner_phones} = [$user->public_phone_num];
-        }
-
-        # Exclude fields for read permission "3"
-        if ($realty->agent_id && $realty->agent_id != 10000 && $self->has_permission(realty => read => $realty->agent_id) == 3) {
-            $x->{$_} = undef for @exclude_fields_agent_plus;
-            
-            my $user = Rplus::Model::User::Manager->get_objects(query => [id => $realty->agent_id, delete_date => undef])->[0];
-            $x->{owner_phones} = [$user->public_phone_num];            
+            if ($realty->agent_id && $realty->agent_id != 10000) {
+                my $user = Rplus::Model::User::Manager->get_objects(query => [id => $realty->agent_id, delete_date => undef])->[0];
+                $x->{owner_phones} = [$user->public_phone_num];
+            }
         }
 
         # if it's a demo acc - hide refs and phones
