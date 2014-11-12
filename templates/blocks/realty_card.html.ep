@@ -329,37 +329,36 @@
       } else {
         $('#unlock-btn').addClass('hidden');
       }
+
+      if (realty.owner_phones) {
+        $('#dg_p_contacts_label', $realty_modal).removeClass('hidden');
+        $('#dg_p_contacts', $realty_modal).removeClass('hidden');
+        $('#dg_p_contacts_label', $realty_modal).html('Телефон');
+        $('#dg_p_contacts', $realty_modal).html(Rplus.Util.formatPhoneNum(realty.owner_phones.join(', ')));
+      } else {
+        $('#dg_p_contacts_label', $realty_modal).addClass('hidden');        
+        $('#dg_p_contacts', $realty_modal).addClass('hidden');
+        $('#dg_p_contacts', $realty_modal).html(Rplus.Util.formatPhoneNum(''));
+      }
       
       if (realty.agent_id == 10000) {   // посредник
         $('#dg_p9_label', $realty_modal).html('Предложение');
         $('span[data-name="dg_p9"]', $realty_modal).html(realty.mediator_company);
-
-        if (realty.owner_phones) {
-          $('#dg_p_contacts', $realty_modal).html(Rplus.Util.formatPhoneNum(realty.owner_phones[0]));
-        } else {
-          $('#dg_p_contacts', $realty_modal).html(Rplus.Util.formatPhoneNum(''));
-        }
-        $('#dg_p_contacts_label', $realty_modal).html('Телефон');
-
-        $('#dg_p_contacts', $realty_modal).removeClass('hidden');
-        $('#dg_p_contacts_label', $realty_modal).removeClass('hidden');
       } else {
         if (realty.agent_id) {
           var agent = Rplus.Table.users[realty.agent_id];
 
           $('#dg_p9_label', $realty_modal).html('Агент');
 
+          $('#dg_p_contacts_label', $realty_modal).removeClass('hidden');
+          $('#dg_p_contacts', $realty_modal).removeClass('hidden');
+
           $('#dg_p_contacts', $realty_modal).html((agent.public_phone_num || Rplus.Util.formatPhoneNum(agent.phone_num)));
           $('#dg_p_contacts_label', $realty_modal).html('Телефон');
-
-          $('#dg_p_contacts', $realty_modal).removeClass('hidden');
-          $('#dg_p_contacts_label', $realty_modal).removeClass('hidden');
+          
         } else {
           $('#dg_p9_label', $realty_modal).html('Предложение');
           $('span[data-name="dg_p9"]', $realty_modal).html('Собственник');
-
-          $('#dg_p_contacts', $realty_modal).addClass('hidden');
-          $('#dg_p_contacts_label', $realty_modal).addClass('hidden');
         }
       }
 
