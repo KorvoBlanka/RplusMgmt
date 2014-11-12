@@ -93,7 +93,7 @@
           digest.push('<br><span>Агент: ' + (agent.public_name || agent.name) + ', ' + (agent.public_phone_num || Rplus.Util.formatPhoneNum(Rplus.Table.users[r.agent_id].phone_num)) + '</span>');
         }
       } else {
-        digest.push('<br><span>Собственник</span>');
+        digest.push('<br><span>Собственник ' + (r.owner_phones ? Rplus.Util.formatPhoneNum(r.owner_phones[0]) : '') + '</span>');
       }
       return digest.join(', ');
     },
