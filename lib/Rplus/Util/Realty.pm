@@ -203,7 +203,6 @@ sub find_similar {
                     address_object_id => $data{'address_object_id'}, house_num => $data{'house_num'},
                 )),
 
-
                 ($data{'ap_num'} ? (OR => [ap_num => $data{'ap_num'}, ap_num => undef]) : ()),
                 ($data{'rooms_count'} ? (OR => [rooms_count => $data{'rooms_count'}, rooms_count => undef]) : ()),
                 ($data{'rooms_offer_count'} ? (OR => [rooms_offer_count => $data{'rooms_offer_count'}, rooms_offer_count => undef]) : ()),

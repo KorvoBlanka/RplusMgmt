@@ -637,7 +637,6 @@
         state_class = 'deleted';
       }
 
-
       var xhtml = '<tr class="' + state_class + '" data-id="' + r.id + '" data-page="' + page + '" data-lat="' + r.latitude + '" data-lng="' + r.longitude + '">';
       xhtml += '<td style="width: 28px;">' + tag + '</td>';
       xhtml += '<td style="width: 24px;"><span class="glyphicon ' + classes.join(' ') + '"></span><br>' + photo +'<br><br>' + '' + '</td>';

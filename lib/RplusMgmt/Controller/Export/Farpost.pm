@@ -71,17 +71,16 @@ sub index {
             $header_fmt2->copy($header_fmt1);
             my $header = {
                 'A1' => { text => "Тип сделки", width => 15 },
-                'B1' => { text => "Тип недвижимости", width => 15 },
-                'C1' => { text => "Кол. комн." },
-                'D1' => { text => "Р-он", width => 22 },
-                'E1' => { text => "Улица", width => 35 },
-                'F1' => { text => "Номер дома" },
-                'G1' => { text => "Общая площадь, кв.м." },
-                'H1' => { text => "Этаж" },
-                'I1' => { text => "Всего этажей" },
-                'J1' => { text => "Дополнительное описание", width => 25 },
-                'K1' => { text => "Ссылки на фотографии", width => 70 },
-                'L1' => { text => "Цена руб." },
+                'B1' => { text => "Кол. комн." },
+                'C1' => { text => "Р-он", width => 22 },
+                'D1' => { text => "Улица", width => 35 },
+                'E1' => { text => "Номер дома" },
+                'F1' => { text => "Общая площадь, кв.м." },
+                'G1' => { text => "Этаж" },
+                'H1' => { text => "Всего этажей" },
+                'I1' => { text => "Дополнительное описание", width => 25 },
+                'J1' => { text => "Ссылки на фотографии", width => 70 },
+                'K1' => { text => "Цена руб." },
             };
             for my $x (keys %$header) {
                 if ($x =~ /^(\S)\d$/) {
@@ -122,10 +121,16 @@ sub index {
                     }
                     my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $realty->id, delete_date => undef])};
 
+                    my $rooms_count = '';
+                    if ($realty->type_code eq 'apartment') {
+                        $rooms_count = $realty->rooms_count;
+                    } else {
+                        $rooms_count = $realty->type->name;
+                    }
+
                     my $row = [
                         $realty->offer_type->name,
-                        $realty->type->name,
-                        $realty->rooms_count || '',
+                        $rooms_count || '',
                         $area ? $area->name : '',
                         $realty->address_object ? $realty->address_object->name.($realty->address_object->short_type ne 'ул' ? ' '.$realty->address_object->short_type : '') : '',
                         $realty->house_num || '',
