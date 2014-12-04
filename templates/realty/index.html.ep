@@ -483,6 +483,7 @@
       
       context.init({preventDoubleContext: true, compress: true, above: 'auto',}, context_cb);
       context.attach('#realtyTable', [
+        {text: '<span class="glyphicon glyphicon-ok"></span>&nbsp&nbspПроверить', element_id: 'el_check', data_action: 'realty-check',},
         {text: '<span class="glyphicon glyphicon-folder-open"></span>&nbsp&nbsp<%= ucfloc 'open' %>', element_id: 'el_open', data_action: 'realty-open',},
         % if (has_permission(realty => 'write')->{can_assign}) {
           {text: '<span class="glyphicon glyphicon-user"></span>&nbsp&nbspНазначить', element_id: 'el_assign', data_action: 'realty-set-agent', data_val: "<%= $self->stash('user')->{id} %>",},
@@ -660,16 +661,13 @@
           _tid = setTimeout(function(){updateRealty()},10000);
 
           if (data.rq_id != rq_id) {
-            console.log('!');
             return 0;
           }
 
-          var inserted = 0;
           for (var i = 0; i < data.list.length; i++) {
             var r = data.list[i];
             // check if id in table
             if($('#realtyTable > tbody > tr[data-id="' + r.id + '"]').length > 0) {continue;};
-            inserted ++;
             var xhtml = '<tr data-page="' + data.page + '" data-id="' + r.id + '" data-lat="' + r.latitude + '" data-lng="' + r.longitude +  '"';
             xhtml += ' class="';
             var h = getHistory(r.id);
@@ -691,7 +689,11 @@
               xhtml += '<td class="' + (!f.visible ? 'hidden' : '') + '"' + (f.style ? ' style="' + f.style + '"' : '') + '>' + f.val(r) + '</td>';
             }
             xhtml += '</tr>';
-            $('#realtyTable > tbody').prepend(xhtml);
+            if (i == 0) {
+              $('#realtyTable > tbody').prepend(xhtml);
+            } else {
+              $('#realtyTable > tbody > tr')[i - 1].after(xhtml);
+            }
             var $tr = $('#realtyTable > tbody > tr[data-id="' + r.id + '"]');
             $tr.data('obj', r);
             $('#realtyTableWrapper').scrollTop($('#realtyTableWrapper').scrollTop() + $tr.height());
@@ -1103,6 +1105,17 @@
       $('[data-action="realty-create"]').click(function (e) {
         openRealtyCard(null);
 
+      });
+
+      // Open realty object card
+      $('[data-action="realty-check"]').click(function (e) {
+        var $selected = $('#realtyTable > tbody > tr.selected');
+        var phones = [];
+        $selected.each(function () {
+          phones = phones.concat(($(this).data('obj')).owner_phones);
+        });
+        $('#searchQuery').val(phones.join(', '));
+        listRealty(1);
       });
 
       // Open realty object card

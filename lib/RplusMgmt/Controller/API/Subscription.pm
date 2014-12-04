@@ -377,14 +377,14 @@ sub realty_update {
         my $values_str = '';
         my $sid = $subscription->id;
         while (my $realty = $realty_iter->next) {
-            Rplus::Model::SubscriptionRealty->new(subscription_id => $subscription->id, realty_id => $realty->id)->save;
-            #my $realty_id = $realty->id; 
-            #$values_str .= "($sid, $realty_id),";
+            #Rplus::Model::SubscriptionRealty->new(subscription_id => $subscription->id, realty_id => $realty->id)->save;
+            my $realty_id = $realty->id; 
+            $values_str .= "($sid, $realty_id),";
         }
-        #if (length $values_str > 0) {
-        #    chop $values_str;
-        #    Rplus::DB->new_or_cached->dbh->do("INSERT INTO subscription_realty (subscription_id, realty_id) VALUES $values_str;");
-        #}
+        if (length $values_str > 0) {
+            chop $values_str;
+            Rplus::DB->new_or_cached->dbh->do("INSERT INTO subscription_realty (subscription_id, realty_id) VALUES $values_str;");
+        }
     }
 }
 
