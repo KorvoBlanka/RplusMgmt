@@ -12,24 +12,41 @@ use Rplus::Model::Mediator::Manager;
 use Rplus::Model::MediatorCompany;
 use Rplus::Model::MediatorCompany::Manager;
 
+use Data::Dumper;
+
 say 'checking realty';
 say update_mediators() . ' objects updated';
 
 sub update_mediators {
     my $count = 0;
-    my $mediator_iter = Rplus::Model::Mediator::Manager->get_objects_iterator(query => [delete_date => undef], require_objects => ['company']);
-    while (my $x = $mediator_iter->next) {
-        my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(query => [delete_date => undef, '!agent_id' => 10000,  \("owner_phones && '{".$x->phone_num."}'")]);
+    #my $mediator_iter = Rplus::Model::Mediator::Manager->get_objects_iterator(query => [delete_date => undef], require_objects => ['company']);
+    #while (my $x = $mediator_iter->next) {
+        my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(query => [delete_date => undef,]);
         while (my $realty = $realty_iter->next) {
-            $count ++;
-            $realty->mediator_company_id($x->company->id);
-            $realty->agent_id(10000);
-            if($realty->state_code eq 'work') {
-                $realty->state_code('raw');    
+            my $a = $realty->owner_phones;
+            next unless scalar @{ $a };
+            my $x = Rplus::Model::Mediator::Manager->get_objects(query => [phone_num => $a, delete_date => undef], require_objects => ['company'], limit => 1,)->[0];
+
+            if ($x) {
+                if (!$realty->agent_id || $realty->agent_id != 10000) {
+                    $count ++;
+                    $realty->mediator_company_id($x->company->id);
+                    $realty->agent_id(10000);
+                    if($realty->state_code eq 'work') {
+                        $realty->state_code('raw');    
+                    }
+                    $realty->save(changes_only => 1);
+                    say $realty->id;
+                }
+            } else {
+                if ($realty->agent_id && $realty->agent_id == 10000) {
+                    $realty->mediator_company_id(undef);
+                    $realty->agent_id(undef);
+                    $realty->save(changes_only => 1);
+                    say $realty->id;                    
+                }
             }
-            $realty->save(changes_only => 1);
-            say $realty->id;
         }
-    }
+
     return $count;
 }
