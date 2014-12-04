@@ -50,6 +50,9 @@ sub run {
     } 
     $last_ts = $rt_param->ts;
 
+    $rt_param->ts('now');
+    $rt_param->save(chages_only => 1);
+
     #my $rt_param = Rplus::Model::RuntimeParam->new(key => 'opt_var')->load();
     
     my $import_param = Rplus::Model::RuntimeParam->new(key => 'import')->load();
@@ -183,8 +186,6 @@ sub run {
             }
         }
     }
-    $rt_param->ts('now');
-    $rt_param->save(chages_only => 1);
 }
 
 sub get_load_average {

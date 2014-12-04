@@ -664,6 +664,7 @@
             return 0;
           }
 
+          var prev_id = 0;
           for (var i = 0; i < data.list.length; i++) {
             var r = data.list[i];
             // check if id in table
@@ -689,14 +690,15 @@
               xhtml += '<td class="' + (!f.visible ? 'hidden' : '') + '"' + (f.style ? ' style="' + f.style + '"' : '') + '>' + f.val(r) + '</td>';
             }
             xhtml += '</tr>';
-            if (i == 0) {
+            console.log(prev_id);
+            if (prev_id == 0) {
               $('#realtyTable > tbody').prepend(xhtml);
             } else {
-              $('#realtyTable > tbody > tr')[i - 1].after(xhtml);
+              $('#realtyTable > tbody > tr[data-id="' + prev_id + '"]').after(xhtml);
             }
             var $tr = $('#realtyTable > tbody > tr[data-id="' + r.id + '"]');
             $tr.data('obj', r);
-            $('#realtyTableWrapper').scrollTop($('#realtyTableWrapper').scrollTop() + $tr.height());
+            prev_id = r.id;
           }
           _listRealty_finished = false;
         });
