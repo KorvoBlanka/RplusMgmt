@@ -793,7 +793,7 @@
       $('form[role="search"]').submit(function (e) { e.preventDefault(); });
 
       // Filters
-      $('[data-filter] a').click(function (e) {
+      $('[data-filter] > ul a').click(function (e) {
         var $display = $(this).closest('[data-filter]').data('val', $(this).data('val')).find('> a [role="display"]');
         if ($(this).data('type') == 'text') { $display.text($(this).text()) } else { $display.html($(this).html()) };
         listRealty(1);
