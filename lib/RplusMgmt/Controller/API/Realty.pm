@@ -72,7 +72,7 @@ my $_serialize = sub {
         }
 
         # Exclude fields for read permission "2"
-        if ($self->has_permission(realty => read => $realty->agent_id) == 2 && $realty->agent_id != 10000) {
+        if ($self->has_permission(realty => read => $realty->agent_id) == 2 && $realty->agent_id != 10000 && $realty->agent->superior != $self->stash('user')->{id}) {
             $x->{$_} = undef for @exclude_fields;
             if ($realty->agent_id) {
                 my $user = Rplus::Model::User::Manager->get_objects(query => [id => $realty->agent_id, delete_date => undef])->[0];
@@ -187,7 +187,7 @@ sub list {
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => 'read');
 
     # Input validation
-    $self->validation->optional('agent_id')->like(qr/^(?:\d+|any|all|not_med|nobody)$/);
+    $self->validation->optional('agent_id')->like(qr/^(?:\d+|any|all|not_med|nobody|a\d+)$/);
     $self->validation->optional('page')->like(qr/^\d+$/);
     $self->validation->optional('per_page')->like(qr/^\d+$/);
 
@@ -222,12 +222,6 @@ sub list {
           
         if ($state_code ne 'any') { push @query, state_code => $state_code } else { push @query, '!state_code' => 'deleted' };
         if ($offer_type_code ne 'any') { push @query, offer_type_code => $offer_type_code };
-        if ($self->has_permission(realty => 'read')->{only_work}) {
-          push @query, or => [
-              agent_id => $self->stash('user')->{id},
-              state_code => 'work',
-          ];
-        }
 
         my $agent_ok;
         if ($agent_id eq 'all' && $self->has_permission(realty => 'read')->{others}) {
@@ -236,6 +230,17 @@ sub list {
         } elsif ($agent_id eq 'not_med') {
             push @query, 'agent_id' => undef;
             $agent_ok = 1;
+        } elsif ($agent_id =~ /^a(\d+)$/) {
+
+            my $a_id = [];
+
+            for my $a (@{Rplus::Model::User::Manager->get_objects(query => [role => ['agent', 'agent_ext'], superior => $1, delete_date => undef], sort_by => 'name')}) {
+                push @{$a_id}, $a->id;
+            }
+
+            push @query, agent_id => $a_id;
+            $agent_ok = 1;
+
         } elsif ($agent_id =~ /^\d+$/ && $self->has_permission(realty => read => $agent_id)) {
             push @query, agent_id => $agent_id;
             $agent_ok = 1;

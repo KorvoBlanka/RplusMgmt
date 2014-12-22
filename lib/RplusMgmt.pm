@@ -194,7 +194,7 @@ sub startup {
 
         my $acc_data = $self->get_acc_data();
         my $c_phone_prefix = $acc_data->{phone_prefix};
-        $phone_prefix //= $c_phone_prefix;
+        $phone_prefix = $c_phone_prefix;
 
         if ($phone_num !~ /^\d{10}$/) {
             $phone_num =~ s/\D//g;

@@ -201,22 +201,43 @@
           } else {
             $('#googleSyncCb').prop('checked', true);
           }
+
+          if (data.role != 'manager')
+
+          $('select[name="candidates"]').html('');
+          for (var i = 0; i < data.candidates.length; i++) {
+            var a = data.candidates[i];
+            $('select[name="candidates"]').append('<option value="' + a.id + '">' + a.name + '</option>');
+          }
+
+          $('select[name="subordinates"]').html('');
+          for (var i = 0; i < data.subordinates.length; i++) {
+            var a = data.subordinates[i];
+            $('select[name="subordinates"]').append('<option value="' + a.id + '">' + a.name + '</option>');
+          }
         })
         .fail(function (jqXHR, textStatus, errorThrown) {
           alert('Cannot open user card');
         });
+
     }
 
     function initUserSave() {
       $form.submit(function (e) {
         e.preventDefault();
 
-        var formData = {};
+        var formData = {
+          subordinates: [],
+        };
         var formArray = $(this).serializeArray();
         for (var i = 0; i < formArray.length; i++) {
           var x = formArray[i];
           formData[x.name] = x.value || null;
         }
+
+        $('select[name="subordinates"]').children().each(function (i) {
+          formData.subordinates.push($(this).val());
+        });
 
         $.ajax({
           type: "POST",
@@ -409,6 +430,16 @@
         });      
     });
 
+    $('#buttonAddSub').click(function () {
+      $('select[name="subordinates"]').append($('select[name="candidates"] option:selected'));
+      $('select[name="candidates"] option:selected').remove();
+    });
+
+    $('#buttonRemSub').click(function () {
+      $('select[name="candidates"]').append($('select[name="subordinates"] option:selected'));
+      $('select[name="subordinates"] option:selected').remove();
+    });
+
   })();
 </script>
 % end
@@ -427,6 +458,7 @@
           <li class="active"><a href="#userCard_profileTab" data-toggle="pill"><%= ucfloc 'profile' %></a></li>
           <li><a href="#userCard_addTab" data-toggle="pill"><%= ucfloc 'additional' %></a></li>
           <li><a href="#userCard_telephonyTab" data-toggle="pill"><%= ucfloc 'telephony' %></a></li>
+          <li><a href="#userCard_subordinateTab" data-toggle="pill">Подчиненные</a></li>
         </ul>
 
         <div class="tab-content">
@@ -479,10 +511,12 @@
                     <label for="userCard_userForm_inputRole" class="col-md-3 control-label"><%= ucfloc 'role' %></label>
                     <div class="col-md-9">
                       <select class="form-control input-sm" name="role" id="userCard_userForm_inputRole">
-                        <option value="agent"><%= ucfloc 'agent' %></option>
-                        <option value="agent_ext"><%= ucfloc 'agent_ext' %></option>                        
-                        <option value="dispatcher"><%= ucfloc 'dispatcher' %></option>
+                        <option value="top"> Топ менеджер</option>                      
                         <option value="manager"><%= ucfloc 'manager' %></option>
+                        <option value="agent_ext"><%= ucfloc 'agent_ext' %></option>                        
+                        <option value="agent"><%= ucfloc 'agent' %></option>
+                        <option value="dispatcher"><%= ucfloc 'dispatcher' %></option>
+
                       </select>
                     </div>
                   </div>
@@ -572,7 +606,27 @@
                 </div>
               </div>
             </div>
-          </div>          
+          </div>
+          <div class="tab-pane" id="userCard_subordinateTab">
+            <div class="col-md-5">
+              <div style="width: 100%; height: 190px; border: 1px solid #bbb;">
+                <select name="candidates" size="11" style="width: 100%; border: none;">
+                </select>
+              </div>
+            </div>
+            <div class="col-md-1" style="height: 190px; display: table;">
+              <div style="display: table-cell; vertical-align: middle;">
+                <button id="buttonAddSub">></button>
+                <button id="buttonRemSub"><</button>
+              </div>
+            </div>
+            <div class="col-md-5">
+              <div style="width: 100%; height: 190px; border: 1px solid #bbb;">
+                <select name="subordinates" size="11" style="width: 100%; border: none;">
+                </select>
+              </div>            
+            </div>
+          </div>
         </div>
 
       </div><!-- /.modal-body -->

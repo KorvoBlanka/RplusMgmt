@@ -78,7 +78,17 @@ sub get {
         photo_url => $user->photo_url ? $self->config->{'storage'}->{'url'} . $user->photo_url . '?ts=' . time : '',
         offer_mode => $user->offer_mode,
         sync_google => $user->sync_google,
+        candidates => [],
+        subordinates => [],
     };
+
+    for my $a (@{Rplus::Model::User::Manager->get_objects(query => [role => ['agent', 'agent_ext'], superior => undef, delete_date => undef], sort_by => 'name')}) {
+        push @{$res->{candidates}}, {id => $a->id, name => $a->name,};
+    }
+
+    for my $a (@{Rplus::Model::User::Manager->get_objects(query => [role => ['agent', 'agent_ext'], superior => $user->id, delete_date => undef], sort_by => 'name')}) {
+        push @{$res->{subordinates}}, {id => $a->id, name => $a->name,};
+    }
 
     return $self->render(json => $res);
 }
@@ -183,6 +193,8 @@ sub save {
     my $public_name = $self->param_n('public_name');
     my $public_phone_num = $self->param_n('public_phone_num');
 
+    my @subordinates = $self->param('subordinates[]');
+
     my $sip = {};
     $sip->{sip_host} = $self->param_n('sip_host');
     $sip->{sip_login} = $self->param_n('sip_login');
@@ -201,6 +213,19 @@ sub save {
 
     eval {
         $user->save($user->id ? (changes_only => 1) : (insert => 1));
+
+        Rplus::Model::User::Manager->update_objects(
+            set => {superior => undef},
+            where => [superior => $user->id],
+        );
+
+        foreach (@subordinates) {
+            Rplus::Model::User::Manager->update_objects(
+                set => {superior => $user->id},
+                where => [id => $_],
+            );            
+        }
+
         1;
     } or do {
         return $self->render(json => {error => $@}, status => 500);

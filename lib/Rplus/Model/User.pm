@@ -26,6 +26,7 @@ __PACKAGE__->meta->setup(
         offer_mode       => { type => 'varchar', default => 'sale', not_null => 1 },
         google           => { type => 'scalar', default => '{}', not_null => 1, remarks => 'active: true/false, access_token_valid: true/false, access_token: XXXXX, refresh_token: XXXXX, access_token_ts: 2014.09.19T00:00:00+00:11' },
         sync_google      => { type => 'varchar', default => 'ask', not_null => 1, remarks => 'yes/no/ask' },
+        superior         => { type => 'integer' },
     ],
 
     primary_key_columns => [ 'id' ],

@@ -793,7 +793,7 @@
       $('form[role="search"]').submit(function (e) { e.preventDefault(); });
 
       // Filters
-      $('[data-filter] > ul > li > a').click(function (e) {
+      $('[data-filter] a').click(function (e) {
         var $display = $(this).closest('[data-filter]').data('val', $(this).data('val')).find('> a [role="display"]');
         if ($(this).data('type') == 'text') { $display.text($(this).text()) } else { $display.html($(this).html()) };
         listRealty(1);
@@ -1558,11 +1558,21 @@
                 <li><a href="#" data-val="all" data-type="text"><strong><%= ucfloc 'all agents' %></strong></a></li>
                 <li><a href="#" data-val="10000" data-type="text"><strong> Посредник</strong></a></li>
                 <li><a href="#" data-val="not_med" data-type="text"><strong> Собственник</strong></a></li>
+                <li><a href="#" data-val="<%= $self->stash('user')->{id} %>" data-type="text"><strong> Мои объекты</strong></a></li>
                 % }
-                % for my $x (@{Rplus::Model::User::Manager->get_objects(query => [role => ['agent', 'agent_ext', 'manager'], delete_date => undef], sort_by => 'name')}) {
-                  % if (has_permission(realty => read => $x->id) && $x->id != 10000) {
-                  <li><a href="#" data-val="<%= $x->id %>" data-type="text"><%= $x->name %></a></li>
-                  % }
+                % if ($self->stash('user')->{role} eq 'top') {
+                %   for my $m (@{Rplus::Model::User::Manager->get_objects(query => [role => ['manager'], delete_date => undef], sort_by => 'name')}) {
+                      <li class="dropdown-submenu"><a href="#" data-val="<%= $m->id %>" data-type="text"><%= $m->name %></a><ul class="dropdown-menu dropdown-context dropdown-context-sub compressed-context" style="bottom: auto;">
+                        <li><a href="#" data-val="a<%= $m->id %>" data-type="text"> Все агенты</a></li>
+                %     for my $a (@{Rplus::Model::User::Manager->get_objects(query => [role => ['agent', 'agent_ext'], superior => $m->id, delete_date => undef], sort_by => 'name')}) {                      
+                        <li><a href="#" data-val="<%= $a->id %>" data-type="text"><%= $a->name %></a></li>
+                %     }
+                      </ul></li>
+                %   }
+                % } elsif ($self->stash('user')->{role} eq 'manager') {
+                %   for my $a (@{Rplus::Model::User::Manager->get_objects(query => [role => ['agent', 'agent_ext'], superior => $self->stash('user')->{id}, delete_date => undef], sort_by => 'name')}) {
+                  <li><a href="#" data-val="<%= $a->id %>" data-type="text"><%= $a->name %></a></li>
+                % }
                 % }
               </ul>
             </li>
