@@ -312,6 +312,13 @@
             return '';
           }
         }},
+        {id: "superior", name: "Менеджер", sortName: "agent.superior", visible: false, val: function (r) {
+          if (r.agent_id) {
+            var s_id = Rplus.Table['users'][r.agent_id].superior;
+            return s_id ? Rplus.Table['users'][s_id].name : '';
+          }
+          return '';
+        }},        
         {id: "agent", name: "<%= ucfloc 'agent' %>", sortName: "agent.name", visible: true, val: function (r) {
           return r.agent_id ? Rplus.Table['users'][r.agent_id].name : '';
         }},
@@ -501,7 +508,7 @@
         {text: '<span class="glyphicon glyphicon-user"></span> Назначить', element_id: 'el_agents', subMenu: [
             {text: '<strong><%= ucfloc 'nobody' %></strong>', data_action: 'realty-set-agent', data_val: '', },
             {text: '<strong> Посредник</strong>', data_action: 'realty-set-agent', data_val: '10000', },
-          % my $iter = Rplus::Model::User::Manager->get_objects_iterator(select => 'id, name', query => [role => ['agent', 'agent_ext', 'manager'], delete_date => undef], sort_by => 'name');
+          % my $iter = Rplus::Model::User::Manager->get_objects_iterator(select => 'id, name', query => [role => ['agent', 'agent_ext', 'manager', 'top'], delete_date => undef], sort_by => 'name');
           % while (my $x = $iter->next) {
           % if ($x->id != 10000) {  
             {text: '<%= $x->name %>', data_action: 'realty-set-agent', data_val: '<%= $x->id %>', },

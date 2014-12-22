@@ -83,7 +83,7 @@ sub get {
     };
 
     for my $a (@{Rplus::Model::User::Manager->get_objects(query => [role => ['agent', 'agent_ext'], superior => undef, delete_date => undef], sort_by => 'name')}) {
-        push @{$res->{candidates}}, {id => $a->id, name => $a->name,};
+        push @{$res->{candidates}}, {id => $a->id, name => $a->name,} unless $a->id == 10000;
     }
 
     for my $a (@{Rplus::Model::User::Manager->get_objects(query => [role => ['agent', 'agent_ext'], superior => $user->id, delete_date => undef], sort_by => 'name')}) {

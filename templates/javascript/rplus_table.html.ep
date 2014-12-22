@@ -103,7 +103,15 @@
     users: { <% { %>
       % my $iter = Rplus::Model::User::Manager->get_objects_iterator(query => [role => ['agent', 'agent_ext', 'manager', 'top'], delete_date => undef]);
       % while (my $x = $iter->next) {
-        "<%= $x->id %>": {id: <%= $x->id %>, offer_mode: "<%= $x->offer_mode %>", name: "<%= $x->name %>", phone_num: "<%= $x->phone_num %>", public_name: "<%= $x->{'public_name'} %>", public_phone_num: "<%= $x->{'public_phone_num'} %>"},
+        "<%= $x->id %>": {
+          id: <%= $x->id %>, 
+          offer_mode: "<%= $x->offer_mode %>", 
+          name: "<%= $x->name %>", 
+          phone_num: "<%= $x->phone_num %>", 
+          public_name: "<%= $x->{'public_name'} %>", 
+          public_phone_num: "<%= $x->{'public_phone_num'} %>",
+          superior: "<%= $x->{'superior'} %>",
+        },
       % }
     <% } %> },
   };
