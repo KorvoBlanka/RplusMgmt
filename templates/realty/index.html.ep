@@ -431,6 +431,8 @@
         $("#el_open").removeClass('disabled');
         $('#el_task').removeClass('disabled');
         $("#el_agents").removeClass('disabled');
+        $menu_states.removeClass('disabled');
+        $menu_export.removeClass('disabled');
 
         var $menu_el = $(".export-check");
         $menu_el.each(function () {
@@ -443,6 +445,11 @@
         $selected.each(function () {
           var $this = $(this);
           var id = $this.data('id');
+          var obj = $this.data('obj');
+
+          console.log(obj);
+          var s_id = Rplus.Table['users'][obj.agent_id] ? Rplus.Table['users'][obj.agent_id].superior : null;
+
           var media_export_row = media_export[id];
           for (var id_key in media_export_row) {
             var val = media_export_row[id_key];
@@ -460,7 +467,9 @@
             }
           }
           var agent_id = agents_ids[id];
-          if ('<%= $self->stash('user')->{role} %>' != 'top') {   // fixme
+          if ("<%= $self->stash('user')->{role} %>" == 'top' || ("<%= $self->stash('user')->{role} %>" == 'manager' && (!obj.agent_id || s_id == "<%= $self->stash('user')->{id} %>"))) {
+
+          } else {
             if (agent_id == null) {
               $("#el_assign").removeClass('disabled');
 
@@ -470,6 +479,7 @@
 
             } else {
               $("#el_assign").addClass('disabled');
+              $("#el_agents").addClass('disabled');
               if (agent_id != <%= $self->stash('user')->{id} %>) {
                 $menu_export.addClass('disabled');
                 $menu_states.addClass('disabled');
@@ -508,12 +518,22 @@
         {text: '<span class="glyphicon glyphicon-user"></span> Назначить', element_id: 'el_agents', subMenu: [
             {text: '<strong><%= ucfloc 'nobody' %></strong>', data_action: 'realty-set-agent', data_val: '', },
             {text: '<strong> Посредник</strong>', data_action: 'realty-set-agent', data_val: '10000', },
-          % my $iter = Rplus::Model::User::Manager->get_objects_iterator(select => 'id, name', query => [role => ['agent', 'agent_ext', 'manager', 'top'], delete_date => undef], sort_by => 'name');
+            {text: '<strong> <%= $self->stash('user')->{name} %></strong>', data_action: 'realty-set-agent', data_val: '<%= $self->stash('user')->{id} %>', },
+        % if ($self->stash('user')->{role} eq 'top') {
+          % my $iter = Rplus::Model::User::Manager->get_objects_iterator(select => 'id, name', query => [role => ['agent', 'agent_ext', 'manager'], delete_date => undef], sort_by => 'name');
           % while (my $x = $iter->next) {
           % if ($x->id != 10000) {  
             {text: '<%= $x->name %>', data_action: 'realty-set-agent', data_val: '<%= $x->id %>', },
           % }
           % }
+        % } elsif ($self->stash('user')->{role} eq 'manager') {
+          % my $iter = Rplus::Model::User::Manager->get_objects_iterator(select => 'id, name', query => [role => ['agent', 'agent_ext',], superior => $self->stash('user')->{id}, delete_date => undef], sort_by => 'name');
+          % while (my $x = $iter->next) {
+          % if ($x->id != 10000) {  
+            {text: '<%= $x->name %>', data_action: 'realty-set-agent', data_val: '<%= $x->id %>', },
+          % }
+          % }
+        % }
         ]},
         % }
         {text: '<span class="glyphicon glyphicon-cog"></span> Задача', element_id: 'el_task', subMenu: [
