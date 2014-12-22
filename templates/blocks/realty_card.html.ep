@@ -324,7 +324,7 @@
       var my_id = <%= $self->stash('user')->{id} %>;
       var my_role = '<%= $self->stash('user')->{role} %>';
 
-      if (my_role == 'manager' || realty.agent_id == my_id || realty.title == 'Новый') {
+      if (my_role == 'top' || my_role == 'manager' || realty.agent_id == my_id || realty.title == 'Новый') {
         $('#unlock-btn').removeClass('hidden');
       } else {
         $('#unlock-btn').addClass('hidden');

@@ -460,7 +460,7 @@
             }
           }
           var agent_id = agents_ids[id];
-          if ('<%= $self->stash('user')->{role} %>' != 'manager') {   // fixme
+          if ('<%= $self->stash('user')->{role} %>' != 'top') {   // fixme
             if (agent_id == null) {
               $("#el_assign").removeClass('disabled');
 
