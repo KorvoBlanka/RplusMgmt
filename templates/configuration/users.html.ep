@@ -62,6 +62,16 @@
     cursor: pointer;
   }
 
+  .user-card {
+    border: 1px solid #aaa;
+    padding: 8px;
+    cursor: pointer;
+  }
+
+  .img-thumbnail {
+    border: none;
+  }
+
 </style>
 % end
 
@@ -136,11 +146,20 @@
         .done(function (data) {
           //$('#userList').html('');
           var xhtml = '';
+
+          xhtml += '<div class="col-lg-4 user-preview margin-bottom-15" data-action="user-create" style="margin-top: 15px;">';
+          xhtml += '<div class="media user-card">';
+
+          xhtml += '<img data-src="holder.js/110x110/big/text:+" class="img-thumbnail pull-left">';
+          xhtml += '<h4 class="media-heading" style="line-height: 100px; color: #999;">Добавить пользователя</h4>';
+          xhtml += '</div>';
+          xhtml += '</div>';
+
           for (var i = 0; i < data.list.length; i++) {
             var x = data.list[i];
-            xhtml += '<div class="col-lg-4 user-preview margin-bottom-15" data-id="' + x.id + '">';
-            xhtml += '<div class="media">';
+            xhtml += '<div class="col-lg-4 user-preview margin-bottom-15" data-id="' + x.id + '" data-action="user-open">';
             xhtml += '<a class="pull-left" href="#">';
+            xhtml += '<div class="media user-card">';
             if (x.photo_url.length > 0) {
               xhtml += '<img src="' + x.photo_url + '" style="height: 110px; width: 110px;" class="img-thumbnail">';
             } else {
@@ -148,7 +167,7 @@
             }
             xhtml += '</a>';
             xhtml += '<div class="media-body">';
-            xhtml += '<h4 class="media-heading">' + Rplus.Util.escape(x.name) + '</h4>';
+            xhtml += '<h4 class="media-heading" style="color: #999;">' + Rplus.Util.escape(x.name) + '</h4>';
             xhtml += '<p><span class="label label-' + (x.role == 'manager' ? 'warning' : 'primary') + '">' + x.role_loc + '</span></p>';
             xhtml += '<p>';
             if (x.phone_num) xhtml += '<small><%= ucfloc q{phone num} %>: ' + Rplus.Util.formatPhoneNum(x.phone_num) + '</small><br>';
@@ -274,12 +293,14 @@
         if ($(this).prop('checked')) { $('[name="password"]:input', $modal).attr('type', 'text'); } else { $('[name="password"]:input', $modal).attr('type', 'password'); }
       });
 
-      $('#userList').on('click', '.user-preview .img-thumbnail', function (e) {
+      $('#userList').on('click', 'div[data-action="user-open"]', function (e) {
         openUserCard($(this).closest('.user-preview').data('id'));
       });
 
       // Create new user
-      $('button[data-action="user-create"]').click(function (e) { createUserCard(); });
+      $('#userList').on('click', 'div[data-action="user-create"]', function (e) {
+        createUserCard();
+      });
 
       initUserSave();
       listUsers();
@@ -517,7 +538,6 @@
                         <option value="agent_ext"><%= ucfloc 'agent_ext' %></option>                        
                         <option value="agent"><%= ucfloc 'agent' %></option>
                         <option value="dispatcher"><%= ucfloc 'dispatcher' %></option>
-
                       </select>
                     </div>
                   </div>
@@ -658,6 +678,5 @@
       <span class="text-primary"><%= ucfloc 'found' %></span> <span class="text-primary" id="userCount">0</span>
       <span class="glyphicon glyphicon-refresh animation-rotate invisible indicator-ajax"></span>
     </div>
-    <button type="button" class="btn btn-primary btn-sm navbar-btn" data-action="user-create"><span class="glyphicon glyphicon-plus"></span> <%= ucfloc 'add' %></button>
   </div>
 </nav>
