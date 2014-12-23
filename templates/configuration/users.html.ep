@@ -76,6 +76,10 @@
     border: none;
   }
 
+  #photo-upload-button{
+    text-align: center;
+  } 
+
 </style>
 % end
 
@@ -226,6 +230,7 @@
           }
 
           if (data.role == 'manager') {
+            $('#subordinatesTab').removeClass('hidden');
             $('select[name="candidates"]').html('');
             for (var i = 0; i < data.candidates.length; i++) {
               var a = data.candidates[i];
@@ -237,6 +242,8 @@
               var a = data.subordinates[i];
               $('select[name="subordinates"]').append('<option value="' + a.id + '">' + a.name + '</option>');
             }
+          } else {
+            $('#subordinatesTab').addClass('hidden');
           }
 
         })
@@ -484,7 +491,7 @@
           <li class="active"><a href="#userCard_profileTab" data-toggle="pill"><%= ucfloc 'profile' %></a></li>
           <li><a href="#userCard_addTab" data-toggle="pill"><%= ucfloc 'additional' %></a></li>
           <li><a href="#userCard_telephonyTab" data-toggle="pill"><%= ucfloc 'telephony' %></a></li>
-          <li><a href="#userCard_subordinateTab" data-toggle="pill">Подчиненные</a></li>
+          <li id="subordinatesTab"><a href="#userCard_subordinateTab" data-toggle="pill">Подчиненные</a></li>
         </ul>
 
         <div class="tab-content">

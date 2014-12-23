@@ -921,18 +921,20 @@
             <label class="col-md-3 col-lg-3 control-label" for="agentInput"><%= ucfloc 'agent' %></label>
             <div class="col-md-9 col-lg-9">
               <select class="form-control input-sm" name="agent_id" id="agentInput">
-              %# check read (!) permission to prevent empty list
-              % if (has_permission(realty => read => undef)) {
                 <option class="text-muted" value="">-</option>
-              % }
-              % for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [role => ['agent', 'agent_ext', 'manager'], delete_date => undef], sort_by => 'name')}) {
-                % if ($self->stash('user')->{role} eq 'manager' || $x->id == $self->stash('user')->{id}) {
-                  <option value="<%= $x->id %>"><%= $x->name %></option>
-                % } else {
-                  <option disabled value="<%= $x->id %>"><%= $x->name %></option>
+                % if ($self->stash('user')->{role} eq 'top') {
+                % for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [role => ['agent', 'agent_ext', 'manager'], delete_date => undef], sort_by => 'name')}) {                  
+                <option value="<%= $x->id %>"><%= $x->name %></option>
                 % }
-              % }
+                % } elsif ($self->stash('user')->{role} eq 'manager') {
+                % for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [role => ['agent', 'agent_ext', 'manager'], superior => $self->stash('user')->{id}, delete_date => undef], sort_by => 'name')}) {                  
+                <option value="<%= $x->id %>"><%= $x->name %></option>
+                % }
+                % } elsif ($self->stash('user')->{role} eq 'agent_ext') {
+                <option value="<%= $self->stash('user')->{id} %>"><%= $self->stash('user')->{name} %></option>
+                % } else {
 
+                % }
               </select>
             </div>
           </div>

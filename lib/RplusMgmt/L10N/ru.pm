@@ -201,6 +201,7 @@ our %Lexicon = (
     # T
     q{type} => 'тип',
     q{to} => 'до',
+    q{top} => 'топ менеджер',
     q{total} => 'всего',
     q{telephony} => 'IP телефония',
 
