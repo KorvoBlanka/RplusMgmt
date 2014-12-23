@@ -202,19 +202,20 @@
             $('#googleSyncCb').prop('checked', true);
           }
 
-          if (data.role != 'manager')
+          if (data.role == 'manager') {
+            $('select[name="candidates"]').html('');
+            for (var i = 0; i < data.candidates.length; i++) {
+              var a = data.candidates[i];
+              $('select[name="candidates"]').append('<option value="' + a.id + '">' + a.name + '</option>');
+            }
 
-          $('select[name="candidates"]').html('');
-          for (var i = 0; i < data.candidates.length; i++) {
-            var a = data.candidates[i];
-            $('select[name="candidates"]').append('<option value="' + a.id + '">' + a.name + '</option>');
+            $('select[name="subordinates"]').html('');
+            for (var i = 0; i < data.subordinates.length; i++) {
+              var a = data.subordinates[i];
+              $('select[name="subordinates"]').append('<option value="' + a.id + '">' + a.name + '</option>');
+            }
           }
 
-          $('select[name="subordinates"]').html('');
-          for (var i = 0; i < data.subordinates.length; i++) {
-            var a = data.subordinates[i];
-            $('select[name="subordinates"]').append('<option value="' + a.id + '">' + a.name + '</option>');
-          }
         })
         .fail(function (jqXHR, textStatus, errorThrown) {
           alert('Cannot open user card');
