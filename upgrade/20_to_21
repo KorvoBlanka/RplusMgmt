@@ -1,0 +1,200 @@
+#!/usr/bin/env perl
+
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+
+use Rplus::Modern;
+use Rplus::DB;
+
+use Mojo::Asset::File;
+use JSON;
+use Data::Dumper;
+
+$Data::Dumper::Terse = 1;
+$Data::Dumper::Quotekeys = 0;
+
+my $dbh = Rplus::DB->new_or_cached->dbh;
+
+if (1) {
+    say 'updating config';
+
+    my $config_path = "$FindBin::Bin/../app.conf";
+    my $config = read_config($config_path);
+    #print Dumper $config;
+    $config->{roles} = {
+        tst => {
+
+        },
+        agent => {
+            realty => {
+                read => {
+                    nobody => 2,
+                    others => 2
+                },
+                write => {
+                   others => 0,
+                   nobody => 0
+                },
+                export => 0
+            },
+            clients => {
+                read => {
+                    nobody => 0,
+                    others => 0
+                },
+                write => 0
+            },
+            subscriptions => {
+                write => 0,
+                read => 1
+            }
+        },
+        dispatcher => {
+            subscriptions => {
+                                write => 1,
+                                read => 1
+            },
+            clients => {
+                subscribe => 1,
+                write => 1,
+                read => {
+                    others => 1,
+                    nobody => 1
+                }
+            },
+            realty => {
+                read => {
+                    others => 2,
+                    nobody => 0
+                },
+                write => {
+                    nobody => 0,
+                    others => 0
+                }
+            }
+        },
+        agent_ext => {
+            realty => {
+                analyse => 1,
+                read => {
+                    nobody => 1,
+                    others => 2
+                },
+                write => {
+                    others => 0,
+                    nobody => 0,
+                    can_assign => 1
+                },
+                export => 0
+            },
+            subscriptions => {
+                write => 1,
+                read => 1
+            },
+            clients => {
+                write => 0,
+                read => {
+                    others => 0,
+                    nobody => 1
+                }
+            }
+        },
+        manager => {
+            mediators => {
+                read => 1,
+                write => 1
+            },
+            realty => {
+                read => {
+                    nobody => 1,
+                    others => 2,
+                },
+                analyse => 1,
+                delete => {
+                    nobody => 1,
+                    others => 1,
+                },
+                write => {
+                    nobody => 1,
+                    others => 1,
+                }
+            },
+            subscriptions => {
+                read => 1,
+                write => 1
+            },
+            clients => {
+                subscribe => 1,
+                write => 1,
+                read => {
+                    others => 1,
+                    nobody => 1
+                }
+            },
+        },
+        top => {
+            mediators => {
+                read => 1,
+                write => 1
+            },
+            realty => {
+                export => 1,
+                read => {
+                    nobody => 1,
+                    others => 1
+                },
+                analyse => 1,
+                delete => {
+                    nobody => 1,
+                    others => 1
+                },
+                write => {
+                    others => 1,
+                    nobody => 1
+                }
+            },
+            subscriptions => {
+                read => 1,
+                write => 1
+            },
+            clients => {
+                subscribe => 1,
+                write => 1,
+                read => {
+                    others => 1,
+                    nobody => 1
+                }
+            },
+            users => {
+                manage => 1
+            },
+            landmarks => {
+                write => 1,
+                read => 1
+            }
+        }
+    };
+    #print Dumper $config;
+    write_config($config, $config_path);
+
+    say 'done';
+}
+
+sub read_config {
+    my $file_name = shift;
+
+    my $file = Mojo::Asset::File->new(path => $file_name);
+    my $config = eval $file->slurp;
+    return $config;
+}
+
+sub write_config {
+    my $config = shift;
+    my $file_name = shift;
+
+    open OUTFILE, ">$file_name" or die "Can't open '$file_name':$!";
+
+    print OUTFILE Dumper $config;
+}
+
+exit 1;
