@@ -1661,25 +1661,33 @@ a:focus {
         </li>
 
         <!-- Agent filter -->
-        % if ($self->stash('user')->{role} ne 'manager') {
+        % if ($self->stash('user')->{role} eq 'top') {
         <li class="dropdown" data-filter="assigned_user_id" data-val="<%= $self->stash('user')->{id} %>">
           <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-user"></span><span role="display"> <%= $self->stash('user')->{name} %></span> <b class="caret"></b></a>
           <ul class="dropdown-menu">
-            <li><a href="#" data-val="<%= $self->stash('user')->{id} %>" data-type="text"><strong> <%= $self->stash('user')->{name} %></strong></a></li>
+            <li><a href="#" data-val="all" data-type="text"><strong> Все</strong></a></li>
+            % for my $x (@{Rplus::Model::User::Manager->get_objects(query => [role => ['agent', 'agent_ext', 'manager', 'top'], delete_date => undef], sort_by => 'name')}) {
+            <li><a href="#" data-val="<%= $x->id %>" data-type="text"><%= $x->name %></a></li>
+            % }
+          </ul>
+        </li>
+        %} elsif ($self->stash('user')->{role} eq 'manager') {
+        <li class="dropdown" data-filter="assigned_user_id" data-val="<%= $self->stash('user')->{id} %>">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-user"></span><span role="display"> <%= $self->stash('user')->{name} %></span> <b class="caret"></b></a>
+          <ul class="dropdown-menu">
+            <li><a href="#" data-val="all" data-type="text"><strong> Все</strong></a></li>
+            % for my $x (@{Rplus::Model::User::Manager->get_objects(query => [role => ['agent', 'agent_ext', 'manager', 'top'], delete_date => undef], sort_by => 'name')}) {
+            <li><a href="#" data-val="<%= $x->id %>" data-type="text"><%= $x->name %></a></li>
+            % }
           </ul>
         </li>
         % } else {
         <li class="dropdown" data-filter="assigned_user_id" data-val="<%= $self->stash('user')->{id} %>">
           <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-user"></span><span role="display"> <%= $self->stash('user')->{name} %></span> <b class="caret"></b></a>
           <ul class="dropdown-menu">
-            <li><a href="#" data-val="all" data-type="text"><strong> Все</strong></a></li>
-            % for my $x (@{Rplus::Model::User::Manager->get_objects(query => [role => ['agent', 'agent_ext', 'manager'], delete_date => undef], sort_by => 'name')}) {
-            % if (has_permission(realty => read => $x->id) && $x->id != 10000) {
-            <li><a href="#" data-val="<%= $x->id %>" data-type="text"><%= $x->name %></a></li>
-              % }
-            % }
+            <li><a href="#" data-val="<%= $self->stash('user')->{id} %>" data-type="text"><strong> <%= $self->stash('user')->{name} %></strong></a></li>
           </ul>
-        </li>
+        </li>          
         % }
 
         <li class="dropdown" data-filter="days_count" data-val="1">
