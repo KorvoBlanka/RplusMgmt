@@ -923,7 +923,7 @@
               <select class="form-control input-sm" name="agent_id" id="agentInput">
                 <option class="text-muted" value="">-</option>
                 % if ($self->stash('user')->{role} eq 'top') {
-                % for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [role => ['agent', 'agent_ext', 'manager'], delete_date => undef], sort_by => 'name')}) {                  
+                % for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [role => ['agent', 'agent_ext', 'manager', 'top'], delete_date => undef], sort_by => 'name')}) {                  
                 <option value="<%= $x->id %>"><%= $x->name %></option>
                 % }
                 % } elsif ($self->stash('user')->{role} eq 'manager') {
