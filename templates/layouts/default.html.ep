@@ -324,7 +324,7 @@
     <!-- HolderJS -->
     <script type="application/javascript" src="<%= $assets_url %>/holder/<%= $holderjs_ver %>/holder.min.js"></script>
     <script> 
-      Holder.add_theme("big", {background:"#eee", foreground:"#999", size: 52});
+      Holder.add_theme("big", {background:"#eee", foreground:"#a3cd73", size: 52});
     </script>
     <!-- Pines Notify -->
     <script type="application/javascript" src="<%= $assets_url %>/pnotify/1.2.2/jquery.pnotify.js"></script>
