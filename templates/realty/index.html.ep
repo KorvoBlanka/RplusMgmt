@@ -316,7 +316,7 @@
           }
         }},
         {id: "superior", name: "Менеджер", sortName: "agent.superior", visible: false, val: function (r) {
-          if (r.agent_id) {
+          if (r.agent_id && r.agent_id != 10000) {
             var s_id = Rplus.Table['users'][r.agent_id].superior;
             return s_id ? Rplus.Table['users'][s_id].name : '';
           }
@@ -360,9 +360,9 @@
         lang        : 'ru-RU',
         format      : 'input',            //input, textarea, html
         build       : 'overwrite',           //append, overwrite
-        startImg    : 'http://assets.maklerdv.ru/jquery.webSpeech/sm-mic.png',
-        animateImg  : 'http://assets.maklerdv.ru/jquery.webSpeech/sm-mic-on.png',
-        errorImg    : 'http://assets.maklerdv.ru/jquery.webSpeech/sm-mic-off.png',
+        startImg    : '<%= $assets_url %>/jquery.webSpeech/sm-mic.png',
+        animateImg  : '<%= $assets_url %>/jquery.webSpeech/sm-mic-on.png',
+        errorImg    : '<%= $assets_url %>/jquery.webSpeech/sm-mic-off.png',
         showHelp    : false,
         showInterim : false,
         continuous  : false,
