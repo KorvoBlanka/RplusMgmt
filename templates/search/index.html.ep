@@ -643,9 +643,9 @@
         lang        : 'ru-RU',
         format      : 'input',            //input, textarea, html
         build       : 'overwrite',           //append, overwrite
-        startImg    : 'http://assets.maklerdv.ru/jquery.webSpeech/sm-mic.png',
-        animateImg  : 'http://assets.maklerdv.ru/jquery.webSpeech/sm-mic-on.png',
-        errorImg    : 'http://assets.maklerdv.ru/jquery.webSpeech/sm-mic-off.png',
+        startImg    : '<%= $assets_url %>/jquery.webSpeech/sm-mic.png',
+        animateImg  : '<%= $assets_url %>/jquery.webSpeech/sm-mic-on.png',
+        errorImg    : '<%= $assets_url %>/jquery.webSpeech/sm-mic-off.png',
         showHelp    : false,
         showInterim : false,
         continuous  : false,

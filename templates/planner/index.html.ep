@@ -1517,7 +1517,7 @@ a:focus {
         <div class="row" style="border-top: 1px solid #aaa; margin-top: 25px;">
           <div class="col-lg-12 col-md-12" style="padding-top: 15px;">
             <select class="form-control input-sm selectpicker" data-size="7" name="assignedUserId" id="assignedUserIdInput">
-            % for my $x (@{Rplus::Model::User::Manager->get_objects(query => [delete_date => undef,], sort_by => 'id')}) {
+            % for my $x (@{Rplus::Model::User::Manager->get_objects(query => ['!id' => 10000, delete_date => undef,], sort_by => 'id')}) {
               <option value="<%= $x->id %>"><%= $x->name %></option>
             % }
             </select>
@@ -1666,7 +1666,7 @@ a:focus {
           <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-user"></span><span role="display"> <%= $self->stash('user')->{name} %></span> <b class="caret"></b></a>
           <ul class="dropdown-menu">
             <li><a href="#" data-val="all" data-type="text"><strong> Все</strong></a></li>
-            % for my $x (@{Rplus::Model::User::Manager->get_objects(query => [role => ['agent', 'agent_ext', 'manager', 'top'], delete_date => undef], sort_by => 'name')}) {
+            % for my $x (@{Rplus::Model::User::Manager->get_objects(query => ['!id' => 10000, delete_date => undef], sort_by => 'name')}) {
             <li><a href="#" data-val="<%= $x->id %>" data-type="text"><%= $x->name %></a></li>
             % }
           </ul>
@@ -1676,7 +1676,7 @@ a:focus {
           <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-user"></span><span role="display"> <%= $self->stash('user')->{name} %></span> <b class="caret"></b></a>
           <ul class="dropdown-menu">
             <li><a href="#" data-val="all" data-type="text"><strong> Все</strong></a></li>
-            % for my $x (@{Rplus::Model::User::Manager->get_objects(query => [role => ['agent', 'agent_ext', 'manager', 'top'], delete_date => undef], sort_by => 'name')}) {
+            % for my $x (@{Rplus::Model::User::Manager->get_objects(query => ['!id' => 10000, delete_date => undef], sort_by => 'name')}) {
             <li><a href="#" data-val="<%= $x->id %>" data-type="text"><%= $x->name %></a></li>
             % }
           </ul>
