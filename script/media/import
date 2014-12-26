@@ -81,7 +81,8 @@ sub run {
             next;
         }
 
-        my $tx = $ua->get($acc_data->{realty_buffer_url}. "/api/realty/list", form => {last_ts => $last_ts, offer_type => $offer_type, source_media => $source_media, realty_type => $realty_type});
+        say $acc_data->{realty_buffer_url} . '/api/realty/list' . '?last_ts=' . $last_ts . '&offer_type=' . $offer_type . '&source_media=' . $source_media . '&realty_type=' . $realty_type;
+        my $tx = $ua->get($acc_data->{realty_buffer_url} . '/api/realty/list', form => {last_ts => $last_ts, offer_type => $offer_type, source_media => $source_media, realty_type => $realty_type});
         if (my $res = $tx->success) {
             my $realty_data = $res->json->{list};
             for my $data (@$realty_data) {
@@ -100,7 +101,7 @@ sub run {
                 }
 
                 my $id;
-                if ($id = Rplus::Util::Realty->find_similar(%$data, state_code => ['raw', 'work', 'suspended'])) {
+                if ($id = Rplus::Util::Realty->find_similar(%$data, state_code => ['raw', 'work', 'suspended', 'deleted'])) {
                     say "Found similar realty: $id";
                     my $data_id = $data->{id};
                     my $o_realty = Rplus::Model::Realty->new(id => $id)->load;

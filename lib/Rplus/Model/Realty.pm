@@ -64,6 +64,7 @@ __PACKAGE__->meta->setup(
         last_seen_date      => { type => 'timestamp with time zone', default => 'now()', not_null => 1 },
         assign_date         => { type => 'timestamp with time zone', remarks => 'дата-время назначения агента на объект' },
         mediator_company_id => { type => 'integer' },
+        source_url          => { type => 'varchar' },
     ],
 
     primary_key_columns => [ 'id' ],
