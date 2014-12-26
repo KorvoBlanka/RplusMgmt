@@ -35,7 +35,7 @@ sub find_similar {
 
                 type_code => $data{'type_code'},
                 offer_type_code => $data{'offer_type_code'},
-                state_code => $data{'state_code'},
+                #state_code => $data{'state_code'},
                 ($data{'id'} ? ('!id' => $data{'id'}) : ()),
             ],
             limit => 1,
@@ -81,7 +81,7 @@ sub find_similar {
 
                     type_code => $data{'type_code'},
                     offer_type_code => $data{'offer_type_code'},
-                    state_code => $data{'state_code'},
+                    #state_code => $data{'state_code'},
                     ($data{'id'} ? ('!id' => $data{'id'}) : ()),
                 ],
                 limit => 1
@@ -111,7 +111,7 @@ sub find_similar {
 
                     type_code => $data{'type_code'},
                     offer_type_code => $data{'offer_type_code'},
-                    state_code => $data{'state_code'},
+                    #state_code => $data{'state_code'},
                     ($data{'id'} ? ('!id' => $data{'id'}) : ()),
                 ],
                 limit => 1
@@ -140,7 +140,7 @@ sub find_similar {
 
                     type_code => $data{'type_code'},
                     offer_type_code => $data{'offer_type_code'},
-                    state_code => $data{'state_code'},
+                    #state_code => $data{'state_code'},
                     ($data{'id'} ? ('!id' => $data{'id'}) : ()),
                 ],
                 limit => 1,
@@ -170,7 +170,7 @@ sub find_similar {
 
                     type_code => $data{'type_code'},
                     offer_type_code => $data{'offer_type_code'},
-                    state_code => $data{'state_code'},
+                    #state_code => $data{'state_code'},
                     ($data{'id'} ? ('!id' => $data{'id'}) : ()),
                 ],
                 limit => 1,
@@ -191,7 +191,7 @@ sub find_similar {
 
                 type_code => $data{'type_code'},
                 offer_type_code => $data{'offer_type_code'},
-                state_code => $data{'state_code'},
+                #state_code => $data{'state_code'},
                 ($data{'id'} ? ('!id' => $data{'id'}) : ()),
 
                 ($data{'latitude'} && $data{'longitude'} ? (

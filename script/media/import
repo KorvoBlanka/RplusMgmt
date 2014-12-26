@@ -87,17 +87,18 @@ sub run {
             my $realty_data = $res->json->{list};
             for my $data (@$realty_data) {
 
+                say '-----------------------';
+
                 my @owner_phones = flat $data->{owner_phones};
-                my $mediator = Rplus::Model::Mediator::Manager->get_objects(query => [phone_num => \@owner_phones, delete_date => undef], require_objects => ['company'], limit => 1,)->[0];
-                if ($mediator) {
-                    say 'mediator detected!';
+                if (scalar @owner_phones > 0) {
+                    my $mediator = Rplus::Model::Mediator::Manager->get_objects(query => [phone_num => \@owner_phones, delete_date => undef], require_objects => ['company'], limit => 1,)->[0];
+                    if ($mediator) {
+                        say 'mediator detected!';
 
-                    $mediator->last_seen_date('now()');
-                    $mediator->save(changes_only => 1);
-
-                    next if ($offer_type eq 'rent');
-                    $data->{agent_id} = 10000;
-                    $data->{mediator_company_id} = $mediator->company->id;
+                        next if ($offer_type eq 'rent');
+                        $data->{agent_id} = 10000;
+                        $data->{mediator_company_id} = $mediator->company->id;
+                    }
                 }
 
                 my $id;
@@ -177,9 +178,9 @@ sub run {
                         }
 
                         # Сохраним историю
-                        if ($id && !Rplus::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $data->{source_media_id}, media_num => '', realty_id => $id])) {
-                            Rplus::Model::MediaImportHistory->new(media_id => $data->{source_media_id}, media_num => '', media_text => $data->{'source_media_text'}, realty_id => $id)->save;                    
-                        }
+                        #if ($id && !Rplus::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $data->{source_media_id}, media_num => '', realty_id => $id])) {
+                        #    Rplus::Model::MediaImportHistory->new(media_id => $data->{source_media_id}, media_num => '', media_text => $data->{'source_media_text'}, realty_id => $id)->save;                    
+                        #}
                     } or do {
                         say $@;
                     };
@@ -187,14 +188,6 @@ sub run {
             }
         }
     }
-}
-
-sub get_load_average {
-    open(LOAD, "/proc/loadavg") or die "Unable to get server load \n";
-    my $load_avg = <LOAD>;
-    close LOAD;
-    my ( $one_min_avg ) = split /\s/, $load_avg;
-    return $one_min_avg;
 }
 
 1;
