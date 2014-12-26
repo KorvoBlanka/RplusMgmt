@@ -16,8 +16,21 @@ $Data::Dumper::Quotekeys = 0;
 my $dbh = Rplus::DB->new_or_cached->dbh;
 
 if (1) {
-    say 'fail %(';
+    say 'updating db';
+    $dbh->do(q{ALTER TABLE public.realty ADD COLUMN source_url varchar;});
 
+    say 'updating config';
+
+    my $config_path = "$FindBin::Bin/../app.conf";
+    my $config = read_config($config_path);
+    #print Dumper $config;
+    $config->{force_hide_nav} = {
+        agent => ['search'],
+        agent_ext => ['search'],
+        dispatcher => ['realty', 'clients',]
+    },
+
+    write_config($config, $config_path);
 
     say 'done';
 }
