@@ -22,6 +22,9 @@ use List::Flatten;
 use JSON;
 use Data::Dumper;
 
+my $parser = DateTime::Format::Strptime->new( pattern => '%FT%T' );
+my $parser_tz = DateTime::Format::Strptime->new( pattern => '%FT%T%z' );
+
 run(Rplus::Util::Config::get_config());
 
 sub run {
@@ -95,7 +98,7 @@ sub run {
                     if ($mediator) {
                         say 'mediator detected!';
 
-                        next if ($offer_type eq 'rent');
+                        #next if ($offer_type eq 'rent'); на время тестирования
                         $data->{agent_id} = 10000;
                         $data->{mediator_company_id} = $mediator->company->id;
                     }
@@ -106,6 +109,17 @@ sub run {
                     say "Found similar realty: $id";
                     my $data_id = $data->{id};
                     my $o_realty = Rplus::Model::Realty->new(id => $id)->load;
+
+                    # пропустим если объект в базе "новее""
+                    my $o_dt = $parser->parse_datetime($o_realty->last_seen_date);
+                    my $n_dt = $parser_tz->parse_datetime($data->{add_date});
+                    say $o_dt;
+                    say $n_dt;
+                    if ($o_dt >= $n_dt) {
+                        say 'newer!';
+                        next;
+                    }
+
                     $o_realty->source_media_id($data->{source_media_id});
                     $o_realty->source_media_text($data->{source_media_text});
                     $o_realty->last_seen_date($data->{add_date});
