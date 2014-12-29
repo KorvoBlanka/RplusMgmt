@@ -18,7 +18,6 @@ use Rplus::Util::Mediator qw(add_mediator);
 
 use Mojo::UserAgent;
 use Mojo::Collection;
-use List::Flatten;
 use JSON;
 
 use Data::Dumper;
@@ -26,13 +25,8 @@ use Data::Dumper;
 my $parser = DateTime::Format::Strptime->new( pattern => '%FT%T' );
 my $parser_tz = DateTime::Format::Strptime->new( pattern => '%FT%T%z' );
 
-my $t = 0;
-my $d = 0;
 
 run(Rplus::Util::Config::get_config());
-
-say $t;
-say $d;
 
 sub run {
     my $config = shift;
@@ -61,7 +55,7 @@ sub run {
     $last_ts = $rt_param->ts;
 
     $rt_param->ts('now');
-    $rt_param->save(chages_only => 1);
+    #$rt_param->save(chages_only => 1);
 
     #my $rt_param = Rplus::Model::RuntimeParam->new(key => 'opt_var')->load();
     
@@ -96,77 +90,75 @@ sub run {
         if (my $res = $tx->success) {
             my $realty_data = $res->json->{list};
             for my $data (@$realty_data) {
-
-                $t ++;
                 say '-----------------------';
-
-                my @owner_phones = flat $data->{owner_phones};
-                if (scalar @owner_phones > 0) {
-                    my $mediator = Rplus::Model::Mediator::Manager->get_objects(query => [phone_num => \@owner_phones, delete_date => undef], require_objects => ['company'], limit => 1,)->[0];
+                for (@{$data->{'owner_phones'}}) {
+                    my $mediator = $MEDIATOR_PHONES{$_};
                     if ($mediator) {
                         say 'mediator detected!';
-
-                        #next if ($offer_type eq 'rent'); на время тестирования
+                        #say Dumper $mediator;
                         $data->{agent_id} = 10000;
-                        $data->{mediator_company_id} = $mediator->company->id;
+                        $data->{mediator_company_id} = $mediator->{company_id};
+                        last;
                     }
                 }
+                # Закомментил на время тестирования
+                #next if ($data->{agent_id} = 10000 && $offer_type eq 'rent');
 
-                my $id;
-                if ($id = Rplus::Util::Realty->find_similar(%$data, state_code => ['raw', 'work', 'suspended', 'deleted'])) {
-                    $d ++;
-                    say "Found similar realty: $id";
-                    my $data_id = $data->{id};
-                    my $o_realty = Rplus::Model::Realty->new(id => $id)->load;
+                my @realtys = @{Rplus::Util::Realty->find_similar(%$data, state_code => ['raw', 'work', 'suspended', 'deleted'])};
+                if (scalar @realtys > 0) {
+                    foreach (@realtys) {
+                        my $id = $_->id;
+                        my $data_id = $data->{id};
+                        my $o_realty = $_;
+                        say "Found similar realty: $id";
 
-                    # пропустим если объект в базе "новее""
-                    my $o_dt = $parser->parse_datetime($o_realty->last_seen_date);
-                    my $n_dt = $parser_tz->parse_datetime($data->{add_date});
-                    say $o_dt;
-                    say $n_dt;
-                    if ($o_dt >= $n_dt) {
-                        say 'newer!';
-                        next;
-                    }
-
-                    $o_realty->source_media_id($data->{source_media_id});
-                    $o_realty->source_url($data->{source_url});
-                    $o_realty->source_media_text($data->{source_media_text});
-                    $o_realty->last_seen_date($data->{add_date});
-
-
-                    my @phones = ();
-                    foreach (@{$o_realty->owner_phones}) {
-                        push @phones, $_;
-                    }
-                    foreach (@{$o_realty->owner_phones}) {
-                        push @phones, $_;   
-                    }
-                    say Dumper @phones;
-                    $o_realty->owner_phones(Mojo::Collection->new(@phones)->compact->uniq);
-
-                    if ($data->{state_code} ne 'work') {
-                        my @fields = qw(owner_price address_object_id house_num ap_scheme_id rooms_offer_count rooms_count condition_id room_scheme_id house_type_id floors_count floor square_total square_living square_kitchen square_land square_land_type);
-                        foreach(@fields) {
-                            $o_realty->$_($data->{$_}) if $data->{$_};
-                            say $_;
+                        # пропустим если объект в базе "новее"
+                        my $o_dt = $parser->parse_datetime($o_realty->last_seen_date);
+                        my $n_dt = $parser_tz->parse_datetime($data->{add_date});
+                        if ($o_dt >= $n_dt) {
+                            say 'newer!';
+                            next;
                         }
-                    }
 
-                    $o_realty->save(changes_only => 1);
-                    say "updated realty: $id";
+                        $o_realty->source_media_id($data->{source_media_id});
+                        $o_realty->source_url($data->{source_url});
+                        $o_realty->source_media_text($data->{source_media_text});
+                        $o_realty->last_seen_date($data->{add_date});
 
-                    Rplus::Util::Image::remove_images($id);
-                    my $tx = $ua->get($acc_data->{realty_buffer_url} . "/api/realty/get_photos?realty_id=$data_id");
-                    if (my $res = $tx->success) {
-                        my $photo_data = $res->json->{list};
-                        for my $photo (@$photo_data) {
-                            my $new_photo = Rplus::Model::Photo->new;
-                            # Save
-                            $new_photo->realty_id($id);
-                            $new_photo->filename($photo->{photo_url});
-                            $new_photo->thumbnail_filename($photo->{thumbnail_url});
-                            $new_photo->save;
+
+                        my @phones = ();
+                        foreach (@{$o_realty->owner_phones}) {
+                            push @phones, $_;
+                        }
+                        foreach (@{$o_realty->owner_phones}) {
+                            push @phones, $_;   
+                        }
+                        say Dumper @phones;
+                        $o_realty->owner_phones(Mojo::Collection->new(@phones)->compact->uniq);
+
+                        if ($data->{state_code} ne 'work') {
+                            my @fields = qw(owner_price address_object_id house_num ap_scheme_id rooms_offer_count rooms_count condition_id room_scheme_id house_type_id floors_count floor square_total square_living square_kitchen square_land square_land_type);
+                            foreach(@fields) {
+                                $o_realty->$_($data->{$_}) if $data->{$_};
+                                say $_;
+                            }
+                        }
+
+                        $o_realty->save(changes_only => 1);
+                        say "updated realty: $id";
+
+                        Rplus::Util::Image::remove_images($id);
+                        my $tx = $ua->get($acc_data->{realty_buffer_url} . "/api/realty/get_photos?realty_id=$data_id");
+                        if (my $res = $tx->success) {
+                            my $photo_data = $res->json->{list};
+                            for my $photo (@$photo_data) {
+                                my $new_photo = Rplus::Model::Photo->new;
+                                # Save
+                                $new_photo->realty_id($id);
+                                $new_photo->filename($photo->{photo_url});
+                                $new_photo->thumbnail_filename($photo->{thumbnail_url});
+                                $new_photo->save;
+                            }
                         }
                     }
                 } else {

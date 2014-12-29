@@ -29,7 +29,7 @@ sub find_similar {
     if (1 == 2 && $data{'source_media_text'}) {     # выключим проверку на тексту объявления, посмотрим что получится
         # Поиск в таблице недвижимости по тексту объявления
         my $realty = Rplus::Model::Realty::Manager->get_objects(
-            select => 'id',
+            #select => 'id',
             query => [
                 source_media_text => $data{'source_media_text'},
 
@@ -38,9 +38,9 @@ sub find_similar {
                 #state_code => $data{'state_code'},
                 ($data{'id'} ? ('!id' => $data{'id'}) : ()),
             ],
-            limit => 1,
-        )->[0];
-        return $realty->id if $realty;
+            limit => 10,
+        );
+        return $realty if scalar @{$realty} > 0;
 
         # Поиск в таблице истории импорта по тексту объявления
         #my $mih = Rplus::Model::MediaImportHistory::Manager->get_objects(
@@ -65,7 +65,7 @@ sub find_similar {
     #
     if (ref($data{'owner_phones'}) eq 'ARRAY' && @{$data{'owner_phones'}}) {
         my $realty = Rplus::Model::Realty::Manager->get_objects(
-            select => 'id',
+            #select => 'id',
             query => [
                 \("owner_phones && '{".join(',', map { '"'.$_.'"' } @{$data{'owner_phones'}})."}'"),
 
@@ -92,13 +92,13 @@ sub find_similar {
                 ($data{'square_living'} ? (OR => [square_living => $data{'square_living'}, square_living => undef]) : ()),
                 ($data{'square_land'} ? (OR => [square_land => $data{'square_land'}, square_land => undef]) : ()),
             ],
-            limit => 1,
-        )->[0];
-        return $realty->id if $realty;
+            limit => 10,
+        );
+        return $realty if scalar @{$realty} > 0;
     }
 
     # Недвижимость чистая
-    return;
+    return [];
 }
 
 1;
