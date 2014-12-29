@@ -17,15 +17,22 @@ use Rplus::Util::Realty;
 use Rplus::Util::Mediator qw(add_mediator);
 
 use Mojo::UserAgent;
+use Mojo::Collection;
 use List::Flatten;
-
 use JSON;
+
 use Data::Dumper;
 
 my $parser = DateTime::Format::Strptime->new( pattern => '%FT%T' );
 my $parser_tz = DateTime::Format::Strptime->new( pattern => '%FT%T%z' );
 
+my $t = 0;
+my $d = 0;
+
 run(Rplus::Util::Config::get_config());
+
+say $t;
+say $d;
 
 sub run {
     my $config = shift;
@@ -90,6 +97,7 @@ sub run {
             my $realty_data = $res->json->{list};
             for my $data (@$realty_data) {
 
+                $t ++;
                 say '-----------------------';
 
                 my @owner_phones = flat $data->{owner_phones};
@@ -106,6 +114,7 @@ sub run {
 
                 my $id;
                 if ($id = Rplus::Util::Realty->find_similar(%$data, state_code => ['raw', 'work', 'suspended', 'deleted'])) {
+                    $d ++;
                     say "Found similar realty: $id";
                     my $data_id = $data->{id};
                     my $o_realty = Rplus::Model::Realty->new(id => $id)->load;
@@ -121,24 +130,27 @@ sub run {
                     }
 
                     $o_realty->source_media_id($data->{source_media_id});
+                    $o_realty->source_url($data->{source_url});
                     $o_realty->source_media_text($data->{source_media_text});
                     $o_realty->last_seen_date($data->{add_date});
 
-                    my $meta = from_json($o_realty->metadata);
-                    if ($data->{work_info}) {
-                        my $ref = $data->{work_info};
-                        if ($ref !~ /http/) {
-                            $ref =~ s/^.*?(http.*?$)/$1/;
-                        }
-                        $meta->{'reference'} = $ref;
-                        $o_realty->metadata(encode_json($meta));
-                    } else {
-                        delete $meta->{'reference'};
-                        $o_realty->metadata(encode_json($meta));
+
+                    my @phones = ();
+                    foreach (@{$o_realty->owner_phones}) {
+                        push @phones, $_;
                     }
+                    foreach (@{$o_realty->owner_phones}) {
+                        push @phones, $_;   
+                    }
+                    say Dumper @phones;
+                    $o_realty->owner_phones(Mojo::Collection->new(@phones)->compact->uniq);
 
                     if ($data->{state_code} ne 'work') {
-                        $o_realty->owner_price($data->{owner_price});
+                        my @fields = qw(owner_price address_object_id house_num ap_scheme_id rooms_offer_count rooms_count condition_id room_scheme_id house_type_id floors_count floor square_total square_living square_kitchen square_land square_land_type);
+                        foreach(@fields) {
+                            $o_realty->$_($data->{$_}) if $data->{$_};
+                            say $_;
+                        }
                     }
 
                     $o_realty->save(changes_only => 1);

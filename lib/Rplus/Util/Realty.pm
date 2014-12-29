@@ -26,7 +26,7 @@ sub find_similar {
     #
     # Поиск по тексту объявления
     #
-    if ($data{'source_media_text'}) {
+    if (1 == 2 && $data{'source_media_text'}) {     # выключим проверку на тексту объявления, посмотрим что получится
         # Поиск в таблице недвижимости по тексту объявления
         my $realty = Rplus::Model::Realty::Manager->get_objects(
             select => 'id',
@@ -57,126 +57,6 @@ sub find_similar {
         #    limit => 1
         #)->[0];
         #return $mih->realty_id if $mih;
-    }
-
-    #
-    # Комната (room)
-    #
-    if ($category_code eq 'room') {
-        # Совпадение: адресный объект, номер дома, номер квартиры, площадь комнаты
-        if ($data{'address_object_id'} && $data{'house_num'} && $data{'ap_num'} && $data{'square_living'}) {
-            my $realty = Rplus::Model::Realty::Manager->get_objects(
-                select => 'id',
-                query => [
-                    ($data{'latitude'} && $data{'longitude'} ? (
-                        or => [
-                            and => [latitude => $data{'latitude'}, longitude => $data{'longitude'}],
-                            and => [address_object_id => $data{'address_object_id'}, house_num => $data{'house_num'}],
-                        ],
-                    ) : (
-                        address_object_id => $data{'address_object_id'}, house_num => $data{'house_num'},
-                    )),
-                    ap_num => $data{'ap_num'},
-                    square_living => $data{'square_living'},
-
-                    type_code => $data{'type_code'},
-                    offer_type_code => $data{'offer_type_code'},
-                    #state_code => $data{'state_code'},
-                    ($data{'id'} ? ('!id' => $data{'id'}) : ()),
-                ],
-                limit => 1
-            )->[0];
-            return $realty->id if $realty;
-        }
-    }
-
-    #
-    # Квартира (apartment)
-    #
-    if ($category_code eq 'apartment') {
-        # Совпадение: адресный объект, номер дома, номер квартиры
-        if ($data{'address_object_id'} && $data{'house_num'} && $data{'ap_num'}) {
-            my $realty = Rplus::Model::Realty::Manager->get_objects(
-                select => 'id',
-                query => [
-                    ($data{'latitude'} && $data{'longitude'} ? (
-                        or => [
-                            and => [latitude => $data{'latitude'}, longitude => $data{'longitude'}],
-                            and => [address_object_id => $data{'address_object_id'}, house_num => $data{'house_num'}],
-                        ],
-                    ) : (
-                        address_object_id => $data{'address_object_id'}, house_num => $data{'house_num'},
-                    )),
-                    ap_num => $data{'ap_num'},
-
-                    type_code => $data{'type_code'},
-                    offer_type_code => $data{'offer_type_code'},
-                    #state_code => $data{'state_code'},
-                    ($data{'id'} ? ('!id' => $data{'id'}) : ()),
-                ],
-                limit => 1
-            )->[0];
-            return $realty->id if $realty;
-        }
-    }
-
-    #
-    # Дом (house) + Земельный участок (land)
-    #
-    if ($category_code eq 'house' || $category_code eq 'land') {
-        # Совпадение: адресный объект, номер дома
-        if ($data{'address_object_id'} && $data{'house_num'}) {
-            my $realty = Rplus::Model::Realty::Manager->get_objects(
-                select => 'id',
-                query => [
-                    ($data{'latitude'} && $data{'longitude'} ? (
-                        or => [
-                            and => [latitude => $data{'latitude'}, longitude => $data{'longitude'}],
-                            and => [address_object_id => $data{'address_object_id'}, house_num => $data{'house_num'}],
-                        ],
-                    ) : (
-                        address_object_id => $data{'address_object_id'}, house_num => $data{'house_num'},
-                    )),
-
-                    type_code => $data{'type_code'},
-                    offer_type_code => $data{'offer_type_code'},
-                    #state_code => $data{'state_code'},
-                    ($data{'id'} ? ('!id' => $data{'id'}) : ()),
-                ],
-                limit => 1,
-            )->[0];
-            return $realty->id if $realty;
-        }
-    }
-
-    #
-    # Коммерческая недвижимость
-    #
-    if ($category_code eq 'commersial') {
-        # Совпадение: адресный объект, номер дома + проверка по "номер кв/офиса"
-        if ($data{'address_object_id'} && $data{'house_num'}) {
-            my $realty = Rplus::Model::Realty::Manager->get_objects(
-                select => 'id',
-                query => [
-                    ($data{'latitude'} && $data{'longitude'} ? (
-                        or => [
-                            and => [latitude => $data{'latitude'}, longitude => $data{'longitude'}],
-                            and => [address_object_id => $data{'address_object_id'}, house_num => $data{'house_num'}],
-                        ],
-                    ) : (
-                        address_object_id => $data{'address_object_id'}, house_num => $data{'house_num'},
-                    )),
-                    ($data{'ap_num'} ? (OR => [ap_num => $data{'ap_num'}, ap_num => undef]) : ()),
-
-                    type_code => $data{'type_code'},
-                    offer_type_code => $data{'offer_type_code'},
-                    #state_code => $data{'state_code'},
-                    ($data{'id'} ? ('!id' => $data{'id'}) : ()),
-                ],
-                limit => 1,
-            )->[0];
-            return $realty->id if $realty;
-        }
     }
 
     #
