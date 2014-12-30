@@ -55,7 +55,7 @@ sub run {
     $last_ts = $rt_param->ts;
 
     $rt_param->ts('now');
-    $rt_param->save(chages_only => 1);
+    #$rt_param->save(chages_only => 1);
 
     #my $rt_param = Rplus::Model::RuntimeParam->new(key => 'opt_var')->load();
     

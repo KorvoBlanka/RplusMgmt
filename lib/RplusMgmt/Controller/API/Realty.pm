@@ -39,8 +39,6 @@ my $_serialize = sub {
 
     my (@serialized, %realty_h);
     for my $realty (@realty_objs) {
-        
-        my $meta = from_json($realty->metadata);
         my $x = {
             (map { $_ => ($_ =~ /_date$/ ? $self->format_datetime($realty->$_) : scalar($realty->$_)) } grep { !($_ ~~ [qw(delete_date geocoords landmarks metadata fts)]) } $realty->meta->column_names),
 
@@ -56,11 +54,8 @@ my $_serialize = sub {
             main_photo_thumbnail => undef,
             color_tag_id => undef,            
             mediator_company => ($realty->mediator_company && $realty->agent_id == 10000) ? $realty->mediator_company->name : '',
-            reference => '',
+            source_url => $realty->source_url,
         };
-        
-        my $vals = from_json($realty->metadata);
-        $x->{reference} = $vals->{'reference'};
 
         if ($realty->color_tags) {
             foreach($realty->color_tags) {
