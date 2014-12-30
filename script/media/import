@@ -164,16 +164,6 @@ sub run {
                 } else {
                     eval {
                         my $realty = Rplus::Model::Realty->new((map { $_ => $data->{$_} } grep { $_ ne 'category_code' && $_ ne 'id' } keys %$data), state_code => 'raw');
-                        if ($data->{work_info}) {
-                            my $vals = from_json($realty->metadata);
-                            my $ref = $data->{work_info};
-                            if ($ref !~ /http/) {
-                                $ref =~ s/^.*?(http.*?$)/$1/;
-                            }
-                            $vals->{'reference'} = $ref;
-                            $realty->metadata(encode_json($vals));
-                            $realty->{work_info} = '';
-                        }
                         $realty->last_seen_date($data->{add_date});
                         $realty->save;
                         my $data_id = $data->{id};
