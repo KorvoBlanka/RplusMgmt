@@ -363,8 +363,8 @@
       }
 
       % if (account_type() ne 'demo') {
-        if (realty.reference) {
-          $('#dg_p_reference', $realty_modal).attr('href', realty.reference);
+        if (realty.source_url) {
+          $('#dg_p_reference', $realty_modal).attr('href', realty.source_url);
           $('#dg_p_reference', $realty_modal).removeClass('hidden');
         } else {
           $('#dg_p_reference', $realty_modal).addClass('hidden');
