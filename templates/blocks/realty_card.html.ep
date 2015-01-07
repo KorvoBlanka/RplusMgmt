@@ -330,7 +330,7 @@
         $('#unlock-btn').addClass('hidden');
       }
 
-      if (realty.owner_phones) {
+      if (realty.owner_phones.length > 0) {
         $('#dg_p_contacts_label', $realty_modal).removeClass('hidden');
         $('#dg_p_contacts', $realty_modal).removeClass('hidden');
         $('#dg_p_contacts_label', $realty_modal).html('Телефон');
@@ -338,7 +338,7 @@
       } else {
         $('#dg_p_contacts_label', $realty_modal).addClass('hidden');        
         $('#dg_p_contacts', $realty_modal).addClass('hidden');
-        $('#dg_p_contacts', $realty_modal).html(Rplus.Util.formatPhoneNum(''));
+        $('#dg_p_contacts', $realty_modal).html('');
       }
       
       if (realty.agent_id == 10000) {   // посредник

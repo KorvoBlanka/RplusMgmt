@@ -292,7 +292,7 @@
           return sq.length ? sq.join(' / ') : '';
         }},
         {id: "source", name: "<%= ucfloc 'import' %>", sortName: "source_media.name", visible: false, val: function (r) {
-          return r.source_media_id ? ('<a href="' + r.source_url + '" target="_blank">' + Rplus.Table['media'][r.source_media_id].name + '</a>') : '';
+          return r.source_media_id ? ('<a href="' + (r.source_url || '#') + '" target="_blank">' + Rplus.Table['media'][r.source_media_id].name + '</a>') : '';
         }},
         {id: "export", name: "<%= ucfloc q{advertisement} %>", visible: false, val: function (r) {
           return r.export_media ? r.export_media.map(function (x) { return Rplus.Table['media'][x] ? Rplus.Table['media'][x].name : x; }).join('<br>') : '';
@@ -303,7 +303,7 @@
         }},        
         
         {id: "owner", name: "Контакты", visible: true, style: "white-space: nowrap;", val: function (r) {
-          return r.owner_phones ? r.owner_phones.map(function (x) { return Rplus.Util.formatPhoneNum(x) }).join('<br>') : '';
+          return r.owner_phones ? r.owner_phones.map(function (x) { console.log(r.id); return Rplus.Util.formatPhoneNum(x) }).join('<br>') : '';
         }},
         {id: "price", name: "<%= ucfloc 'price' %>", sortName: "price", visible: false, val: function (r) {
           return r.price || '';
