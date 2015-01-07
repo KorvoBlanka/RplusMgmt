@@ -330,7 +330,7 @@
         $('#unlock-btn').addClass('hidden');
       }
 
-      if (realty.owner_phones.length > 0) {
+      if (realty.owner_phones && realty.owner_phones.length > 0) {
         $('#dg_p_contacts_label', $realty_modal).removeClass('hidden');
         $('#dg_p_contacts', $realty_modal).removeClass('hidden');
         $('#dg_p_contacts_label', $realty_modal).html('Телефон');
