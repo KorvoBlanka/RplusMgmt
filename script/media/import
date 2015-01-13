@@ -102,7 +102,7 @@ sub run {
                     }
                 }
                 # Закомментил на время тестирования
-                #next if ($data->{agent_id} = 10000 && $offer_type eq 'rent');
+                next if ($data->{agent_id} = 10000 && $offer_type eq 'rent');
 
                 my @realtys = @{Rplus::Util::Realty->find_similar(%$data, state_code => ['raw', 'work', 'suspended', 'deleted'])};
                 if (scalar @realtys > 0) {
@@ -125,7 +125,6 @@ sub run {
                         $o_realty->source_media_text($data->{source_media_text});
                         $o_realty->last_seen_date($data->{add_date});
                         $o_realty->change_date('now()');
-
 
                         my @phones = ();
                         foreach (@{$o_realty->owner_phones}) {
