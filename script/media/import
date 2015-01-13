@@ -124,15 +124,16 @@ sub run {
                         $o_realty->source_url($data->{source_url});
                         $o_realty->source_media_text($data->{source_media_text});
                         $o_realty->last_seen_date($data->{add_date});
+                        $o_realty->change_date('now()');
 
 
                         my @phones = ();
                         foreach (@{$o_realty->owner_phones}) {
                             push @phones, $_;
                         }
-                        foreach (@{$o_realty->owner_phones}) {
-                            push @phones, $_;   
-                        }
+                        #foreach (@{$data->{owner_phones}}) {
+                        #    push @phones, $_;   
+                        #}
                         say Dumper @phones;
                         $o_realty->owner_phones(Mojo::Collection->new(@phones)->compact->uniq);
 
