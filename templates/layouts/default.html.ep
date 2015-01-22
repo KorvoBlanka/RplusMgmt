@@ -1040,6 +1040,8 @@
             $('#answer-button > span').removeClass('lightup-answer');
             $('#reject-button > span').removeClass('lightup-reject');
 
+            $('#sfPhoneNum').val(caller.phone_num);
+
             if (prev_state == 'INCOMING') {
               saveRecord(caller.phone_num, caller.name, caller.tag, 'INCOMING');
             }
