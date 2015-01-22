@@ -138,7 +138,7 @@ sub index {
                         $realty->floor || '',
                         $realty->floors_count || '',
                         $realty->description,
-                        @photos ? {type => 'photo_list', body => join("\n", map { $self->config->{'storage'}->{'url'}.'/photos/'.$_->realty_id.'/'.$_->filename } @photos)} : '',
+                        @photos ? {type => 'photo_list', body => join("\n", map { $_->filename } @photos)} : '',
                         $realty->price * 1000,
                     ];
                     for my $col_num (0..(scalar(@$row)-1)) {

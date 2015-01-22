@@ -1,3 +1,5 @@
+% use JSON;
+
 <!DOCTYPE html>
 <html>
   <head>
@@ -17,6 +19,279 @@
     <!-- Pines Notify -->
     <link rel="stylesheet" href="<%= $assets_url %>/pnotify/1.2.2/jquery.pnotify.default.css">
     <!-- <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet"> -->
+
+    <style type="text/css">
+
+      .quarter-circle-top-left {
+        width: 65px;
+        height: 65px;
+        border-radius: 65px 0 0 0;
+        -moz-border-radius: 65px 0 0 0;
+        -webkit-border-radius: 65px 0 0 0;
+      }
+      .quarter-circle-top-right {
+        width: 65px;
+        height: 65px;
+        border-radius: 0 65px 0 0;
+        -moz-border-radius: 0 65px 0 0;
+        -webkit-border-radius: 0 65px 0 0;
+      }
+      .quarter-circle-bottom-left {
+        width: 65px;
+        height: 65px;
+        border-radius: 0 0 0 65px;
+        -moz-border-radius: 0 0 0 65px;
+        -webkit-border-radius: 0 0 0 65px;       
+      }
+      .quarter-circle-bottom-right {
+        width: 65px;
+        height: 65px;
+        border-radius: 0 0 65px 0;
+        -moz-border-radius: 0 0 65px 0;
+        -webkit-border-radius: 0 0 65px 0;       
+      }
+
+      .phone-button {
+        background: #aaa;
+        text-align: center;
+        -webkit-transition: all .2s ease-in-out;
+      }
+
+      .answer-button {
+        background-color: rgba(0, 170, 0, 0.70);
+      }
+
+      % if ($self->req->headers->user_agent !~ /Android/) {
+      .answer-button:hover {
+        background-color: rgba(25, 214, 25, 0.70);
+        -webkit-transform: scale(1.01);
+      }
+      % }
+
+      .showphone-button {
+        background-color: rgba(165, 165, 165, 0.55)
+      }
+
+      % if ($self->req->headers->user_agent !~ /Android/) {
+      .showphone-button:hover {
+        background-color: rgba(190, 190, 190, 0.55);
+        -webkit-transform: scale(1.01);
+      }
+      % }
+
+      .reject-button {
+        background-color: rgba(190, 20, 20, 0.70);
+      }
+
+      % if ($self->req->headers->user_agent !~ /Android/) {
+      .reject-button:hover {
+        background-color: rgba(210, 70, 70, 0.70);
+        -webkit-transform: scale(1.01);
+      }
+      % }
+
+      .disabled-button {
+        background-color: rgba(165, 165, 165, 0.55);
+      }
+
+      % if ($self->req->headers->user_agent !~ /Android/) {
+      .disabled-button:hover {
+        background-color: rgba(190, 190, 190, 0.55);
+        -webkit-transform: scale(1.01);
+      }
+      % }
+
+      #user-pic {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+      }
+
+      @-webkit-keyframes ring0 {
+        0%, 100% { 
+          -webkit-transform: rotate(0deg);
+        }
+        20% {
+          -webkit-transform: rotate(12deg);
+        }
+        40% { 
+          -webkit-transform: rotate(-12deg);
+        }
+        60% {
+          -webkit-transform: rotate(12deg);
+        }
+        80% {
+          -webkit-transform: rotate(-12deg);
+        }
+      }
+
+      @-webkit-keyframes ring1 {
+        0%, 100% { 
+          -webkit-transform: scale(1);
+        }
+        50% {
+          -webkit-transform: scale(1.1);
+        }
+      }
+
+      .callin {
+        -webkit-animation: ring0 0.5s infinite;
+      }
+
+      .phone-screen {
+        height: 600px;
+        width: 900px;
+        overflow: hidden;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        margin-top: -300px;
+        margin-left: -450px;
+        background-color: rgba(0,0,0, 0.7);
+        z-index: 1100;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.6), 0 22px 70px 4px rgba(0,0,0,.6), 0 0 0 1px rgba(0, 0, 0, 0.1);
+      }
+
+      .lightup-answer {
+        color: rgba(1, 199, 1, 1.0) !important;
+      }
+
+      .lightup-reject {
+        color: rgba(214, 0, 0, 0.55) !important;
+      }
+
+      .calllist-selector {
+        padding: 0px;
+        margin: 0px;
+
+        position: fixed; 
+        top: 50%; 
+        left: 50%; 
+        margin-top: -67px;
+        margin-left: -415px;
+        height: 35px;
+        width: 320px;
+      }
+
+      .calllist-selector-button {
+        cursor: pointer;
+        border-radius: 15px;
+      }
+
+      .calllist-selector-button.active {
+        background-color: rgba(255,255,255,0.20);
+        color: #eee;
+      }
+
+      .calllist-selector-button:hover {
+        background-color: rgba(255,255,255,0.16);
+      }
+
+      .calllist-wrapper {
+        padding: 0px;
+        margin: 0px;
+
+        position: fixed; 
+        top: 50%; 
+        left: 50%; 
+        margin-top: -30px; 
+        margin-left: -415px; 
+        z-index: 500;
+        height: 320px;
+        overflow-y: scroll;
+        -webkit-overflow-scrolling: touch;  /* iOS native style momentum scrolling */        
+      }
+
+      .calllist {
+        width: 320px;
+        color: #fff;
+        text-align: left;
+        font-size: 28px;
+        font-weight: 100;
+      }
+
+      .calllist-record {
+        padding: 3px;
+        /*border-bottom: 1px solid rgba(255,255,255,0.15);*/
+        cursor: pointer;
+      }
+
+      .calllist-record:hover {
+        background-color: rgba(255,255,255,0.40) !important;
+      }
+
+      .numpad {
+        padding: 0px;
+        margin: 0px;
+        color: #fff;
+        text-align: center;
+        font-size: 28px;
+        font-weight: 100;
+
+        width: 260px; 
+        position: fixed; 
+        top: 50%; 
+        left: 50%; 
+        margin-top: -30px; 
+        margin-left: 155px; 
+        z-index: 500;
+      }
+
+      .numpad tr > td {
+        padding: 0px;
+        margin: 0px;
+        /*width: 64px;
+        height: 32px;*/
+      }
+
+      .numpad tr > td > div {
+        padding: 0px;
+        margin: 12px 18px;
+        margin-left: 0px;
+        margin-bottom: 0px;
+        background-color: rgba(255,255,255,0.05);
+      }
+
+      % if ($self->req->headers->user_agent !~ /Android/) {
+        .numpad tr > td > div:hover {
+          -webkit-transform: scale(1.02);
+          background-color: rgba(255,255,255,0.20);
+        }
+      % }
+
+      .numpad tr > td > div:active {
+        -webkit-transform: scale(0.96);
+      }  
+
+      .numpad-key {
+        -webkit-transition: all .08s;
+        cursor: pointer;
+
+        border-radius: 50% !important;
+        border: 1px double #888;
+
+        height: 60px;
+        width: 60px;
+        line-height: 60px;
+
+        padding: 0px;
+        margin: 0px;
+
+        font-family: "Helvetica Neue",Helvetica,Arial,sans-serif !important;
+
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        -khtml-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+      }
+
+      .numpad-key:active {
+        /*-webkit-transform: scale(0.92);*/
+        background-color: rgba(255,255,255,0.40) !important;
+      }    
+    </style>
 
     <style type="text/css">
       body {
@@ -224,7 +499,175 @@
   </head>
   <body>
 
-  <div class="help-window hidden">
+  <div class="phone-screen hidden" style="">
+
+    <table style="width:127px; position: fixed; top: 50%; left: 50%; margin-top: -67px; margin-left: -67px; z-index: 500;">
+      <tr>
+        <td>
+          <div id="answer-button" class="quarter-circle-top-left phone-button answer-button disabled-button" data-action="call-answer">
+            <span class="glyphicon glyphicon glyphicon-earphone" style="line-height: 65px; font-size: 24px; color: #fff; margin-top: 5px; margin-left: 15px;"></span>
+          </div>
+        </td>
+        <td>
+          <div id="reject-button" class="quarter-circle-top-right phone-button reject-button disabled-button" data-action="call-reject">
+            <span class="glyphicon glyphicon glyphicon-phone-alt" style="line-height: 65px; font-size: 24px; color: #fff; margin-top: 5px; margin-right: 15px;"></span>
+          </div>
+        </td>
+      </tr>
+      </tr>
+        <td>
+          <div class="quarter-circle-bottom-left phone-button disabled-button" style="">
+          </div>
+        </td>
+        <td>
+          <div id="show-phone-button" class="quarter-circle-bottom-right phone-button showphone-button" data-action="phone-show" style="">
+            <span class="glyphicon glyphicon glyphicon-th-list hidden" style="line-height: 65px; font-size: 24px; color: #fff; margin-top: -5px; margin-left: -15px;"></span>
+          </div>
+        </td>
+      </tr>
+    </table>
+
+    <audio id="ringSound">
+      <source src="<%= $assets_url %>/sound/telefono.wav"></source>
+    </audio>
+    <div class="hidden" id="user-pic">
+      <img src="" style="width: 160px; height: 160px;">
+    </div>
+    <div id="" style="width: 200px;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        margin-top: 270px;
+        margin-left: 260px;
+        z-index: 500;
+        text-align: center;">
+      <p style="font-size: 14px; color: #bbb; font-weight: 100;letter-spacing: 1px;">
+        % my $user = Rplus::Model::User::Manager->get_objects(query => [id => $self->stash('user')->{id}, delete_date => undef])->[0];
+        % my $sip = from_json($user->ip_telephony);    
+        <%= $sip->{sip_login} %>@<%= $sip->{sip_host} %>
+      </p>
+    </div>
+    <div id="" style="width: 500px;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        margin-top: -215px;
+        margin-left: -250px;
+        z-index: 500;
+        text-align: center;">
+      <p style="font-size: 36px; color: #fff; font-weight: 100;letter-spacing: 1px;">
+        <span id="callerNumber"></span>
+        <span id="callerNumberBackspace" class="numpad-key" data-action="backspace" style="position: absolute; right: 0px; top: 0px; line-height: 52px;"><</span>
+      </p>
+    </div>
+    <div id="" style="width: 700px;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        margin-top: -155px;
+        margin-left: -350px;
+        z-index: 500;
+        text-align: center;">
+      <p id="callerName" style="font-size: 28px; color: #fff; font-weight: 100;letter-spacing: 1px;"></p>
+    </div>
+    <div id="" style="width: 700px;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        margin-top: -110px;
+        margin-left: -350px;
+        z-index: 500;
+        text-align: center;">
+      <p id="call-time" style="font-size: 28px; color: #fff; font-weight: 100;letter-spacing: 1px;"></p>
+    </div>
+
+    <div class="calllist-selector" style="padding: 3px; color: #c5c5c5; text-align: center; line-height: 27px;">
+      <div style="height: 100%; border: 1px solid #c5c5c5; border-radius: 15px;">
+        <div class="calllist-selector-button active" data-action="calllist-select" data-val="ANY" style="height: 100%; width: 50%; float: left; border-right: 1px solid #c5c5c5; border-radius: 0px; border-top-left-radius: 15px; border-bottom-left-radius: 15px;">
+          Все
+        </div>
+        <div class="calllist-selector-button" data-action="calllist-select" data-val="MISSED" style="height: 100%; width: 50%; float: right; border-radius: 0px; border-top-right-radius: 15px; border-bottom-right-radius: 15px;">
+          Пропущенные
+        </div>        
+      </div>
+    </div>
+    <div class="calllist-wrapper" style="">
+      <table class="calllist" style="">
+        <tbody>
+        </tbody>
+      </table>
+    </div>
+
+    <table class="numpad" style="">
+      <tr>
+        <td>
+          <div class="numpad-key" data-action="numpad-click" data-key="1">
+            1
+          </div>
+        </td>
+        <td>
+          <div class="numpad-key" data-action="numpad-click" data-key="2">
+            2
+          </div>
+        </td>
+        <td>
+          <div class="numpad-key" data-action="numpad-click" data-key="3">
+            3
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <div class="numpad-key" data-action="numpad-click" data-key="4">
+            4
+          </div>
+        </td>
+        <td>
+          <div class="numpad-key" data-action="numpad-click" data-key="5">
+            5
+          </div>
+        </td>
+        <td>
+          <div class="numpad-key" data-action="numpad-click" data-key="6">
+            6
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <div class="numpad-key" data-action="numpad-click" data-key="7">
+            7
+          </div>
+        </td>
+        <td>
+          <div class="numpad-key" data-action="numpad-click" data-key="8">
+            8
+          </div>
+        </td>
+        <td>
+          <div class="numpad-key" data-action="numpad-click" data-key="9">
+            9
+          </div>
+        </td>      
+      </tr>
+      <tr>
+        <td>
+          <div class="numpad-key" data-action="numpad-click" data-key="*">
+            *
+          </div>
+        </td>
+        <td>
+          <div class="numpad-key" data-action="numpad-click" data-key="0">
+            0
+          </div>
+        </td>
+        <td>
+          <div class="numpad-key" data-action="numpad-click" data-key="#">
+            #
+          </div>
+        </td>
+      </tr>
+    </table>
   </div>
 
   <div class="indicator-ajax invisible" style="position: absolute; top: 50%; left: 50%; margin-top: -20px; margin-left: -20px; z-index: 1000;">
@@ -271,7 +714,7 @@
               % }
               % if(has_permission(realty => 'analyse')) {
                 <li><a href="/service/piramid"><span class="glyphicon glyphicon-list-alt"></span> Воронка</a></li>
-              % }              
+              % }
               </ul>
             </li>
           % }
@@ -328,6 +771,8 @@
     </script>
     <!-- Pines Notify -->
     <script type="application/javascript" src="<%= $assets_url %>/pnotify/1.2.2/jquery.pnotify.js"></script>
+    <script type="application/javascript" src="/js/pyphone/pyphone.js"></script>
+
     <%= content_for 'after_bootstrap' %>
 
     <%= include 'javascript/rplus' %>
@@ -372,6 +817,401 @@
       }
     </script>
     <%= content_for 'javascript' %>
+
+    <script type="">
+
+      function isNumber(n) {
+        return !isNaN(parseFloat(n)) && isFinite(n);
+      }
+
+      function format_phone(phone_str) {
+        if (phone_str.length < 5) {                     // внутренний номер? 100X ?
+          return phone_str; //phone_blocks(phone_str);
+        }
+        if (phone_str.length < 8) {              // городской или короткий номер => XXX-XX-XX, XX-XX-XX, X-XX-XX ...
+          return phone_blocks(phone_str);
+        } else {                                        // {код страны} код города/оператора, номер
+          var code_number = '';
+          var c_code = ''
+          if (phone_str.match(/^\+/)) {
+            c_code = phone_str.substring(0, 2) + ' ';
+            code_number = phone_str.substring(2);
+          } else if (phone_str.match(/^8/)) {
+            c_code = phone_str.substring(0, 1) + ' ';
+            code_number = phone_str.substring(1);
+          } else if (phone_str.length == 11) {
+            c_code = phone_str.substring(0, 1) + ' ';
+            code_number = phone_str.substring(1);
+          } else {
+            c_code = '';
+            code_number = phone_str;
+          }
+          return c_code + format_10(code_number);
+        }
+        return '';
+      }
+
+      function reverse(s){
+          return s.split("").reverse().join("");
+      }
+
+      function format_10(phone_number) {
+        /*
+        if (phone_number.match(/^(914|924|929|926)/)) { // собрать мегарегулярку или вытаскивать из номера по 3, 4, 5 первых цифр и проверять есть ли они в массиве кодов
+          var code = phone_number.substring(0, 3);
+          var number = phone_number.substring(3);
+          return '(' + code +') ' + phone_blocks(number);
+        }
+        */
+        var code = '';
+        var number = '';
+        if (phone_number.match(/^(4212|4217)/)) {
+          code = phone_number.substring(0, 4);
+          number = phone_number.substring(4);
+          return '(' + code +') ' + phone_blocks(number);
+        }
+        code = phone_number.substring(0, 3);
+        number = phone_number.substring(3);
+        return '(' + code +') ' + phone_blocks(number);      
+      }
+
+      function phone_blocks(number){
+          var len = number.length
+          if (len < 3) return number;
+          var number_rev = reverse(number);
+          var split_num = number_rev.match(/.{1,2}/g);
+          if (len > 6) {
+            var p = split_num.splice(-1, 1);
+            split_num[split_num.length - 1] = split_num[split_num.length - 1] + p[0];
+          }
+          var t = split_num.join('-');
+          return reverse(t);
+      }
+
+      function saveRecord(number, name, tag, state) {
+        var time = new Date().getTime();
+        var call_list = getCallList();
+        call_list[time] = {time: time, number: number, name: name, tag: tag, state: state};
+        localStorage.setItem('CALL_LIST', JSON.stringify(call_list));
+      }
+
+      function getCallList() {
+        var list_str = localStorage.getItem('CALL_LIST');
+        var call_list;
+        if (list_str) {
+          call_list = JSON.parse(list_str);
+        } else {
+          call_list = {};
+        }
+        return call_list;
+      }
+
+      function listCalls() {
+        var list = getCallList();
+        var cat = $('.calllist-selector-button.active').data('val');
+        console.log(cat);
+        $('.calllist > tbody').html('');
+        for (var ts in list) {
+          var obj = list[ts];
+          var xhtml = '';
+
+          var state = '';
+          var color = '#c5c5c5';
+          var suffix = '';
+
+          if (cat == 'MISSED') {
+            if (obj.state != 'MISSED') continue;
+          }
+
+          if (obj.state == 'OUTGOING') {
+            state = '<span class="glyphicon glyphicon-arrow-up"></span>';
+            suffix = ', Исходящий';
+          } else if (obj.state == 'INCOMING') {
+            state = '<span class="glyphicon glyphicon-arrow-down"></span>';
+            color = 'rgba(20, 190, 20, 0.98)';
+            suffix = ', Входящий';
+          } else if (obj.state == 'MISSED') {
+            state = '<span class="glyphicon glyphicon-arrow-down"></span>';
+            color = 'rgba(190, 20, 20, 0.98)';
+            suffix = ', Пропущено';
+          }
+
+          var tag = obj.tag ? '<span class="round-button color-tag-' + obj.tag + '" style="margin-right: 6px; width: 12px; height: 12px;"></span>' : '';
+
+          var ts = moment(obj.time);
+          var now = moment();
+          var time = '';
+          if (ts.isAfter(moment().startOf('day'))) {
+            time = moment(obj.time).format('HH:mm');
+          } else if (ts.isAfter(moment().startOf('week'))) {
+            time = moment(obj.time).format('ddd HH:mm');
+          } else {
+            time = moment(obj.time).format('DD.MM HH:mm');
+          }
+
+          xhtml += '<tr>';
+          xhtml += '<td class="calllist-record" data-number="' + obj.number + '">';
+          xhtml += '<div class="" style="float: left; font-size: 14px; letter-spacing: 1.5px; height: 38px; width: 25px; margin-top: 4px; color: ' + color + ';">';
+          xhtml += state;
+          xhtml += '</div>';
+          xhtml += '<div class="">';
+          xhtml += '<div class="" style="font-size: 16px; letter-spacing: 1.5px;">';
+          xhtml += tag + ' ' + (obj.name ? obj.name : format_phone(obj.number));
+          xhtml += '</div>';
+          xhtml += '<div class="" style="font-size: 12px; letter-spacing: 1.5px; color: #c5c5c5;">';
+          xhtml += time + suffix;
+          xhtml += '</div>';
+          xhtml += '</div>';
+          xhtml += '</td>';
+          xhtml += '</tr>';
+
+          $('.calllist > tbody').prepend(xhtml);
+        }
+        $('.calllist-record').click(function (e) {
+          var phone_num = $(this).data('number') + '';
+          $('#callerNumber').html(format_phone(phone_num));
+          $('#callerNumber').data('phone_num', phone_num);
+        });
+      }
+
+      function phoneSetup() {
+        console.log('phone setup');
+        var call_time = 0;
+        var call_timer_id;
+
+        var caller;
+        var prev_state = '';
+        var sound = document.getElementById("ringSound");
+
+        pyPhone.initDone = function() {
+          pyPhone.register({
+            % my $user = Rplus::Model::User::Manager->get_objects(query => [id => $self->stash('user')->{id}, delete_date => undef])->[0];
+            % my $sip = from_json($user->ip_telephony);
+            host: '<%= $sip->{sip_host} %>',
+            user: '<%= $sip->{sip_login} %>',
+            password: '<%= $sip->{sip_password} %>',
+            proxy: '',
+          });      
+        }
+
+        pyPhone.onRegStateChanged = function(regInfo) {
+          if (regInfo.registered) {
+            $('#show-phone-button > span').removeClass('hidden');
+          }
+        }
+
+        // обработчик состояния звонка
+        pyPhone.onCallStateChanged = function(callInfo) {
+          // 'IDLE', 'INCOMING', 'OUTGOING', 'CONNECTED'
+          if (callInfo.state == 'INCOMING') {
+            sound.loop = true;
+            sound.play();
+            $('.phone-screen').removeClass('hidden');
+            $('#answer-button').addClass('disabled-button');
+            $('#reject-button').addClass('disabled-button');
+
+            $('#answer-button > span').addClass('callin');
+            $('#answer-button > span').addClass('lightup-answer');
+            $('#reject-button > span').addClass('lightup-reject');
+
+            var phone_num = callInfo.display;
+            caller = get_caller(phone_num);
+            $('#callerNumber').html(format_phone(phone_num));
+            $('#callerNumber').data('phone_num', phone_num);
+            $('#callerName').html(caller.name);
+            if(caller.photo_url != '') {
+              $('#user-pic > img').attr('src', caller.photo_url);
+              $('#user-pic').removeClass('hidden');
+            } else {
+              $('#user-pic > img').attr('src', '');
+              $('#user-pic').addClass('hidden');
+            }
+          } else {
+            sound.pause();
+            sound.currentTime = 0;
+          }
+
+          if (callInfo.state == 'CONNECTED') {
+            $('.phone-screen').removeClass('hidden');
+            $('#answer-button').removeClass('disabled-button');
+            $('#reject-button').removeClass('disabled-button');
+
+            $('#answer-button > span').removeClass('callin');
+            $('#answer-button > span').removeClass('lightup-answer');
+            $('#reject-button > span').removeClass('lightup-reject');
+
+            if (prev_state == 'INCOMING') {
+              saveRecord(caller.phone_num, caller.name, caller.tag, 'INCOMING');
+            }
+
+            call_timer_id = setInterval(callTimerTick, 1000);
+          }
+
+          if (callInfo.state == 'IDLE') {
+            $('#answer-button').addClass('disabled-button');
+            $('#reject-button').addClass('disabled-button');
+
+            $('#answer-button > span').removeClass('callin');
+            $('#answer-button > span').removeClass('lightup-answer');
+            $('#reject-button > span').removeClass('lightup-reject');
+
+            $('#user-pic > img').attr('src', '');
+            $('#user-pic').addClass('hidden');
+            $('#callerName').html('');
+
+            if (prev_state == 'INCOMING') {
+              saveRecord(caller.phone_num, caller.name, caller.tag, 'MISSED');
+            }
+
+            $('#callerNumber').html('');
+            $('#callerNumber').data('phone_num', '');
+
+            clearCallTimer();
+          }
+
+          if (callInfo.state == 'OUTGOING') {
+            $('.phone-screen').removeClass('hidden');
+            $('#answer-button').addClass('disabled-button');
+            $('#reject-button').addClass('disabled-button');
+
+            $('#answer-button > span').removeClass('callin');
+            $('#answer-button > span').addClass('lightup-answer');
+            $('#reject-button > span').addClass('lightup-reject');
+
+            var phone_num = $('#callerNumber').data('phone_num');
+            caller = get_caller(phone_num);
+            $('#callerName').html(caller.name);
+
+            saveRecord(caller.phone_num, caller.name, caller.tag, 'OUTGOING');
+          }
+
+          prev_state = callInfo.state;
+          listCalls();
+        }
+
+        $('[data-action="call-answer"]').click(function (e) {
+          if (pyPhone.callState() == 'INCOMING') {
+            pyPhone.answer();
+          }
+
+          if(pyPhone.callState() == 'IDLE') {
+            var phone_num = $('#callerNumber').data('phone_num');
+            pyPhone.call({'number': phone_num});
+          }
+        });
+
+        $('[data-action="call-reject"]').click(function (e) {
+          //if (RTCKit.webPhone.callState() == '') {
+            pyPhone.hangup();
+          //}
+        });
+
+        $('[data-action="phone-show"]').click(function (e) {
+          $('.phone-screen').toggleClass('hidden');
+        });
+
+        $('[data-action="numpad-click"]').click(function (e) {
+          var phone_num = $('#callerNumber').data('phone_num');
+          if (phone_num.length < 11) {
+            var key = $(this).data('key');
+            phone_num += key;
+            $('#callerNumber').html(format_phone(phone_num));
+            $('#callerNumber').data('phone_num', phone_num);
+          }
+        });
+
+        $('[data-action="backspace"]').click(function (e) {
+          var phone_num = $('#callerNumber').data('phone_num');
+          phone_num = phone_num.slice(0, - 1);
+          $('#callerNumber').html(format_phone(phone_num));
+          $('#callerName').html('');
+          $('#user-pic').addClass('hidden');
+          $('#callerNumber').data('phone_num', phone_num);
+        });
+
+        $('[data-action="calllist-select"]').click(function (e) {
+          $('.calllist-selector-button.active').removeClass('active');
+          $(this).addClass('active');
+          listCalls();
+        });
+
+        $(document).keydown(function(e) {
+          var phone_num = $('#callerNumber').data('phone_num');
+          if (e.keyCode == 8 && e.target.tagName != 'INPUT' && e.target.tagName != 'TEXTAREA') {
+            e.preventDefault();
+            phone_num = phone_num.slice(0, - 1);
+            $('#callerNumber').html(format_phone(phone_num));
+            $('#callerName').html('');
+          }
+          var key = String.fromCharCode(e.keyCode)
+          if (isNumber(key) || key == '#' || key == '*') {
+            if (phone_num.length < 11) {
+              phone_num += key;
+              $('#callerNumber').html(format_phone(phone_num));
+            }
+          }
+          $('#callerNumber').data('phone_num', phone_num);
+        });
+
+        function clearCallTimer() {
+          call_time = 0;
+          clearInterval(call_timer_id);
+          $('#call-time').html('');
+        }
+
+        function callTimerTick() {
+          call_time ++;
+          var minutes = ((call_time / 60) > 9 ? '' : '0') + (call_time / 60 | 0);
+          var seconds = ((call_time % 60) > 9 ? '' : '0') + (call_time % 60);
+          var call_time_str = minutes + ':' + seconds;
+          $('#call-time').html(call_time_str);
+        }
+
+        function get_caller(phone_num) {
+          var r = {name: '', photo_url: '', phone_num: phone_num,}
+          $.ajax({
+            type: "GET",
+            url: "/api/client/get",
+            data: {phone_num: phone_num},
+            async: false,
+            success: function (data, textStatus, jqXHR) {
+              r.name = data.name;
+              r.tag = data.color_tag_id;
+            },
+            error: function (jqXHR, textStatus, errorThrown) {},
+          });
+
+          $.ajax({
+            type: "GET",
+            url: "/api/mediator/get",
+            data: {phone_num: phone_num},
+            async: false,
+            success: function (data, textStatus, jqXHR) {
+              r.name = data.company.name;
+            },
+            error: function (jqXHR, textStatus, errorThrown) {},
+          });
+
+          $.ajax({
+            type: "GET",
+            url: "/api/user/find",
+            data: {phone_num: phone_num},
+            async: false,
+            success: function (data, textStatus, jqXHR) {
+              r.name = data.name;
+              r.photo_url = data.photo_url;
+            },
+            error: function (jqXHR, textStatus, errorThrown) {},
+          });
+
+          return r;
+        }
+
+        pyPhone.init();
+      };
+      phoneSetup();
+      listCalls();
+    </script>
 
     <script type="application/javascript">
       "use strict";
@@ -432,7 +1272,7 @@
               }
             }
           });
-        supressAjaxIndicator(0);        
+        supressAjaxIndicator(0);
       }
 
       getTodaysTasksCount();
@@ -447,7 +1287,7 @@
         },
         getClientNewCount: function () {
           getClientNewCount();
-        }        
+        }
       };
     </script>
   </body>

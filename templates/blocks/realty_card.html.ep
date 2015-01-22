@@ -927,6 +927,7 @@
                 <option value="<%= $x->id %>"><%= $x->name %></option>
                 % }
                 % } elsif ($self->stash('user')->{role} eq 'manager') {
+                <option value="<%= $self->stash('user')->{id} %>"><%= $self->stash('user')->{name} %></option>
                 % for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [role => ['agent', 'agent_ext', 'manager'], superior => $self->stash('user')->{id}, delete_date => undef], sort_by => 'name')}) {                  
                 <option value="<%= $x->id %>"><%= $x->name %></option>
                 % }

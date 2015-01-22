@@ -412,7 +412,7 @@
             }
           }
           var agent_id = $this.data('obj').agent_id;
-          if ('<%= $self->stash('user')->{role} %>' != 'manager') {   // fixme
+          if ('<%= $self->stash('user')->{role} %>' != 'manager' && '<%= $self->stash('user')->{role} %>' != 'top') {   // fixme
             if (agent_id == null) {
               console.log('null');
               $("#el_assign").removeClass('disabled');
@@ -669,7 +669,7 @@
       xhtml += '<td style="width: 1px;"></td>';
       xhtml += '<td style="width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + tag + '&nbsp' + caption + '<br>' + agent_str + '</td>'
       xhtml += '<td style="width: 90px;padding-top: 0px;padding-bottom: 10px;"><span style="font-size: 10px;">' + moment(client.change_date).format("DD.MM.YY HH:mm") + '</span><br>&nbsp;</td>';
-      xhtml += '<td style="width: 20px;padding-left: 0px;"><a style="display: inline-block;" href="#" data-action="client-add-query"><span class="glyphicon glyphicon-plus-sign pull-right"></span></a></td>';
+      xhtml += '<td style="width: 20px;padding-left: 0px;"></td>';
       xhtml += '</tr>';
 
       var parent = node_id;
@@ -682,7 +682,7 @@
           xhtml += '<td></td>';
           xhtml += '<td class="query">' + subscription.queries + '</td>';
           xhtml += '<td style="padding-top: 0px;padding-bottom: 10px;"><span style="font-size: 10px;">' + moment(subscription.add_date).format("DD.MM.YY HH:mm") + '</span><br>&nbsp;</td>';
-          xhtml += '<td style="padding-left: 0px;"><a style="display: inline-block;" href="#" data-action="client-delete-query"><span class="glyphicon glyphicon-minus-sign pull-right"></span></a></td>';
+          xhtml += '<td style="padding-left: 0px;"></td>';
           xhtml += '</tr>';
         }
       }
@@ -892,7 +892,8 @@
         .bind('keydown', function (e) {
           if (e.which == 13) {
             $('#searchQuery').typeahead('close');
-            
+            listRealty(1);
+            /*
             var $selected = $('.tree > tbody > tr.subselected');
             if ($selected.length == 0) {
               listRealty(1);
@@ -923,6 +924,7 @@
 
               updateTreeEntry(clients[client_id], true);
             }
+            */
           }
         });
 
