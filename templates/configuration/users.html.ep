@@ -104,7 +104,7 @@
 
 
 % content_for after_bootstrap => begin
-%= js_once "/js/pyphone/pyphone.js";
+%= js_once "/js/rphone/rphone.js";
 % end
 
 % content_for javascript => begin
@@ -315,10 +315,10 @@
 
       initUserSave();
       listUsers();
-      if (!pyPhone.checkService()) {
-        $('#pyPhoneNotice').removeClass('hidden');
+      if (!rPhone.checkService()) {
+        $('#rPhoneNotice').removeClass('hidden');
       } else {
-        $('#pyPhoneNotice').addClass('hidden');
+        $('#rPhoneNotice').addClass('hidden');
       }
     });
     
@@ -624,10 +624,10 @@
             </div>
             <div class="col-md-6">
               <div class="row">
-                <div id="pyPhoneNotice" class="hidden" style="margin-left: 35px;">
+                <div id="rPhoneNotice" class="hidden" style="margin-left: 35px;">
                   <p>Для работы IP телефонии необходимо установить дополнительный компонент</p>
                   % if ($self->req->headers->user_agent =~ /Windows/) {
-                  <form method="get" action="<%= $assets_url %>/install/win/pyphone_setup.exe">
+                  <form method="get" action="<%= $assets_url %>/install/win/rphone_setup.exe">
                     <button type="submit" class="btn btn-primary btn-sm">скачать компонент</button>
                   </form>
                   % } else {

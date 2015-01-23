@@ -556,7 +556,7 @@
         z-index: 500;
         text-align: center;">
       <p style="font-size: 36px; color: #fff; font-weight: 100;letter-spacing: 1px;">
-        <span id="callerNumber"></span>
+        <span id="callerNumber" data-phone_num=""></span>
         <span id="callerNumberBackspace" class="numpad-key" data-action="backspace" style="position: absolute; right: 0px; top: 0px; line-height: 52px;"><</span>
       </p>
     </div>
@@ -771,7 +771,7 @@
     </script>
     <!-- Pines Notify -->
     <script type="application/javascript" src="<%= $assets_url %>/pnotify/1.2.2/jquery.pnotify.js"></script>
-    <script type="application/javascript" src="/js/pyphone/pyphone.js"></script>
+    <script type="application/javascript" src="/js/rphone/rphone.js"></script>
 
     <%= content_for 'after_bootstrap' %>
 
@@ -825,6 +825,7 @@
       }
 
       function format_phone(phone_str) {
+        if (!phone_str) return;
         if (phone_str.length < 5) {                     // внутренний номер? 100X ?
           return phone_str; //phone_blocks(phone_str);
         }
@@ -983,8 +984,8 @@
         var prev_state = '';
         var sound = document.getElementById("ringSound");
 
-        pyPhone.initDone = function() {
-          pyPhone.register({
+        rPhone.initDone = function() {
+          rPhone.register({
             % my $user = Rplus::Model::User::Manager->get_objects(query => [id => $self->stash('user')->{id}, delete_date => undef])->[0];
             % my $sip = from_json($user->ip_telephony);
             host: '<%= $sip->{sip_host} %>',
@@ -994,14 +995,14 @@
           });      
         }
 
-        pyPhone.onRegStateChanged = function(regInfo) {
+        rPhone.onRegStateChanged = function(regInfo) {
           if (regInfo.registered) {
             $('#show-phone-button > span').removeClass('hidden');
           }
         }
 
         // обработчик состояния звонка
-        pyPhone.onCallStateChanged = function(callInfo) {
+        rPhone.onCallStateChanged = function(callInfo) {
           // 'IDLE', 'INCOMING', 'OUTGOING', 'CONNECTED'
           if (callInfo.state == 'INCOMING') {
             sound.loop = true;
@@ -1040,7 +1041,19 @@
             $('#answer-button > span').removeClass('lightup-answer');
             $('#reject-button > span').removeClass('lightup-reject');
 
+            var phone_num = callInfo.display;
+            caller = get_caller(phone_num);
             $('#sfPhoneNum').val(caller.phone_num);
+            $('#callerNumber').html(format_phone(phone_num));
+            $('#callerNumber').data('phone_num', phone_num);
+            $('#callerName').html(caller.name);
+            if(caller.photo_url != '') {
+              $('#user-pic > img').attr('src', caller.photo_url);
+              $('#user-pic').removeClass('hidden');
+            } else {
+              $('#user-pic > img').attr('src', '');
+              $('#user-pic').addClass('hidden');
+            }
 
             if (prev_state == 'INCOMING') {
               saveRecord(caller.phone_num, caller.name, caller.tag, 'INCOMING');
@@ -1080,6 +1093,20 @@
             $('#answer-button > span').addClass('lightup-answer');
             $('#reject-button > span').addClass('lightup-reject');
 
+            var phone_num = callInfo.display;
+            caller = get_caller(phone_num);
+            $('#sfPhoneNum').val(caller.phone_num);
+            $('#callerNumber').html(format_phone(phone_num));
+            $('#callerNumber').data('phone_num', phone_num);
+            $('#callerName').html(caller.name);
+            if(caller.photo_url != '') {
+              $('#user-pic > img').attr('src', caller.photo_url);
+              $('#user-pic').removeClass('hidden');
+            } else {
+              $('#user-pic > img').attr('src', '');
+              $('#user-pic').addClass('hidden');
+            }
+
             var phone_num = $('#callerNumber').data('phone_num');
             caller = get_caller(phone_num);
             $('#callerName').html(caller.name);
@@ -1092,19 +1119,19 @@
         }
 
         $('[data-action="call-answer"]').click(function (e) {
-          if (pyPhone.callState() == 'INCOMING') {
-            pyPhone.answer();
+          if (rPhone.callState() == 'INCOMING') {
+            rPhone.answer();
           }
 
-          if(pyPhone.callState() == 'IDLE') {
+          if(rPhone.callState() == 'IDLE') {
             var phone_num = $('#callerNumber').data('phone_num');
-            pyPhone.call({'number': phone_num});
+            rPhone.call({'number': phone_num});
           }
         });
 
         $('[data-action="call-reject"]').click(function (e) {
           //if (RTCKit.webPhone.callState() == '') {
-            pyPhone.hangup();
+            rPhone.hangup();
           //}
         });
 
@@ -1209,7 +1236,7 @@
           return r;
         }
 
-        pyPhone.init();
+        rPhone.init();
       };
       phoneSetup();
       listCalls();

@@ -4,14 +4,14 @@
  * ??? License
  */
 
-var pyPhone = pyPhone || (function () {
+var rPhone = rPhone || (function () {
 
-    var pyPhoneObject = {};
+    var rPhoneObject = {};
 
-    var pyphone_url = 'http://localhost:8080/pyphone';
-    var pyphone_ws_url = 'ws://localhost:8080/pyphone/ws';
+    var rphone_url = 'http://localhost:8080/rphone';
+    var rphone_ws_url = 'ws://localhost:8080/rphone/ws';
     var ws = null;
-    var pyPhoneInfo = {
+    var rPhoneInfo = {
         js_version: '0.1',
         srv_version: '0.1',
     };
@@ -24,9 +24,9 @@ var pyPhone = pyPhone || (function () {
         display: '',
     };
 
-    pyPhoneObject.onRegStateChanged = function() {};
+    rPhoneObject.onRegStateChanged = function() {};
 
-    pyPhoneObject.onCallStateChanged = function() {};
+    rPhoneObject.onCallStateChanged = function() {};
 
     var rqRegState = function() {
         ws.send(JSON.stringify({
@@ -45,8 +45,8 @@ var pyPhone = pyPhone || (function () {
         }));
     }
 
-    pyPhoneObject.init = function() {
-        ws = new WebSocket(pyphone_ws_url);
+    rPhoneObject.init = function() {
+        ws = new WebSocket(rphone_ws_url);
 
         ws.onmessage = function(evt) {
             var jmsg = JSON.parse(evt.data)
@@ -55,14 +55,14 @@ var pyPhone = pyPhone || (function () {
                 if (regInfo.reg_state != jmsg['reg_state']) {
                     regInfo.reg_state = jmsg['reg_state'];
                     regInfo.registered = jmsg['registered'];
-                    pyPhoneObject.onRegStateChanged(regInfo);
+                    rPhoneObject.onRegStateChanged(regInfo);
                 }
 
             } else if ('call_state' in jmsg) {
                 if (callInfo.state != jmsg['call_state']) {
                     callInfo.state = jmsg['call_state'];
                     callInfo.display = jmsg['display'];
-                    pyPhoneObject.onCallStateChanged(callInfo);
+                    rPhoneObject.onCallStateChanged(callInfo);
                 }
             } else if ('version' in jmsg) {
                 
@@ -77,21 +77,21 @@ var pyPhone = pyPhone || (function () {
             console.log("ws open");
             //rqRegState();
             rqCallState();
-            pyPhoneObject.initDone();
+            rPhoneObject.initDone();
         };
     };
 
-    pyPhoneObject.initDone = function() {};
+    rPhoneObject.initDone = function() {};
 
-    pyPhoneObject.regState = function() {
+    rPhoneObject.regState = function() {
         return regInfo.registered;
     };
 
-    pyPhoneObject.callState = function() {
+    rPhoneObject.callState = function() {
         return callInfo.state;
     };
 
-    pyPhoneObject.register = function(acc_config) {
+    rPhoneObject.register = function(acc_config) {
         ws.send(JSON.stringify({
             cmd: 'register',
             host: acc_config.host,
@@ -101,32 +101,32 @@ var pyPhone = pyPhone || (function () {
         }));
     };
 
-    pyPhoneObject.call = function(to) {
+    rPhoneObject.call = function(to) {
         ws.send(JSON.stringify({
             cmd: 'call',
             to_number: to.number,
         }));
     };
-    pyPhoneObject.answer = function() {
+    rPhoneObject.answer = function() {
         ws.send(JSON.stringify({
             cmd: 'answer',
         }));
     };
-    pyPhoneObject.hangup = function() {
+    rPhoneObject.hangup = function() {
         ws.send(JSON.stringify({
             cmd: 'hangup',
         }));
     };
-    pyPhoneObject.checkService = function() {
+    rPhoneObject.checkService = function() {
         var result = false;
         $.ajax({
             type: "GET",
-            url: pyphone_url + "/version",
+            url: rphone_url + "/version",
             data: {},
             timeout: 1000,
             async: false,
             success: function (data, textStatus, jqXHR) {
-                if (pyPhoneInfo.srv_version == data.version) {
+                if (rPhoneInfo.srv_version == data.version) {
                     result = true;
                 }
             },
@@ -136,5 +136,5 @@ var pyPhone = pyPhone || (function () {
         return result;
     };
 
-    return pyPhoneObject;
+    return rPhoneObject;
 }) ();
