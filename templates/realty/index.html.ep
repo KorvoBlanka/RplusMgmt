@@ -233,6 +233,8 @@
 
   registerGlobalAjaxEvents();
   
+  $('#searchQuery').val(localStorage.getItem('REALTY_Q'));
+
   (function () {
     // Configuration of the realty table
     $('#offer-type-filter').data('val', Rplus.Variables['User'].offer_mode);
@@ -805,9 +807,11 @@
           remote: "/api/query/complete?q=%QUERY&limit=10",
         })
         .bind('typeahead:selected', function (e, obj) {
+          localStorage.setItem('REALTY_Q', $('#searchQuery').val());
           listRealty(1);
         })
         .bind('input', function (e) {
+          localStorage.setItem('REALTY_Q', $(this).val());
           if ($(this).val() == '') {
             listRealty(1);
           }

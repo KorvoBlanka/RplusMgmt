@@ -233,6 +233,8 @@
   (function () {
     var geoMap;
 
+    $('#searchQuery').val(localStorage.getItem('SEARCH_Q'));
+
     function initSpeech() {
       $('#searchQuery').webSpeech({ 
         button      : 'speech-button', //id of the initiating button
@@ -344,9 +346,13 @@
           remote: "/api/query/complete?q=%QUERY&limit=10",
         })
         .bind('typeahead:selected', function (e, obj) {
+          localStorage.setItem('SEARCH_Q', $('#searchQuery').val());
           listRealty(1);
         })
         .bind('input', function (e) {
+
+          localStorage.setItem('SEARCH_Q', $(this).val());
+
           if ($(this).val() == '') {
             // clear Geo markers
             rtm_hash = {};

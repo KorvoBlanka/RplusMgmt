@@ -342,6 +342,8 @@
     $('#offer-type-filter').data('val', Rplus.Variables['User'].offer_mode);
     $('#offer-type-filter > a > span').text(Rplus.Variables['User'].offer_mode == 'sale' ? 'Продажа' : 'Аренда');
 
+    $('#searchQuery').val(localStorage.getItem('CLIENTS_Q'));
+
     function initSpeech() {
       $('#searchQuery').webSpeech({ 
         button      : 'speech-button', //id of the initiating button
@@ -882,9 +884,11 @@
           remote: "/api/query/complete?q=%QUERY&limit=10",
         })
         .bind('typeahead:selected', function (e, obj) {
+          localStorage.setItem('CLIENTS_Q', $('#searchQuery').val());
           //listRealty(1);
         })
         .bind('input', function (e) {
+          localStorage.setItem('CLIENTS_Q', $('#searchQuery').val());
           if ($(this).val() == '') {
             //listRealty(1);
           }
