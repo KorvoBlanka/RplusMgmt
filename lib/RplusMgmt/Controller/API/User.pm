@@ -147,8 +147,10 @@ sub get_obj_count {
     
     my $realty_count = Rplus::Model::Realty::Manager->get_objects_count(query => [agent_id => $user_id, delete_date => undef]);
     my $client_count = Rplus::Model::Client::Manager->get_objects_count(query => [agent_id => $user_id, delete_date => undef]);
+    my $subordinate_count = Rplus::Model::User::Manager->get_objects_count(query => [superior => $user_id, delete_date => undef]);
 
-    return $self->render(json => {realty_count => $realty_count, client_count => $client_count});
+
+    return $self->render(json => {realty_count => $realty_count, client_count => $client_count, subordinate_count => $subordinate_count,});
 }
 
 
@@ -157,7 +159,6 @@ sub save {
 
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(users => 'manage');
     return $self->render(json => {error => 'Forbidden'}, status => 403) if ($self->account_type() eq 'demo');
-        
 
     # Retrieve user
     my $user;
@@ -211,27 +212,32 @@ sub save {
     $user->public_phone_num($public_phone_num);
     $user->ip_telephony(encode_json($sip));
 
-    eval {
-        $user->save($user->id ? (changes_only => 1) : (insert => 1));
-
+    if ($role eq 'manager') {
         Rplus::Model::User::Manager->update_objects(
             set => {superior => undef},
             where => [superior => $user->id],
         );
-
         foreach (@subordinates) {
             Rplus::Model::User::Manager->update_objects(
                 set => {superior => $user->id},
                 where => [id => $_],
-            );            
+            );
         }
+    } else {
+        if (scalar(@subordinates) > 0) {
+            return $self->render(json => {msg => 'wrong role'}, status => 200);
+        }
+    }
+
+    eval {
+        $user->save($user->id ? (changes_only => 1) : (insert => 1));
 
         1;
     } or do {
         return $self->render(json => {error => $@}, status => 500);
     };
 
-    return $self->render(json => {status => 'success', });
+    return $self->render(json => {msg => 'success', status => 200});
 }
 
 sub upload_photo {

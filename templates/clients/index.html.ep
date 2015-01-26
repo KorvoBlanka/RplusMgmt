@@ -240,7 +240,7 @@
     border-top:1px solid #E5E5E5;
   }
   
-  .tree > tbody > tr > th, td {
+  .tree > tbody > tr > th, .tree > tbody > tr > td {
     text-align:left;
     padding:5px 10px;
     border-bottom:1px solid #E5E5E5;

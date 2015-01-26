@@ -140,10 +140,9 @@
           })
           .fail(function (jqXHR, textStatus, errorThrown) {
             $("#userCard_userForm_inputRole").val(previous_role);
-            alert('Cannot check user');
+            alert('Сервер не отвечает');
           });
-          
-        }
+      }
     });
     
     function listUsers() {
@@ -276,13 +275,18 @@
           data: formData
         })
           .done(function (data) {
-            if (data.status == 'success') {
+            if (data.msg == 'wrong role') {
+              alert('Невозможно сменить тип роли для менеджера - ему назначены агенты');
+            } else {
               $modal.modal('hide');
               listUsers();
             }
           })
           .fail(function (jqXHR, textStatus, errorThrown) {
-            alert('An error occurred while saving user. Please, check input values.');
+            console.log(jqXHR);
+            console.log(textStatus);
+            console.log(errorThrown);
+
           })
         ;
       });
