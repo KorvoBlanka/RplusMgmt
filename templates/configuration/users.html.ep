@@ -631,7 +631,7 @@
                     <button type="submit" class="btn btn-primary btn-sm">скачать компонент</button>
                   </form>
                   % } else {
-                  <form method="get" action="<%= $assets_url %>/install/macosx/Rphone.pkg">
+                  <form method="get" action="<%= $assets_url %>/install/macosx/rphone.dmg">
                     <button type="submit" class="btn btn-primary btn-sm">скачать компонент</button>
                   </form>
                   % }
