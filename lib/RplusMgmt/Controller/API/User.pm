@@ -295,16 +295,21 @@ sub remove_photo {
 sub delete {
     my $self = shift;
 
+    my $id = $self->param('id');
+
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(users => 'manage');
     return $self->render(json => {error => 'Forbidden'}, status => 403) if ($self->account_type() eq 'demo');
 
-    my $id = $self->param('id');
+    my $user = Rplus::Model::User::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
+    return $self->render(json => {error => 'Not Found'}, status => 404) unless $user;
 
-    my $num_rows_updated = Rplus::Model::User::Manager->update_objects(
-        set => {delete_date => \'now()'},
-        where => [id => $id, delete_date => undef],
-    );
-    return $self->render(json => {error => 'Not Found'}, status => 404) unless $num_rows_updated;
+    if ($user->role eq 'manager') {
+        my $subordinate_count = Rplus::Model::User::Manager->get_objects_count(query => [superior => $user->id, delete_date => undef]);
+        return $self->render(json => {error => 'Has Subordinate'}, status => 200) if $subordinate_count > 0;
+    }
+
+    $user->delete_date('now()');
+    $user->save();
 
     return $self->render(json => {status => 'success'});
 }

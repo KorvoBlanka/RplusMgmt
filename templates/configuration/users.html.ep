@@ -276,7 +276,7 @@
         })
           .done(function (data) {
             if (data.msg == 'wrong role') {
-              alert('Невозможно сменить тип роли для менеджера - ему назначены агенты');
+              alert('Невозможно сменить тип роли для менеджера, имеются подчиненные');
             } else {
               $modal.modal('hide');
               listUsers();
@@ -346,7 +346,9 @@
               data: {id :uid},
             })
               .done(function (data, textStatus, jqXHR) {
-                  if (data.status == 'success') {
+                  if (data.error) {
+                    alert("Менеджер " + uname + " не может быть удален, имеются подчиненные");
+                  } else {
                     alert("Пользователь " + uname + " удален");
                     $modal.modal('hide');
                     listUsers();
