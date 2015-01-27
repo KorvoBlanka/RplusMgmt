@@ -39,7 +39,7 @@ sub list {
                 phone_num => $user->phone_num,
                 description => $user->description,
                 add_date => $self->format_datetime($user->add_date),
-                photo_url => $user->photo_url ? $self->config->{'storage'}->{'url'} . $user->photo_url . '?ts=' . time : '',
+                photo_url => $user->photo_url ? $user->photo_url : '',
                 offer_mode => $user->offer_mode,
             };
             push @{$res->{list}}, $x;
@@ -97,7 +97,7 @@ sub get {
         sip_host => $sip->{sip_host} ? $sip->{sip_host} : '',
         sip_login => $sip->{sip_login} ? $sip->{sip_login} : '',
         sip_password => $sip->{sip_password} ? $sip->{sip_password} : '',
-        photo_url => $user->photo_url ? $self->config->{'storage'}->{'url'} . $user->photo_url . '?ts=' . time : '',
+        photo_url => $user->photo_url ? $user->photo_url : '',
         offer_mode => $user->offer_mode,
         sync_google => $user->sync_google,
         candidates => [],

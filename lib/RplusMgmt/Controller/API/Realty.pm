@@ -226,9 +226,12 @@ sub list {
             push @query, 'agent_id' => undef;
             $agent_ok = 1;
         } elsif ($agent_id =~ /^a(\d+)$/) {
-
             my $manager = Rplus::Model::User::Manager->get_objects(query => [id => $1, delete_date => undef])->[0];
-            push @query, agent_id => [$manager->subordinate];
+            if (scalar (@{$manager->subordinate})) {
+                push @query, agent_id => [$manager->subordinate];
+            } else {
+                push @query, agent_id => 0;
+            }
             $agent_ok = 1;
 
         } elsif ($agent_id =~ /^\d+$/ && $self->has_permission(realty => read => $agent_id)) {

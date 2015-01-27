@@ -526,17 +526,26 @@
             {text: '<strong> Посредник</strong>', data_action: 'realty-set-agent', data_val: '10000', },
             {text: '<strong> <%= $self->stash('user')->{name} %></strong>', data_action: 'realty-set-agent', data_val: '<%= $self->stash('user')->{id} %>', },
         % if ($self->stash('user')->{role} eq 'top') {
-          % my $iter = Rplus::Model::User::Manager->get_objects_iterator(select => 'id, name', query => [role => ['agent', 'agent_ext', 'manager'], delete_date => undef], sort_by => 'name');
-          % while (my $x = $iter->next) {
-          % if ($x->id != 10000) {  
-            {text: '<%= $x->name %>', data_action: 'realty-set-agent', data_val: '<%= $x->id %>', },
-          % }
-          % }
+        %   my @owned = ();
+        %   for my $m (@{Rplus::Model::User::Manager->get_objects(query => [role => ['manager'], delete_date => undef], sort_by => 'name')}) {
+        %     if (scalar (@{$m->subordinate})) {
+              {text: '<%= $m->name %>', data_action: 'realty-set-agent', data_val: '<%= $m->id %>', subMenu: [
+        %       push @owned, @{$m->subordinate};
+        %       for my $a (@{Rplus::Model::User::Manager->get_objects(query => [id => [$m->subordinate], delete_date => undef], sort_by => 'name')}) {
+                {text: '<%= $a->name %>', data_action: 'realty-set-agent', data_val: '<%= $a->id %>'},
+        %       }
+              ]},
+        %     } else {
+              {text: '<%= $m->name %>', data_action: 'realty-set-agent', data_val: '<%= $m->id %>',},
+        %     }
+        %   }
         % } elsif ($self->stash('user')->{role} eq 'manager') {
-          % for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [id => $user->{subordinate}, delete_date => undef], sort_by => 'name')}) {
-          %   if ($x->id != 10000) {  
-            {text: '<%= $x->name %>', data_action: 'realty-set-agent', data_val: '<%= $x->id %>', },
-          %   }
+          % if (scalar (@{$self->stash('user')->{subordinate}})) {
+            % for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
+              % if ($x->id != 10000) {  
+                {text: '<%= $x->name %>', data_action: 'realty-set-agent', data_val: '<%= $x->id %>', },
+              % }
+            % }
           % }
         % }
         ]},
@@ -1594,20 +1603,33 @@
                 <li><a href="#" data-val="<%= $self->stash('user')->{id} %>" data-type="text"><strong> Мои объекты</strong></a></li>
                 % }
                 % if ($self->stash('user')->{role} eq 'top') {
+                %   my @owned = ();
                 %   for my $m (@{Rplus::Model::User::Manager->get_objects(query => [role => ['manager'], delete_date => undef], sort_by => 'name')}) {
                       <li class="dropdown-submenu"><a href="#" data-val="<%= $m->id %>" data-type="text"><%= $m->name %></a><ul class="dropdown-menu dropdown-context dropdown-context-sub compressed-context" style="bottom: auto;">
                         <li><a href="#" data-val="a<%= $m->id %>" data-type="text"> Все агенты</a></li>
-                %     if (scalar(@{$m->subordinate})) {
+                %     if (scalar (@{$m->subordinate})) {
+                %       push @owned, @{$m->subordinate};
                 %       for my $a (@{Rplus::Model::User::Manager->get_objects(query => [id => [$m->subordinate], delete_date => undef], sort_by => 'name')}) {
                           <li><a href="#" data-val="<%= $a->id %>" data-type="text"><%= $a->name %></a></li>
                 %       }
                 %     }
                       </ul></li>
                 %   }
+                      <li class="dropdown-submenu"><a href="#" data-val="" data-type="text"> Свободные агенты</a>
+                        <ul class="dropdown-menu dropdown-context dropdown-context-sub compressed-context" style="bottom: auto;">            
+                %   for my $a (@{Rplus::Model::User::Manager->get_objects(query => [role => ['agent', 'agent_ext'], delete_date => undef], sort_by => 'name')}) {
+                %    unless ($a->id ~~ @owned || $a->id == 10000) {
+                          <li><a href="#" data-val="<%= $a->id %>" data-type="text"><%= $a->name %></a></li>
+                %     }
+                %   }
+                        </ul>
+                      </li>
                 % } elsif ($self->stash('user')->{role} eq 'manager') {
-                % for my $a (@{Rplus::Model::User::Manager->get_objects(query => [id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
-                  <li><a href="#" data-val="<%= $a->id %>" data-type="text"><%= $a->name %></a></li>
-                % }
+                %   if (scalar (@{$self->stash('user')->{subordinate}})) {                  
+                %     for my $a (@{Rplus::Model::User::Manager->get_objects(query => [id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
+                        <li><a href="#" data-val="<%= $a->id %>" data-type="text"><%= $a->name %></a></li>
+                %     }
+                %   }
                 % }
               </ul>
             </li>

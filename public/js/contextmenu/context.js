@@ -81,7 +81,7 @@ var context = context || (function () {
                 } 
 
                 if (typeof data[i].subMenu !== 'undefined') {
-                    $sub = ('<li class="dropdown-submenu"' + element_id + '><a tabindex="-1" href="' + data[i].href + '">' + data[i].text + '</a></li>');
+                    $sub = ('<li '  + element_id + data_action + data_val +  ' class="dropdown-submenu"' + element_id + '><a tabindex="-1" href="' + data[i].href + '">' + data[i].text + '</a></li>');
                 } else {
                     $sub = $('<li' + element_id + data_action + data_val + '><a tabindex="-1" href="' + data[i].href + '"'+linkTarget+'>' + data[i].text + '</a></li>');
                 }

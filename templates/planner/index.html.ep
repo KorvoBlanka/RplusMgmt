@@ -385,11 +385,14 @@ a:focus {
 %= js_once "$assets_url/modernizr/modernizr.js";
 %= js_once "$assets_url/bootstrap-select/dist/js/bootstrap-select.min.js";
 %= js_once "$assets_url/powerange/dist/powerange.min.js";
+%= js_once "/js/contextmenu/context.js";
 % end
 
 % content_for javascript => begin
 <script type="application/javascript">
   "use strict";
+
+  context.init({preventDoubleContext: true, compress: true, above: 'auto',}, function(e){});
 
   var task_types_dict = {
   % for my $x (@{Rplus::Model::DictTaskType::Manager->get_objects(query => [delete_date => undef,], sort_by => 'id')}) {
@@ -1661,34 +1664,44 @@ a:focus {
         </li>
 
         <!-- Agent filter -->
+        <li class="dropdown" data-filter="assigned_user_id" data-val="<%= $self->stash('user')->{id} %>">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-user"></span><span role="display"> Мои задачи</span> <b class="caret"></b></a>
+          <ul class="dropdown-menu">
         % if ($self->stash('user')->{role} eq 'top') {
-        <li class="dropdown" data-filter="assigned_user_id" data-val="<%= $self->stash('user')->{id} %>">
-          <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-user"></span><span role="display"> <%= $self->stash('user')->{name} %></span> <b class="caret"></b></a>
-          <ul class="dropdown-menu">
-            <li><a href="#" data-val="all" data-type="text"><strong> Все</strong></a></li>
-            % for my $x (@{Rplus::Model::User::Manager->get_objects(query => ['!id' => 10000, delete_date => undef], sort_by => 'name')}) {
-            <li><a href="#" data-val="<%= $x->id %>" data-type="text"><%= $x->name %></a></li>
-            % }
-          </ul>
-        </li>
-        %} elsif ($self->stash('user')->{role} eq 'manager') {
-        <li class="dropdown" data-filter="assigned_user_id" data-val="<%= $self->stash('user')->{id} %>">
-          <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-user"></span><span role="display"> <%= $self->stash('user')->{name} %></span> <b class="caret"></b></a>
-          <ul class="dropdown-menu">
-            <li><a href="#" data-val="all" data-type="text"><strong> Все</strong></a></li>
-            % for my $x (@{Rplus::Model::User::Manager->get_objects(query => ['!id' => 10000, delete_date => undef], sort_by => 'name')}) {
-            <li><a href="#" data-val="<%= $x->id %>" data-type="text"><%= $x->name %></a></li>
-            % }
-          </ul>
-        </li>
-        % } else {
-        <li class="dropdown" data-filter="assigned_user_id" data-val="<%= $self->stash('user')->{id} %>">
-          <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-user"></span><span role="display"> <%= $self->stash('user')->{name} %></span> <b class="caret"></b></a>
-          <ul class="dropdown-menu">
-            <li><a href="#" data-val="<%= $self->stash('user')->{id} %>" data-type="text"><strong> <%= $self->stash('user')->{name} %></strong></a></li>
-          </ul>
-        </li>          
+          <li><a href="#" data-val="all" data-type="text"><strong> Все</strong></a></li>
+          <li><a href="#" data-val="<%= $self->stash('user')->{id} %>" data-type="text"><strong> Мои задачи</strong></a></li>
+        %   my @owned = ();
+        %   for my $m (@{Rplus::Model::User::Manager->get_objects(query => [role => ['manager'], delete_date => undef], sort_by => 'name')}) {
+              <li class="dropdown-submenu"><a href="#" data-val="<%= $m->id %>" data-type="text"><%= $m->name %></a><ul class="dropdown-menu dropdown-context dropdown-context-sub compressed-context" style="bottom: auto;">
+                <li><a href="#" data-val="a<%= $m->id %>" data-type="text"> Все агенты</a></li>
+        %     if (scalar (@{$m->subordinate})) {
+        %       push @owned, @{$m->subordinate};
+        %       for my $a (@{Rplus::Model::User::Manager->get_objects(query => [id => [$m->subordinate], delete_date => undef], sort_by => 'name')}) {
+                  <li><a href="#" data-val="<%= $a->id %>" data-type="text"><%= $a->name %></a></li>
+        %       }
+        %     }
+              </ul></li>
+        %   }
+              <li class="dropdown-submenu"><a href="#" data-val="" data-type="text"> Свободные агенты</a>
+                <ul class="dropdown-menu dropdown-context dropdown-context-sub compressed-context" style="bottom: auto;">            
+        %   for my $a (@{Rplus::Model::User::Manager->get_objects(query => [role => ['agent', 'agent_ext'], delete_date => undef], sort_by => 'name')}) {
+        %    unless ($a->id ~~ @owned || $a->id == 10000) {
+                  <li><a href="#" data-val="<%= $a->id %>" data-type="text"><%= $a->name %></a></li>
+        %     }
+        %   }
+                </ul>
+              </li>
+        % } elsif ($self->stash('user')->{role} eq 'manager') {
+          <li><a href="#" data-val="<%= $self->stash('user')->{id} %>" data-type="text"><strong> Мои задачи</strong></a></li>
+        % for my $a (@{Rplus::Model::User::Manager->get_objects(query => [id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
+          <li><a href="#" data-val="<%= $a->id %>" data-type="text"><%= $a->name %></a></li>
         % }
+        % } else {
+          <li><a href="#" data-val="<%= $self->stash('user')->{id} %>" data-type="text"><strong> Мои задачи</strong></a></li>
+        % }
+          </ul>
+        </li>
+
 
         <li class="dropdown" data-filter="days_count" data-val="1">
           <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-calendar"></span><span role="display">день </span><b class="caret"></b></a>
