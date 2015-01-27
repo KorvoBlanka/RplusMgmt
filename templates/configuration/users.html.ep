@@ -366,13 +366,13 @@
               data: {id :uid},
             })
               .done(function (data, textStatus, jqXHR) {
-                  if (data.error) {
-                    alert("Менеджер " + uname + " не может быть удален, имеются подчиненные");
-                  } else {
-                    alert("Пользователь " + uname + " удален");
-                    $modal.modal('hide');
-                    listUsers();
-                  }
+                if (data.error) {
+                  alert("Менеджер " + uname + " не может быть удален, имеются подчиненные");
+                } else {
+                  alert("Пользователь " + uname + " удален");
+                  $modal.modal('hide');
+                  listUsers();
+                }
               })
               .fail(function (jqXHR, textStatus, errorThrown) {
                 alert('Unexpected error, cannot delete user');

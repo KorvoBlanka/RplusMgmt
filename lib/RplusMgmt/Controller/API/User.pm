@@ -226,6 +226,11 @@ sub save {
     } else {
         if (scalar(@subordinates) > 0) {
             return $self->render(json => {msg => 'wrong role'}, status => 200);
+        } else {
+            Rplus::Model::User::Manager->update_objects(
+                set => {superior => undef},
+                where => [superior => $user->id],
+            );            
         }
     }
 
