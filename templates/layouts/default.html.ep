@@ -910,7 +910,6 @@
       function listCalls() {
         var list = getCallList();
         var cat = $('.calllist-selector-button.active').data('val');
-        console.log(cat);
         $('.calllist > tbody').html('');
         for (var ts in list) {
           var obj = list[ts];

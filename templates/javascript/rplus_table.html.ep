@@ -101,6 +101,13 @@
     <% } %> },
 
     users: { <% { %>
+      % my %sub_m;
+      % my $iter = Rplus::Model::User::Manager->get_objects_iterator(query => [role => ['manager'], delete_date => undef]);
+      % while (my $x = $iter->next) {
+      %   foreach($x->subordinate) {
+      %     $sub_m{$_} = $x->id;
+      %   }
+      % }
       % my $iter = Rplus::Model::User::Manager->get_objects_iterator(query => [role => ['agent', 'agent_ext', 'manager', 'top'], delete_date => undef]);
       % while (my $x = $iter->next) {
         "<%= $x->id %>": {
@@ -110,7 +117,7 @@
           phone_num: "<%= $x->phone_num %>", 
           public_name: "<%= $x->{'public_name'} %>", 
           public_phone_num: "<%= $x->{'public_phone_num'} %>",
-          superior: "<%= $x->{'superior'} %>",
+          superior: <%= $sub_m{$x->{'id'}} || 'null' %>,
         },
       % }
     <% } %> },

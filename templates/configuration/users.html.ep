@@ -126,36 +126,9 @@
       var uid = $("#userCard_userForm_userId").val();
       var uname = $("#userCard_userForm_inputName").val();      
       if (uid && role == 'dispatcher') {
-        $.ajax({
-          type: "POST",
-          url: "/api/user/get_obj_count",
-          data: {id :uid},
-        })
-          .done(function (data, textStatus, jqXHR) {
-            if (data.realty_count > 0 || data.client_count > 0) {
-              $("#userCard_userForm_inputRole").val(previous_role);
-              alert("Пользователю " + uname + " присвоено " + data.realty_count + " объектов недвижимости и " + data.client_count + " купцов, для изменения роли пользователя на 'Диспетчер' необходимо снять объекты с пользователя");
-            }
-            
-          })
-          .fail(function (jqXHR, textStatus, errorThrown) {
-            $("#userCard_userForm_inputRole").val(previous_role);
-            alert('Сервер не отвечает');
-          });
+
       } else if (role == 'manager') {
-          /*$('#subordinatesTab').removeClass('hidden');*/
-
-          /*$('select[name="candidates"]').html('');
-          for (var i = 0; i < data.candidates.length; i++) {
-            var a = data.candidates[i];
-            $('select[name="candidates"]').append('<option value="' + a.id + '">' + a.name + '</option>');
-          }
-
-          $('select[name="subordinates"]').html('');
-          for (var i = 0; i < data.subordinates.length; i++) {
-            var a = data.subordinates[i];
-            $('select[name="subordinates"]').append('<option value="' + a.id + '">' + a.name + '</option>');
-          }*/
+          $('#subordinatesTab').removeClass('hidden');
       }
     });
     
@@ -214,7 +187,21 @@
       Holder.run({images: "#user-photo"});
 
       $('#subordinatesTab').addClass('hidden');
+      $('select[name="candidates"]').html('');
       $('select[name="subordinates"]').html('');
+
+      $.ajax({
+        type: "POST",
+        url: "/api/user/list_candidates",
+        data: {},
+      })
+        .done(function (data, textStatus, jqXHR) {
+          for (var i = 0; i < data.candidates.length; i++) {
+            var a = data.candidates[i];
+            $('select[name="candidates"]').append('<option value="' + a.id + '">' + a.name + '</option>');
+          }
+        });
+
       $(':input', $modal).val(null);
       $('[name="role"]:input', $modal).val($('[name="role"]:input > option:first', $modal).attr('value'));
       $modal.modal('show');
@@ -250,11 +237,6 @@
 
           if (data.role == 'manager') {
             $('#subordinatesTab').removeClass('hidden');
-            $('select[name="candidates"]').html('');
-            for (var i = 0; i < data.candidates.length; i++) {
-              var a = data.candidates[i];
-              $('select[name="candidates"]').append('<option value="' + a.id + '">' + a.name + '</option>');
-            }
 
             $('select[name="subordinates"]').html('');
             for (var i = 0; i < data.subordinates.length; i++) {
@@ -263,6 +245,8 @@
             }
           } else {
             $('#subordinatesTab').addClass('hidden');
+            $('select[name="candidates"]').html('');
+            $('select[name="subordinates"]').html('');
           }
 
         })
@@ -270,6 +254,18 @@
           alert('Cannot open user card');
         });
 
+      $('select[name="candidates"]').html('');
+      $.ajax({
+        type: "POST",
+        url: "/api/user/list_candidates",
+        data: {},
+      })
+        .done(function (data, textStatus, jqXHR) {
+          for (var i = 0; i < data.candidates.length; i++) {
+            var a = data.candidates[i];
+            $('select[name="candidates"]').append('<option value="' + a.id + '">' + a.name + '</option>');
+          }
+        });
     }
 
     function initUserSave() {
@@ -278,6 +274,7 @@
 
         var formData = {
           subordinates: [],
+          photo_url: null,
         };
         var formArray = $(this).serializeArray();
         for (var i = 0; i < formArray.length; i++) {
@@ -289,14 +286,20 @@
           formData.subordinates.push($(this).val());
         });
 
+        formData.photo_url = $('#user-photo').data('photo_url');
+
         $.ajax({
           type: "POST",
           url: "/api/user/save",
           data: formData
         })
           .done(function (data) {
-            if (data.msg == 'wrong role') {
+            if (data.error == 'Has Subordinate') {
               alert('Невозможно сменить тип роли для менеджера, имеются подчиненные');
+            } else if (data.error == 'Has Realty') {
+              alert('Невозможно сменить тип роли на "Диспетчер", назанчена недвижимость');
+            } else if (data.error == 'Has Clients') { 
+              alert('Невозможно сменить тип роли на "Диспетчер", назанчены купцы');
             } else {
               $modal.modal('hide');
               listUsers();
@@ -306,7 +309,6 @@
             console.log(jqXHR);
             console.log(textStatus);
             console.log(errorThrown);
-
           })
         ;
       });
@@ -353,36 +355,24 @@
       
       $.ajax({
         type: "POST",
-        url: "/api/user/get_obj_count",
+        url: "/api/user/delete",
         data: {id :uid},
       })
         .done(function (data, textStatus, jqXHR) {
-          if (data.realty_count > 0 || data.client_count > 0) {
-            alert("Пользователю " + uname + " присвоено " + data.realty_count + " объектов недвижимости и " + data.client_count + " купцов, для удаления необходимо снять объекты с пользователя");
+          if (data.error == 'Has Subordinate') {
+            alert('Невозможно удалить пользователя, имеются подчиненные');
+          } else if (data.error == 'Has Realty') {
+            alert('Невозможно удалить пользователя, назанчена недвижимость');
+          } else if (data.error == 'Has Clients') { 
+            alert('Невозможно удалить пользователя, назанчены купцы');
           } else {
-            $.ajax({
-              type: "POST",
-              url: "/api/user/delete",
-              data: {id :uid},
-            })
-              .done(function (data, textStatus, jqXHR) {
-                if (data.error) {
-                  alert("Менеджер " + uname + " не может быть удален, имеются подчиненные");
-                } else {
-                  alert("Пользователь " + uname + " удален");
-                  $modal.modal('hide');
-                  listUsers();
-                }
-              })
-              .fail(function (jqXHR, textStatus, errorThrown) {
-                alert('Unexpected error, cannot delete user');
-              });        
+            alert("Пользователь " + uname + " удален");
+            $modal.modal('hide');
+            listUsers();
           }
-          
         })
         .fail(function (jqXHR, textStatus, errorThrown) {
-          $("#userCard_userForm_inputRole").val(previous_role);
-          alert('Cannot check user');
+          alert('Unexpected error, cannot delete user');
         });
     });
 
@@ -432,7 +422,8 @@
       done: function (e, data) {
         var x = data.result;
         var uid = $("#userCard_userForm_userId").val();
-        $('#user-photo').attr('src', x.photo_url);
+        $('#user-photo').attr('src', x.src);
+        $('#user-photo').data('photo_url', x.photo_url);
         $('.user-preview[data-id=' + uid + '] .img-thumbnail').attr('src', x.photo_url);
         $('.img-overlay').removeClass('img-overlay-hover');
       }
@@ -447,23 +438,9 @@
       var uid = $("#userCard_userForm_userId").val();
       var uname = $("#userCard_userForm_inputName").val();
 
-      $.ajax({
-        type: "POST",
-        url: "/api/user/remove_photo",
-        data: {user_id: uid},
-      })
-        .done(function (data, textStatus, jqXHR) {
-          $('#user-photo').attr('data-src', 'holder.js/200x200/text:<%= ucfloc q{no photo} %>');
-          Holder.run({images: "#user-photo"});
-          console.log(uid);
-          $('.user-preview[data-id=' + uid + '] .img-thumbnail').attr('data-src', 'holder.js/110x110/text:<%= ucfloc q{no photo} %>');
-          Holder.run({images: ".img-thumbnail"});
-          $('#photo-upload-button').removeClass('hidden');
-          $('#photo-remove-button').addClass('hidden');
-        })
-        .fail(function (jqXHR, textStatus, errorThrown) {
-          alert('Не удалось выполнить операцию, попробуйте позже или обратитесь в тех. поддержку');
-        });
+      $('#user-photo').attr('data-src', 'holder.js/200x200/text:<%= ucfloc q{no photo} %>');
+      $('#user-photo').data('photo_url', '');
+      Holder.run({images: "#user-photo"});
     });
 
     $('#googleSyncCb').change(function () {

@@ -259,6 +259,7 @@ sub startup {
                     role => $user->role,
                     phone_num => $user->phone_num,
                     add_date => $user->add_date,
+                    subordinate => [$user->subordinate],
                     permissions => Hash::Merge->new('RIGHT_PRECEDENT')->merge($c->config->{roles}->{$user->role} || {}, from_json($user->permissions)),
                 });
             }

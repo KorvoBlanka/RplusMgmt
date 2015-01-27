@@ -11,6 +11,7 @@ use Rplus::Model::Client::Manager;
 
 use Rplus::Util::GoogleCalendar;
 
+use Mojo::Collection;
 use File::Path qw(make_path);
 use Image::Magick;
 
@@ -50,6 +51,27 @@ sub list {
     return $self->render(json => $res);
 }
 
+sub list_candidates {
+    my $self = shift;
+
+    my $res = {
+        candidates => [],
+    };
+
+    my @owned = ();
+    for my $m (@{Rplus::Model::User::Manager->get_objects(query => [role => 'manager', delete_date => undef])}) {
+        push @owned, @{$m->subordinate};
+    }
+
+    for my $a (@{Rplus::Model::User::Manager->get_objects(query => [role => ['agent', 'agent_ext'], delete_date => undef], sort_by => 'name')}) {
+        unless ($a->id ~~ @owned) {
+            push @{$res->{candidates}}, {id => $a->id, name => $a->name,} unless $a->id == 10000;
+        }
+    }
+
+    return $self->render(json => $res);
+}
+
 sub get {
     my $self = shift;
 
@@ -82,12 +104,14 @@ sub get {
         subordinates => [],
     };
 
-    for my $a (@{Rplus::Model::User::Manager->get_objects(query => [role => ['agent', 'agent_ext'], superior => undef, delete_date => undef], sort_by => 'name')}) {
+    for my $a (@{Rplus::Model::User::Manager->get_objects(query => [role => ['agent', 'agent_ext'], delete_date => undef], sort_by => 'name')}) {
         push @{$res->{candidates}}, {id => $a->id, name => $a->name,} unless $a->id == 10000;
     }
 
-    for my $a (@{Rplus::Model::User::Manager->get_objects(query => [role => ['agent', 'agent_ext'], superior => $user->id, delete_date => undef], sort_by => 'name')}) {
-        push @{$res->{subordinates}}, {id => $a->id, name => $a->name,};
+    if (scalar(@{$user->subordinate})) {
+        for my $a (@{Rplus::Model::User::Manager->get_objects(query => [id => [$user->subordinate], delete_date => undef], sort_by => 'name')}) {
+            push @{$res->{subordinates}}, {id => $a->id, name => $a->name,};
+        }
     }
 
     return $self->render(json => $res);
@@ -131,28 +155,11 @@ sub find {
         sip_host => $sip->{sip_host} ? $sip->{sip_host} : '',
         sip_login => $sip->{sip_login} ? $sip->{sip_login} : '',
         sip_password => $sip->{sip_password} ? $sip->{sip_password} : '',
-        photo_url => $user->photo_url ? $self->config->{'storage'}->{'url'} . $user->photo_url . '?ts=' . time : '',
+        photo_url => $user->photo_url ? $self->config->{'storage'}->{'url'} . $user->photo_url : '',
     };
 
     return $self->render(json => $res);
 }
-
-sub get_obj_count {
-    my $self = shift;
-
-    my $user_id = $self->param('id');
-
-    my $user = Rplus::Model::User::Manager->get_objects(query => [id => $user_id, delete_date => undef])->[0];
-    return $self->render(json => {error => 'Not Found'}, status => 404) unless $user;
-    
-    my $realty_count = Rplus::Model::Realty::Manager->get_objects_count(query => [agent_id => $user_id, delete_date => undef]);
-    my $client_count = Rplus::Model::Client::Manager->get_objects_count(query => [agent_id => $user_id, delete_date => undef]);
-    my $subordinate_count = Rplus::Model::User::Manager->get_objects_count(query => [superior => $user_id, delete_date => undef]);
-
-
-    return $self->render(json => {realty_count => $realty_count, client_count => $client_count, subordinate_count => $subordinate_count,});
-}
-
 
 sub save {
     my $self = shift;
@@ -193,6 +200,7 @@ sub save {
     my $description = $self->param_n('description');
     my $public_name = $self->param_n('public_name');
     my $public_phone_num = $self->param_n('public_phone_num');
+    my $photo_url = $self->param_n('photo_url');
 
     my @subordinates = $self->param('subordinates[]');
 
@@ -211,38 +219,29 @@ sub save {
     $user->public_name($public_name);
     $user->public_phone_num($public_phone_num);
     $user->ip_telephony(encode_json($sip));
+    $user->photo_url($photo_url);
+    $user->subordinate(Mojo::Collection->new(@subordinates)->compact->uniq);
 
-    if ($role eq 'manager') {
-        Rplus::Model::User::Manager->update_objects(
-            set => {superior => undef},
-            where => [superior => $user->id],
-        );
-        foreach (@subordinates) {
-            Rplus::Model::User::Manager->update_objects(
-                set => {superior => $user->id},
-                where => [id => $_],
-            );
-        }
-    } else {
-        if (scalar(@subordinates) > 0) {
-            return $self->render(json => {msg => 'wrong role'}, status => 200);
-        } else {
-            Rplus::Model::User::Manager->update_objects(
-                set => {superior => undef},
-                where => [superior => $user->id],
-            );            
-        }
+    if (scalar(@subordinates) > 0 && $role ne 'manager') {
+        return $self->render(json => {error => 'Has Subordinate'}, status => 200);
+    }
+
+    if ($user->id && $role eq 'dispatcher') {
+        my $realty_count = Rplus::Model::Realty::Manager->get_objects_count(query => [agent_id => $user->id, delete_date => undef]);
+        return $self->render(json => {error => 'Has Realty'}, status => 200) if $realty_count > 0;
+
+        my $client_count = Rplus::Model::Client::Manager->get_objects_count(query => [agent_id => $user->id, delete_date => undef]);    
+        return $self->render(json => {error => 'Has Clients'}, status => 200) if $client_count > 0;
     }
 
     eval {
         $user->save($user->id ? (changes_only => 1) : (insert => 1));
-
         1;
     } or do {
         return $self->render(json => {error => $@}, status => 500);
     };
 
-    return $self->render(json => {msg => 'success', status => 200});
+    return $self->render(json => {msg => 'success'}, status => 200);
 }
 
 sub upload_photo {
@@ -250,51 +249,34 @@ sub upload_photo {
 
     #return $self->render(json => {error => 'Limit is exceeded'}, status => 500) if $self->req->is_limit_exceeded;
     my $photo_url = '';
-    my $user_id = $self->param('user_id');
-    my $user = Rplus::Model::User::Manager->get_objects(query => [id => $user_id, delete_date => undef])->[0];
-    return $self->render(json => {error => 'Not Found'}, status => 404) unless $user;
+    my $cat = '/users/photos/';
 
     if (my $file = $self->param('files[]')) {
-        my $path = $self->config->{'storage'}->{'path'}.'/users/'.$user_id;
-        #my $name = Time::HiRes::time =~ s/\.//r; # Unique name
-        my $name = "user_photo";
+        my $path = $self->config->{'storage'}->{'path'} . $cat;
+        my $name = (Time::HiRes::time =~ s/\.//r) . '.png'; # Unique name
 
         eval {
             make_path($path);
-            $file->move_to($path.'/'.$name.'.png');
+            $file->move_to($path . $name);
 
             # Convert image to jpeg
             my $image = Image::Magick->new;
-            $image->Read($path.'/'.$name.'.png');
+            $image->Read($path . $name);
             $image->Resize(geometry => '800x800');
             $image->Extent(geometry => '800x800', gravity => 'Center', background => 'transparent');
-            $image->Write($path.'/'.$name.'.png');
+            $image->Write($path . $name);
 
             # Save
-            $photo_url = '/users/'.$user_id.'/'.$name.'.png';
-            $user->photo_url($photo_url);
-            $user->save;
+            $photo_url = $cat . $name;
+
         } or do {
             return $self->render(json => {error => $@}, status => 500);
         };
 
-        return $self->render(json => {status => 'success', photo_url => $self->config->{'storage'}->{'url'} . $photo_url,});
+        return $self->render(json => {status => 'success', photo_url => $photo_url, src => $self->config->{'storage'}->{'url'} . $photo_url});
     }
 
     return $self->render(json => {error => 'Bad Request'}, status => 400);
-}
-
-sub remove_photo {
-    my $self = shift;
-
-    my $user_id = $self->param('user_id');
-    my $user = Rplus::Model::User::Manager->get_objects(query => [id => $user_id, delete_date => undef])->[0];
-    return $self->render(json => {error => 'Not Found'}, status => 404) unless $user;
-
-    $user->photo_url(undef);
-    $user->save(changes_only => 1);
-
-    return $self->render(json => {status => 'success'});
 }
 
 sub delete {
@@ -308,10 +290,14 @@ sub delete {
     my $user = Rplus::Model::User::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $user;
 
-    if ($user->role eq 'manager') {
-        my $subordinate_count = Rplus::Model::User::Manager->get_objects_count(query => [superior => $user->id, delete_date => undef]);
-        return $self->render(json => {error => 'Has Subordinate'}, status => 200) if $subordinate_count > 0;
-    }
+    my $realty_count = Rplus::Model::Realty::Manager->get_objects_count(query => [agent_id => $id, delete_date => undef]);
+    return $self->render(json => {error => 'Has Realty'}, status => 200) if $realty_count > 0;
+
+    my $client_count = Rplus::Model::Client::Manager->get_objects_count(query => [agent_id => $id, delete_date => undef]);    
+    return $self->render(json => {error => 'Has Clients'}, status => 200) if $client_count > 0;
+
+    my $subordinate_count =  scalar @{$user->subordinate};
+    return $self->render(json => {error => 'Has Subordinate'}, status => 200) if $subordinate_count > 0;
 
     $user->delete_date('now()');
     $user->save();

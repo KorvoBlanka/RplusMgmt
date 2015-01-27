@@ -67,7 +67,7 @@ my $_serialize = sub {
         }
 
         # Exclude fields for read permission "2"
-        if ($self->has_permission(realty => read => $realty->agent_id) == 2 && $realty->agent_id && $realty->agent_id != 10000 && $realty->agent->superior != $self->stash('user')->{id}) {
+        if ($self->has_permission(realty => read => $realty->agent_id) == 2 && $realty->agent_id != 10000 && !($realty->agent_id ~~ @{$self->stash('user')->{subordinate}})) {
             $x->{$_} = undef for @exclude_fields;
             if ($realty->agent_id) {
                 my $user = Rplus::Model::User::Manager->get_objects(query => [id => $realty->agent_id, delete_date => undef])->[0];
@@ -227,13 +227,8 @@ sub list {
             $agent_ok = 1;
         } elsif ($agent_id =~ /^a(\d+)$/) {
 
-            my $a_id = [];
-
-            for my $a (@{Rplus::Model::User::Manager->get_objects(query => [role => ['agent', 'agent_ext'], superior => $1, delete_date => undef], sort_by => 'name')}) {
-                push @{$a_id}, $a->id;
-            }
-
-            push @query, agent_id => $a_id;
+            my $manager = Rplus::Model::User::Manager->get_objects(query => [id => $1, delete_date => undef])->[0];
+            push @query, agent_id => [$manager->subordinate];
             $agent_ok = 1;
 
         } elsif ($agent_id =~ /^\d+$/ && $self->has_permission(realty => read => $agent_id)) {

@@ -20,6 +20,7 @@
 %= css_once "$assets_url/typeahead.js/$typeaheadjs_ver/css/typeahead.js-bootstrap.css";
 %= css_once "$assets_url/jquery.webSpeech/jquery.webSpeech-1.0.1.css";
 %= css_once "/css/context.css";
+
 <style type="text/css">
   .export-check-hidden {
     visibility: hidden;
@@ -305,7 +306,7 @@
         }},        
         
         {id: "owner", name: "Контакты", visible: true, style: "white-space: nowrap;", val: function (r) {
-          return r.owner_phones ? r.owner_phones.map(function (x) { console.log(r.id); return Rplus.Util.formatPhoneNum(x) }).join('<br>') : '';
+          return r.owner_phones ? r.owner_phones.map(function (x) { return Rplus.Util.formatPhoneNum(x) }).join('<br>') : '';
         }},
         {id: "price", name: "<%= ucfloc 'price' %>", sortName: "price", visible: false, val: function (r) {
           return r.price || '';
@@ -532,23 +533,23 @@
           % }
           % }
         % } elsif ($self->stash('user')->{role} eq 'manager') {
-          % my $iter = Rplus::Model::User::Manager->get_objects_iterator(select => 'id, name', query => [role => ['agent', 'agent_ext',], superior => $self->stash('user')->{id}, delete_date => undef], sort_by => 'name');
-          % while (my $x = $iter->next) {
-          % if ($x->id != 10000) {  
+          % for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [id => $user->{subordinate}, delete_date => undef], sort_by => 'name')}) {
+          %   if ($x->id != 10000) {  
             {text: '<%= $x->name %>', data_action: 'realty-set-agent', data_val: '<%= $x->id %>', },
-          % }
+          %   }
           % }
         % }
         ]},
         % }
         {text: '<span class="glyphicon glyphicon-cog"></span> Задача', element_id: 'el_task', subMenu: [
-          % my $iter = Rplus::Model::DictTaskType::Manager->get_objects_iterator(query => [or => [category => 'seller', category => 'both'], delete_date => undef,], sort_by => 'id');
-          % while (my $x = $iter->next) {
-            {text: '&nbsp<%= $x->name %>', data_action: 'task-create', data_val: '<%= $x->id %>', },
+          % if (scalar(@{$self->stash('user')->{subordinate}})) {
+          %   for my $a (@{Rplus::Model::User::Manager->get_objects(query => [id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
+                {text: '&nbsp<%= $a->name %>', data_action: 'task-create', data_val: '<%= $a->id %>', },
+          %   }
           % }
         ]},
         {text: '<span class="glyphicon glyphicon-export"></span>  <%= ucfloc q{advertisement} %>', element_id: 'el_export', subMenu: [
-          % my $loc_id = $self->session('user')->{location_id};      # костыль!
+          % my $loc_id = $self->session('user')->{location_id};
           % for my $x (@{Rplus::Model::Media::Manager->get_objects(query => [type => 'export', delete_date => undef])}) {
           % next if $loc_id == 2 && ($x->id == 2 || $x->id == 3) || $loc_id == 3 && ($x->id == 2 || $x->id == 3);
             {text: '<span class="export-check export-check<%= $x->id %> glyphicon glyphicon-ok"></span>&nbsp&nbsp<%= $x->name %>', data_action: 'realty-set-export', data_val: '<%= $x->id %>', },
@@ -594,7 +595,6 @@
             media_export = {};
           }
           if (data.rq_id != rq_id) {
-            console.log('!');
             return 0;
           }
           var xhtml = '';
@@ -722,7 +722,6 @@
               xhtml += '<td class="' + (!f.visible ? 'hidden' : '') + '"' + (f.style ? ' style="' + f.style + '"' : '') + '>' + f.val(r) + '</td>';
             }
             xhtml += '</tr>';
-            console.log(prev_id);
             if (prev_id == 0) {
               $('#realtyTable > tbody').prepend(xhtml);
             } else {
@@ -1598,13 +1597,15 @@
                 %   for my $m (@{Rplus::Model::User::Manager->get_objects(query => [role => ['manager'], delete_date => undef], sort_by => 'name')}) {
                       <li class="dropdown-submenu"><a href="#" data-val="<%= $m->id %>" data-type="text"><%= $m->name %></a><ul class="dropdown-menu dropdown-context dropdown-context-sub compressed-context" style="bottom: auto;">
                         <li><a href="#" data-val="a<%= $m->id %>" data-type="text"> Все агенты</a></li>
-                %     for my $a (@{Rplus::Model::User::Manager->get_objects(query => [role => ['agent', 'agent_ext'], superior => $m->id, delete_date => undef], sort_by => 'name')}) {                      
-                        <li><a href="#" data-val="<%= $a->id %>" data-type="text"><%= $a->name %></a></li>
+                %     if (scalar(@{$m->subordinate})) {
+                %       for my $a (@{Rplus::Model::User::Manager->get_objects(query => [id => [$m->subordinate], delete_date => undef], sort_by => 'name')}) {
+                          <li><a href="#" data-val="<%= $a->id %>" data-type="text"><%= $a->name %></a></li>
+                %       }
                 %     }
                       </ul></li>
                 %   }
                 % } elsif ($self->stash('user')->{role} eq 'manager') {
-                %   for my $a (@{Rplus::Model::User::Manager->get_objects(query => [role => ['agent', 'agent_ext'], superior => $self->stash('user')->{id}, delete_date => undef], sort_by => 'name')}) {
+                % for my $a (@{Rplus::Model::User::Manager->get_objects(query => [id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
                   <li><a href="#" data-val="<%= $a->id %>" data-type="text"><%= $a->name %></a></li>
                 % }
                 % }

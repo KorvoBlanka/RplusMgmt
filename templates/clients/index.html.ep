@@ -2200,34 +2200,48 @@
   <nav class="navbar navbar-default navbar-fixed-bottom">
     <div class="container hidden" id="nav-1">
       <ul class="nav navbar-nav" style="width: 34.3%;">            
-          <!-- Color tag filter -->
-          <li class="dropdown" data-filter="client-color_tag_id" data-val="">
-            <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span role="display"><span class="glyphicon glyphicon-tags"></span>&nbsp&nbspВсе</span> <b class="caret"></b></a>
-            <ul class="dropdown-menu">
-              <li><a href="#" data-val=""><span class="glyphicon glyphicon-tags"></span>&nbsp&nbspВсе</a></li>
-              % for my $x (@{Rplus::Model::DictColorTag::Manager->get_objects(query => [delete_date => undef], sort_by => 'id')}) {
-                <li><a href="#" data-val="<%= $x->id %>"><span class="tag-button color-tag-<%= $x->id %> pull-left"></span>&nbsp<%= $x->name %></a></li>
-              % }
-            </ul>
-          </li>
+        <!-- Color tag filter -->
+        <li class="dropdown" data-filter="client-color_tag_id" data-val="">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span role="display"><span class="glyphicon glyphicon-tags"></span>&nbsp&nbspВсе</span> <b class="caret"></b></a>
+          <ul class="dropdown-menu">
+            <li><a href="#" data-val=""><span class="glyphicon glyphicon-tags"></span>&nbsp&nbspВсе</a></li>
+            % for my $x (@{Rplus::Model::DictColorTag::Manager->get_objects(query => [delete_date => undef], sort_by => 'id')}) {
+              <li><a href="#" data-val="<%= $x->id %>"><span class="tag-button color-tag-<%= $x->id %> pull-left"></span>&nbsp<%= $x->name %></a></li>
+            % }
+          </ul>
+        </li>
 
-          <!-- Agent filter -->
-          <li class="dropdown" data-filter="client-agent_id" data-val="">
-            <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-user"></span><span role="display"><%= ucfloc 'any' %></span> <b class="caret"></b></a>
-            <ul class="dropdown-menu">
-              % if (has_permission(realty => 'read')->{nobody} || has_permission(realty => 'read')->{others}) {
-              <li><a href="#" data-val="" data-type="text"><strong><%= ucfloc 'any' %></strong></a></li>
-              % }
-              % if (has_permission(realty => 'read')->{nobody}) {
-              <li><a href="#" data-val="nobody" data-type="text"><strong>Не назначено</strong></a></li>
-              % }
-              % for my $x (@{Rplus::Model::User::Manager->get_objects(query => [role => ['agent', 'agent_ext', 'manager'], delete_date => undef], sort_by => 'name')}) {
-                % if (has_permission(realty => read => $x->id) && $x->id != 10000) {
-                <li><a href="#" data-val="<%= $x->id %>" data-type="text"><%= $x->name %></a></li>
-                % }
-              % }
-            </ul>
-          </li>
+        <!-- Agent filter -->
+        <li class="dropdown" data-filter="client-agent_id" data-val="">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-user"></span><span role="display"> Все купцы</span> <b class="caret"></b></a>
+          <ul class="dropdown-menu">
+            % if (has_permission(realty => 'read')->{nobody} || has_permission(realty => 'read')->{others}) {
+            <li><a href="#" data-val="" data-type="text"><strong> Все купцы</strong></a></li>
+            % }
+            % if (has_permission(realty => 'read')->{nobody}) {
+            <li><a href="#" data-val="nobody" data-type="text"><strong>Не назначенные</strong></a></li>
+            % }              
+            % if (has_permission(realty => 'read')->{others}) {
+            <li><a href="#" data-val="<%= $self->stash('user')->{id} %>" data-type="text"><strong> Мои купцы</strong></a></li>
+            % }
+            % if ($self->stash('user')->{role} eq 'top') {
+            %   for my $m (@{Rplus::Model::User::Manager->get_objects(query => [role => ['manager'], delete_date => undef], sort_by => 'name')}) {
+                  <li class="dropdown-submenu"><a href="#" data-val="<%= $m->id %>" data-type="text"><%= $m->name %></a><ul class="dropdown-menu dropdown-context dropdown-context-sub compressed-context" style="bottom: auto;">
+                    <!--<li><a href="#" data-val="a<%= $m->id %>" data-type="text"> Все агенты</a></li>-->
+            %     if (scalar(@{$m->subordinate})) {
+            %       for my $a (@{Rplus::Model::User::Manager->get_objects(query => [id => [$m->subordinate], delete_date => undef], sort_by => 'name')}) {
+                      <li><a href="#" data-val="<%= $a->id %>" data-type="text"><%= $a->name %></a></li>
+            %       }
+            %     }
+                  </ul></li>
+            %   }
+            % } elsif ($self->stash('user')->{role} eq 'manager') {
+            % for my $a (@{Rplus::Model::User::Manager->get_objects(query => [id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
+              <li><a href="#" data-val="<%= $a->id %>" data-type="text"><%= $a->name %></a></li>
+            % }
+            % }
+          </ul>
+        </li>
       </ul>      
     </div>
 
