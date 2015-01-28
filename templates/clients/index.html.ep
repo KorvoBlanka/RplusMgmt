@@ -413,10 +413,11 @@
               $(".export-check" + id_key).removeClass("export-check-hidden").removeClass("export-check-visible").addClass("export-check-grayed");
             }
           }
+
+          console.log($this.data('obj'));
           var agent_id = $this.data('obj').agent_id;
           if ('<%= $self->stash('user')->{role} %>' != 'manager' && '<%= $self->stash('user')->{role} %>' != 'top') {   // fixme
             if (agent_id == null) {
-              console.log('null');
               $("#el_assign").removeClass('disabled');
 
               $menu_export.addClass('disabled');
@@ -464,12 +465,30 @@
         {text: '<span class="glyphicon glyphicon-user"></span> Назначить', element_id: 'el_agents', subMenu: [
             {text: '<strong><%= ucfloc 'nobody' %></strong>', data_action: 'realty-set-agent', data_val: '', },
             {text: '<strong> Посредник</strong>', data_action: 'realty-set-agent', data_val: '10000', },
-          % my $iter = Rplus::Model::User::Manager->get_objects_iterator(select => 'id, name', query => [role => ['agent', 'agent_ext', 'manager'], delete_date => undef], sort_by => 'name');
-          % while (my $x = $iter->next) {
-          % if ($x->id != 10000) {  
-            {text: '<%= $x->name %>', data_action: 'realty-set-agent', data_val: '<%= $x->id %>', },
+            {text: '<strong> <%= $self->stash('user')->{name} %></strong>', data_action: 'realty-set-agent', data_val: '<%= $self->stash('user')->{id} %>', },
+        % if ($self->stash('user')->{role} eq 'top') {
+        %   my @owned = ();
+        %   for my $m (@{Rplus::Model::User::Manager->get_objects(query => [role => ['manager'], delete_date => undef], sort_by => 'name')}) {
+        %     if (scalar (@{$m->subordinate})) {
+              {text: '<%= $m->name %>', data_action: 'realty-set-agent', data_val: '<%= $m->id %>', subMenu: [
+        %       push @owned, @{$m->subordinate};
+        %       for my $a (@{Rplus::Model::User::Manager->get_objects(query => [id => [$m->subordinate], delete_date => undef], sort_by => 'name')}) {
+                {text: '<%= $a->name %>', data_action: 'realty-set-agent', data_val: '<%= $a->id %>'},
+        %       }
+              ]},
+        %     } else {
+              {text: '<%= $m->name %>', data_action: 'realty-set-agent', data_val: '<%= $m->id %>',},
+        %     }
+        %   }
+        % } elsif ($self->stash('user')->{role} eq 'manager') {
+          % if (scalar (@{$self->stash('user')->{subordinate}})) {
+            % for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
+              % if ($x->id != 10000) {  
+                {text: '<%= $x->name %>', data_action: 'realty-set-agent', data_val: '<%= $x->id %>', },
+              % }
+            % }
           % }
-          % }
+        % }
         ]},
         % }
         {text: '<span class="glyphicon glyphicon-send"></span> Уведомить', element_id: 'el_notify', subMenu: [
@@ -506,14 +525,33 @@
         {text: '<span class="glyphicon glyphicon-trash"></span>&nbsp&nbsp<%= ucfloc 'delete' %>', element_id: 'el_delete', data_action: 'client-delete',},
         {divider: true},
         % if (has_permission(realty => 'write')->{nobody} || has_permission(realty => 'write')->{others}) {
-        {text: '<span class="glyphicon glyphicon-user"></span> <%= ucfloc 'agent' %>', element_id: 'el_agents', subMenu: [
+        {text: '<span class="glyphicon glyphicon-user"></span> Назначить', element_id: 'el_agents', subMenu: [
             {text: '<strong><%= ucfloc 'nobody' %></strong>', data_action: 'client-set-agent', data_val: '', },
-          % my $iter = Rplus::Model::User::Manager->get_objects_iterator(select => 'id, name', query => [role => ['agent', 'agent_ext', 'manager'], delete_date => undef], sort_by => 'name');
-          % while (my $x = $iter->next) {
-          % if ($x->id != 10000) {  
-            {text: '<%= $x->name %>', data_action: 'client-set-agent', data_val: '<%= $x->id %>', },
+            {text: '<strong> Посредник</strong>', data_action: 'client-set-agent', data_val: '10000', },
+            {text: '<strong> <%= $self->stash('user')->{name} %></strong>', data_action: 'client-set-agent', data_val: '<%= $self->stash('user')->{id} %>', },
+        % if ($self->stash('user')->{role} eq 'top') {
+        %   my @owned = ();
+        %   for my $m (@{Rplus::Model::User::Manager->get_objects(query => [role => ['manager'], delete_date => undef], sort_by => 'name')}) {
+        %     if (scalar (@{$m->subordinate})) {
+              {text: '<%= $m->name %>', data_action: 'client-set-agent', data_val: '<%= $m->id %>', subMenu: [
+        %       push @owned, @{$m->subordinate};
+        %       for my $a (@{Rplus::Model::User::Manager->get_objects(query => [id => [$m->subordinate], delete_date => undef], sort_by => 'name')}) {
+                {text: '<%= $a->name %>', data_action: 'client-set-agent', data_val: '<%= $a->id %>'},
+        %       }
+              ]},
+        %     } else {
+              {text: '<%= $m->name %>', data_action: 'client-set-agent', data_val: '<%= $m->id %>',},
+        %     }
+        %   }
+        % } elsif ($self->stash('user')->{role} eq 'manager') {
+          % if (scalar (@{$self->stash('user')->{subordinate}})) {
+            % for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
+              % if ($x->id != 10000) {  
+                {text: '<%= $x->name %>', data_action: 'realty-set-agent', data_val: '<%= $x->id %>', },
+              % }
+            % }
           % }
-          % }
+        % }
         ]},
         % }
         {text: '<span class="glyphicon glyphicon-cog"></span> Задача',  element_id: 'el_task_client', subMenu: [
@@ -805,6 +843,7 @@
       if ($tr.length) {
         var page = $tr.data('page');
         $tr.replaceWith(buildHtmlForRealty(realty, page));
+        $('#realtyTable > tbody > tr[data-id="' + r.id + '"]').data('obj', realty);
         media_export[r.id] = r.export_media;
       }
     }
@@ -2187,7 +2226,7 @@
       </div>
     </div>
 
-    <div class="col-md-7 col-lg-8" style="padding-left: 11px;">
+    <div class="col-md-7 col-lg-8" style="padding-left: 0px;">
       <div class="table-responsive" id="realtyTableWrapper">
         <table style="overflow: hidden;" class="table table-condensed table-striped table-hover" id="realtyTable" data-toggle="context">
           <thead></thead>
@@ -2199,7 +2238,7 @@
 
   <nav class="navbar navbar-default navbar-fixed-bottom">
     <div class="container hidden" id="nav-1">
-      <ul class="nav navbar-nav" style="width: 34.3%;">            
+      <ul class="nav navbar-nav" style="width: 33.8%;">
         <!-- Color tag filter -->
         <li class="dropdown" data-filter="client-color_tag_id" data-val="">
           <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span role="display"><span class="glyphicon glyphicon-tags"></span>&nbsp&nbspВсе</span> <b class="caret"></b></a>
@@ -2249,9 +2288,12 @@
                     </ul>
                   </li>
             % } elsif ($self->stash('user')->{role} eq 'manager') {
-            % for my $a (@{Rplus::Model::User::Manager->get_objects(query => [id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
-              <li><a href="#" data-val="<%= $a->id %>" data-type="text"><%= $a->name %></a></li>
-            % }
+              <li><a href="#" data-val="a<%= $self->stash('user')->{id} %>" data-type="text"> Мои агенты</a></li>
+            %   if (scalar(@{$self->stash('user')->{subordinate}})) {
+            %     for my $a (@{Rplus::Model::User::Manager->get_objects(query => [id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
+                    <li><a href="#" data-val="<%= $a->id %>" data-type="text"><%= $a->name %></a></li>
+            %     }
+            %   }
             % }
           </ul>
         </li>
@@ -2264,7 +2306,7 @@
         <a href="#" style="color: #aaa;" data-action="toggle-nav"><span class="glyphicon glyphicon-chevron-up"></span></a>
       </div>
 
-      <ul class="nav navbar-nav" style="width: 34.3%;">
+      <ul class="nav navbar-nav" style="width: 33.8%;">
         <li><a href="#" data-action="client-create"><span class="glyphicon glyphicon-plus"></span>&nbsp&nbspДобавить</a></li>
         <li><a href="#" data-action="client-delete"><span class="glyphicon glyphicon-trash"></span> <%= ucfloc 'delete' %></a></li>
 
@@ -2340,9 +2382,12 @@
                       </ul>
                     </li>                
               % } elsif ($self->stash('user')->{role} eq 'manager') {
-              % for my $a (@{Rplus::Model::User::Manager->get_objects(query => [id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
+                <li><a href="#" data-val="a<%= $self->stash('user')->{id} %>" data-type="text"><strong> Мои агенты</strong></a></li>
+              %   if (scalar (@{$self->stash('user')->{subordinate}})) {
+              %     for my $a (@{Rplus::Model::User::Manager->get_objects(query => [id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
                 <li><a href="#" data-val="<%= $a->id %>" data-type="text"><%= $a->name %></a></li>
-              % }
+              %     }
+              %   }
               % }
             </ul>
           </li>

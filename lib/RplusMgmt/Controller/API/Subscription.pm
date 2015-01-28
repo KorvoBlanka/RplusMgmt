@@ -67,7 +67,7 @@ my $_serialize = sub {
         }
 
         # Exclude fields for read permission "2"
-        if ($self->has_permission(realty => read => $realty->agent_id) == 2 && $realty->agent_id != 10000 && $realty->agent->superior != $self->stash('user')->{id}) {
+        if ($self->has_permission(realty => read => $realty->agent_id) == 2 && $realty->agent_id != 10000 && !($realty->agent_id ~~ @{$self->stash('user')->{subordinate}})) {
             $x->{$_} = undef for @exclude_fields;
             if ($realty->agent_id) {
                 my $user = Rplus::Model::User::Manager->get_objects(query => [id => $realty->agent_id, delete_date => undef])->[0];

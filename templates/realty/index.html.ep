@@ -1615,17 +1615,9 @@
                 %     }
                       </ul></li>
                 %   }
-                      <li class="dropdown-submenu"><a href="#" data-val="" data-type="text"> Свободные агенты</a>
-                        <ul class="dropdown-menu dropdown-context dropdown-context-sub compressed-context" style="bottom: auto;">            
-                %   for my $a (@{Rplus::Model::User::Manager->get_objects(query => [role => ['agent', 'agent_ext'], delete_date => undef], sort_by => 'name')}) {
-                %    unless ($a->id ~~ @owned || $a->id == 10000) {
-                          <li><a href="#" data-val="<%= $a->id %>" data-type="text"><%= $a->name %></a></li>
-                %     }
-                %   }
-                        </ul>
-                      </li>
                 % } elsif ($self->stash('user')->{role} eq 'manager') {
-                %   if (scalar (@{$self->stash('user')->{subordinate}})) {                  
+                <li><a href="#" data-val="a<%= $self->stash('user')->{id} %>" data-type="text"><strong> Мои агенты</strong></a></li>
+                %   if (scalar (@{$self->stash('user')->{subordinate}})) {
                 %     for my $a (@{Rplus::Model::User::Manager->get_objects(query => [id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
                         <li><a href="#" data-val="<%= $a->id %>" data-type="text"><%= $a->name %></a></li>
                 %     }
