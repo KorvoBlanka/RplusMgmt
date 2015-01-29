@@ -1609,7 +1609,7 @@
       // Change agent
       $('[data-action="realty-set-agent"]').click(function (e) {
 
-        if (e.target != $(this)[0].childNodes[0]) return;
+        if (e.currentTarget != e.delegateTarget) return;
 
         var agentId = $(this).data('val');
         var $selected = $('#realtyTable > tbody > tr.selected');
@@ -1694,7 +1694,7 @@
       // Set color agent for client
       $('[data-action="client-set-agent"]').click(function (e) {
 
-        if (e.target != $(this)[0].childNodes[0]) return;
+        if (e.currentTarget != e.delegateTarget) return;
 
         var agent_id = $(this).data('val');
         var $selected = $('.tree > tbody > tr.cselected');

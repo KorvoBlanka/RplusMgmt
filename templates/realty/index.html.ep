@@ -1172,7 +1172,7 @@
       // Change agent
       $('[data-action="realty-set-agent"]').click(function (e) {
 
-        if (e.target != $(this)[0].childNodes[0]) return;
+        if (e.currentTarget != e.delegateTarget) return;
 
         var agentId = $(this).data('val');
         var $selected = $('#realtyTable > tbody > tr.selected');
