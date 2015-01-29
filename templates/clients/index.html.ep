@@ -245,7 +245,7 @@
     padding:5px 10px;
     border-bottom:1px solid #E5E5E5;
   }
-  
+
   .client-node {
     background-color: #FAFAFA;
   }
@@ -257,7 +257,7 @@
   .subscription-node > td {
     text-align: left;
   }
-  
+
   #searchQuery::-webkit-input-placeholder {
     font-style:italic;
   }  
@@ -346,10 +346,10 @@
 
     function initSpeech() {
       $('#searchQuery').webSpeech({ 
-        button      : 'speech-button', //id of the initiating button
+        button      : 'speech-button',    //id of the initiating button
         lang        : 'ru-RU',
         format      : 'input',            //input, textarea, html
-        build       : 'overwrite',           //append, overwrite
+        build       : 'overwrite',        //append, overwrite
         startImg    : '<%= $assets_url %>/jquery.webSpeech/sm-mic.png',
         animateImg  : '<%= $assets_url %>/jquery.webSpeech/sm-mic-on.png',
         errorImg    : '<%= $assets_url %>/jquery.webSpeech/sm-mic-off.png',
@@ -414,7 +414,6 @@
             }
           }
 
-          console.log($this.data('obj'));
           var agent_id = $this.data('obj').agent_id;
           if ('<%= $self->stash('user')->{role} %>' != 'manager' && '<%= $self->stash('user')->{role} %>' != 'top') {   // fixme
             if (agent_id == null) {
@@ -445,7 +444,7 @@
           }
         });
       };
-      
+
       context.init({preventDoubleContext: true, compress: true, above: 'auto',}, context_cb);
       context.attach('#realtyTable', [
         {text: '<span class="glyphicon glyphicon-folder-open"></span>&nbsp&nbsp<%= ucfloc 'open' %>', element_id: 'el_open', data_action: 'realty-open',},
@@ -621,7 +620,7 @@
       $('#realtyTable > tbody').html('');
       $('#objectsCount').text('0');
     }
-    
+
     function listRealty(page) {
       scroll_type = 0;
       var q = $('#searchQuery').val();
@@ -655,8 +654,8 @@
           }
         })
       ;
-    }    
-    
+    }
+
     function buildHtmlForRealty(realty, page) {
       var r = realty;
       var classes = [Rplus.Table['realty_states'][r.state_code].metadata['icon-class']];
@@ -699,7 +698,7 @@
       if (client.color_tag_id != 0) {
         tag = '<span class="tag-button color-tag-placeholder color-tag-' + client.color_tag_id + '" style="display: inline-block"></span>';
       }
-      
+
       if (client.agent_id) {
         var agent = Rplus.Table.users[client.agent_id];
         agent_str = 'Агент: ';
@@ -728,7 +727,7 @@
       }
       return xhtml;
     }
-    
+
     function insertTreeEntry(client) {
       var $selected = $('.tree > tbody > tr.cselected');
       $selected.each(function () {
@@ -757,16 +756,13 @@
         $('.tree-tmp').treegrid('expand');
       }
       $('.tree-tmp').removeClass('tree-tmp');
-    }    
+    }
     
     var node_id = 0;
     var tree_options = {
       initialState: "collapsed",
       expanderExpandedClass: 'hidden',
       expanderCollapsedClass: 'hidden'
-      /*onExpand: function () {
-        console.log('!');
-      },*/
     };
     var settings = {};
 
@@ -802,13 +798,6 @@
             var client = data.list[i];
             clients[client.id] = client;
             node_id ++;
-
-            /*
-            var xhtml = '<tr><td style="width: 1px; height: 1px; padding-top: 0px; padding-bottom: 0px;"></td>' +
-            '<td style="width: 220px; height: 1px;padding-top: 0px; padding-bottom: 0px;"></td>' +
-            '<td style="width: 90px; height: 1px;padding-top: 0px; padding-bottom:0px;"></td>' +
-            '<td style="width: 20px; height: 1px;padding-top: 0px; padding-bottom: 0px;"></td></tr>';
-            */
 
             var xhtml = buildHtmlForClient(client, 'tree-tmp');
 
@@ -869,14 +858,14 @@
 
             })
           ;
-          
+
         },
         saved: function (r) {
           // Update object row in the table
           updateRealtyRow(r);
         },
         close: function (r) {
-          
+
         },
       });
       card.open(id);
@@ -914,7 +903,6 @@
         });
       $('form[role="client-search"]').submit(function (e) { e.preventDefault(); });
 
-
       $('#searchQuery')
         .typeahead({
           name: 'searchQuery',
@@ -936,38 +924,6 @@
           if (e.which == 13) {
             $('#searchQuery').typeahead('close');
             listRealty(1);
-            /*
-            var $selected = $('.tree > tbody > tr.subselected');
-            if ($selected.length == 0) {
-              listRealty(1);
-            } else {
-
-              var q = $('#searchQuery').val();
-              var subscription_id = $('.subselected').data('subscription');
-              var client_id = $('.tree > tbody > tr.cselected').data('id');
-
-              $.ajax({
-                type: "POST",
-                url: "/api/subscription/update",
-                data: {id: subscription_id, queries: [q]},
-                async: false,
-                success: function (data2, textStatus2, jqXHR2) {},
-                error: function (jqXHR2, textStatus2, errorThrown2) {},
-              });
-
-              listSubscriptionRealty(subscription_id, 1);
-              
-
-              for (var i = 0; i < clients[client_id].subscriptions.length; i++) {
-                var subscription = clients[client_id].subscriptions[i];
-                if (subscription.id == subscription_id) {
-                  subscription.queries = [q];
-                }
-              }
-
-              updateTreeEntry(clients[client_id], true);
-            }
-            */
           }
         });
 
@@ -1018,7 +974,7 @@
           listClients(clientsLastPage + 1);
         }
       });
-      
+
       // Sorting
       $('#realtyTable > thead > tr > th[data-sortable="true"]').click(function (e) {
         var si = $(this).data('index');
@@ -1178,7 +1134,7 @@
             $this.removeClass('subselected');
           });
         });
-        
+
         $('.tree').on('mousedown', 'tr.client-node', function (e) {
           if (hasTouch()) return;
           var $this = $(this);          
@@ -1248,12 +1204,12 @@
           clearTimeout(select_timer);
           clearTimeout(open_timer);
         });
-        
+
         $('.tree').on('touchmove', 'tr.client-node', function (e) {
           cancel_click = true;
           clearTimeout(select_timer);
           clearTimeout(open_timer);
-        });        
+        });
 
         $('body').click(function(e){
           if (hasTouch()) return;
@@ -1351,28 +1307,28 @@
           var $this = $(this);
           var id = $this.data('id');
           if(e.which == 1) {  // lmb pressed
-                  var sel_idx = $this.index();
-                  var $selected = $('#realtyTable > tbody > tr.selected');
-                  $selected.each(function () {
-                    var $this = $(this);
-                    var id = $this.data('id');
-                    $this.removeClass('selected');
-                  });
-                  
-                  var $rows;
-                  if(last_sel_idx < sel_idx) {
-                    $rows = $('#realtyTable > tbody > tr').slice(last_sel_idx, sel_idx + 1);
-                  } else {
-                    $rows = $('#realtyTable > tbody > tr').slice(sel_idx, last_sel_idx + 1);
-                  }
-                  $rows.each(function () {
-                    var $this = $(this);
-                    var id = $this.data('id');
-                    //if (!$this.hasClass('opened')) {
-                    {
-                      $this.addClass('selected');
-                    }
-                  });
+              var sel_idx = $this.index();
+              var $selected = $('#realtyTable > tbody > tr.selected');
+              $selected.each(function () {
+                var $this = $(this);
+                var id = $this.data('id');
+                $this.removeClass('selected');
+              });
+
+              var $rows;
+              if(last_sel_idx < sel_idx) {
+                $rows = $('#realtyTable > tbody > tr').slice(last_sel_idx, sel_idx + 1);
+              } else {
+                $rows = $('#realtyTable > tbody > tr').slice(sel_idx, last_sel_idx + 1);
+              }
+              $rows.each(function () {
+                var $this = $(this);
+                var id = $this.data('id');
+                //if (!$this.hasClass('opened')) {
+                {
+                  $this.addClass('selected');
+                }
+              });
           }
         });
 
@@ -1405,7 +1361,7 @@
           clearTimeout(select_timer);
           clearTimeout(open_timer);
         });
-        
+
         $('#realtyTable > tbody').on('touchmove', 'tr', function (e) {
           cancel_click = true;
           clearTimeout(select_timer);
@@ -1426,7 +1382,7 @@
             break;
           }
         }
-        
+
         $.ajax({
           type: "POST",
           url: "/api/subscription/delete",
@@ -1440,7 +1396,7 @@
         updateTreeEntry(client, true);
         return false;
       });
-      
+
       $('.tree').on('click', '[data-action="client-add-query"]', function (e) {
         var q = $('#searchQuery').val().trim(),
           offerTypeCode = $('[data-filter="offer_type_code"]').data('val'),
@@ -1466,9 +1422,9 @@
           send_owner_phone: false,
           end_date: moment().add('days', 14).format('YYYY-MM-DDTHH:mm:ssZZ'),
         };
-        
+
         client.subscriptions.push(subscription);
-        
+
         $.ajax({
           type: "POST",
           url: "/api/subscription/save",
@@ -1479,7 +1435,7 @@
           },
           error: function (jqXHR, textStatus, errorThrown) {},
         });
-        
+
         clearRealty();
         updateTreeEntry(client, true);
       });
@@ -1511,7 +1467,7 @@
           });
         });
       });
-      
+
       $('[data-action="notify-email"]').click(function (e) {
         var $clients = $('.tree > tbody > tr.cselected');
         $clients.each(function () {
@@ -1574,7 +1530,7 @@
           },
         }).createWithSubscription(q, offerTypeCode, realtyIds, '<%= $self->stash('user')->{id} %>');
       });
-      
+
       $('[data-action="client-delete"]').click(function (e) {
         var $selected = $('.tree > tbody > tr.cselected');
         $selected.each(function () {
@@ -1607,7 +1563,7 @@
           }).open(client_id);
         });
       });
-      
+
       // Create realty object card
       $('[data-action="realty-create"]').click(function (e) {
         var card = RealtyCard({
@@ -1652,24 +1608,29 @@
 
       // Change agent
       $('[data-action="realty-set-agent"]').click(function (e) {
+
+        if (e.target != $(this)[0].childNodes[0]) return;
+
         var agentId = $(this).data('val');
         var $selected = $('#realtyTable > tbody > tr.selected');
+
         $selected.each(function () {
           var $this = $(this);
           var id = $this.data('id');
           $.ajax({
             type: "POST",
+            async: false,
             url: "/api/realty/update",
-            data: {id: id, agent_id: agentId}
-          })
-            .done(function (data, textStatus, jqXHR) {
+            data: {id: id, agent_id: agentId},
+            success: function (data, textStatus, jqXHR) {
               if (data.status == 'success') {
                 var r = data.realty;
                 // Update row data in realty table
                 updateRealtyRow(r);
               }
-            })
-          ;
+            },
+            error: function (jqXHR, textStatus, errorThrown) {},
+          });
         });
       });
 
@@ -1732,6 +1693,9 @@
 
       // Set color agent for client
       $('[data-action="client-set-agent"]').click(function (e) {
+
+        if (e.target != $(this)[0].childNodes[0]) return;
+
         var agent_id = $(this).data('val');
         var $selected = $('.tree > tbody > tr.cselected');
 
@@ -1806,7 +1770,7 @@
                 updateRealtyRow(r);
               }
             }).fail(function (jqXHR, textStatus, errorThrown) {
-               
+
             });
           ;
         });
@@ -1851,10 +1815,10 @@
 
                     }
                   }).fail(function (jqXHR, textStatus, errorThrown) {
-                     
+
                   });
 
-              });            
+              });
             } else if($cselected.length == 1) {
               var $node = $($cselected[0]);
               var client_id = $node.data('id');
@@ -1893,7 +1857,7 @@
 
                     }
                   }).fail(function (jqXHR, textStatus, errorThrown) {
-                     
+
                   });
 
                 if (agent_id != client_agent_id) {
@@ -1985,7 +1949,7 @@
             });
           })
         ;
-        
+
         $('#realtyTable > tbody').on('click', 'td:has([data-action="remove-proposal"])', function (e) {
           var $tr = $(this).closest('tr');
           $tr.addClass('hidden');
@@ -1994,7 +1958,7 @@
           var $selected = $('.tree > tbody > tr.subselected');
           $selected.each(function () {
             var $this = $(this);
-            
+
             $.ajax({
               type: 'POST',
               url: '/api/subscription/realty_set_state',
@@ -2007,8 +1971,6 @@
             ;
             
           });
-          //var lastPage = $('#realtyTable > tbody > tr:last').data('page');
-          //listRealty(lastPage + 1);
         });
 
         // Load photos
@@ -2279,7 +2241,7 @@
                   </li>
             %   }
                   <li class="dropdown-submenu"><a href="#" data-val="" data-type="text"> Свободные агенты</a>
-                    <ul class="dropdown-menu dropdown-context dropdown-context-sub compressed-context" style="bottom: auto;">            
+                    <ul class="dropdown-menu dropdown-context dropdown-context-sub compressed-context" style="bottom: auto;">
             %   for my $a (@{Rplus::Model::User::Manager->get_objects(query => [role => ['agent', 'agent_ext'], delete_date => undef], sort_by => 'name')}) {
             %    unless ($a->id ~~ @owned || $a->id == 10000) {
                       <li><a href="#" data-val="<%= $a->id %>" data-type="text"><%= $a->name %></a></li>
@@ -2297,7 +2259,7 @@
             % }
           </ul>
         </li>
-      </ul>      
+      </ul>
     </div>
 
     <div class="container" id="nav-0">
@@ -2360,27 +2322,18 @@
               <li><a href="#" data-val="<%= $self->stash('user')->{id} %>" data-type="text"><strong> Мои объекты</strong></a></li>
               % }
               % if ($self->stash('user')->{role} eq 'top') {
-              %   my @owned = ();                  
+              %   my @owned = ();
               %   for my $m (@{Rplus::Model::User::Manager->get_objects(query => [role => ['manager'], delete_date => undef], sort_by => 'name')}) {
                     <li class="dropdown-submenu"><a href="#" data-val="<%= $m->id %>" data-type="text"><%= $m->name %></a><ul class="dropdown-menu dropdown-context dropdown-context-sub compressed-context" style="bottom: auto;">
                       <li><a href="#" data-val="a<%= $m->id %>" data-type="text"> Все агенты</a></li>
               %     if (scalar(@{$m->subordinate})) {
-              %       push @owned, @{$m->subordinate};                  
+              %       push @owned, @{$m->subordinate};
               %       for my $a (@{Rplus::Model::User::Manager->get_objects(query => [id => [$m->subordinate], delete_date => undef], sort_by => 'name')}) {
                         <li><a href="#" data-val="<%= $a->id %>" data-type="text"><%= $a->name %></a></li>
               %       }
               %     }
                     </ul></li>
               %   }
-                    <li class="dropdown-submenu"><a href="#" data-val="" data-type="text"> Свободные агенты</a>
-                      <ul class="dropdown-menu dropdown-context dropdown-context-sub compressed-context" style="bottom: auto;">            
-              %   for my $a (@{Rplus::Model::User::Manager->get_objects(query => [role => ['agent', 'agent_ext'], delete_date => undef], sort_by => 'name')}) {
-              %    unless ($a->id ~~ @owned || $a->id == 10000) {
-                        <li><a href="#" data-val="<%= $a->id %>" data-type="text"><%= $a->name %></a></li>
-              %     }
-              %   }
-                      </ul>
-                    </li>                
               % } elsif ($self->stash('user')->{role} eq 'manager') {
                 <li><a href="#" data-val="a<%= $self->stash('user')->{id} %>" data-type="text"><strong> Мои агенты</strong></a></li>
               %   if (scalar (@{$self->stash('user')->{subordinate}})) {
@@ -2407,5 +2360,5 @@
 
         </ul>
       </div>
-    </div>    
+    </div>
   </nav> <!-- /.navbar -->

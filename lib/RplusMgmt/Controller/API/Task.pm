@@ -28,7 +28,14 @@ sub list {
     if ($assigned_user_id eq 'all') {
         Rplus::Util::GoogleCalendar::syncAll();
     } else {
-        Rplus::Util::GoogleCalendar::sync($assigned_user_id);
+        if ($assigned_user_id =~ /^a(\d+)$/) {
+            my $manager = Rplus::Model::User::Manager->get_objects(query => [id => $1, delete_date => undef])->[0];
+            if (scalar (@{$manager->subordinate})) {
+                # Засинхронизировать всех подчиненных
+            }
+        } else {
+            Rplus::Util::GoogleCalendar::sync($assigned_user_id);
+        }
     }
 
     # "where" query
@@ -38,7 +45,16 @@ sub list {
             push @query, status => $status;
         }
         if ($assigned_user_id ne 'all') {
-            push @query, assigned_user_id => $assigned_user_id;
+            if ($assigned_user_id =~ /^a(\d+)$/) {
+                my $manager = Rplus::Model::User::Manager->get_objects(query => [id => $1, delete_date => undef])->[0];
+                if (scalar (@{$manager->subordinate})) {
+                    push @query, assigned_user_id => [$manager->subordinate];
+                } else {
+                    push @query, assigned_user_id => 0;
+                }
+            } else {
+                push @query, assigned_user_id => $assigned_user_id;
+            }
         }
         if ($task_type_id ne 'all') {
             push @query, task_type_id => $task_type_id;

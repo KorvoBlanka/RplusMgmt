@@ -296,9 +296,18 @@ sub realty_list {
                 push @query, and => ['!realty.agent_id' => undef, '!realty.agent_id' => 10000];
             } elsif ($agent_id eq 'not_med') {
                 push @query, 'realty.agent_id' => undef;
+            } elsif ($agent_id =~ /^a(\d+)$/) {
+                my $manager = Rplus::Model::User::Manager->get_objects(query => [id => $1, delete_date => undef])->[0];
+                if (scalar (@{$manager->subordinate})) {
+                    push @query, 'realty.agent_id' => [$manager->subordinate];
+                } else {
+                    push @query, 'realty.agent_id' => 0;
+                }
             } elsif ($agent_id =~ /^\d+$/ && $self->has_permission(realty => read => $agent_id)) {
                 push @query, 'realty.agent_id' => $agent_id;
             }
+
+
         }
         if ($color_tag_id ne 'any') {
             push @query, 'color_tag.color_tag_id' => $color_tag_id;

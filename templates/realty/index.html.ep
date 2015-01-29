@@ -542,7 +542,7 @@
         % } elsif ($self->stash('user')->{role} eq 'manager') {
           % if (scalar (@{$self->stash('user')->{subordinate}})) {
             % for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
-              % if ($x->id != 10000) {  
+              % if ($x->id != 10000) {
                 {text: '<%= $x->name %>', data_action: 'realty-set-agent', data_val: '<%= $x->id %>', },
               % }
             % }
@@ -551,27 +551,26 @@
         ]},
         % }
         {text: '<span class="glyphicon glyphicon-cog"></span> Задача', element_id: 'el_task', subMenu: [
-          % if (scalar(@{$self->stash('user')->{subordinate}})) {
-          %   for my $a (@{Rplus::Model::User::Manager->get_objects(query => [id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
-                {text: '&nbsp<%= $a->name %>', data_action: 'task-create', data_val: '<%= $a->id %>', },
-          %   }
-          % }
+        % my $iter = Rplus::Model::DictTaskType::Manager->get_objects_iterator(query => [or => [category => 'seller', category => 'both'], delete_date => undef,], sort_by => 'id');
+        % while (my $x = $iter->next) {
+              {text: '&nbsp<%= $x->name %>', data_action: 'task-create', data_val: '<%= $x->id %>', },
+        % }
         ]},
         {text: '<span class="glyphicon glyphicon-export"></span>  <%= ucfloc q{advertisement} %>', element_id: 'el_export', subMenu: [
-          % my $loc_id = $self->session('user')->{location_id};
-          % for my $x (@{Rplus::Model::Media::Manager->get_objects(query => [type => 'export', delete_date => undef])}) {
-          % next if $loc_id == 2 && ($x->id == 2 || $x->id == 3) || $loc_id == 3 && ($x->id == 2 || $x->id == 3);
-            {text: '<span class="export-check export-check<%= $x->id %> glyphicon glyphicon-ok"></span>&nbsp&nbsp<%= $x->name %>', data_action: 'realty-set-export', data_val: '<%= $x->id %>', },
-          % }
+        % my $loc_id = $self->session('user')->{location_id};
+        % for my $x (@{Rplus::Model::Media::Manager->get_objects(query => [type => 'export', delete_date => undef])}) {
+        % next if $loc_id == 2 && ($x->id == 2 || $x->id == 3) || $loc_id == 3 && ($x->id == 2 || $x->id == 3);
+          {text: '<span class="export-check export-check<%= $x->id %> glyphicon glyphicon-ok"></span>&nbsp&nbsp<%= $x->name %>', data_action: 'realty-set-export', data_val: '<%= $x->id %>', },
+        % }
         ]},
         {divider: true},
         {header: '&nbspТеги...'},
         {header:  // '+' to concat strings, '' - to match last +
-          '<span class="cmenu-tag-group">' +
-          % for my $x (@{Rplus::Model::DictColorTag::Manager->get_objects(query => [delete_date => undef], sort_by => 'id')}) {
-            '<span class="round-button color-tag-<%= $x->id %>" data-action="realty-set-color_tag_id" data-val="<%= $x->id %>"></span>' + 
-          % }
-          '</span>'},
+        '<span class="cmenu-tag-group">' +
+        % for my $x (@{Rplus::Model::DictColorTag::Manager->get_objects(query => [delete_date => undef], sort_by => 'id')}) {
+          '<span class="round-button color-tag-<%= $x->id %>" data-action="realty-set-color_tag_id" data-val="<%= $x->id %>"></span>' + 
+        % }
+        '</span>'},
         {divider: true},
         {text: '<span class="glyphicon glyphicon-print"></span>  Печать'},
       ]);
@@ -1172,6 +1171,9 @@
 
       // Change agent
       $('[data-action="realty-set-agent"]').click(function (e) {
+
+        if (e.target != $(this)[0].childNodes[0]) return;
+
         var agentId = $(this).data('val');
         var $selected = $('#realtyTable > tbody > tr.selected');
 
@@ -1196,7 +1198,6 @@
                 $this.removeClass('selected').addClass('modified');
                 putToHistory(id, "selected", 0);
                 putToHistory(id, "modified", 1);
-                last_event_id.push(data.event_id);
               }
             },
             error: function (jqXHR, textStatus, errorThrown) {},
@@ -1233,7 +1234,6 @@
                   }
                   putToHistory(id, "selected", 0);
                   putToHistory(id, "modified", 1);
-                  last_event_id.push(data.event_id);
                 }
               });
           }
@@ -1260,7 +1260,6 @@
                   var f = realtyTableConf.fields[j];
                   $('td:nth-child(' + (j + 1) + ')', $this).html(f.val(r));
                 }
-                last_event_id.push(data.event_id);
               }
             });
         });
@@ -1301,7 +1300,6 @@
                 $this.removeClass('selected').addClass('modified');
                 putToHistory(id, "selected", 0);
                 putToHistory(id, "modified", 1);
-                last_event_id.push(data.event_id);
               }
             }).fail(function (jqXHR, textStatus, errorThrown) {});
           ;

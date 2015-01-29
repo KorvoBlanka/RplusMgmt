@@ -1359,7 +1359,7 @@ a:focus {
     }
 
     // Filters
-    $('[data-filter] > ul > li > a').click(function (e) {
+    $('[data-filter] > ul a').click(function (e) {
       var $display = $(this).closest('[data-filter]').data('val', $(this).data('val')).find('> a [role="display"]');
       if ($(this).data('type') == 'text') { $display.text($(this).text()) } else { $display.html($(this).html()) };
 
@@ -1682,15 +1682,6 @@ a:focus {
         %     }
               </ul></li>
         %   }
-              <li class="dropdown-submenu"><a href="#" data-val="" data-type="text"> Свободные агенты</a>
-                <ul class="dropdown-menu dropdown-context dropdown-context-sub compressed-context" style="bottom: auto;">            
-        %   for my $a (@{Rplus::Model::User::Manager->get_objects(query => [role => ['agent', 'agent_ext'], delete_date => undef], sort_by => 'name')}) {
-        %    unless ($a->id ~~ @owned || $a->id == 10000) {
-                  <li><a href="#" data-val="<%= $a->id %>" data-type="text"><%= $a->name %></a></li>
-        %     }
-        %   }
-                </ul>
-              </li>
         % } elsif ($self->stash('user')->{role} eq 'manager') {
           <li><a href="#" data-val="<%= $self->stash('user')->{id} %>" data-type="text"><strong> Мои задачи</strong></a></li>
         % for my $a (@{Rplus::Model::User::Manager->get_objects(query => [id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {

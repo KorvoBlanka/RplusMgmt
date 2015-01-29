@@ -597,12 +597,7 @@
             readonly = 'disabled';
           }
 
-          console.log(readonly);
-
           res += '<textarea ' + readonly + ' type="text" class="form-control text-input" name="query" rows="2" placeholder="Текст запроса">' + Rplus.Util.escape(x) + '</textarea>';
-
-          console.log(res);
-
           res += '<span id="query-alert" style="color: red;" class="ccard-input-group-addon glyphicon glyp-big glyphicon-exclamation-sign nodispaly"></span>';
           res += '<a href="#" id="arrow" class="ccard-input-group-addon" data-action="show-proposed" data-guid=' + subscription.guid +'><span  class="glyphicon glyphicon-arrow-right"></span></a>';
           res += '</div>';
