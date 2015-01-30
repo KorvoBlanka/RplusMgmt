@@ -390,14 +390,13 @@
 
         var $menu_export = $("#el_export");
         var $menu_states = $("#el_states");
-        $menu_states.removeClass('disabled');
-        $menu_export.removeClass('disabled');
+
         $("#el_assign").removeClass('disabled');
         $("#el_delete").removeClass('disabled');
         $("#el_open").removeClass('disabled');
         $("#el_agents").removeClass('disabled');
-        $('#el_task').removeClass('disabled');
-        $('#el_notify').removeClass('disabled');
+        $menu_states.removeClass('disabled');
+        $menu_export.removeClass('disabled');
 
         var $menu_el = $(".export-check");
         $menu_el.each(function () {
@@ -410,6 +409,11 @@
         $selected.each(function () {
           var $this = $(this);
           var id = $this.data('id');
+          var obj = $this.data('obj');
+
+          console.log(obj);
+          var s_id = Rplus.Table['users'][obj.agent_id] ? Rplus.Table['users'][obj.agent_id].superior : null;
+
           var media_export_row = media_export[id];
           for (var id_key in media_export_row) {
             var val = media_export_row[id_key];
@@ -427,9 +431,10 @@
             }
           }
 
-          var agent_id = $this.data('obj').agent_id;
-          if ('<%= $self->stash('user')->{role} %>' != 'manager' && '<%= $self->stash('user')->{role} %>' != 'top') {   // fixme
-            if (agent_id == null) {
+          if ("<%= $self->stash('user')->{role} %>" == 'top' || ("<%= $self->stash('user')->{role} %>" == 'manager' && (!obj.agent_id || s_id == "<%= $self->stash('user')->{id} %>"))) {
+
+          } else {
+            if (obj.agent_id == null) {
               $("#el_assign").removeClass('disabled');
 
               $menu_export.addClass('disabled');
@@ -438,11 +443,11 @@
 
             } else {
               $("#el_assign").addClass('disabled');
-              if (agent_id != <%= $self->stash('user')->{id} %>) {
+              $("#el_agents").addClass('disabled');
+              if (obj.agent_id != <%= $self->stash('user')->{id} %>) {
                 $menu_export.addClass('disabled');
                 $menu_states.addClass('disabled');
                 $("#el_delete").addClass('disabled');
-                $('#el_task').addClass('disabled');
               }
             }
           } 

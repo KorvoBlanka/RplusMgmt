@@ -390,7 +390,6 @@
     };
 
     var media_export = {};
-    var agents_ids = {};
     var card_opened = false;
     
     function loadHistory() {
@@ -430,12 +429,10 @@
       var context_cb = function(e){
         var $menu_export = $("#el_export");
         var $menu_states = $("#el_states");
-        var $menu_task = $("#el_task");
 
         $("#el_assign").removeClass('disabled');
         $("#el_delete").removeClass('disabled');
         $("#el_open").removeClass('disabled');
-        $('#el_task').removeClass('disabled');
         $("#el_agents").removeClass('disabled');
         $menu_states.removeClass('disabled');
         $menu_export.removeClass('disabled');
@@ -472,11 +469,11 @@
               $(".export-check" + id_key).removeClass("export-check-hidden").removeClass("export-check-visible").addClass("export-check-grayed");
             }
           }
-          var agent_id = agents_ids[id];
+
           if ("<%= $self->stash('user')->{role} %>" == 'top' || ("<%= $self->stash('user')->{role} %>" == 'manager' && (!obj.agent_id || s_id == "<%= $self->stash('user')->{id} %>"))) {
 
           } else {
-            if (agent_id == null) {
+            if (obj.agent_id == null) {
               $("#el_assign").removeClass('disabled');
 
               $menu_export.addClass('disabled');
@@ -486,10 +483,9 @@
             } else {
               $("#el_assign").addClass('disabled');
               $("#el_agents").addClass('disabled');
-              if (agent_id != <%= $self->stash('user')->{id} %>) {
+              if (obj.agent_id != <%= $self->stash('user')->{id} %>) {
                 $menu_export.addClass('disabled');
                 $menu_states.addClass('disabled');
-                $menu_task.addClass('disabled');
                 $("#el_delete").addClass('disabled');
               }
             }
@@ -610,7 +606,6 @@
             var r = data.list[i];
             
             media_export[r.id] = r.export_media;
-            agents_ids[r.id] = r.agent_id;
             xhtml += '<tr data-page="' + data.page + '" data-id="' + r.id + '" data-lat="' + r.latitude + '" data-lng="' + r.longitude +  '"';
             xhtml += ' class="';
             var h = getHistory(r.id);
@@ -767,7 +762,6 @@
             } else {
               $tr.removeClass('deleted').addClass('modified');
             }
-            agents_ids[r.id] = r.agent_id;
             media_export[r.id] = r.export_media;
             putToHistory(id, "modified", 1);
             $tr.data('lat', r.latitude);
@@ -1194,7 +1188,6 @@
                   $('td:nth-child(' + (j + 1) + ')', $this).html(f.val(r));
                 }
                 $this.data('obj', r);
-                agents_ids[r.id] = agentId;
                 $this.removeClass('selected').addClass('modified');
                 putToHistory(id, "selected", 0);
                 putToHistory(id, "modified", 1);
