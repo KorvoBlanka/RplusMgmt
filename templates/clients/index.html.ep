@@ -2281,8 +2281,9 @@
 
       <ul class="nav navbar-nav" style="width: 33.8%;">
         <li><a href="#" data-action="client-create"><span class="glyphicon glyphicon-plus"></span>&nbsp&nbspДобавить</a></li>
+        % if ($self->stash('user')->{role} eq 'top') {
         <li><a href="#" data-action="client-delete"><span class="glyphicon glyphicon-trash"></span> <%= ucfloc 'delete' %></a></li>
-
+        % }
         <li class="divider-vertical pull-right"></li>
       </ul>
 

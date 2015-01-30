@@ -99,7 +99,7 @@
     position: absolute;
     z-index: 10;
     top: 4px;
-    right: 78px;    
+    right: 120px;    
     background: none;
     border: none;
   }
@@ -439,6 +439,7 @@
 
       // Subscribe client
       $('[data-action="client-subscribe"]').click(function (e) {
+        console.log('!');
         var q = $('#searchQuery').val().trim(),
             offerTypeCode = $('[data-filter="offer_type_code"]').data('val'),
             days = $(this).data('days'),
@@ -448,8 +449,12 @@
           realtyIds.push($(this).data('id'));
         });
 
+        console.log(q);
+        console.log(days);
+        console.log(phoneNum);
+
         if (!q) { alert("<%= ucfloc 'query cannot be empty' %>"); return; };
-        if (!days && !realtyIds.length) return;
+        //if (!days ) return;
         if (!phoneNum) { alert("<%= ucfloc 'phone num cannot be empty' %>"); return; }
 
         $.ajax({
@@ -607,10 +612,10 @@
       <div class="input-group input-group-sm">
         <input type="text" class="form-control input-sm" id="searchQuery" name="q" placeholder="<%= ucfloc 'search' %>" autocomplete="off">
         <div class="input-group-btn">
-          <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown"><%= loc 'SMS' %> <span class="caret"></span></button>
+          <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">Сорханить <span class="caret"></span></button>
           <ul class="dropdown-menu pull-right" role="menu">
-            <li><a href="#" data-action="client-subscribe"><%= loc 'SMS' %></a></li>
-            <li><a href="#" data-action="client-subscribe" data-days="14"><%= loc 'SMS' %> + <%= ucfloc 'subscription' %></a></li>
+            <li><a href="#" data-action="client-subscribe" data-days="">Сохранить </a></li>
+            <li><a href="#" data-action="client-subscribe" data-days="14">Сохранить и подписать </a></li>
           </ul>
         </div>
       </div>
