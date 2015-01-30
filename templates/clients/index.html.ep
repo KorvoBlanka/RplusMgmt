@@ -315,6 +315,9 @@
     color: rgba(190, 20, 20, 0.70);
   }
 
+  .disabled {
+    pointer-events: none;
+  }
 </style>
 % end
 
@@ -375,6 +378,16 @@
     
     function createContextMenu() {
       var context_cb = function(e){
+
+        if ($(e.currentTarget)[0].id == 'clientsTree') {
+          if ('<%= $self->stash('user')->{role} %>' != 'top') {
+            $("#el_delete_client").addClass('disabled');
+          } else {
+            $("#el_delete_client").removeClass('disabled');
+          }
+          return;
+        }
+
         var $menu_export = $("#el_export");
         var $menu_states = $("#el_states");
         $menu_states.removeClass('disabled');
@@ -422,7 +435,6 @@
               $menu_export.addClass('disabled');
               $menu_states.addClass('disabled');
               $("#el_delete").addClass('disabled');
-              $('#el_notify').addClass('disabled');
 
             } else {
               $("#el_assign").addClass('disabled');
@@ -431,7 +443,6 @@
                 $menu_states.addClass('disabled');
                 $("#el_delete").addClass('disabled');
                 $('#el_task').addClass('disabled');
-                $('#el_notify').addClass('disabled');
               }
             }
           } 
@@ -520,11 +531,11 @@
       ]);
 
       context.attach('#clientsTree', [
-        {text: '<span class="glyphicon glyphicon-folder-open"></span>&nbsp&nbsp<%= ucfloc 'open' %>', element_id: 'el_open', data_action: 'client-open',},
-        {text: '<span class="glyphicon glyphicon-trash"></span>&nbsp&nbsp<%= ucfloc 'delete' %>', element_id: 'el_delete', data_action: 'client-delete',},
+        {text: '<span class="glyphicon glyphicon-folder-open"></span>&nbsp&nbsp<%= ucfloc 'open' %>', element_id: 'el_open_client', data_action: 'client-open',},
+        {text: '<span class="glyphicon glyphicon-trash"></span>&nbsp&nbsp<%= ucfloc 'delete' %>', element_id: 'el_delete_client', data_action: 'client-delete',},
         {divider: true},
         % if (has_permission(realty => 'write')->{nobody} || has_permission(realty => 'write')->{others}) {
-        {text: '<span class="glyphicon glyphicon-user"></span> Назначить', element_id: 'el_agents', subMenu: [
+        {text: '<span class="glyphicon glyphicon-user"></span> Назначить', element_id: 'el_agents_client', subMenu: [
             {text: '<strong><%= ucfloc 'nobody' %></strong>', data_action: 'client-set-agent', data_val: '', },
             {text: '<strong> Посредник</strong>', data_action: 'client-set-agent', data_val: '10000', },
             {text: '<strong> <%= $self->stash('user')->{name} %></strong>', data_action: 'client-set-agent', data_val: '<%= $self->stash('user')->{id} %>', },
@@ -2214,16 +2225,16 @@
 
         <!-- Agent filter -->
         <li class="dropdown" data-filter="client-agent_id" data-val="">
-          <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-user"></span><span role="display"> Все купцы</span> <b class="caret"></b></a>
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-user"></span><span role="display"> Все покупатели</span> <b class="caret"></b></a>
           <ul class="dropdown-menu">
             % if (has_permission(realty => 'read')->{nobody} || has_permission(realty => 'read')->{others}) {
-            <li><a href="#" data-val="" data-type="text"><strong> Все купцы</strong></a></li>
+            <li><a href="#" data-val="" data-type="text"><strong> Все покупатели</strong></a></li>
             % }
             % if (has_permission(realty => 'read')->{nobody}) {
             <li><a href="#" data-val="nobody" data-type="text"><strong>Не назначенные</strong></a></li>
             % }              
             % if (has_permission(realty => 'read')->{others}) {
-            <li><a href="#" data-val="<%= $self->stash('user')->{id} %>" data-type="text"><strong> Мои купцы</strong></a></li>
+            <li><a href="#" data-val="<%= $self->stash('user')->{id} %>" data-type="text"><strong> Мои покупатели</strong></a></li>
             % }
             % if ($self->stash('user')->{role} eq 'top') {
             %   my @owned = ();
