@@ -456,7 +456,7 @@ a:focus {
       $('[data-filter="task_status"] span[role="display"]').text(nav_items['task_status'][0]);
       $('[data-filter="task_status"]').data('val', nav_items['task_status'][1]);
 
-      $('[data-filter="task_type_id"] span[role="display"]').text(nav_items['task_type'][0]);
+      $('[data-filter="task_type_id"] span[role="display"]').text(' ' + nav_items['task_type'][0]);
       $('[data-filter="task_type_id"]').data('val', nav_items['task_type'][1]);
 
       // не устанавливаем "assigned_user" если мы "агент" или "агент+"
@@ -1658,7 +1658,7 @@ a:focus {
           <ul class="dropdown-menu">
             <li><a href="#" data-val="all" data-type="text"><strong> Все</strong></a></li>
           % for my $x (@{Rplus::Model::DictTaskType::Manager->get_objects(query => [delete_date => undef,], sort_by => 'id')}) {
-            <li><a href='#' data-val="<%= $x->id %>" data-type="text"><%= $x->name %></a></li>
+            <li><a href='#' data-val="<%= $x->id %>" data-type="text"> <%= $x->name %></a></li>
           % }
           </ul>
         </li>
@@ -1672,20 +1672,22 @@ a:focus {
           <li><a href="#" data-val="<%= $self->stash('user')->{id} %>" data-type="text"><strong> Мои задачи</strong></a></li>
         %   my @owned = ();
         %   for my $m (@{Rplus::Model::User::Manager->get_objects(query => [role => ['manager'], delete_date => undef], sort_by => 'name')}) {
-              <li class="dropdown-submenu"><a href="#" data-val="<%= $m->id %>" data-type="text"><%= $m->name %></a><ul class="dropdown-menu dropdown-context dropdown-context-sub compressed-context" style="bottom: auto;">
+              <li class="dropdown-submenu"><a href="#" data-val="<%= $m->id %>" data-type="text"> <%= $m->name %></a><ul class="dropdown-menu dropdown-context dropdown-context-sub compressed-context" style="bottom: auto;">
                 <li><a href="#" data-val="a<%= $m->id %>" data-type="text"> Все агенты</a></li>
         %     if (scalar (@{$m->subordinate})) {
         %       push @owned, @{$m->subordinate};
         %       for my $a (@{Rplus::Model::User::Manager->get_objects(query => [id => [$m->subordinate], delete_date => undef], sort_by => 'name')}) {
-                  <li><a href="#" data-val="<%= $a->id %>" data-type="text"><%= $a->name %></a></li>
+                  <li><a href="#" data-val="<%= $a->id %>" data-type="text"> <%= $a->name %></a></li>
         %       }
         %     }
               </ul></li>
         %   }
         % } elsif ($self->stash('user')->{role} eq 'manager') {
           <li><a href="#" data-val="<%= $self->stash('user')->{id} %>" data-type="text"><strong> Мои задачи</strong></a></li>
+        % if (scalar (@{$self->stash('user')->{subordinate}})) {
         % for my $a (@{Rplus::Model::User::Manager->get_objects(query => [id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
-          <li><a href="#" data-val="<%= $a->id %>" data-type="text"><%= $a->name %></a></li>
+          <li><a href="#" data-val="<%= $a->id %>" data-type="text"> <%= $a->name %></a></li>
+        % }
         % }
         % } else {
           <li><a href="#" data-val="<%= $self->stash('user')->{id} %>" data-type="text"><strong> Мои задачи</strong></a></li>

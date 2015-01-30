@@ -612,7 +612,7 @@
       <div class="input-group input-group-sm">
         <input type="text" class="form-control input-sm" id="searchQuery" name="q" placeholder="<%= ucfloc 'search' %>" autocomplete="off">
         <div class="input-group-btn">
-          <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">Сорханить <span class="caret"></span></button>
+          <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">Сохранить <span class="caret"></span></button>
           <ul class="dropdown-menu pull-right" role="menu">
             <li><a href="#" data-action="client-subscribe" data-days="">Сохранить </a></li>
             <li><a href="#" data-action="client-subscribe" data-days="14">Сохранить и подписать </a></li>
