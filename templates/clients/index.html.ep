@@ -1707,10 +1707,15 @@
         });
       });
 
-      // Set color agent for client
+      var fuse = 0;
+      // Set agent for client
       $('[data-action="client-set-agent"]').click(function (e) {
 
-        if (e.currentTarget != e.delegateTarget) return;
+        fuse ++;
+        if (fuse > 1) {
+          fuse = 0;
+          return;
+        }
 
         var agent_id = $(this).data('val');
         var $selected = $('.tree > tbody > tr.cselected');
