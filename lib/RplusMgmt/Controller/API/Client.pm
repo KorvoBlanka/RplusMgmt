@@ -208,7 +208,7 @@ sub get {
                 #'!end_date' => undef,
             ],
             require_objects => ['client'],
-            with_objects => ['subscription_realty'],
+            #with_objects => ['subscription_realty'],
             sort_by => 'id',
         );
         my %realty_h;
@@ -219,7 +219,7 @@ sub get {
                 queries => scalar $subscription->queries,
                 add_date => $self->format_datetime($subscription->add_date),
                 end_date => $self->format_datetime($subscription->end_date),
-                realty_count => scalar @{$subscription->subscription_realty},
+                #realty_count => scalar @{$subscription->subscription_realty},
                 realty_limit => $subscription->realty_limit,
                 send_owner_phone => $subscription->send_owner_phone ? \1 : \0,                
             };
@@ -232,7 +232,7 @@ sub get {
 
 sub update_offer_types {
     my $self = shift;
-    
+
     # Retrieve client
     my $id = $self->param('id');
     my $client = Rplus::Model::Client::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
@@ -245,7 +245,7 @@ sub update_offer_types {
             #'subscription_realty.delete_date' => undef,
         ],
     );
-    
+
     my $offer_type_code = 'none';
     while (my $subscription = $subscription_iter->next) {
         if ($offer_type_code eq 'none') {
@@ -256,7 +256,7 @@ sub update_offer_types {
     } 
     $client->subscription_offer_types($offer_type_code);
     $client->save();
-    
+
     return $self->render(json => {offer_type => $offer_type_code, status => 'success'});    
 }
 
@@ -295,8 +295,6 @@ sub save {
     my $color_tag_id = $self->param('color_tag_id');
     my $agent_id = $self->param('agent_id');
     my $subscription_offer_types = $self->param('subscription_offer_types');
-    
-
 
     # Save
     $client->name($name);
@@ -623,39 +621,6 @@ sub subscribe {
     $db->commit;
 
     return $self->render(json => {status => 'success'});
-}
-
-sub get_count {
-    my $self = shift;
-
-    my $offer_type_code = $self->param('offer_type_code') || 'none';
-
-    my $clients_count = 0;
-
-    my @query;
-    if ($self->stash('user') && $self->stash('user')->{role} ne 'manager') {
-        push @query, agent_id => $self->stash('user')->{id};
-    }
-    my $clients_iter = Rplus::Model::Client::Manager->get_objects_iterator(
-        query => [
-            or => [
-                subscription_offer_types => $offer_type_code,
-                subscription_offer_types => 'both',
-            ],        
-            @query,
-            delete_date => undef,
-        ],
-        sort_by => 'change_date desc',
-    );
-
-    while (my $client = $clients_iter->next) {
-        my $meta = decode_json $client->{metadata};
-        if ($meta->{subscription_with_new_realty} > 0) {
-            $clients_count ++;
-        }
-    }
-
-    return $self->render(json => {status => 'success', clients_count => $clients_count});
 }
 
 1;

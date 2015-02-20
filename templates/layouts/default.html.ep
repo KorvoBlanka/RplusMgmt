@@ -1254,20 +1254,20 @@
         
       });
 
-      function getClientNewCount() {
+      function getActiveSubCount() {
         supressAjaxIndicator(1);
         $.ajax({
           type: "POST",
-          url: "/api/client/get_count",
+          url: "/api/subscription/get_active_count",
           data: {offer_type_code: Rplus.Variables['User'].offer_mode},
           complete: function () {}
         })
           .done(function (data, textStatus, jqXHR) {
             if (data.status == 'success') {
-              if (data.clients_count == 0) {              
+              if (data.sub_count == 0) {              
                 $('#client-count-notifier').addClass('hidden');
               } else {
-                $('#client-count-notifier').html(data.clients_count);
+                $('#client-count-notifier').html(data.sub_count);
                 $('#client-count-notifier').removeClass('hidden');
               }
             }
@@ -1306,15 +1306,15 @@
       getTodaysTasksCount();
       setInterval(getTodaysTasksCount, 30000);
 
-      setTimeout(getClientNewCount, 3000);
-      setInterval(getClientNewCount, 60000);
+      getActiveSubCount();
+      setInterval(getActiveSubCount, 360000);
 
       window.Rplus.Functions = { 
         getTodaysTasksCount: function () {
           getTodaysTasksCount();
         },
-        getClientNewCount: function () {
-          getClientNewCount();
+        getActiveSubCount: function () {
+          getActiveSubCount();
         }
       };
     </script>

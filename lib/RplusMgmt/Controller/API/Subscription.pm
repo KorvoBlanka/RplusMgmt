@@ -579,4 +579,32 @@ sub delete {
     return $self->render(json => {status => 'success'});
 }
 
+sub get_active_count {
+    my $self = shift;
+
+    my $offer_type_code = $self->param('offer_type_code') || 'none';
+
+    my $clients_count = 0;
+
+    my @query;
+    if ($self->stash('user')) {
+        if ($self->stash('user')->{role} eq 'manger') {
+            push @query, user_id => $self->stash('user')->{subordinate};
+        } elsif ($self->stash('user')->{role} eq 'agent' || $self->stash('user')->{role} eq 'agent_plus') {
+            push @query, user_id => $self->stash('user')->{id};    
+        }
+    }
+
+    my $sub_count = Rplus::Model::Subscription::Manager->get_objects_count (
+        query => [
+            @query,
+            offer_type_code => $offer_type_code,
+            end_date => {gt => \'now()'},
+            delete_date => undef,
+        ],
+    );
+
+    return $self->render(json => {status => 'success', sub_count => $sub_count});
+}
+
 1;

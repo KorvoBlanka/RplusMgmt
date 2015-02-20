@@ -134,6 +134,10 @@
     color: #fff;
   }
   
+  .tree > tbody > tr.inactive {
+    color: #999;
+  }
+
   #realtyTable > tbody > tr.selected > td {
     background-color: #6B7F98 !important;
     color: #fff;
@@ -707,7 +711,8 @@
     function buildHtmlForClient (client, insert_class) {
       var offer_type = $('[data-filter="offer_type_code"]').data('val');
       node_id ++;
-      var xhtml = '<tr data-id=' + client.id + ' class="' + insert_class + ' client-node treegrid-' + node_id + '">';
+      var first_node = node_id;
+      var xhtml = '';
       var caption = client.name == null ? Rplus.Util.formatPhoneNum(client.phone_num) : Rplus.Util.formatPhoneNum(client.phone_num) + ' ' + client.name;
       var tag = '';
       var agent_str = '';
@@ -728,19 +733,40 @@
       xhtml += '</tr>';
 
       var parent = node_id;
+      var now = moment();
+      var client_active = false;
+      var c_class = 'inactive';
       for(var si in client.subscriptions) {
         var subscription = client.subscriptions[si];
         if (subscription.offer_type_code == offer_type) {
           node_id ++;
+          var s_class = 'inactive';
+          var end_date_str = '';
+          if (subscription.end_date) {
+              var end_date = moment(subscription.end_date);
+              end_date_str = moment(end_date).format("DD.MM.YY HH:mm")
+              if (end_date.isAfter(now)) {
+                  s_class = '';
+                  client_active = true;
+              }
+          }
+
           xhtml += '<tr data-page=' + 1 + ' data-offer_type=' + subscription.offer_type_code +
-            ' data-subscription=' + subscription.id + ' class="subscription-node treegrid-' + node_id + ' treegrid-parent-' + parent + '">';
+            ' data-subscription=' + subscription.id + ' class="subscription-node ' + s_class + ' treegrid-' + node_id + ' treegrid-parent-' + parent + '">';
           xhtml += '<td></td>';
           xhtml += '<td class="query">' + subscription.queries + '</td>';
-          xhtml += '<td style="padding-top: 0px;padding-bottom: 10px;"><span style="font-size: 10px;">' + moment(subscription.add_date).format("DD.MM.YY HH:mm") + '</span><br>&nbsp;</td>';
+          xhtml += '<td style="padding-top: 0px;padding-bottom: 10px;"><span style="font-size: 10px;">' + end_date_str + '</span><br>&nbsp;</td>';
           xhtml += '<td style="padding-left: 0px;"></td>';
           xhtml += '</tr>';
         }
       }
+
+      if (client_active) {
+        c_class = '';
+      }
+
+      xhtml = '<tr data-id=' + client.id + ' class="' + insert_class + ' client-node ' + c_class + ' treegrid-' + first_node + '">' + xhtml;
+
       return xhtml;
     }
 

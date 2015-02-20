@@ -55,20 +55,6 @@ sub run {
                 # Skip FTS data
                 my @query = map { ref($_) eq 'SCALAR' && $$_ =~ /^t1\.fts/ ? () : $_ } (Rplus::Util::Query->parse($q, $c));
 
-                my $t_count = Rplus::Model::Realty::Manager->get_objects_count(
-                    query => [
-                        @query,
-                        offer_type_code => $subscr->offer_type_code,
-                        delete_date => undef,
-                        state_code => ['work', 'raw', 'suspended'],
-                        [\"t1.id NOT IN (SELECT SR.realty_id FROM subscription_realty SR WHERE SR.subscription_id = ? AND SR.state_code != 'new')" => $subscr->id],
-                    ],
-                    with_objects => ['address_object', 'agent', 'type', 'sublandmark'],
-                );
-                if ($t_count > 0) {
-                    $sub_new_count += $t_count;
-                }
-
                 my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
                     query => [
                         offer_type_code => $subscr->offer_type_code,
@@ -83,9 +69,9 @@ sub run {
                     ],
                     with_objects => ['address_object', 'agent', 'type', 'sublandmark'],
                 );
-                my $found = 0;
+
                 while (my $realty = $realty_iter->next) {
-                    $found++;
+
                     my $sr = Rplus::Model::SubscriptionRealty::Manager->get_objects(query => [subscription_id => $subscr->id, realty_id => $realty->id])->[0];
                     if (!$sr) {
                       $sr = Rplus::Model::SubscriptionRealty->new(subscription_id => $subscr->id, realty_id => $realty->id);
@@ -134,8 +120,6 @@ sub run {
             $subscr->last_check_date('now()');
             $subscr->save(chages_only => 1);
         }
-        $client->metadata(encode_json({subscription_with_new_realty => $sub_new_count}));
-        $client->save(chages_only => 1);
     }
 
     return;
