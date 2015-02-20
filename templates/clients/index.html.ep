@@ -862,6 +862,7 @@
       saved: function (client) {
         updateTreeEntry(client);
         card.close();
+        Rplus.Functions.getActiveSubCount();
       },
       
     }).open(client_id);
@@ -1586,6 +1587,7 @@
             async: false, // (!)
             success: function (data, textStatus, jqXHR) {
               $this.addClass('hidden');
+              Rplus.Functions.getActiveSubCount();
             },
             error: function (jqXHR, textStatus, errorThrown) {},
           });
@@ -1760,6 +1762,7 @@
                 clients[client_id].agent_id = agent_id;
                 // Update row data in client tree
                 updateTreeEntry(clients[client_id], false);
+                Rplus.Functions.getActiveSubCount();
               }
             });
         });
