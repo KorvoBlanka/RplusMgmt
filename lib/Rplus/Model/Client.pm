@@ -25,6 +25,7 @@ __PACKAGE__->meta->setup(
         change_date              => { type => 'timestamp with time zone', default => 'now()', not_null => 1, remarks => 'дата изменения' },
         subscription_offer_types => { type => 'varchar', default => 'none', not_null => 1 },
         agent_id                 => { type => 'integer', remarks => 'идентификатор агента, занимающегося этим клиентом' },
+        account_id               => { type => 'integer', not_null => 1 },
     ],
 
     primary_key_columns => [ 'id' ],

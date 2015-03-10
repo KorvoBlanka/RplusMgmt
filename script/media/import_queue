@@ -1,0 +1,32 @@
+#!/usr/bin/env perl
+
+use FindBin;
+BEGIN { unshift @INC, "$FindBin::Bin/../../lib" }
+
+use Rplus::Modern;
+use JSON;
+
+
+#open (LOG, '>>update.log');
+
+while (1 != 2) {
+	say 'cycle starts ' . localtime;
+
+    eval {
+        chdir "/home/raven/projects/RplusMgmt/script/media";
+        say 'sync mediators';
+        system ("perl sync_mediators > /dev/null");		        
+        say 'import';
+        system ("perl import > /dev/null");
+        #say 'tasks';
+        #system ("curl --silent --max-time 6000 http://dev.rplusmgmt.com/tasks/run > /dev/null");
+    } or do {
+    	say $@;
+    };
+
+
+	sleep (10);
+}
+#close (LOG);
+
+1;

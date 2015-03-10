@@ -8,8 +8,8 @@ use Rplus::Model::Realty;
 use Rplus::Model::Realty::Manager;
 use Rplus::Model::Landmark;
 use Rplus::Model::Landmark::Manager;
-use Rplus::Model::RuntimeParam;
-use Rplus::Model::RuntimeParam::Manager;
+use Rplus::Model::Option;
+use Rplus::Model::Option::Manager;
 
 use Mojo::Util qw(trim);
 use File::Temp qw(tmpnam);
@@ -18,6 +18,8 @@ use JSON;
 
 sub index {
     my $self = shift;
+
+    my $acc_id = $self->session('user')->{account_id};
 
     return $self->render_not_found unless $self->req->method eq 'POST';
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => 'export');
@@ -34,12 +36,12 @@ sub index {
     my $conf_phones = '';
     my $agent_phone = 0;
 
-    my $rt_param = Rplus::Model::RuntimeParam->new(key => 'export')->load();
-    if ($rt_param) {
-        my $config = from_json($rt_param->{value});
-        $conf_phones = $config->{'vnh-phones'} ? trim($config->{'vnh-phones'}) : '';
-        $agent_phone = 1 if $config->{'vnh-agent-phone'};
-        $company = $config->{'vnh-company'} ? trim($config->{'vnh-company'}) : '';
+    my $options = Rplus::Model::Option->new(account_id => $acc_id)->load();
+    if ($options) {
+        my $e_opt = from_json($options->{options})->{'export'};
+        $conf_phones = $e_opt->{'vnh-phones'} ? trim($e_opt->{'vnh-phones'}) : '';
+        $agent_phone = 1 if $e_opt->{'vnh-agent-phone'};
+        $company = $e_opt->{'vnh-company'} ? trim($e_opt->{'vnh-company'}) : '';
     }
 
     unlink($meta->{'prev_file'}) if $meta->{'prev_file'};
@@ -105,6 +107,7 @@ sub index {
                     offer_type_code => $offer_type_code,
                     'type.category_code' => ['room', 'apartment'],
                     export_media => {'&&' => $media->id},
+                    account_id => $acc_id,
                 ],
                 sort_by => 'address_object.expanded_name',
                 with_objects => ['address_object', 'sublandmark', 'type', 'agent'],
@@ -207,6 +210,7 @@ sub index {
                     offer_type_code => $offer_type_code,
                     'type.category_code' => 'house',
                     export_media => {'&&' => $media->id},
+                    account_id => $acc_id,
                 ],
                 sort_by => 'address_object.expanded_name',
                 with_objects => ['address_object', 'sublandmark', 'type', 'agent'],

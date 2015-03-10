@@ -18,7 +18,6 @@
     <link rel="stylesheet" href="<%= $assets_url %>/bootstrap/<%= $bootstrap_ver %>/css/bootstrap.min.css">
     <!-- Pines Notify -->
     <link rel="stylesheet" href="<%= $assets_url %>/pnotify/1.2.2/jquery.pnotify.default.css">
-    <!-- <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet"> -->
 
     <style type="text/css">
 
@@ -1227,7 +1226,7 @@
             async: false,
             success: function (data, textStatus, jqXHR) {
               r.name = data.name;
-              r.photo_url = data.photo_url;
+              r.photo_url = '<%= $self->config->{'storage'}->{'url'} %>' + '/' + '<%= $self->session->{'user'}->{'account_name'} %>' + data.photo_url;
             },
             error: function (jqXHR, textStatus, errorThrown) {},
           });
@@ -1258,16 +1257,16 @@
         supressAjaxIndicator(1);
         $.ajax({
           type: "POST",
-          url: "/api/subscription/get_active_count",
+          url: "/api/client/get_active_count",
           data: {offer_type_code: Rplus.Variables['User'].offer_mode},
           complete: function () {}
         })
           .done(function (data, textStatus, jqXHR) {
             if (data.status == 'success') {
-              if (data.sub_count == 0) {              
+              if (data.client_count == 0) {              
                 $('#client-count-notifier').addClass('hidden');
               } else {
-                $('#client-count-notifier').html(data.sub_count);
+                $('#client-count-notifier').html(data.client_count);
                 $('#client-count-notifier').removeClass('hidden');
               }
             }
@@ -1307,7 +1306,7 @@
       setInterval(getTodaysTasksCount, 30000);
 
       getActiveSubCount();
-      setInterval(getActiveSubCount, 360000);
+      setInterval(getActiveSubCount, 30000);
 
       window.Rplus.Functions = { 
         getTodaysTasksCount: function () {

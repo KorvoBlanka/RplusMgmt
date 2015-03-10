@@ -17,6 +17,8 @@ use Image::Magick;
 
 use JSON;
 
+use Data::Dumper;
+
 sub list {
     my $self = shift;
 
@@ -27,7 +29,8 @@ sub list {
         list => [],
     };
 
-    my $user_iter = Rplus::Model::User::Manager->get_objects_iterator(query => [delete_date => undef], sort_by => 'name');
+    my $acc_id = $self->session('user')->{account_id};
+    my $user_iter = Rplus::Model::User::Manager->get_objects_iterator(query => [account_id => $acc_id, delete_date => undef], sort_by => 'name');
     while (my $user = $user_iter->next) {
         if ($user->id != 10000) {
             my $x = {
@@ -58,12 +61,13 @@ sub list_candidates {
         candidates => [],
     };
 
+    my $acc_id = $self->session('user')->{account_id};
     my @owned = ();
-    for my $m (@{Rplus::Model::User::Manager->get_objects(query => [role => 'manager', delete_date => undef])}) {
+    for my $m (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $acc_id, role => 'manager', delete_date => undef])}) {
         push @owned, @{$m->subordinate};
     }
 
-    for my $a (@{Rplus::Model::User::Manager->get_objects(query => [role => ['agent', 'agent_ext'], delete_date => undef], sort_by => 'name')}) {
+    for my $a (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $acc_id, role => ['agent', 'agent_ext'], delete_date => undef], sort_by => 'name')}) {
         unless ($a->id ~~ @owned) {
             push @{$res->{candidates}}, {id => $a->id, name => $a->name,} unless $a->id == 10000;
         }
@@ -79,7 +83,8 @@ sub get {
 
     my $id = $self->param('id');
 
-    my $user = Rplus::Model::User::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
+    my $acc_id = $self->session('user')->{account_id};
+    my $user = Rplus::Model::User::Manager->get_objects(query => [account_id => $acc_id, id => $id, delete_date => undef])->[0];
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $user;
 
     my $sip = from_json($user->ip_telephony);
@@ -109,7 +114,7 @@ sub get {
     }
 
     if (scalar(@{$user->subordinate})) {
-        for my $a (@{Rplus::Model::User::Manager->get_objects(query => [id => [$user->subordinate], delete_date => undef], sort_by => 'name')}) {
+        for my $a (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $acc_id, id => [$user->subordinate], delete_date => undef], sort_by => 'name')}) {
             push @{$res->{subordinates}}, {id => $a->id, name => $a->name,};
         }
     }
@@ -123,12 +128,13 @@ sub find {
     my $raw_phone_num = $self->param('phone_num');
     my $phone_num = $self->parse_phone_num($raw_phone_num);
 
+    my $acc_id = $self->session('user')->{account_id};
     my $user;
     if ($phone_num) {
-        $user = Rplus::Model::User::Manager->get_objects(query => [phone_num => $phone_num, delete_date => undef])->[0];
+        $user = Rplus::Model::User::Manager->get_objects(query => [account_id => $acc_id, phone_num => $phone_num, delete_date => undef])->[0];
     }
     unless ($user) {
-        my $user_iter = Rplus::Model::User::Manager->get_objects_iterator(query => [delete_date => undef], sort_by => 'name');
+        my $user_iter = Rplus::Model::User::Manager->get_objects_iterator(query => [account_id => $acc_id, delete_date => undef], sort_by => 'name');
         while (my $x = $user_iter->next) {
             my $sip = from_json($x->ip_telephony);
             if ($sip->{sip_login} && $sip->{sip_login} eq $raw_phone_num) {
@@ -155,7 +161,7 @@ sub find {
         sip_host => $sip->{sip_host} ? $sip->{sip_host} : '',
         sip_login => $sip->{sip_login} ? $sip->{sip_login} : '',
         sip_password => $sip->{sip_password} ? $sip->{sip_password} : '',
-        photo_url => $user->photo_url ? $self->config->{'storage'}->{'url'} . $user->photo_url : '',
+        photo_url => $user->photo_url ? $user->photo_url : '',
     };
 
     return $self->render(json => $res);
@@ -167,10 +173,11 @@ sub save {
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(users => 'manage');
     return $self->render(json => {error => 'Forbidden'}, status => 403) if ($self->account_type() eq 'demo');
 
+    my $acc_id = $self->session('user')->{account_id};
     # Retrieve user
     my $user;
     if (my $id = $self->param('id')) {
-        $user = Rplus::Model::User::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
+        $user = Rplus::Model::User::Manager->get_objects(query => [account_id => $acc_id, id => $id, delete_date => undef])->[0];
     } else {
         $user = Rplus::Model::User->new;
     }
@@ -221,9 +228,30 @@ sub save {
     $user->ip_telephony(encode_json($sip));
     $user->photo_url($photo_url);
     $user->subordinate(Mojo::Collection->new(@subordinates)->compact->uniq);
+    $user->account_id($acc_id);
 
     if (scalar(@subordinates) > 0 && $role ne 'manager') {
-        return $self->render(json => {error => 'Has Subordinate'}, status => 200);
+        $user->subordinate([]);
+    }
+
+    # если пользователь не агент/агент+ он не может быть в подчиненных
+    if ($user->id) {
+        if ($role ne 'agent' && $role ne 'agent_ext') {
+            my $user_iter = Rplus::Model::User::Manager->get_objects_iterator(
+                query => [
+                    account_id => $acc_id,
+                    role => 'manager',
+                    \("subordinate && '{".$user->id."}'"),
+                    delete_date => undef,
+                ],
+            );
+            while (my $u = $user_iter->next) {
+                my $s = Mojo::Collection->new(@{$u->subordinate});
+                $s = $s->grep( sub {$_ != $user->id});
+                $u->subordinate($s->compact->uniq);
+                $u->save(changes_only => 1);
+            }
+        }
     }
 
     if ($user->id && $role eq 'dispatcher') {
@@ -252,7 +280,7 @@ sub upload_photo {
     my $cat = '/users/photos/';
 
     if (my $file = $self->param('files[]')) {
-        my $path = $self->config->{'storage'}->{'path'} . $cat;
+        my $path = $self->config->{'storage'}->{'path'} . '/' . $self->session->{'user'}->{'account_name'} . $cat;
         my $name = (Time::HiRes::time =~ s/\.//r) . '.png'; # Unique name
 
         eval {
@@ -273,7 +301,7 @@ sub upload_photo {
             return $self->render(json => {error => $@}, status => 500);
         };
 
-        return $self->render(json => {status => 'success', photo_url => $photo_url, src => $self->config->{'storage'}->{'url'} . $photo_url});
+        return $self->render(json => {status => 'success', photo_url => $photo_url, src => $self->config->{'storage'}->{'url'} . '/' . $self->session->{'user'}->{'account_name'} . $photo_url});
     }
 
     return $self->render(json => {error => 'Bad Request'}, status => 400);
@@ -287,7 +315,9 @@ sub delete {
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(users => 'manage');
     return $self->render(json => {error => 'Forbidden'}, status => 403) if ($self->account_type() eq 'demo');
 
-    my $user = Rplus::Model::User::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
+    my $acc_id = $self->session('user')->{account_id};
+
+    my $user = Rplus::Model::User::Manager->get_objects(query => [account_id => $acc_id, id => $id, delete_date => undef])->[0];
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $user;
 
     my $realty_count = Rplus::Model::Realty::Manager->get_objects_count(query => [agent_id => $id, delete_date => undef]);
@@ -310,7 +340,9 @@ sub set_offer_mode {
 
     my $id = $self->param('id');
     my $offer_mode = $self->param('offer_mode');
-    my $user = Rplus::Model::User::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
+
+    my $acc_id = $self->session('user')->{account_id};
+    my $user = Rplus::Model::User::Manager->get_objects(query => [account_id => $acc_id, id => $id, delete_date => undef])->[0];
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $user;
 
     $user->offer_mode($offer_mode);
@@ -333,7 +365,8 @@ sub set_sync_google {
     my $user_id = $self->param('user_id');
     my $val = $self->param('val');
 
-    my $user = Rplus::Model::User::Manager->get_objects(query => [id => $user_id, delete_date => undef])->[0];
+    my $acc_id = $self->session('user')->{account_id};
+    my $user = Rplus::Model::User::Manager->get_objects(query => [account_id => $acc_id, id => $user_id, delete_date => undef])->[0];
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $user;
 
     $user->sync_google($val);

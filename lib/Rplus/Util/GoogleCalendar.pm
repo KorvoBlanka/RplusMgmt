@@ -196,9 +196,16 @@ sub sync {
             $task->assigned_user_id($user_id);
             $task->summary($summary);
             $task->description($description);
-            $task->start_date($item->{start}->{dateTime});
-            $task->end_date($item->{end}->{dateTime});
-            $task->save;
+            $task->change_date('now()');
+            eval {
+                $task->start_date($item->{start}->{dateTime});
+                $task->end_date($item->{end}->{dateTime});
+                $task->save;                 
+            };
+            if ($@) {
+                say Dumper $@;
+            }
+
         }
     }
 
@@ -206,13 +213,14 @@ sub sync {
 }
 
 sub syncAll {
+    my ($acc_id) = @_;
     my $sync_items = [];
-    for my $x (@{Rplus::Model::User::Manager->get_objects(query => [delete_date => undef,], sort_by => 'id')}) {
+    for my $x (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $acc_id, delete_date => undef,], sort_by => 'id')}) {
         my $data = getGoogleData($x->id);
         next unless $data->{permission_granted};
-        push @$sync_items, @{sync($x->id)};
+        sync($x->id);
     }
-    return $sync_items;
+    return;
 }
 
 # добавить задачу для user_id

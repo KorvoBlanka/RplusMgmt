@@ -429,10 +429,12 @@ a:focus {
 
   var time_slider = document.querySelector('#timeSlider');
 
+  var _tid;
+
   registerGlobalAjaxEvents();
 
   (function () {
-    % my $u = Rplus::Model::User::Manager->get_objects(query => [delete_date => undef, id => $self->stash('user')->{id}])->[0];
+    % my $u = Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('user')->{account_id}, id => $self->stash('user')->{id}, delete_date => undef])->[0];
     % my $x = Rplus::Util::GoogleCalendar::getGoogleData($self->stash('user')->{id});
     % if ($u->{sync_google} eq 'ask') {
       $('#enableGoogleSync').removeClass('hidden');
@@ -703,7 +705,7 @@ a:focus {
       var xhtml = '';
       var groups = {};
 
-      clearEvents();
+      //aclearEvents();
       var reverse_list = event_list.reverse();
       if (calendar_days_count == 30)
       {
@@ -715,16 +717,24 @@ a:focus {
           
           var row = Math.floor(offset / 7);
           var col = offset % 7;
-          var xhtml = '<div class="month-event">';
+          var xhtml = '<div class="month-event" data-id="' + event.id + '">';
           xhtml += '<div style="width: 15px; height: 15px; display: inline-block; background-color: ' + event.color + '; top: 2px; position: relative;">';
           xhtml += '</div>';
           xhtml += ' ' + start_date.format('HH:mm') + ' ' + event.task_type;
           xhtml += '</div>';
-          $('.month-body > table tr:eq(' + row + ') td:eq(' + col + ') > .cell-wrapper').append(xhtml);
+          var $e = $('.month-body .month-event[data-id="' + event.id + '"]');
+          if ($e.length > 0) {
+            $e.replaceWith(xhtml);
+          } else {
+            $('.month-body > table tr:eq(' + row + ') td:eq(' + col + ') > .cell-wrapper').append(xhtml);
+          }
         }
       } else {
         var last_ts = null;
         var group_idx = 0;
+
+        var was_opened = $('.event-selected').data('id');
+
         for (var i = 0; i < reverse_list.length; i++) {
           var event = reverse_list[i];
           var start_date = moment(event.start_date);
@@ -748,9 +758,6 @@ a:focus {
             var event = events[i];
             var start_date = moment(event.start_date);
             var end_date = moment(event.end_date);
-
-            console.log('---------------');
-            console.log(start_date);
 
             var realty_ref = '';
             if (event.realty_id) {
@@ -777,7 +784,8 @@ a:focus {
                 event_height = 25;
               }
 
-              xhtml += '<div class="event event-' + event.status + '" data-date="' + start_date.format('YYYY-MM-DD') + '" data-left=' + (column * column_width) + ' data-width=' + column_width + ' data-column=' + column + ' data-id="' + event.id + '" class="simple-calendar-event task-' + event.status + '" style="top: ' + offset_y + 'px; left: ' + offset_x + 'px; height: ' + event_height + 'px; width: ' + event_width + 'px; background-color: ' + event.color + ';">';
+
+              xhtml = '<div class="event event-' + event.status + '" data-date="' + start_date.format('YYYY-MM-DD') + '" data-left=' + (column * column_width) + ' data-width=' + column_width + ' data-column=' + column + ' data-id="' + event.id + '" class="simple-calendar-event task-' + event.status + '" style="top: ' + offset_y + 'px; left: ' + offset_x + 'px; height: ' + event_height + 'px; width: ' + event_width + 'px; background-color: ' + event.color + ';">';
               xhtml +=  '<div class="event-body">'
               xhtml +=   '<div class="status-button-wrapper hidden" style="height: 1000px;">';
               xhtml +=    '<div class="status-button nopep" data-action="event-set-status">';
@@ -792,10 +800,19 @@ a:focus {
               xhtml +=   '<span class="glyphicon glyphicon-chevron-down"></span>';
               xhtml +=  '</div>';
               xhtml += '</div>';
+
+              var $e = $('.events-container .event[data-id="' + event.id + '"]');
+
+              if ($e.length > 0) {
+                $e.replaceWith(xhtml);
+              } else {
+                $('.simple-calendar .events-container').append(xhtml);
+              }
+
             }
           }
         }
-        $('.simple-calendar .events-container').append(xhtml);
+        
 
         $('a[data-action="realty-open"]').click(function (e) {
           var realty_id = $(this).data('id');
@@ -885,8 +902,6 @@ a:focus {
               min = Math.floor((pos_y % 100) * (60 / 100));
               time = (hour < 10 ? '0' : '') + hour + ':' + (min < 10 ? '0' : '') + min;
               var end_date = moment($this.data('date') + ' ' + time);
-
-              console.log(start_date);
 
               $.ajax({
                 type: "POST",
@@ -990,8 +1005,6 @@ a:focus {
               var end_date = moment(obj.$el.data('date') + ' ' + time);
               end_date.add(add_days, 'days');
 
-              console.log(start_date);
-
               $.ajax({
                 type: "POST",
                 url: "/api/task/update",
@@ -1023,6 +1036,11 @@ a:focus {
             }
           },
         });
+
+        if(was_opened) {
+          var $e = $('.events-container .event[data-id="' + was_opened + '"]');
+          toggleEventSelect($e);
+        }
       }
     }
 
@@ -1049,6 +1067,46 @@ a:focus {
         .done(function (data, textStatus, jqXHR) {
           drawEvents(data.list);
           $('#objectsCount').text(data.count);
+        });
+    }
+
+    var last_check_ts = moment();
+    function updateEvents() {
+
+      if ($('.pep-active').length) {
+        return;
+      }
+
+      var task_type_id = $('[data-filter="task_type_id"]').data('val');
+      var assigned_user_id = $('[data-filter="assigned_user_id"]').data('val');
+      var task_status = $('[data-filter="task_status"]').data('val');
+
+      var changed_since = last_check_ts.format();
+
+      var start_date = calendar_start_date.format();
+      var end_date = calendar_start_date.clone().add(calendar_days_count, 'days').format();
+
+      last_check_ts = moment();
+      supressAjaxIndicator(1);
+      $.ajax({
+        type: "POST",
+        url: "/api/task/list",
+        data: {
+          start_date: start_date,
+          end_date: end_date,
+          //changed_since: changed_since,
+          task_status: task_status,
+          assigned_user_id: assigned_user_id,
+          task_type_id: task_type_id,
+        },
+      })
+        .done(function (data, textStatus, jqXHR) {
+          supressAjaxIndicator(0);
+          if (data.count > 0) {
+            console.log('!');
+            drawEvents(data.list);
+            Rplus.Functions.getTodaysTasksCount();
+          }
         });
     }
 
@@ -1134,8 +1192,6 @@ a:focus {
 
     function drawPlanner() {
 
-      console.log(calendar_start_date.format());
-
       clearEvents();
 
       drawCalendarCaption(calendar_start_date);
@@ -1143,6 +1199,11 @@ a:focus {
       drawCalendarBody(calendar_start_hour, calendar_hours_count);
 
       listEvents();
+
+      scrollToCurrentTime()
+
+      clearTimeout(_tid);
+      _tid = setInterval(function() {updateEvents()}, 30000);
     }
 
     $('[data-action="day-minus"]').click(function() {
@@ -1392,12 +1453,6 @@ a:focus {
     $('#date-picker').datepicker('setDate', calendar_start_date.format('YYYY-MM-DD'));
     setInterval(drawCurrentTime, 30);
 
-    var now = moment();
-    var offset_y = (now.hour() - calendar_start_hour) * 100;
-    offset_y += (now.minute()) * (100 / 60);
-    offset_y -= $('.simple-calendar .body').height() / 2; 
-    $('.simple-calendar .body').scrollTop(offset_y);
-
     $('[data-action=set-google-sync]').click(function (e) {
       var val = $(this).data('val');
 
@@ -1422,6 +1477,14 @@ a:focus {
 
         });
     });
+
+    function scrollToCurrentTime() {
+      var now = moment();
+      var offset_y = (now.hour() - calendar_start_hour) * 100;
+      offset_y += (now.minute()) * (100 / 60);
+      offset_y -= $('.simple-calendar .body').height() / 2; 
+      $('.simple-calendar .body').scrollTop(offset_y);      
+    }
 
     function leadingZero(val) {
       return (val < 10 ? '0' : '') + val;
@@ -1520,7 +1583,7 @@ a:focus {
         <div class="row" style="border-top: 1px solid #aaa; margin-top: 25px;">
           <div class="col-lg-12 col-md-12" style="padding-top: 15px;">
             <select class="form-control input-sm selectpicker" data-size="7" name="assignedUserId" id="assignedUserIdInput">
-            % for my $x (@{Rplus::Model::User::Manager->get_objects(query => ['!id' => 10000, delete_date => undef,], sort_by => 'id')}) {
+            % for my $x (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('user')->{account_id}, '!id' => 10000, delete_date => undef,], sort_by => 'id')}) {
               <option value="<%= $x->id %>"><%= $x->name %></option>
             % }
             </select>
@@ -1671,12 +1734,12 @@ a:focus {
           <li><a href="#" data-val="all" data-type="text"><strong> Все</strong></a></li>
           <li><a href="#" data-val="<%= $self->stash('user')->{id} %>" data-type="text"><strong> Мои задачи</strong></a></li>
         %   my @owned = ();
-        %   for my $m (@{Rplus::Model::User::Manager->get_objects(query => [role => ['manager'], delete_date => undef], sort_by => 'name')}) {
+        %   for my $m (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('user')->{account_id}, role => ['manager'], delete_date => undef], sort_by => 'name')}) {
               <li class="dropdown-submenu"><a href="#" data-val="<%= $m->id %>" data-type="text"> <%= $m->name %></a><ul class="dropdown-menu dropdown-context dropdown-context-sub compressed-context" style="bottom: auto;">
                 <li><a href="#" data-val="a<%= $m->id %>" data-type="text"> Все агенты</a></li>
         %     if (scalar (@{$m->subordinate})) {
         %       push @owned, @{$m->subordinate};
-        %       for my $a (@{Rplus::Model::User::Manager->get_objects(query => [id => [$m->subordinate], delete_date => undef], sort_by => 'name')}) {
+        %       for my $a (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('user')->{account_id}, id => [$m->subordinate], delete_date => undef], sort_by => 'name')}) {
                   <li><a href="#" data-val="<%= $a->id %>" data-type="text"> <%= $a->name %></a></li>
         %       }
         %     }
@@ -1685,7 +1748,7 @@ a:focus {
         % } elsif ($self->stash('user')->{role} eq 'manager') {
           <li><a href="#" data-val="<%= $self->stash('user')->{id} %>" data-type="text"><strong> Мои задачи</strong></a></li>
         % if (scalar (@{$self->stash('user')->{subordinate}})) {
-        % for my $a (@{Rplus::Model::User::Manager->get_objects(query => [id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
+        % for my $a (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('user')->{account_id}, id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
           <li><a href="#" data-val="<%= $a->id %>" data-type="text"> <%= $a->name %></a></li>
         % }
         % }

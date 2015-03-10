@@ -327,19 +327,7 @@ sub realty_list {
         per_page => $per_page,
     };
 
-    my $realty_iter = Rplus::Model::SubscriptionRealty::Manager->get_objects_iterator(
-        select => ['subscription_realty.id', 'subscription_realty.state_code', 'subscription_realty.offered', 'realty.*'],
-        query => [
-            @query,
-            '!state_code' => 'del',
-        ],
-        with_objects => ['realty', 'color_tag'],
-        sort_by => 'subscription_realty.id DESC',
-        page => $page,
-        per_page => $per_page,
-    );
-
-    my $count = Rplus::Model::SubscriptionRealty::Manager->get_objects_count(
+    $res->{count} = Rplus::Model::SubscriptionRealty::Manager->get_objects_count(
         query => [
             @query,
             '!state_code' => 'del',
@@ -347,7 +335,18 @@ sub realty_list {
         require_objects => ['realty'],
         with_objects => ['color_tag'],        
     );
-    $res->{count} = $count;
+
+    my $realty_iter = Rplus::Model::SubscriptionRealty::Manager->get_objects_iterator(
+        select => ['subscription_realty.id', 'subscription_realty.state_code', 'subscription_realty.offered', 'realty.*'],
+        query => [
+            @query,
+            '!state_code' => 'del',
+        ],
+        with_objects => ['realty', 'color_tag'],
+        sort_by => 'subscription_realty.state_code ASC',
+        page => $page,
+        per_page => $per_page,
+    );
 
     my $realty_objs = [];
     while (my $realty = $realty_iter->next) {
@@ -369,6 +368,8 @@ sub realty_update {
     my ($self, $subscription_id) = @_;
     my $subscription = Rplus::Model::Subscription::Manager->get_objects(query => [id => $subscription_id, delete_date => undef])->[0];
 
+    my $acc_id = $self->session('user')->{account_id};
+
     for my $q (@{$subscription->queries}) {
         # Skip FTS data
         my @query = map { ref($_) eq 'SCALAR' && $$_ =~ /^t1\.fts/ ? () : $_ } (Rplus::Util::Query->parse($q, $self));
@@ -378,7 +379,9 @@ sub realty_update {
                 @query,
                 offer_type_code => $subscription->offer_type_code,
                 delete_date => undef,
-                state_code => ['work', 'raw', 'suspended'],                
+                state_code => ['work', 'raw', 'suspended'],
+                or => [account_id => undef, account_id => $acc_id],
+                \("NOT hidden_for && '{".$acc_id."}'"),
                 [\"t1.id NOT IN (SELECT SR.realty_id FROM subscription_realty SR WHERE SR.subscription_id = ?)" => $subscription->id],
             ],
         );
@@ -509,11 +512,12 @@ sub save {
         }
     }
 
-    my $rt_param = Rplus::Model::RuntimeParam->new(key => 'notifications')->load();
+    my $acc_id = $self->session('user')->{account_id};
+    my $options = Rplus::Model::Option->new(account_id => $acc_id)->load();
     my $contact_info = '';
-    if ($rt_param) {
-        my $config = from_json($rt_param->{value});
-        $contact_info = $config->{'contact_info'} ? $config->{'contact_info'} : '';
+    if ($options) {
+        my $e_opt = from_json($options->{options})->{'notifications'};
+        $contact_info = $e_opt->{'contact_info'} ? $e_opt->{'contact_info'} : '';
     }
 
     # Add realty to subscription & generate SMS
@@ -582,6 +586,8 @@ sub delete {
 sub get_active_count {
     my $self = shift;
 
+    my $acc_id = $self->session('user')->{account_id};
+
     my $offer_type_code = $self->param('offer_type_code') || 'none';
 
     my $clients_count = 0;
@@ -589,19 +595,23 @@ sub get_active_count {
     my @query;
     if ($self->stash('user')) {
         if ($self->stash('user')->{role} eq 'manger') {
-            push @query, user_id => $self->stash('user')->{subordinate};
+            my $t = $self->stash('user')->{subordinate};
+            push @{$t}, $self->stash('user')->{id};
+            push @query, user_id => $t;
         } elsif ($self->stash('user')->{role} eq 'agent' || $self->stash('user')->{role} eq 'agent_plus') {
-            push @query, user_id => $self->stash('user')->{id};    
+            push @query, user_id => $self->stash('user')->{id};
         }
     }
 
     my $sub_count = Rplus::Model::Subscription::Manager->get_objects_count (
         query => [
             @query,
+            'user.account_id' => $acc_id,
             offer_type_code => $offer_type_code,
             end_date => {gt => \'now()'},
             delete_date => undef,
         ],
+        with_objects => ['user'],
     );
 
     return $self->render(json => {status => 'success', sub_count => $sub_count});

@@ -6,8 +6,8 @@ use Rplus::Model::Media;
 use Rplus::Model::Media::Manager;
 use Rplus::Model::Realty;
 use Rplus::Model::Realty::Manager;
-use Rplus::Model::RuntimeParam;
-use Rplus::Model::RuntimeParam::Manager;
+use Rplus::Model::Option;
+use Rplus::Model::Option::Manager;
 use Rplus::Model::Photo;
 use Rplus::Model::Photo::Manager;
 
@@ -341,6 +341,8 @@ my %templates_hash = (
 sub index {
     my $self = shift;
 
+    my $acc_id = $self->session('user')->{account_id};
+
     return $self->render_not_found unless $self->req->method eq 'POST';
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => 'export');
 
@@ -359,14 +361,14 @@ sub index {
 
     my $meta = from_json($media->metadata);
 
-    my $rt_param = Rplus::Model::RuntimeParam->new(key => 'export')->load();
-    if ($rt_param) {
-        my $config = from_json($rt_param->{value});
-        $company_name = $config->{'avito-company'} ? $config->{'avito-company'} : '';                
-        $contact_phone = $config->{'avito-phone'} ? trim($config->{'avito-phone'}) : '';
-        $agent_phone = 1 if $config->{'avito-agent-phone'};
+    my $options = Rplus::Model::Option->new(account_id => $acc_id)->load();
+    if ($options) {
+        my $e_opt = from_json($options->{options})->{'export'};
+        $company_name = $e_opt->{'avito-company'} ? $e_opt->{'avito-company'} : '';                
+        $contact_phone = $e_opt->{'avito-phone'} ? trim($e_opt->{'avito-phone'}) : '';
+        $agent_phone = 1 if $e_opt->{'avito-agent-phone'};
         $contact_name = '';
-        $contact_email = $config->{'irr-email'} ? $config->{'irr-email'} : '';
+        $contact_email = $e_opt->{'irr-email'} ? $e_opt->{'irr-email'} : '';
     }
 
     unlink($meta->{'prev_file'}) if $meta->{'prev_file'};
@@ -410,6 +412,7 @@ sub index {
                             @tc,
                         ],
                     export_media => {'&&' => $media->id},
+                    account_id => $acc_id,
                 ],
                 sort_by => 'id ASC',
                 require_objects => ['offer_type'],

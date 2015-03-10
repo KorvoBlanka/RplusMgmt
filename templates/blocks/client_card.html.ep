@@ -838,7 +838,7 @@
               % if (has_permission(clients => read => undef)) {
                 <option class="text-muted" value="">-</option>
               % }
-              % for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [role => ['agent', 'agent_ext', 'manager'], delete_date => undef], sort_by => 'name')}) {
+              % for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [account_id => $self->session('user')->{account_id}, role => ['agent', 'agent_ext', 'manager'], delete_date => undef], sort_by => 'name')}) {
                 % if ($self->stash('user')->{role} eq 'manager' || $x->id == $self->stash('user')->{id}) {
                   <option value="<%= $x->id %>"><%= $x->name %></option>
                 % } else {

@@ -17,30 +17,40 @@ no warnings 'experimental::smartmatch';
 sub list {
     my $self = shift;
 
+    my $acc_id = $self->session('user')->{account_id};
+
     my $start_date = $self->param('start_date') || 'any';
     my $end_date = $self->param('end_date') || 'any';
+
+    my $changed_since = $self->param('changed_since');
 
     my $status = $self->param('task_status') || 'all';
     my $assigned_user_id = $self->param('assigned_user_id') || 'all';
     my $task_type_id = $self->param('task_type_id') || 'all';
 
     # sync with google
-    if ($assigned_user_id eq 'all') {
-        Rplus::Util::GoogleCalendar::syncAll();
-    } else {
-        if ($assigned_user_id =~ /^a(\d+)$/) {
-            my $manager = Rplus::Model::User::Manager->get_objects(query => [id => $1, delete_date => undef])->[0];
-            if (scalar (@{$manager->subordinate})) {
-                # Засинхронизировать всех подчиненных
-            }
-        } else {
-            Rplus::Util::GoogleCalendar::sync($assigned_user_id);
-        }
-    }
+    #if ($assigned_user_id eq 'all') {
+    #    #Rplus::Util::GoogleCalendar::syncAll($acc_id);
+    #} else {
+    #    if ($assigned_user_id =~ /^a(\d+)$/) {
+    #        my $manager = Rplus::Model::User::Manager->get_objects(query => [id => $1, delete_date => undef])->[0];
+    #        if (scalar (@{$manager->subordinate})) {
+    #            # Засинхронизировать всех подчиненных
+    #            for my $user (@{$manager->subordinate}) {
+    #                #Rplus::Util::GoogleCalendar::sync($user->id);
+    #            }
+    #        }
+    #    } else {
+    #        #Rplus::Util::GoogleCalendar::sync($assigned_user_id);
+    #    }
+    #}
 
     # "where" query
     my @query;
     {
+        if ($changed_since) {
+            push @query, change_date => {gt => $changed_since};
+        }
         if ($status ne 'all') {
             push @query, status => $status;
         }
@@ -55,17 +65,30 @@ sub list {
             } else {
                 push @query, assigned_user_id => $assigned_user_id;
             }
+        } else {
+            my @user_ids;
+            my $user_iter = Rplus::Model::User::Manager->get_objects_iterator(query => [account_id => $acc_id, delete_date => undef]);
+            while (my $user = $user_iter->next) {
+                if ($self->session('user')->{role} eq 'top') {
+                    if ($user->role ne 'top' || $user->id == $self->session('user')->{id}) {
+                        push @user_ids, $user->id;
+                    }
+                } else {
+                    push @user_ids, $user->id;
+                }
+            }
+            push @query, assigned_user_id => [@user_ids];
         }
         if ($task_type_id ne 'all') {
             push @query, task_type_id => $task_type_id;
         }
         if ($start_date ne 'any' && $end_date ne 'any') {
-            push @query, start_date => {gt => $start_date};
+            push @query, start_date => {ge => $start_date};
             push @query, start_date => {le => $end_date}
         }
     }
 
-    my $task_iter = Rplus::Model::Task::Manager->get_objects_iterator(
+    my $task_iter = Rplus::Model::Task::Manager->get_objects_iterator (
         query => [
             @query,
             delete_date => undef,

@@ -179,30 +179,35 @@ sub delete {
 
     my $id = $self->param('id');
 
-    my $cant_delete = 0;
+    #return $self->render(json => {error => 'Not Found'}, status => 404) unless $num_rows_updated;
+
+    my $found_phones = Mojo::Collection->new();
     my $mediator = Rplus::Model::Mediator::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
     my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(query => [delete_date => undef, \("owner_phones && '{".$mediator->phone_num."}'")]);
     while (my $realty = $realty_iter->next) {
-        if (scalar @{ $realty->owner_phones } > 1) {
-            $cant_delete = 1;
-            last;
+        push @$found_phones, ($realty->owner_phones);
+    }
+
+    $found_phones = $found_phones->uniq;
+    
+    if ($found_phones->size) {
+        # Add additional mediators from realty owner phones
+        for (@$found_phones) {
+
+            $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(query => [delete_date => undef, \("owner_phones && '{".$_."}'")]);
+            while (my $realty = $realty_iter->next) {
+                $realty->agent_id(undef);
+                $realty->mediator_company_id(undef);
+                $realty->save(changes_only => 1);
+            }
+
+            my $num_rows_updated = Rplus::Model::Mediator::Manager->update_objects(
+                set => {delete_date => \'now()'},
+                where => [phone_num => $_, delete_date => undef],
+            );
+
         }
-    }
-
-    return $self->render(json => {error => 'Forbidden', description => 'Есть объекты недвижимости с таким телефоном'}) if $cant_delete;
-
-    $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(query => [delete_date => undef, \("owner_phones && '{".$mediator->phone_num."}'")]);
-    while (my $realty = $realty_iter->next) {
-        $realty->agent_id(undef);
-        $realty->mediator_company_id(undef);
-        $realty->save(changes_only => 1);
-    }
-
-    my $num_rows_updated = Rplus::Model::Mediator::Manager->update_objects(
-        set => {delete_date => \'now()'},
-        where => [id => $id, delete_date => undef],
-    );
-    return $self->render(json => {error => 'Not Found'}, status => 404) unless $num_rows_updated;    
+    }    
 
     $self->render(json => {status => 'success'});
 }

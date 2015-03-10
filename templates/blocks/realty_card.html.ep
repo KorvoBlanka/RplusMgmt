@@ -208,7 +208,6 @@
 <script type="application/javascript">
   "use strict";
 
-  var last_event_id = [];
   var events = {
     loaded: null,
     saved: null,
@@ -279,14 +278,12 @@
       })
         .done(function (data) {
           realty = data.realty;
-          
-          last_event_id.push(data.event_id);
-            
+
           // Emit event
           if ($.isFunction(events.saved)) {
             events.saved(realty);
           }
-          
+
           setRealtyView(realty);
           //setRealtyEditView(realty);
           setMode(0);
@@ -923,13 +920,13 @@
               <select class="form-control input-sm" name="agent_id" id="agentInput">
                 <option class="text-muted" value="">-</option>
                 % if ($self->stash('user')->{role} eq 'top') {
-                % for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [role => ['agent', 'agent_ext', 'manager', 'top'], delete_date => undef], sort_by => 'name')}) {                  
+                % for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [account_id => $self->session('user')->{account_id}, role => ['agent', 'agent_ext', 'manager', 'top'], delete_date => undef], sort_by => 'name')}) {                  
                 <option value="<%= $x->id %>"><%= $x->name %></option>
                 % }
                 % } elsif ($self->stash('user')->{role} eq 'manager') {
                 <option value="<%= $self->stash('user')->{id} %>"><%= $self->stash('user')->{name} %></option>
                 %   if (scalar (@{$self->stash('user')->{subordinate}})) {
-                %     for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
+                %     for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [account_id => $self->session('user')->{account_id}, id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
                         <option value="<%= $x->id %>"><%= $x->name %></option>
                 %     }
                 %   }

@@ -54,8 +54,8 @@
         },
       })
         .done(function (data, textStatus, jqXHR) {
-          for (var key in data.val) {
-            var r = data.val[key];
+          for (var key in data.options) {
+            var r = data.options[key];
             $('input', $('#' + key)).attr('checked', r == 'true' || r == '1' ? true : false);
           }
           $(".group-checkbox").each(function(e) {

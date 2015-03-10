@@ -135,7 +135,7 @@
   }
   
   .tree > tbody > tr.inactive {
-    color: #999;
+    color: #ccc;
   }
 
   #realtyTable > tbody > tr.selected > td {
@@ -487,11 +487,11 @@
             {text: '<strong> <%= $self->stash('user')->{name} %></strong>', data_action: 'realty-set-agent', data_val: '<%= $self->stash('user')->{id} %>', },
         % if ($self->stash('user')->{role} eq 'top') {
         %   my @owned = ();
-        %   for my $m (@{Rplus::Model::User::Manager->get_objects(query => [role => ['manager'], delete_date => undef], sort_by => 'name')}) {
+        %   for my $m (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('user')->{account_id}, role => ['manager'], delete_date => undef], sort_by => 'name')}) {
         %     if (scalar (@{$m->subordinate})) {
               {text: '<%= $m->name %>', data_action: 'realty-set-agent', data_val: '<%= $m->id %>', subMenu: [
         %       push @owned, @{$m->subordinate};
-        %       for my $a (@{Rplus::Model::User::Manager->get_objects(query => [id => [$m->subordinate], delete_date => undef], sort_by => 'name')}) {
+        %       for my $a (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('user')->{account_id}, id => [$m->subordinate], delete_date => undef], sort_by => 'name')}) {
                 {text: '<%= $a->name %>', data_action: 'realty-set-agent', data_val: '<%= $a->id %>'},
         %       }
               ]},
@@ -501,7 +501,7 @@
         %   }
         % } elsif ($self->stash('user')->{role} eq 'manager') {
           % if (scalar (@{$self->stash('user')->{subordinate}})) {
-            % for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
+            % for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [account_id => $self->session('user')->{account_id}, id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
               % if ($x->id != 10000) {  
                 {text: '<%= $x->name %>', data_action: 'realty-set-agent', data_val: '<%= $x->id %>', },
               % }
@@ -550,11 +550,11 @@
             {text: '<strong> <%= $self->stash('user')->{name} %></strong>', data_action: 'client-set-agent', data_val: '<%= $self->stash('user')->{id} %>', },
         % if ($self->stash('user')->{role} eq 'top') {
         %   my @owned = ();
-        %   for my $m (@{Rplus::Model::User::Manager->get_objects(query => [role => ['manager'], delete_date => undef], sort_by => 'name')}) {
+        %   for my $m (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('user')->{account_id}, role => ['manager'], delete_date => undef], sort_by => 'name')}) {
         %     if (scalar (@{$m->subordinate})) {
               {text: '<%= $m->name %>', data_action: 'client-set-agent', data_val: '<%= $m->id %>', subMenu: [
         %       push @owned, @{$m->subordinate};
-        %       for my $a (@{Rplus::Model::User::Manager->get_objects(query => [id => [$m->subordinate], delete_date => undef], sort_by => 'name')}) {
+        %       for my $a (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('user')->{account_id}, id => [$m->subordinate], delete_date => undef], sort_by => 'name')}) {
                 {text: '<%= $a->name %>', data_action: 'client-set-agent', data_val: '<%= $a->id %>'},
         %       }
               ]},
@@ -564,7 +564,7 @@
         %   }
         % } elsif ($self->stash('user')->{role} eq 'manager') {
           % if (scalar (@{$self->stash('user')->{subordinate}})) {
-            % for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
+            % for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [account_id => $self->session('user')->{account_id}, id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
               % if ($x->id != 10000) {  
                 {text: '<%= $x->name %>', data_action: 'realty-set-agent', data_val: '<%= $x->id %>', },
               % }
@@ -644,8 +644,8 @@
     function listRealty(page) {
       scroll_type = 0;
       var q = $('#searchQuery').val();
-      var stateCode = '';//$('[data-filter="state_code"]').data('val');
       var offerTypeCode = $('[data-filter="offer_type_code"]').data('val');
+      var stateCode = $('[data-filter-realty="state_code"]').data('val');
       var agentId = $('[data-filter-realty="agent_id"]').data('val');
       var colorTagId = $('[data-filter-realty="color_tag_id"]').data('val');
       _listRealty_started = true;
@@ -684,7 +684,7 @@
       var state_class = '';
       var label = '';
 
-      if (r.sr_offered == '1') {
+      if (r.sr_offered == '1' || r.sr_state_code == 'offered') {
         label = '<span style="border-radius: 0px; font-size: 12px;" class="label label-warning">SMS</span>';
       } else if (r.sr_state_code && r.sr_state_code == 'new') {
         label = '<span style="border-radius: 0px; font-size: 12px;" class="label label-danger">New</span>';
@@ -868,9 +868,9 @@
     }).open(client_id);
     }
     
-    function updateRealtyRow(realty) {
+    function updateRealtyRow(prev_id, realty) {
       var r = realty;
-      var $tr = $('#realtyTable > tbody > tr[data-id="' + r.id + '"]');
+      var $tr = $('#realtyTable > tbody > tr[data-id="' + prev_id + '"]');
 
       if ($tr.length) {
         var page = $tr.data('page');
@@ -905,7 +905,7 @@
         },
         saved: function (r) {
           // Update object row in the table
-          updateRealtyRow(r);
+          updateRealtyRow(id, r);
         },
         close: function (r) {
 
@@ -1002,7 +1002,7 @@
             })
               .done(function (data, textStatus, jqXHR) {
                 Rplus.Variables['User'].offer_mode = $('#offer-type-filter').data('val');
-                Rplus.Functions.getClientNewCount();
+                Rplus.Functions.getActiveSubCount();
               });
       });
 
@@ -1501,7 +1501,9 @@
               success: function (data, textStatus, jqXHR) {
                 if(data.status != 'success') {
                     alert('не удалось отправить sms');
-                } 
+                } else {
+
+                }
               },
               error: function (jqXHR, textStatus, errorThrown) {
                 alert('не удалось отправить СМС, проверьте настройки');
@@ -1670,7 +1672,7 @@
               if (data.status == 'success') {
                 var r = data.realty;
                 // Update row data in realty table
-                updateRealtyRow(r);
+                updateRealtyRow(id, r);
               }
             },
             error: function (jqXHR, textStatus, errorThrown) {},
@@ -1695,7 +1697,7 @@
                 if (data.status == 'success') {
                   var r = data.realty;
                   // Update row data in realty table
-                  updateRealtyRow(r);
+                  updateRealtyRow(id, r);
                 }
               });
           }
@@ -1784,7 +1786,7 @@
               if (data.status == 'success') {
                 var r = data.realty;
                 // Update row data in realty table
-                updateRealtyRow(r);
+                updateRealtyRow(id, r);
               }
             });
         });
@@ -1817,7 +1819,7 @@
               if (data.status == 'success') {
                 var r = data.realty;
                 // Update row data in realty table
-                updateRealtyRow(r);
+                updateRealtyRow(id, r);
               }
             }).fail(function (jqXHR, textStatus, errorThrown) {
 
@@ -2277,13 +2279,13 @@
             % }
             % if ($self->stash('user')->{role} eq 'top') {
             %   my @owned = ();
-            %   for my $m (@{Rplus::Model::User::Manager->get_objects(query => [role => ['manager'], delete_date => undef], sort_by => 'name')}) {
+            %   for my $m (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('user')->{account_id}, role => ['manager'], delete_date => undef], sort_by => 'name')}) {
                   <li class="dropdown-submenu"><a href="#" data-val="<%= $m->id %>" data-type="text"><%= $m->name %></a>
                     <ul class="dropdown-menu dropdown-context dropdown-context-sub compressed-context" style="bottom: auto;">
                       <li><a href="#" data-val="a<%= $m->id %>" data-type="text"> Все агенты</a></li>
             %     if (scalar(@{$m->subordinate})) {
             %       push @owned, @{$m->subordinate};
-            %       for my $a (@{Rplus::Model::User::Manager->get_objects(query => [id => [$m->subordinate], delete_date => undef], sort_by => 'name')}) {
+            %       for my $a (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('user')->{account_id}, id => [$m->subordinate], delete_date => undef], sort_by => 'name')}) {
                       <li><a href="#" data-val="<%= $a->id %>" data-type="text"><%= $a->name %></a></li>
             %       }
             %     }
@@ -2292,7 +2294,7 @@
             %   }
                   <li class="dropdown-submenu"><a href="#" data-val="" data-type="text"> Свободные агенты</a>
                     <ul class="dropdown-menu dropdown-context dropdown-context-sub compressed-context" style="bottom: auto;">
-            %   for my $a (@{Rplus::Model::User::Manager->get_objects(query => [role => ['agent', 'agent_ext'], delete_date => undef], sort_by => 'name')}) {
+            %   for my $a (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('user')->{account_id}, role => ['agent', 'agent_ext'], delete_date => undef], sort_by => 'name')}) {
             %    unless ($a->id ~~ @owned || $a->id == 10000) {
                       <li><a href="#" data-val="<%= $a->id %>" data-type="text"><%= $a->name %></a></li>
             %     }
@@ -2302,7 +2304,7 @@
             % } elsif ($self->stash('user')->{role} eq 'manager') {
               <li><a href="#" data-val="a<%= $self->stash('user')->{id} %>" data-type="text"> Мои агенты</a></li>
             %   if (scalar(@{$self->stash('user')->{subordinate}})) {
-            %     for my $a (@{Rplus::Model::User::Manager->get_objects(query => [id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
+            %     for my $a (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('user')->{account_id}, id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
                     <li><a href="#" data-val="<%= $a->id %>" data-type="text"><%= $a->name %></a></li>
             %     }
             %   }
@@ -2374,12 +2376,12 @@
               % }
               % if ($self->stash('user')->{role} eq 'top') {
               %   my @owned = ();
-              %   for my $m (@{Rplus::Model::User::Manager->get_objects(query => [role => ['manager'], delete_date => undef], sort_by => 'name')}) {
+              %   for my $m (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('user')->{account_id}, role => ['manager'], delete_date => undef], sort_by => 'name')}) {
                     <li class="dropdown-submenu"><a href="#" data-val="<%= $m->id %>" data-type="text"><%= $m->name %></a><ul class="dropdown-menu dropdown-context dropdown-context-sub compressed-context" style="bottom: auto;">
                       <li><a href="#" data-val="a<%= $m->id %>" data-type="text"> Все агенты</a></li>
               %     if (scalar(@{$m->subordinate})) {
               %       push @owned, @{$m->subordinate};
-              %       for my $a (@{Rplus::Model::User::Manager->get_objects(query => [id => [$m->subordinate], delete_date => undef], sort_by => 'name')}) {
+              %       for my $a (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('user')->{account_id}, id => [$m->subordinate], delete_date => undef], sort_by => 'name')}) {
                         <li><a href="#" data-val="<%= $a->id %>" data-type="text"><%= $a->name %></a></li>
               %       }
               %     }
@@ -2388,7 +2390,7 @@
               % } elsif ($self->stash('user')->{role} eq 'manager') {
                 <li><a href="#" data-val="a<%= $self->stash('user')->{id} %>" data-type="text"><strong> Мои агенты</strong></a></li>
               %   if (scalar (@{$self->stash('user')->{subordinate}})) {
-              %     for my $a (@{Rplus::Model::User::Manager->get_objects(query => [id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
+              %     for my $a (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('user')->{account_id}, id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
                 <li><a href="#" data-val="<%= $a->id %>" data-type="text"><%= $a->name %></a></li>
               %     }
               %   }

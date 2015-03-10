@@ -65,6 +65,8 @@ __PACKAGE__->meta->setup(
         assign_date         => { type => 'timestamp with time zone', remarks => 'дата-время назначения агента на объект' },
         mediator_company_id => { type => 'integer' },
         source_url          => { type => 'varchar' },
+        account_id          => { type => 'integer' },
+        hidden_for          => { type => 'array', default => '{}', not_null => 1, remarks => 'ID аккаунтов, для которых не будет виден объект' },
     ],
 
     primary_key_columns => [ 'id' ],

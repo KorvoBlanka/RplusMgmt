@@ -395,7 +395,7 @@
             })
               .done(function (data, textStatus, jqXHR) {
                 Rplus.Variables['User'].offer_mode = $('#offer-type-filter').data('val');                
-                Rplus.Functions.getClientNewCount();
+                Rplus.Functions.getActiveSubCount();
               });
       });
 

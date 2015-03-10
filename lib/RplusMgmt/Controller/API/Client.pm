@@ -14,8 +14,8 @@ use Rplus::Model::Realty;
 use Rplus::Model::Realty::Manager;
 use Rplus::Model::SmsMessage;
 use Rplus::Model::SmsMessage::Manager;
-use Rplus::Model::RuntimeParam;
-use Rplus::Model::RuntimeParam::Manager;
+use Rplus::Model::Option;
+use Rplus::Model::Option::Manager;
 
 use Rplus::Util::Query;
 use Rplus::Util::Task;
@@ -49,8 +49,10 @@ sub list {
     my $page = $self->param("page") || 1;
     my $per_page = $self->param("per_page") || 30;
 
+    my $acc_id = $self->session('user')->{account_id};
+
     my $res = {
-        count => Rplus::Model::Client::Manager->get_objects_count(query => [delete_date => undef]),
+        count => Rplus::Model::Client::Manager->get_objects_count(query => [account_id => $acc_id, delete_date => undef]),
         list => [],
         page => $page,
     };
@@ -77,6 +79,7 @@ sub list {
             'clients.*',
         ],
         query => [
+            account_id => $acc_id,
             or => [
                 subscription_offer_types => $subscription_offer_types,
                 subscription_offer_types => 'both',
@@ -162,11 +165,13 @@ sub get {
     #return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(clients => 'read');
     
     # Retrieve client (by id or phone_num)
+    my $acc_id = $self->session('user')->{account_id};
+
     my $client;
     if (my $id = $self->param('id')) {
-        $client = Rplus::Model::Client::Manager->get_objects(query => [id => $id, delete_date => undef], with_objects => ['client_color_tags'],)->[0];
+        $client = Rplus::Model::Client::Manager->get_objects(query => [account_id => $acc_id, id => $id, delete_date => undef], with_objects => ['client_color_tags'],)->[0];
     } elsif (my $phone_num = $self->parse_phone_num(scalar $self->param('phone_num'))) {
-        $client = Rplus::Model::Client::Manager->get_objects(query => [phone_num => $phone_num, delete_date => undef], with_objects => ['client_color_tags'],)->[0];
+        $client = Rplus::Model::Client::Manager->get_objects(query => [account_id => $acc_id, phone_num => $phone_num, delete_date => undef], with_objects => ['client_color_tags'],)->[0];
     }
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $client;
 
@@ -207,7 +212,7 @@ sub get {
                 delete_date => undef,                
                 #'!end_date' => undef,
             ],
-            require_objects => ['client'],
+            #require_objects => ['client'],
             #with_objects => ['subscription_realty'],
             sort_by => 'id',
         );
@@ -235,7 +240,8 @@ sub update_offer_types {
 
     # Retrieve client
     my $id = $self->param('id');
-    my $client = Rplus::Model::Client::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
+    my $acc_id = $self->session('user')->{account_id};
+    my $client = Rplus::Model::Client::Manager->get_objects(query => [account_id => $acc_id, id => $id, delete_date => undef])->[0];
 
     my $subscription_iter = Rplus::Model::Subscription::Manager->get_objects_iterator(
         query => [
@@ -266,8 +272,9 @@ sub save {
     # Retrieve client
     my $create_event = 0;
     my $client;
+    my $acc_id = $self->session('user')->{account_id};
     if (my $id = $self->param('id')) {
-        $client = Rplus::Model::Client::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
+        $client = Rplus::Model::Client::Manager->get_objects(query => [account_id => $acc_id, id => $id, delete_date => undef])->[0];
     } else {
         $client = Rplus::Model::Client->new;
     }
@@ -303,6 +310,7 @@ sub save {
     $client->skype($skype);
     $client->description($description);
     $client->send_owner_phone($send_owner_phone);
+    $client->account_id($acc_id);
 
     unless ($self->has_permission(clients => 'write' => $client->agent_id)) {
         #$agent_id = $self->stash('user')->{id};
@@ -378,7 +386,8 @@ sub update {
 
     # Retrieve client
     my $id = $self->param('id');
-    my $client = Rplus::Model::Client::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
+    my $acc_id = $self->session('user')->{account_id};
+    my $client = Rplus::Model::Client::Manager->get_objects(query => [account_id => $acc_id, id => $id, delete_date => undef])->[0];
 
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $client;
 
@@ -452,6 +461,7 @@ sub delete {
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(clients => 'write');
 
     my $id = $self->param('id');
+    my $acc_id = $self->session('user')->{account_id};
 
     # Удалим подписки
     my $num_rows_updated = Rplus::Model::Subscription::Manager->update_objects(
@@ -462,7 +472,7 @@ sub delete {
     # Удалим клиента
     $num_rows_updated = Rplus::Model::Client::Manager->update_objects(
         set => {delete_date => \'now()'},
-        where => [id => $id, delete_date => undef],
+        where => [account_id => $acc_id, id => $id, delete_date => undef],
     );
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $num_rows_updated;
 
@@ -489,6 +499,8 @@ sub subscribe {
         return $self->render(json => {errors => \@errors}, status => 400);
     }
 
+    my $acc_id = $self->session('user')->{account_id};
+
     # Input params
     my $phone_num = $self->parse_phone_num(scalar $self->param('phone_num'));
     my $q = $self->param_n('q');
@@ -496,14 +508,11 @@ sub subscribe {
     my $realty_ids = Mojo::Collection->new($self->param('realty_ids[]'))->compact->uniq;
     my $end_date = $self->parse_datetime(scalar $self->param('end_date'));
 
-    # Begin transaction
-    my $db = $self->db;
-    $db->begin_work;
 
     # Find/create client by phone number
-    my $client = Rplus::Model::Client::Manager->get_objects(query => [phone_num => $phone_num, delete_date => undef], db => $db)->[0];
+    my $client = Rplus::Model::Client::Manager->get_objects(query => [account_id => $acc_id, phone_num => $phone_num, delete_date => undef])->[0];
     if (!$client) {
-        $client = Rplus::Model::Client->new(phone_num => $phone_num, db => $db);
+        $client = Rplus::Model::Client->new(account_id => $acc_id, phone_num => $phone_num);
     }
 
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(clients => 'subscribe') || $client->agent_id == $self->stash('user')->{id};
@@ -518,19 +527,16 @@ sub subscribe {
         queries => [$q],
         offer_type_code => $offer_type_code,
         end_date => $end_date,
-        db => $db,
     );
     $subscription->save;
 
     my $subscription_iter = Rplus::Model::Subscription::Manager->get_objects_iterator(
         query => [
             client_id => $client->id,
-            delete_date => undef,                
-            #'!end_date' => undef,
-            #'subscription_realty.delete_date' => undef,
+            delete_date => undef,
         ],
     );
-    
+
     my $subscription_offer_types = 'none';    
     while (my $subscription = $subscription_iter->next) {
         if ($subscription_offer_types eq 'none') {
@@ -540,23 +546,22 @@ sub subscribe {
         }
     }
     $client->subscription_offer_types($subscription_offer_types);
-    $client->save();    
-    
-    my $rt_param = Rplus::Model::RuntimeParam->new(key => 'notifications')->load();
+    $client->save();
+
+    my $options = Rplus::Model::Option->new(account_id => $acc_id)->load();
     my $contact_info = '';
-    if ($rt_param) {
-        my $config = from_json($rt_param->{value});
-        $contact_info = $config->{'contact_info'} ? $config->{'contact_info'} : '';
+    if ($options) {
+        my $n_opt = from_json($options->{options})->{'notifications'};
+        $contact_info = $n_opt->{'contact_info'} ? $n_opt->{'contact_info'} : '';
     }
     # Add realty to subscription & generate SMS
     for my $realty_id (@$realty_ids) {
         my $realty = Rplus::Model::Realty::Manager->get_objects(
             query => [id => $realty_id, state_code => ['work',], offer_type_code => $offer_type_code],
             with_objects => ['address_object', 'agent', 'type', 'sublandmark'],
-            db => $db,
         )->[0];
         if ($realty) {
-            Rplus::Model::SubscriptionRealty->new(subscription_id => $subscription->id, realty_id => $realty->id, state_code => 'offered', db => $db)->save;
+            Rplus::Model::SubscriptionRealty->new(subscription_id => $subscription->id, realty_id => $realty->id, offered => 'true')->save;
 
             # Prepare SMS for client
             if ($phone_num =~ /^9\d{9}$/) {
@@ -573,7 +578,7 @@ sub subscribe {
                 }
                 my $sms_body = join(', ', @parts);
                 my $sms_text = 'Вы интересовались: '.$sms_body.($sms_body =~ /\.$/ ? '' : '.').$contact_info;
-                Rplus::Model::SmsMessage->new(phone_num => $phone_num, text => $sms_text, db => $db)->save;
+                Rplus::Model::SmsMessage->new(phone_num => $phone_num, text => $sms_text, account_id => $acc_id)->save;
             }
 
             if ($realty->agent) {
@@ -612,15 +617,52 @@ sub subscribe {
                         push @parts, 'Клиент: '.$self->format_phone_num($phone_num);
                     }
                     my $sms_text = join(', ', @parts);
-                    Rplus::Model::SmsMessage->new(phone_num => $realty->agent->phone_num, text => $sms_text, db => $db)->save;
+                    Rplus::Model::SmsMessage->new(phone_num => $realty->agent->phone_num, text => $sms_text)->save;
                 }
             }
         }
     }
 
-    $db->commit;
-
     return $self->render(json => {status => 'success'});
+}
+
+sub get_active_count {
+    my $self = shift;
+
+    my $acc_id = $self->session('user')->{account_id};
+
+    my $offer_type_code = $self->param('offer_type_code') || 'none';
+
+    my $clients_count = 0;
+
+    my @query;
+    if ($self->stash('user')) {
+        if ($self->stash('user')->{role} eq 'manger') {
+            my $t = $self->stash('user')->{subordinate};
+            push @{$t}, $self->stash('user')->{id};
+            push @query, agent_id => $t;
+        } elsif ($self->stash('user')->{role} eq 'agent' || $self->stash('user')->{role} eq 'agent_plus') {
+            push @query, agent_id => $self->stash('user')->{id};
+        }
+    }
+
+    my $sub_iter = Rplus::Model::Subscription::Manager->get_objects_iterator (
+        query => [
+            @query,
+            'client.account_id' => $acc_id,
+            offer_type_code => $offer_type_code,
+            end_date => {gt => \'now()'},
+            delete_date => undef,
+        ],
+        with_objects => ['client'],
+    );
+
+    my %clients;
+    while (my $sub = $sub_iter->next) {
+        $clients{$sub->client->id} = 1;
+    }
+
+    return $self->render(json => {status => 'success', client_count => scalar keys %clients});
 }
 
 1;

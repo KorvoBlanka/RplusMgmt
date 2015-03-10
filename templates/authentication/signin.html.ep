@@ -84,7 +84,17 @@
     <script type="application/javascript">
       $(function () {
         $('.form-signin').submit(function (e) {
-          e.preventDefault();          
+          e.preventDefault();
+
+          var account_name = '';
+          var d_idx = window.location.host.indexOf('.');
+          
+          if(d_idx !== -1)
+          {
+            account_name = window.location.host.substring(0, d_idx);
+          }
+          console.log(account_name);
+
           var login = $('input[name="login"]').val();
           var password = $('input[name="password"]').val();
           var rememberMe = $('input[name="remember_me"]').prop('checked');
@@ -92,17 +102,17 @@
           $.ajax({
             type: "POST",
             url: "/signin",
-            data: {login: login, password: password, remember_me: rememberMe},
+            data: {account_name: account_name, login: login, password: password, remember_me: rememberMe},
             beforeSend: function (jqXHR, settings) { $('.form-signin button[type="submit"]').button('loading'); },
           })
             .done(function (data, textStatus, jqXHR) {
               if (data.status == 'failed') {
                 $('.form-signin button[type="submit"]').button('reset');
-                if(data.reason == 'no_connection') {
-                  $('#message').html('Нет связи с сервером');
+                if(data.reason == 'account_not_found') {
+                  $('#message').html('аккаунт не найден');
                 } else if(data.reason == 'no_money') {
                   $('#message').html('Недостаточно средств на счету. <a href="http://rplusmgmt.com/cabinet" target="_blank">Перейти в кабинет</a>');
-                } else if(data.reason == 'not_found') {
+                } else if(data.reason == 'user_not_found') {
                   $('#message').html('Неверный логин или пароль');
                 } else {
                   $('#message').html('Достигнуто максимальное количество пользователей. <a href="http://rplusmgmt.com/cabinet" target="_blank">Перейти в кабинет</a>');

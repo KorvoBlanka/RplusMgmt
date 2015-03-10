@@ -6,8 +6,11 @@ use Rplus::Model::Client;
 use Rplus::Model::Client::Manager;
 use Rplus::Model::Photo;
 use Rplus::Model::Photo::Manager;
+use Rplus::Model::Option;
+use Rplus::Model::Option::Manager;
 use Rplus::Util::SMS;
 use Rplus::Util::Email;
+
 
 use Mojo::Base 'Mojolicious::Controller';
 
@@ -15,8 +18,6 @@ use Encode qw(decode encode);
 use JSON;
 use Mojo::Util qw(trim);
 use Mojo::Collection;
-
-use Data::Dumper;
 
 no warnings 'experimental::smartmatch';
 
@@ -47,12 +48,13 @@ sub by_sms {
         with_objects => ['address_object', 'agent', 'type', 'sublandmark'],
     )->[0];
 
-    my $rt_param = Rplus::Model::RuntimeParam->new(key => 'notifications')->load();
+    my $acc_id = $self->session('user')->{account_id};
+    my $options = Rplus::Model::Option->new(account_id => $acc_id)->load();
     my $config;
-    if ($rt_param) {
-        $config = from_json($rt_param->{value});
+    if ($options) {
+        $config = from_json($options->{options})->{notifications};
     } else {
-        return;
+        return $self->render(json => {status => 'no config',});
     }
 
     my $sender = Rplus::Model::User::Manager->get_objects(query => [id => $self->stash('user')->{id}, delete_date => undef])->[0];
@@ -73,10 +75,18 @@ sub by_sms {
         my $sms_body = join(', ', @parts);
         $sms_text = 'Вы интересовались: '.$sms_body.($sms_body =~ /\.$/ ? '' : '.').($config->{'contact_info'} ? $config->{'contact_info'} : '');
 
-        $status = Rplus::Util::SMS->send($self, $client->phone_num, $sms_text, $config);
+        $status = Rplus::Util::SMS->send($self, $config, $acc_id, $client->phone_num, $sms_text);
+
+        my $subscription_iter = Rplus::Model::Subscription::Manager->get_objects_iterator(query => [client_id => $client->id, delete_date => undef,]);
+        while (my $subscription = $subscription_iter->next) {
+            my $num_rows_updated = Rplus::Model::SubscriptionRealty::Manager->update_objects(
+                set => {offered => 1},
+                where => [realty_id => $realty->id, subscription_id => $subscription->id],
+            );            
+        }        
     }
 
-    return $self->render(json => {status => $status,});
+    return $self->render(json => {status => $status, data => $config->{active},});
 }
 
 sub by_email {
@@ -93,10 +103,11 @@ sub by_email {
         with_objects => ['address_object', 'agent', 'type', 'sublandmark'],
     )->[0];
 
-    my $rt_param = Rplus::Model::RuntimeParam->new(key => 'notifications')->load();
+    my $acc_id = $self->session('user')->{account_id};
+    my $options = Rplus::Model::Option->new(account_id => $acc_id)->load();
     my $config;
-    if ($rt_param) {
-        $config = from_json($rt_param->{value});
+    if ($options) {
+        $config = from_json($options->{options})->{'notifications'};
     } else {
         return;
     }

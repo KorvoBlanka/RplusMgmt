@@ -320,13 +320,21 @@
         }},
         {id: "superior", name: "Менеджер", sortName: "agent.superior", visible: false, val: function (r) {
           if (r.agent_id && r.agent_id != 10000) {
-            var s_id = Rplus.Table['users'][r.agent_id].superior;
-            return s_id ? Rplus.Table['users'][s_id].name : '';
+            if (Rplus.Table['users'][r.agent_id]) {
+              var s_id = Rplus.Table['users'][r.agent_id].superior;
+              return s_id ? Rplus.Table['users'][s_id].name : '';
+            } else {
+              return 'NA';
+            }
           }
           return '';
         }},        
         {id: "agent", name: "<%= ucfloc 'agent' %>", sortName: "agent.name", visible: true, val: function (r) {
-          return r.agent_id ? Rplus.Table['users'][r.agent_id].name : '';
+          if (r.agent_id && Rplus.Table['users'][r.agent_id]) {
+            return Rplus.Table['users'][r.agent_id].name;
+          } else {
+            return '';
+          }
         }},
         {id: "added", name: "<%= ucfloc 'added' %>", sortName: "add_date", visible: true, val: function (r) {
           return moment(r.add_date).format("DD.MM.YYYY HH:mm");
@@ -450,7 +458,6 @@
           var id = $this.data('id');
           var obj = $this.data('obj');
 
-          console.log(obj);
           var s_id = Rplus.Table['users'][obj.agent_id] ? Rplus.Table['users'][obj.agent_id].superior : null;
 
           var media_export_row = media_export[id];
@@ -523,11 +530,11 @@
             {text: '<strong> <%= $self->stash('user')->{name} %></strong>', data_action: 'realty-set-agent', data_val: '<%= $self->stash('user')->{id} %>', },
         % if ($self->stash('user')->{role} eq 'top') {
         %   my @owned = ();
-        %   for my $m (@{Rplus::Model::User::Manager->get_objects(query => [role => ['manager'], delete_date => undef], sort_by => 'name')}) {
+        %   for my $m (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('user')->{account_id}, role => ['manager'], delete_date => undef], sort_by => 'name')}) {
         %     if (scalar (@{$m->subordinate})) {
               {text: '<%= $m->name %>', data_action: 'realty-set-agent', data_val: '<%= $m->id %>', subMenu: [
         %       push @owned, @{$m->subordinate};
-        %       for my $a (@{Rplus::Model::User::Manager->get_objects(query => [id => [$m->subordinate], delete_date => undef], sort_by => 'name')}) {
+        %       for my $a (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('user')->{account_id}, id => [$m->subordinate], delete_date => undef], sort_by => 'name')}) {
                 {text: '<%= $a->name %>', data_action: 'realty-set-agent', data_val: '<%= $a->id %>'},
         %       }
               ]},
@@ -537,7 +544,7 @@
         %   }
         % } elsif ($self->stash('user')->{role} eq 'manager') {
           % if (scalar (@{$self->stash('user')->{subordinate}})) {
-            % for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
+            % for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [account_id => $self->session('user')->{account_id}, id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
               % if ($x->id != 10000) {
                 {text: '<%= $x->name %>', data_action: 'realty-set-agent', data_val: '<%= $x->id %>', },
               % }
@@ -678,6 +685,7 @@
       var agentId = $('[data-filter="agent_id"]').data('val');
       var sortBy = $('#realtyTable').data('sort');
       var colorTagId = $('[data-filter="color_tag_id"]').data('val');
+
       _listRealty_started = true;
       supressAjaxIndicator(1);
       rq_id ++;
@@ -685,7 +693,7 @@
       $.ajax({
         type: "POST",
         url: "/api/realty/list",
-        data: {q: q, state_code: stateCode, offer_type_code: offerTypeCode, agent_id: agentId, color_tag_id: colorTagId, sort_by: sortBy, rq_id: rq_id, page: 1, per_page: 30},
+        data: {q: q, state_code: stateCode, offer_type_code: offerTypeCode, agent_id: agentId, color_tag_id: colorTagId, sort_by: sortBy, rq_id: rq_id, page: 1, per_page: 34},
         complete: function () { 
           _listRealty_started = false;
           supressAjaxIndicator(0);
@@ -699,11 +707,11 @@
             return 0;
           }
 
-          var prev_id = 0;
           for (var i = 0; i < data.list.length; i++) {
             var r = data.list[i];
             // check if id in table
             if($('#realtyTable > tbody > tr[data-id="' + r.id + '"]').length > 0) {continue;};
+            if($('#realtyTable > tbody > tr[data-prev_id="' + r.id + '"]').length > 0) {continue;};
             var xhtml = '<tr data-page="' + data.page + '" data-id="' + r.id + '" data-lat="' + r.latitude + '" data-lng="' + r.longitude +  '"';
             xhtml += ' class="';
             var h = getHistory(r.id);
@@ -725,25 +733,20 @@
               xhtml += '<td class="' + (!f.visible ? 'hidden' : '') + '"' + (f.style ? ' style="' + f.style + '"' : '') + '>' + f.val(r) + '</td>';
             }
             xhtml += '</tr>';
-            if (prev_id == 0) {
-              $('#realtyTable > tbody').prepend(xhtml);
-            } else {
-              $('#realtyTable > tbody > tr[data-id="' + prev_id + '"]').after(xhtml);
-            }
+            $(xhtml).insertBefore('#realtyTable tbody tr:eq(' + i + ')');
             var $tr = $('#realtyTable > tbody > tr[data-id="' + r.id + '"]');
             $tr.data('obj', r);
-            prev_id = r.id;
           }
           _listRealty_finished = false;
         });
     }
 
     // Open realty object card
-    function openRealtyCard(id) {      
+    function openRealtyCard(id) {
       var card = RealtyCard({
         loaded: function (r) {
           // Mark opened realty object in the table
-          var $tr = $('#realtyTable > tbody > tr[data-id="' + r.id + '"]');
+          var $tr = $('#realtyTable > tbody > tr[data-id="' + id + '"]');
           if ($tr) {
             $tr.addClass('opened');
           }
@@ -751,7 +754,7 @@
         },
         saved: function (r) {
           // Update object row in the table
-          var $tr = $('#realtyTable > tbody > tr[data-id="' + r.id + '"]');
+          var $tr = $('#realtyTable > tbody > tr[data-id="' + id + '"]');
           if ($tr) {
             for (var j = 0; j < realtyTableConf.fields.length; j++) {
               var f = realtyTableConf.fields[j];
@@ -763,9 +766,15 @@
               $tr.removeClass('deleted').addClass('modified');
             }
             media_export[r.id] = r.export_media;
-            putToHistory(id, "modified", 1);
+            putToHistory(r.id, "modified", 1);
+            $tr.data('obj', r);
             $tr.data('lat', r.latitude);
             $tr.data('lng', r.longitude);
+            $tr.data('id', r.id);
+            $tr.data('prev_id', id);
+            $tr.attr('data-id', r.id);
+            $tr.attr('data-prev_id', id);
+            id = r.id;
           } else {
 
           }
@@ -781,7 +790,7 @@
           var $tr = $('#realtyTable > tbody > tr[data-id="' + r.id + '"]');
           if ($tr) {
             $tr.removeClass('opened').addClass('shown');
-            putToHistory(id, "shown", 1);
+            putToHistory(r.id, "shown", 1);
           }
           card_opened = false;
         },
@@ -846,8 +855,8 @@
               data: {id: <%= $self->session('user')->{id} %>, offer_mode: $('#offer-type-filter').data('val')},
             })
               .done(function (data, textStatus, jqXHR) {
-                Rplus.Variables['User'].offer_mode = $('#offer-type-filter').data('val');                
-                Rplus.Functions.getClientNewCount();
+                Rplus.Variables['User'].offer_mode = $('#offer-type-filter').data('val');
+                Rplus.Functions.getActiveSubCount();
               });
       });
 
@@ -1182,6 +1191,10 @@
             success: function (data, textStatus, jqXHR) {
               if (data.status == 'success') {
                 var r = data.realty;
+                $this.data('id', r.id);
+                $this.data('prev_id', id);
+                $this.attr('data-id', r.id);
+                $this.attr('data-prev_id', id);
                 // Update row data in realty table
                 for (var j = 0; j < realtyTableConf.fields.length; j++) {
                   var f = realtyTableConf.fields[j];
@@ -1189,8 +1202,8 @@
                 }
                 $this.data('obj', r);
                 $this.removeClass('selected').addClass('modified');
-                putToHistory(id, "selected", 0);
-                putToHistory(id, "modified", 1);
+                putToHistory(r.id, "selected", 0);
+                putToHistory(r.id, "modified", 1);
               }
             },
             error: function (jqXHR, textStatus, errorThrown) {},
@@ -1216,6 +1229,10 @@
                 if (data.status == 'success') {
                   var r = data.realty;
                   // Update row data in realty table
+                  $this.data('id', r.id);
+                  $this.data('prev_id', id);
+                  $this.attr('data-id', r.id);
+                  $this.attr('data-prev_id', id);
                   for (var j = 0; j < realtyTableConf.fields.length; j++) {
                     var f = realtyTableConf.fields[j];
                     $('td:nth-child(' + (j + 1) + ')', $this).html(f.val(r));
@@ -1225,8 +1242,8 @@
                   } else {
                       $this.removeClass('selected').removeClass('deleted').addClass('modified');
                   }
-                  putToHistory(id, "selected", 0);
-                  putToHistory(id, "modified", 1);
+                  putToHistory(r.id, "selected", 0);
+                  putToHistory(r.id, "modified", 1);
                 }
               });
           }
@@ -1248,6 +1265,10 @@
             .done(function (data, textStatus, jqXHR) {
               if (data.status == 'success') {
                 var r = data.realty;
+                $this.data('id', r.id);
+                $this.data('prev_id', id);
+                $this.attr('data-id', r.id);
+                $this.attr('data-prev_id', id);
                 // Update row data in realty table
                 for (var j = 0; j < realtyTableConf.fields.length; j++) {
                   var f = realtyTableConf.fields[j];
@@ -1284,15 +1305,19 @@
             .done(function (data, textStatus, jqXHR) {
               if (data.status == 'success') {
                 var r = data.realty;
+                $this.data('id', r.id);
+                $this.data('prev_id', id);
+                $this.attr('data-id', r.id);
+                $this.attr('data-prev_id', id);
                 // Update row data in realty table
                 for (var j = 0; j < realtyTableConf.fields.length; j++) {
                   var f = realtyTableConf.fields[j];
                   $('td:nth-child(' + (j + 1) + ')', $this).html(f.val(r));
                 }
-                media_export[id] = export_array;
+                media_export[r.id] = export_array;
                 $this.removeClass('selected').addClass('modified');
-                putToHistory(id, "selected", 0);
-                putToHistory(id, "modified", 1);
+                putToHistory(r.id, "selected", 0);
+                putToHistory(r.id, "modified", 1);
               }
             }).fail(function (jqXHR, textStatus, errorThrown) {});
           ;
@@ -1595,12 +1620,12 @@
                 % }
                 % if ($self->stash('user')->{role} eq 'top') {
                 %   my @owned = ();
-                %   for my $m (@{Rplus::Model::User::Manager->get_objects(query => [role => ['manager'], delete_date => undef], sort_by => 'name')}) {
+                %   for my $m (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('user')->{account_id}, role => ['manager'], delete_date => undef], sort_by => 'name')}) {
                       <li class="dropdown-submenu"><a href="#" data-val="<%= $m->id %>" data-type="text"><%= $m->name %></a><ul class="dropdown-menu dropdown-context dropdown-context-sub compressed-context" style="bottom: auto;">
                         <li><a href="#" data-val="a<%= $m->id %>" data-type="text"> Все агенты</a></li>
                 %     if (scalar (@{$m->subordinate})) {
                 %       push @owned, @{$m->subordinate};
-                %       for my $a (@{Rplus::Model::User::Manager->get_objects(query => [id => [$m->subordinate], delete_date => undef], sort_by => 'name')}) {
+                %       for my $a (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('user')->{account_id}, id => [$m->subordinate], delete_date => undef], sort_by => 'name')}) {
                           <li><a href="#" data-val="<%= $a->id %>" data-type="text"><%= $a->name %></a></li>
                 %       }
                 %     }
@@ -1609,7 +1634,7 @@
                 % } elsif ($self->stash('user')->{role} eq 'manager') {
                 <li><a href="#" data-val="a<%= $self->stash('user')->{id} %>" data-type="text"><strong> Мои агенты</strong></a></li>
                 %   if (scalar (@{$self->stash('user')->{subordinate}})) {
-                %     for my $a (@{Rplus::Model::User::Manager->get_objects(query => [id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
+                %     for my $a (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('user')->{account_id}, id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
                         <li><a href="#" data-val="<%= $a->id %>" data-type="text"><%= $a->name %></a></li>
                 %     }
                 %   }

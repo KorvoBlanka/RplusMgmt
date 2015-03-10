@@ -30,21 +30,21 @@
       })
         .done(function (data, textStatus, jqXHR) {
 
-          $('[name="email-smtp"]:input').val(data.val['email-smtp']);
-          $('[name="email-user"]:input').val(data.val['email-user']);
-          $('[name="email-password"]:input').val(data.val['email-password']);
-          $('[name="email-port"]:input').val(data.val['email-port']);
+          $('[name="email-smtp"]:input').val(data.options['email-smtp']);
+          $('[name="email-user"]:input').val(data.options['email-user']);
+          $('[name="email-password"]:input').val(data.options['email-password']);
+          $('[name="email-port"]:input').val(data.options['email-port']);
 
-          if (data.val['active'] == '1' || data.val['active'] == 'true') {
+          if (data.options['active'] == '1' || data.options['active'] == 'true') {
             $('[name="active"]:input').prop('checked', true);
           } else {
             $('[name="active"]:input').prop('checked', false);
           }
-          $('[name="msg-count"]:input').val(data.val['msg-count']);
-          $('[name="company"]:input').val(data.val['company']);
-          $('[name="contact_info"]:input').val(data.val['contact_info']);
-          $('[name="login"]:input').val(data.val['login']);
-          $('[name="password"]:input').val(data.val['password']);
+          $('[name="msg-count"]:input').val(data.options['msg-count']);
+          $('[name="company"]:input').val(data.options['company']);
+          $('[name="contact_info"]:input').val(data.options['contact_info']);
+          $('[name="login"]:input').val(data.options['login']);
+          $('[name="password"]:input').val(data.options['password']);
           
         }).fail(function (jqXHR, textStatus, errorThrown) {
           alert('<%= loc q{An error occurred while fetching options} %>');

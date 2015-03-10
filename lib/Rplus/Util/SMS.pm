@@ -4,19 +4,16 @@ use Rplus::Modern;
 
 use Rplus::Model::SmsMessage;
 use Rplus::Model::SmsMessage::Manager;
-use Rplus::Model::RuntimeParam;
-use Rplus::Model::RuntimeParam::Manager;
 
 use Mojo::UserAgent;
 use JSON;
 
 sub send {
-    my ($class, $self, $phone_num, $message_text, $config) = @_;
+    my ($class, $self, $config, $acc_id, $phone_num, $message_text) = @_;
 
-    return unless $config->{active};
+    return 'not activated' unless $config->{active};
 
-
-    my $sms = Rplus::Model::SmsMessage->new(phone_num => $phone_num, text => $message_text)->save;
+    my $sms = Rplus::Model::SmsMessage->new(phone_num => $phone_num, text => $message_text, account_id => $acc_id,)->save;
 
     $self->app->log->debug(sprintf("Sending SMS: (%s) %s => %s", -1, $phone_num, $message_text));
 

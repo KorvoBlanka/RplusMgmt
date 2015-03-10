@@ -25,7 +25,6 @@ use Data::Dumper;
 my $parser = DateTime::Format::Strptime->new( pattern => '%FT%T' );
 my $parser_tz = DateTime::Format::Strptime->new( pattern => '%FT%T%z' );
 
-
 run(Rplus::Util::Config::get_config());
 
 sub run {
@@ -45,7 +44,7 @@ sub run {
         }
     }
 
-    my $ua = Mojo::UserAgent->new;    
+    my $ua = Mojo::UserAgent->new;
     
     my $rt_param = Rplus::Model::RuntimeParam->new(key => 'import_param')->load();
     my $last_ts;
@@ -58,15 +57,16 @@ sub run {
     $rt_param->save(chages_only => 1);
 
     #my $rt_param = Rplus::Model::RuntimeParam->new(key => 'opt_var')->load();
-    
-    my $import_param = Rplus::Model::RuntimeParam->new(key => 'import')->load();
-    my $import_obj = from_json($import_param->{value});
+    my $import_obj = from_json($rt_param->{value});
 
-    my $tx = $ua->get('http://rplusmgmt.com/api/account/get_by_domain?subdomain=' . $config->{'subdomain'});
-    my $acc_data;
-    if (my $res = $tx->success) {
-      $acc_data = $res->json;
-    }
+    my $acc_data = {
+        user_count => 100,
+        blocked => 0,
+        phone_prefix => '4212',
+        mode => 'all',
+        realty_buffer_url => 'http://192.168.5.1:3000',
+    };
+
 
     while (my ($key, $value) = each $import_obj) {
         my @t = split '-', $key;

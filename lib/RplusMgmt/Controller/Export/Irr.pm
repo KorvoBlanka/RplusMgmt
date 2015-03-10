@@ -10,6 +10,8 @@ use Rplus::Model::RuntimeParam;
 use Rplus::Model::RuntimeParam::Manager;
 use Rplus::Model::Photo;
 use Rplus::Model::Photo::Manager;
+use Rplus::Model::Option;
+use Rplus::Model::Option::Manager;
 
 use Mojo::Util qw(trim);
 use File::Temp qw(tmpnam);
@@ -977,6 +979,8 @@ my %templates_hash = (
 sub index {
     my $self = shift;
 
+    my $acc_id = $self->session('user')->{account_id};
+
     return $self->render_not_found unless $self->req->method eq 'POST';
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => 'export');
 
@@ -991,14 +995,14 @@ sub index {
 
     my $meta = from_json($media->metadata);
 
-    my $rt_param = Rplus::Model::RuntimeParam->new(key => 'export')->load();
-    if ($rt_param) {
-        my $config = from_json($rt_param->{value});
-        $contact_phones = $config->{'irr-phones'} ? trim($config->{'irr-phones'}) : '';
-        $agent_phone = 1 if $config->{'irr-agent-phone'};
+    my $options = Rplus::Model::Option->new(account_id => $acc_id)->load();
+    if ($options) {
+        my $e_opt = from_json($options->{options})->{'export'};
+        $contact_phones = $e_opt->{'irr-phones'} ? trim($e_opt->{'irr-phones'}) : '';
+        $agent_phone = 1 if $e_opt->{'irr-agent-phone'};
         $contact_name = '';
-        $contact_email = $config->{'irr-email'} ? $config->{'irr-email'} : '';
-        $site_url = $config->{'irr-url'} ? $config->{'irr-url'} : '';        
+        $contact_email = $e_opt->{'irr-email'} ? $e_opt->{'irr-email'} : '';
+        $site_url = $e_opt->{'irr-url'} ? $e_opt->{'irr-url'} : '';        
     }
 
     #unlink($meta->{'prev_file'}) if $meta->{'prev_file'};
@@ -1046,6 +1050,7 @@ sub index {
                     @tc,
                 ],
             export_media => {'&&' => $media->id},
+            account_id => $acc_id,
         ],
         sort_by => 'id ASC',
         require_objects => ['type', 'offer_type'],

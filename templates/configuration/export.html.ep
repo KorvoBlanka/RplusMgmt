@@ -29,26 +29,26 @@
       })
         .done(function (data, textStatus, jqXHR) {
 
-          $('#formExportAvito [name="company"]:input').val(data.val['avito-company']);
-          $('#formExportAvito [name="phone"]:input').val(data.val['avito-phone']);
-          $('#formExportAvito [name="agent-phone"]:input').attr('checked', (data.val['avito-agent-phone'] == 'true' || data.val['avito-agent-phone'] == '1') ? true : false);
-          $('#formExportAvito [name="email"]:input').val(data.val['avito-email']);
+          $('#formExportAvito [name="company"]:input').val(data.options['avito-company']);
+          $('#formExportAvito [name="phone"]:input').val(data.options['avito-phone']);
+          $('#formExportAvito [name="agent-phone"]:input').attr('checked', (data.options['avito-agent-phone'] == 'true' || data.options['avito-agent-phone'] == '1') ? true : false);
+          $('#formExportAvito [name="email"]:input').val(data.options['avito-email']);
 
-          $('#formExportVnh [name="phones"]:input').val(data.val['vnh-phones']);
-          $('#formExportVnh [name="agent-phone"]:input').attr('checked', (data.val['vnh-agent-phone'] == 'true' || data.val['vnh-agent-phone'] == '1') ? true : false);
-          $('#formExportVnh [name="company"]:input').val(data.val['vnh-company']);
+          $('#formExportVnh [name="phones"]:input').val(data.options['vnh-phones']);
+          $('#formExportVnh [name="agent-phone"]:input').attr('checked', (data.options['vnh-agent-phone'] == 'true' || data.options['vnh-agent-phone'] == '1') ? true : false);
+          $('#formExportVnh [name="company"]:input').val(data.options['vnh-company']);
 
-          $('#formExportFarpost [name="phones"]:input').val(data.val['farpost-phones']);
-          $('#formExportFarpost [name="agent-phone"]:input').attr('checked', (data.val['farpost-agent-phone'] == 'true' || data.val['farpost-agent-phone'] == '1') ? true : false);
+          $('#formExportFarpost [name="phones"]:input').val(data.options['farpost-phones']);
+          $('#formExportFarpost [name="agent-phone"]:input').attr('checked', (data.options['farpost-agent-phone'] == 'true' || data.options['farpost-agent-phone'] == '1') ? true : false);
 
-          $('#formExportPresent [name="phones"]:input').val(data.val['present-phones']);
-          $('#formExportPresent [name="agent-phone"]:input').attr('checked', (data.val['present-agent-phone'] == 'true' || data.val['present-agent-phone'] == '1') ? true : false);
-          $('#formExportPresent [name="add_description_words"]:input').val(data.val['present-descr']);
+          $('#formExportPresent [name="phones"]:input').val(data.options['present-phones']);
+          $('#formExportPresent [name="agent-phone"]:input').attr('checked', (data.options['present-agent-phone'] == 'true' || data.options['present-agent-phone'] == '1') ? true : false);
+          $('#formExportPresent [name="add_description_words"]:input').val(data.options['present-descr']);
 
-          $('#formExportIrr [name="phones"]:input').val(data.val['irr-phones']);
-          $('#formExportIrr [name="agent-phone"]:input').attr('checked', (data.val['irr-agent-phone'] == 'true' || data.val['irr-agent-phone'] == '1') ? true : false);
-          $('#formExportIrr [name="email"]:input').val(data.val['irr-email']);
-          $('#formExportIrr [name="url"]:input').val(data.val['irr-url']);
+          $('#formExportIrr [name="phones"]:input').val(data.options['irr-phones']);
+          $('#formExportIrr [name="agent-phone"]:input').attr('checked', (data.options['irr-agent-phone'] == 'true' || data.options['irr-agent-phone'] == '1') ? true : false);
+          $('#formExportIrr [name="email"]:input').val(data.options['irr-email']);
+          $('#formExportIrr [name="url"]:input').val(data.options['irr-url']);
 
         }).fail(function (jqXHR, textStatus, errorThrown) {
           alert('<%= loc q{An error occurred while fetching options} %>');

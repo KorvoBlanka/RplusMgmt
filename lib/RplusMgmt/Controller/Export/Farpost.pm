@@ -10,8 +10,8 @@ use Rplus::Model::Landmark;
 use Rplus::Model::Landmark::Manager;
 use Rplus::Model::Photo;
 use Rplus::Model::Photo::Manager;
-use Rplus::Model::RuntimeParam;
-use Rplus::Model::RuntimeParam::Manager;
+use Rplus::Model::Option;
+use Rplus::Model::Option::Manager;
 
 use Mojo::Util qw(trim);
 use File::Temp qw(tmpnam);
@@ -21,6 +21,8 @@ use Data::Dumper;
 
 sub index {
     my $self = shift;
+
+    my $acc_id = $self->session('user')->{account_id};
 
     return $self->render_not_found unless $self->req->method eq 'POST';
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => 'export');
@@ -44,12 +46,15 @@ sub index {
     my $conf_phones = '';
     my $agent_phone = 0;
 
-    my $rt_param = Rplus::Model::RuntimeParam->new(key => 'export')->load();
-    if ($rt_param) {
-        my $config = from_json($rt_param->{value});
-        $conf_phones = $config->{'farpost-phones'} ? trim($config->{'farpost-phones'}) : '';
-        $agent_phone = 1 if $config->{'present-agent-phone'};
+    my $meta = from_json($media->metadata);
+
+    my $options = Rplus::Model::Option->new(account_id => $acc_id)->load();
+    if ($options) {
+        my $e_opt = from_json($options->{options})->{'export'};
+        $conf_phones = $e_opt->{'farpost-phones'} ? trim($e_opt->{'farpost-phones'}) : '';
+        $agent_phone = 1 if $e_opt->{'present-agent-phone'};
     }
+
 
     unlink($meta->{'prev_file'}) if $meta->{'prev_file'};
     my $file = tmpnam();
@@ -107,6 +112,7 @@ sub index {
                         offer_type_code => $offer_type_code,
                         type_code => $types,
                         export_media => {'&&' => $media->id},
+                        account_id => $acc_id,
                     ],
                     sort_by => 'address_object.expanded_name',
                     require_objects => ['type', 'offer_type'],

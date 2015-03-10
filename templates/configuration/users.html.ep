@@ -155,7 +155,7 @@
             xhtml += '<a class="pull-left" href="#">';
             xhtml += '<div class="media user-card">';
             if (x.photo_url.length > 0) {
-              xhtml += '<img src="' + '<%= $self->config->{'storage'}->{'url'} %>' + x.photo_url + '" style="height: 110px; width: 110px;" class="img-thumbnail">';
+              xhtml += '<img src="' + '<%= $self->config->{'storage'}->{'url'} %>' + '/' + '<%= $self->session->{'user'}->{'account_name'} %>' + x.photo_url + '" style="height: 110px; width: 110px;" class="img-thumbnail">';
             } else {
               xhtml += '<img data-src="holder.js/110x110/text:<%= ucfloc q{no photo} %>" class="img-thumbnail">';
             }
@@ -224,7 +224,7 @@
           $('#userCard_modal').modal('show');
 
           if (data.photo_url.length > 0) {
-            $('#user-photo').attr('src', '<%= $self->config->{'storage'}->{'url'} %>' + data.photo_url);
+            $('#user-photo').attr('src', '<%= $self->config->{'storage'}->{'url'} %>' + '/' + '<%= $self->session->{'user'}->{'account_name'} %>' + data.photo_url);
             $('#user-photo').data('photo_url', data.photo_url);
           } else {
             $('#user-photo').attr('data-src', 'holder.js/200x200/text:<%= ucfloc q{no photo} %>');

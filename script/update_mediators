@@ -14,13 +14,27 @@ use Rplus::Model::MediatorCompany::Manager;
 
 use Data::Dumper;
 
+use Rplus::Util::Mediator qw(delete_mediator_by_phone);
+
 say 'checking realty';
-say update_mediators() . ' objects updated';
+say delete_mediators('not_med.txt') . ' objects updated';
+
+sub check_mediators {
+    my %count_hash = ();
+    my $mediator_iter = Rplus::Model::Mediator::Manager->get_objects_iterator(query => [delete_date => undef], require_objects => ['company']);
+    while (my $x = $mediator_iter->next) {
+        my $count = Rplus::Model::Realty::Manager->get_objects_count(query => [\("owner_phones && '{" . $x->phone_num . "}'"), delete_date => undef,]);
+        $count_hash{$count} = 0 unless $count_hash{$count};
+        $count_hash{$count} += 1;
+    }
+
+    say Dumper %count_hash;
+
+    return 0;
+}
 
 sub update_mediators {
     my $count = 0;
-    #my $mediator_iter = Rplus::Model::Mediator::Manager->get_objects_iterator(query => [delete_date => undef], require_objects => ['company']);
-    #while (my $x = $mediator_iter->next) {
         my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(query => [delete_date => undef,]);
         while (my $realty = $realty_iter->next) {
             my $a = $realty->owner_phones;
@@ -49,4 +63,17 @@ sub update_mediators {
         }
 
     return $count;
+}
+
+sub delete_mediators {
+    my $filename = shift;
+
+    open (my $fh, $filename);
+    while (<$fh>) {
+        chomp;
+        delete_mediator_by_phone($_);
+    }
+    close $fh;
+
+    return 0;
 }

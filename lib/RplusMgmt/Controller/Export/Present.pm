@@ -8,8 +8,8 @@ use Rplus::Model::Realty;
 use Rplus::Model::Realty::Manager;
 use Rplus::Model::Landmark;
 use Rplus::Model::Landmark::Manager;
-use Rplus::Model::RuntimeParam;
-use Rplus::Model::RuntimeParam::Manager;
+use Rplus::Model::Option;
+use Rplus::Model::Option::Manager;
 
 use Mojo::Util qw(trim);
 use JSON;
@@ -18,6 +18,8 @@ use RTF::Writer;
 
 sub index {
     my $self = shift;
+
+    my $acc_id = $self->session('user')->{account_id};
 
     return $self->render_not_found unless $self->req->method eq 'POST';
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => 'export');
@@ -34,12 +36,12 @@ sub index {
     my $conf_phones = '';
     my $agent_phone = 0;
 
-    my $rt_param = Rplus::Model::RuntimeParam->new(key => 'export')->load();
-    if ($rt_param) {
-        my $config = from_json($rt_param->{value});
-        $conf_phones = $config->{'present-phones'} ? trim($config->{'present-phones'}) : '';
-        $agent_phone = 1 if $config->{'present-agent-phone'};
-        $add_description_words = $config->{'present-descr'} ? $config->{'present-descr'} * 1 : 5;
+    my $options = Rplus::Model::Option->new(account_id => $acc_id)->load();
+    if ($options) {
+        my $e_opt = from_json($options->{options})->{'export'};
+        $conf_phones = $e_opt->{'present-phones'} ? trim($e_opt->{'present-phones'}) : '';
+        $agent_phone = 1 if $e_opt->{'present-agent-phone'};
+        $add_description_words = $e_opt->{'present-descr'} ? $e_opt->{'present-descr'} * 1 : 5;
     }
 
     unlink($meta->{'prev_file'}) if $meta->{'prev_file'};
@@ -79,6 +81,7 @@ sub index {
                         offer_type_code => $offer_type_code,
                         'type.category_code' => 'room',
                         export_media => {'&&' => $media->id},
+                        account_id => $acc_id,
                         ($l ? \("t1.landmarks && '{".$l->id."}'") : \("NOT (t1.landmarks && ARRAY(SELECT L.id FROM landmarks L WHERE L.type = 'present' AND L.delete_date IS NULL))")),
                     ],
                     sort_by => 'address_object.expanded_name',
@@ -160,6 +163,7 @@ sub index {
                         offer_type_code => $offer_type_code,
                         type_code => 'apartment_small',
                         export_media => {'&&' => $media->id},
+                        account_id => $acc_id,
                         ($l ? \("t1.landmarks && '{".$l->id."}'") : \("NOT (t1.landmarks && ARRAY(SELECT L.id FROM landmarks L WHERE L.type = 'present' AND L.delete_date IS NULL))")),
                     ],
                     sort_by => 'address_object.expanded_name',
@@ -245,6 +249,7 @@ sub index {
                             '!type_code' => 'apartment_small',
                             ($xrc ? (rooms_count => $xrc) : (rooms_count => {gt => 4})),
                             export_media => {'&&' => $media->id},
+                            account_id => $acc_id,
                             ($l ? \("t1.landmarks && '{".$l->id."}'") : \("NOT (t1.landmarks && ARRAY(SELECT L.id FROM landmarks L WHERE L.type = 'present' AND L.delete_date IS NULL))")),
                         ],
                         sort_by => 'address_object.expanded_name',
@@ -327,6 +332,7 @@ sub index {
                         offer_type_code => $offer_type_code,
                         'type.category_code' => 'house',
                         export_media => {'&&' => $media->id},
+                        account_id => $acc_id,
                         ($l ? \("t1.landmarks && '{".$l->id."}'") : \("NOT (t1.landmarks && ARRAY(SELECT L.id FROM landmarks L WHERE L.type = 'present' AND L.delete_date IS NULL))")),
                     ],
                     sort_by => 'address_object.expanded_name',

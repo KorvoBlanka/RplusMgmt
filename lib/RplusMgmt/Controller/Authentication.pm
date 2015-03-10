@@ -2,10 +2,13 @@ package RplusMgmt::Controller::Authentication;
 
 use Mojo::Base 'Mojolicious::Controller';
 
+use Rplus::Model::Account;
+use Rplus::Model::Account::Manager;
 use Rplus::Model::User;
 use Rplus::Model::User::Manager;
 
 use JSON;
+use Data::Dumper;
 
 sub auth {
     my $self = shift;
@@ -19,34 +22,48 @@ sub auth {
 sub signin {
     my $self = shift;
 
+    my $account_name = $self->param('account_name');
     my $login = $self->param_n('login');
     my $password = $self->param('password');
     my $remember_me = $self->param_b('remember_me');
 
-    my $acc_data = $self->get_acc_data();
-
     return $self->render(json => {status => 'failed', reason => 'no_data'}) unless $login && defined $password;
 
-    my $user = Rplus::Model::User::Manager->get_objects(query => [login => $login, password => $password, delete_date => undef])->[0];
+    my $account = Rplus::Model::Account::Manager->get_objects(
+        query => [
+            name => $account_name, del_date => undef
+        ],
+        require_objects => ['location'],
+    )->[0];
+    return $self->render(json => {status => 'failed', reason => 'account_not_found'}) unless $account;
 
-    return $self->render(json => {status => 'failed', reason => 'no_connection'}) if $acc_data->{no_connection} == 1;
-    return $self->render(json => {status => 'failed', reason => 'not_found'}) unless $user;
-    return $self->render(json => {status => 'failed', reason => 'not_found'}) unless $acc_data;
-    return $self->render(json => {status => 'failed', reason => 'no_money'}) if $acc_data->{blocked} == 1;
-    return $self->render(json => {status => 'failed', reason => 'user_limit'}) if $self->log_in_check($acc_data->{user_count} * 1, $user->id) == 0;
+    say $account->id;
+    my $user = Rplus::Model::User::Manager->get_objects(query => [account_id => $account->id, login => $login, password => $password, delete_date => undef])->[0];
+    return $self->render(json => {status => 'failed', reason => 'user_not_found'}) unless $user;
+
+    return $self->render(json => {status => 'failed', reason => 'no_money'}) if $account->{balance} < 0;
+    return $self->render(json => {status => 'failed', reason => 'user_limit'}) if $self->log_in_check($account->{user_count} * 1, $user->id) == 0;
+
+    my $coords = from_json($account->location->map_coords);
+
+    say Dumper $coords;
 
     $self->session->{'user'} = {
+        account_name => $account_name,
+        account_id => $account->{id},
         id => $user->id,
         login => $user->login,
         role => $user->role,
-        mode => $acc_data->{mode},
 
-        location_id => $acc_data->{location_id},
-        city_guid => $acc_data->{city_guid},
-        phone_prefix => $acc_data->{phone_prefix},
-        map_lat => $acc_data->{map_lat},
-        map_lng => $acc_data->{map_lng},
+        mode => $account->mode,
+        location_id => $account->location_id,
+        city_guid => $account->location->city_guid,
+        phone_prefix => $account->location->phone_prefix,
+        map_lat => $coords->{lat},
+        map_lng => $coords->{lng},
     };
+
+    say Dumper $self->session->{'user'};
 
     $self->session(sid => int(rand(100000)));
 
@@ -58,7 +75,7 @@ sub signin {
 
     $self->log_in($user->id);
 
-    return $self->render(json => {status => 'success'});
+    return $self->render(json => {status => 'success', account_id => $account->{id}});
 }
 
 sub signout {

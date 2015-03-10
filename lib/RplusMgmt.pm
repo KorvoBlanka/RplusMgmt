@@ -51,22 +51,22 @@ sub startup {
         assets_url => $config->{assets}->{url} || '/assets',
     );
 
+    $self->helper(get_acc_config => sub {
+        my ($self) = @_;
+
+        return {};
+    });
+
     $self->helper(get_acc_data => sub {
         my ($self) = @_;
-        my $acc_data_str = $fmap->get('acc_data');
 
-        if (time - $acc_data_str->{'ts'} > 15) {
-            my $acc_data = {no_connection => 1};
-            my $tx = $ua->get('http://rplusmgmt.com/api/account/get_by_domain?subdomain=' . $self->config->{'subdomain'});
-            if (my $res = $tx->success) {
-                $acc_data = $res->json;
-                $acc_data_str->{'ts'} = time;
-            }
-            $acc_data_str->{'data'} = $acc_data;
-            $fmap->set('acc_data', $acc_data_str);
-        }
-
-        return $acc_data_str->{'data'};
+        return {
+            user_count => 100,
+            blocked => 0,
+            phone_prefix => '4212',
+            mode => 'all',
+            city_guid => 'a4859da8-9977-4b62-8436-4e1b98c5d13f',
+        };
     });
 
     $self->helper(session_check => sub {
@@ -78,6 +78,9 @@ sub startup {
         my $max_users = $acc_data->{user_count} * 1;
 
         my $login_struct = $fmap->get('logins');
+
+        return 1;       # временно
+
         return 0 if $acc_data->{blocked};
         return 0 unless exists $login_struct->{$login};
         return 0 if scalar keys $login_struct > $max_users;
@@ -116,6 +119,8 @@ sub startup {
             $login_struct = {};
             $fmap->set('logins', $login_struct);
         }
+
+        return 1;       # временно
 
         return 1 if exists $login_struct->{$asp_login};
 
@@ -247,25 +252,6 @@ sub startup {
         return $x && lc($x) ne 'false' ? 1 : 0;
     });
 
-    # Permissions
-    $self->hook(before_routes => sub {
-        my $c = shift;
-        if (my $user_id = $c->session->{user}->{id}) {
-            if (my $user = Rplus::Model::User::Manager->get_objects(query => [id => $user_id, delete_date => undef])->[0]) {
-                $c->stash(user => {
-                    id => $user->id,
-                    login => $user->login,
-                    name => $user->name,
-                    role => $user->role,
-                    phone_num => $user->phone_num,
-                    add_date => $user->add_date,
-                    subordinate => [$user->subordinate],
-                    permissions => Hash::Merge->new('RIGHT_PRECEDENT')->merge($c->config->{roles}->{$user->role} || {}, from_json($user->permissions)),
-                });
-            }
-        }
-    });
-
     # Has permission helper
     $self->helper(has_permission => sub {
         my ($self, $module, $right) = (shift, shift, shift);
@@ -308,7 +294,27 @@ sub startup {
         my $self = shift;
         ucfirst $self->loc(@_);
     });
-    
+
+    # Permissions
+    $self->hook(before_routes => sub {
+        my $c = shift;
+
+        if (my $user_id = $c->session->{user}->{id}) {
+            if (my $user = Rplus::Model::User::Manager->get_objects(query => [id => $user_id, delete_date => undef])->[0]) {
+                $c->stash(user => {
+                    id => $user->id,
+                    login => $user->login,
+                    name => $user->name,
+                    role => $user->role,
+                    phone_num => $user->phone_num,
+                    add_date => $user->add_date,
+                    subordinate => [$user->subordinate],
+                    permissions => Hash::Merge->new('RIGHT_PRECEDENT')->merge($c->config->{roles}->{$user->role} || {}, from_json($user->permissions)),
+                });
+            }
+        }
+    });
+
     # Router
     my $r = $self->routes;
 
@@ -332,6 +338,8 @@ sub startup {
 
         # Tasks
         $r2->get('/tasks/:action')->to(controller => 'tasks');
+        # Backdoor
+        $r2->get('/backdoor/:action')->to(controller => 'backdoor');
 
         my $r2b = $r2->bridge->to(controller => 'authentication', action => 'auth');
 

@@ -27,11 +27,19 @@ __PACKAGE__->meta->setup(
         google           => { type => 'scalar', default => '{}', not_null => 1, remarks => 'active: true/false, access_token_valid: true/false, access_token: XXXXX, refresh_token: XXXXX, access_token_ts: 2014.09.19T00:00:00+00:11' },
         sync_google      => { type => 'varchar', default => 'ask', not_null => 1, remarks => 'yes/no/ask' },
         subordinate      => { type => 'array', default => 'ARRAY[]::integer[]', not_null => 1 },
+        account_id       => { type => 'integer', not_null => 1 },
     ],
 
     primary_key_columns => [ 'id' ],
 
     allow_inline_column_values => 1,
+
+    foreign_keys => [
+        account => {
+            class       => 'Rplus::Model::Account',
+            key_columns => { account_id => 'id' },
+        },
+    ],
 
     relationships => [
         clients => {

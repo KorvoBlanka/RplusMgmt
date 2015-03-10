@@ -22,6 +22,7 @@ __PACKAGE__->meta->setup(
         attempts_count     => { type => 'integer', default => '0', not_null => 1, remarks => 'Количество попыток отправки' },
         last_error_msg     => { type => 'varchar', length => 512, remarks => 'Последнее сообщение об ошибке' },
         metadata           => { type => 'scalar', default => '{}', not_null => 1, remarks => 'Метаданные' },
+        account_id         => { type => 'integer', not_null => 1 },
     ],
 
     primary_key_columns => [ 'id' ],
