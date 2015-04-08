@@ -198,6 +198,10 @@ sub save {
         return $self->render(json => {errors => \@errors}, status => 400);
     }
 
+	if (Rplus::Model::User::Manager->get_objects_count(query => [account_id => $acc_id, '!id' => $user->id, login => $self->param_n('login'), delete_date => undef]) > 0) {
+		return $self->render(json => {error => 'bad_login'}, status => 200)
+	}
+	
     # Input params
     my $login = $self->param_n('login');
     my $password = $self->param_n('password');
@@ -210,7 +214,7 @@ sub save {
     my $photo_url = $self->param_n('photo_url');
 
     my @subordinates = $self->param('subordinates[]');
-
+	
     my $sip = {};
     $sip->{sip_host} = $self->param_n('sip_host');
     $sip->{sip_login} = $self->param_n('sip_login');

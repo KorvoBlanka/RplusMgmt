@@ -212,6 +212,10 @@
   .disabled {
     pointer-events: none;
   }
+  
+  .glyphicon.mls {
+      color: #ace44b;
+  }
 </style>
 % end
 
@@ -245,6 +249,9 @@
       fields: [
         {id: "state", name: "", menuName: "<%= ucfloc 'state' %>", sortName: "state.name", visible: true, val: function (r) {
           var classes = [Rplus.Table['realty_states'][r.state_code].metadata['icon-class']];
+          if (r.multylisting) {
+              classes.push('mls');
+          }
           return '<span class="glyphicon ' + classes.join(' ') + '"></span>';
         }},
         {id: "type", name: "<%= ucfloc 'type' %>", sortName: "type.name", visible: true, val: function (r) {
@@ -303,7 +310,7 @@
         
         {id: "mediator", name: "Предложение", visible: true, style: "width: 120px; font-size: 12px; white-space: normal;", val: function (r) {
           return r.mediator_company ? r.mediator_company : 'Собственник';
-        }},        
+        }},
         
         {id: "owner", name: "Контакты", visible: true, style: "white-space: nowrap;", val: function (r) {
           return r.owner_phones ? r.owner_phones.map(function (x) { return Rplus.Util.formatPhoneNum(x) }).join('<br>') : '';
@@ -311,6 +318,18 @@
         {id: "price", name: "<%= ucfloc 'price' %>", sortName: "price", visible: false, val: function (r) {
           return r.price || '';
         }},
+        
+        {id: "mls_price", name: "MLS", sortName: "mls_price", visible: false, val: function (r) {
+          var p_type = 'т. руб.';
+          if (r.mls_price_type == 'perc') {
+            p_type = '%';
+          }
+          if (r.mls_price) {
+            return r.mls_price + ' ' + p_type;
+          }
+          return '';
+        }},
+        
         {id: "price_per_meter", name: "Цена кв.м", sortName: "CASE WHEN price IS NULL THEN 1 ELSE price END / CASE WHEN square_total IS NULL THEN 10000000 ELSE square_total END", visible: true, val: function (r) {
           if (r.square_total && r.price) {
             return (r.price / r.square_total).toFixed(3);
@@ -433,79 +452,96 @@
       localStorage["history"] = JSON.stringify(history);
     }
     
+    // TODO: переделать этот трэшак
     function createContextMenu() {
-      var context_cb = function(e){
-        var $menu_export = $("#el_export");
-        var $menu_states = $("#el_states");
+        
+        var $assign_e = $("#el_assign");
+        
+        var $delete_e = $("#el_delete");
 
-        $("#el_assign").removeClass('disabled');
-        $("#el_delete").removeClass('disabled');
-        $("#el_open").removeClass('disabled');
-        $("#el_agents").removeClass('disabled');
-        $menu_states.removeClass('disabled');
-        $menu_export.removeClass('disabled');
+        var $control_els = $(".control_els");     // state, agent, media_export
+        var $menu_els = $(".menu_els");     // state, agent, media_export
+        
+        var context_cb = function(e){
+        
+            var role = "<%= $self->stash('user')->{role} %>";
+            var can_control = false;
+            var can_delete = false;
+            var can_assign = false;
 
-        var $menu_el = $(".export-check");
-        $menu_el.each(function () {
-          var $this = $(this);
-          $this.removeClass("export-check-visible").removeClass("export-check-grayed").addClass("export-check-hidden");
-        });
+            var $menu_states = $('#el_states');
+            var $menu_export = $('#el_export');
 
-        var $selected = $('#realtyTable > tbody > tr.selected');
-        var ids = new Array();
-        $selected.each(function () {
-          var $this = $(this);
-          var id = $this.data('id');
-          var obj = $this.data('obj');
+            $("#el_assign").removeClass('disabled');
+            $("#el_delete").removeClass('disabled');
+            $("#el_open").removeClass('disabled');
+            $("#el_agents").removeClass('disabled');
+            $menu_states.removeClass('disabled');
+            $menu_export.removeClass('disabled');            
+            
+            // set export checkmarks
+            var $menu_el = $(".export-check");
+            $menu_el.each(function () {
+                var $this = $(this);
+                $this.removeClass("export-check-visible").removeClass("export-check-grayed").addClass("export-check-hidden");
+            });
 
-          var s_id = Rplus.Table['users'][obj.agent_id] ? Rplus.Table['users'][obj.agent_id].superior : null;
+            var $selected = $('#realtyTable > tbody > tr.selected');
+            var ids = new Array();
+            $selected.each(function () {
+                var $this = $(this);
+                var id = $this.data('id');
+                var obj = $this.data('obj');
 
-          var media_export_row = media_export[id];
-          for (var id_key in media_export_row) {
-            var val = media_export_row[id_key];
-            if (ids[val] === undefined) {
-              ids[val] = 1;
-            } else {
-              ids[val] += 1;
-            }
-          }
-          for (var id_key in ids) {
-            if (ids[id_key] == $selected.length) {
-              $(".export-check" + id_key).removeClass("export-check-hidden").removeClass("export-check-grayed").addClass("export-check-visible");
-            } else {
-              $(".export-check" + id_key).removeClass("export-check-hidden").removeClass("export-check-visible").addClass("export-check-grayed");
-            }
-          }
+                var s_id = Rplus.Table['users'][obj.agent_id] ? Rplus.Table['users'][obj.agent_id].superior : null;
 
-          if ("<%= $self->stash('user')->{role} %>" == 'top' || ("<%= $self->stash('user')->{role} %>" == 'manager' && (!obj.agent_id || s_id == "<%= $self->stash('user')->{id} %>"))) {
+                var media_export_row = media_export[id];
+                for (var id_key in media_export_row) {
+                    var val = media_export_row[id_key];
+                    if (ids[val] === undefined) {
+                        ids[val] = 1;
+                    } else {
+                        ids[val] += 1;
+                    }
+                }
+                for (var id_key in ids) {
+                    if (ids[id_key] == $selected.length) {
+                        $(".export-check" + id_key).removeClass("export-check-hidden").removeClass("export-check-grayed").addClass("export-check-visible");
+                    } else {
+                        $(".export-check" + id_key).removeClass("export-check-hidden").removeClass("export-check-visible").addClass("export-check-grayed");
+                    }
+                }
+                //
+          
+                if (role == 'top' || role == 'manager' && (!obj.agent_id || s_id == "<%= $self->stash('user')->{id} %>")) {
 
-          } else {
-            if (obj.agent_id == null) {
-              $("#el_assign").removeClass('disabled');
+                } else {
+                    if (obj.agent_id == null) {
+                        $("#el_assign").removeClass('disabled');
 
-              $menu_export.addClass('disabled');
-              $menu_states.addClass('disabled');
-              $("#el_delete").addClass('disabled');
+                        $menu_export.addClass('disabled');
+                        $menu_states.addClass('disabled');
+                        $("#el_delete").addClass('disabled');
+                    } else {
+                        $("#el_assign").addClass('disabled');
+                        $("#el_agents").addClass('disabled');
+                        if (obj.agent_id != <%= $self->stash('user')->{id} %>) {
+                            $menu_export.addClass('disabled');
+                            $menu_states.addClass('disabled');
+                            $("#el_delete").addClass('disabled');
+                        }
+                    }
+                } 
+            });
 
-            } else {
-              $("#el_assign").addClass('disabled');
-              $("#el_agents").addClass('disabled');
-              if (obj.agent_id != <%= $self->stash('user')->{id} %>) {
+            var state_code = $('[data-filter="state_code"]').data('val');
+            if (state_code == 'multy') {
                 $menu_export.addClass('disabled');
                 $menu_states.addClass('disabled');
                 $("#el_delete").addClass('disabled');
-              }
+                $("#el_agents").addClass('disabled');
             }
-          } 
-          if($this.hasClass('opened')) {
-            $menu_export.addClass('disabled');
-            $menu_states.addClass('disabled');
-            $("#el_delete").addClass('disabled');
-            $("#el_open").addClass('disabled');
-            $("#el_agents").addClass('disabled');
-          }
-        });
-      };
+        };
       
       context.init({preventDoubleContext: true, compress: true, above: 'auto',}, context_cb);
       context.attach('#realtyTable', [
@@ -575,6 +611,7 @@
         % }
         '</span>'},
         {divider: true},
+        {text: '<span class="glyphicon glyphicon-send"></span>  Написать сообщение', element_id: 'el_chat', data_action: 'start-chat',},
         {text: '<span class="glyphicon glyphicon-print"></span>  Печать'},
       ]);
     }
@@ -1154,6 +1191,21 @@
       });
 
       // Open realty object card
+      $('[data-action="start-chat"]').click(function (e) {
+        var $selected = $('#realtyTable > tbody > tr.selected');
+        var obj = $selected.data('obj');
+        if (obj.agent_id && obj.agent_id != 10000) {
+            if (obj.agent_id == <%= $self->stash('user')->{id} %>) {
+                Rplus.Functions.showChat();
+            } else {
+                Rplus.Functions.startChatById(obj.agent_id);
+            }
+        } else {
+            Rplus.Functions.startChatByPhones(obj.owner_phones);
+        }
+      });
+      
+      // Open realty object card
       $('[data-action="realty-check"]').click(function (e) {
         var $selected = $('#realtyTable > tbody > tr.selected');
         var phones = [];
@@ -1259,7 +1311,7 @@
           var id = $this.data('id');
           $.ajax({
             type: "POST",
-            url: "/api/realty/update",
+            url: "/api/realty/set_color_tag",
             data: {id: id, color_tag_id: new_tag_id}
           })
             .done(function (data, textStatus, jqXHR) {
@@ -1657,11 +1709,12 @@
             <li class="dropdown" data-filter="state_code" data-val="">
               <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span role="display"><span class="glyphicon glyphicon-th-large"></span> <%= ucfloc 'any' %></span> <b class="caret"></b></a>
               <ul class="dropdown-menu">
-                <li><a href="#" data-val=""><span class="glyphicon glyphicon-th-large"></span> <%= ucfloc 'any' %></a></li>
-                % for my $x (@{Rplus::Model::RealtyState::Manager->get_objects(sort_by => 'id')}) {
-                  % my $metadata = from_json($x->metadata);
-                  <li><a href="#" data-val="<%= $x->code %>"><span class="glyphicon <%= $metadata->{'icon-class'} %>"></span> <%= $x->name %></a></li>
-                % }
+                  <li><a href="#" data-val=""><span class="glyphicon glyphicon-th-large"></span> Любой</a></li>
+                  <li><a href="#" data-val="raw"><span class="glyphicon glyphicon-unchecked"></span> Не обработано</a></li>
+                  <li><a href="#" data-val="work"><span class="glyphicon glyphicon-ok"></span> В работе</a></li>
+                  <li><a href="#" data-val="multy"><span class="glyphicon glyphicon-file"></span> Мультилистинг</a></li>                  
+                  <li><a href="#" data-val="suspended"><span class="glyphicon glyphicon-time"></span> Приостановлено</a></li>
+                  <li><a href="#" data-val="deleted"><span class="glyphicon glyphicon-trash"></span> Удалено</a></li>
               </ul>
             </li>
 

@@ -28,6 +28,7 @@ __PACKAGE__->meta->setup(
         sync_google      => { type => 'varchar', default => 'ask', not_null => 1, remarks => 'yes/no/ask' },
         subordinate      => { type => 'array', default => 'ARRAY[]::integer[]', not_null => 1 },
         account_id       => { type => 'integer', not_null => 1 },
+        contact_list     => { type => 'array', default => '{}', not_null => 1 },
     ],
 
     primary_key_columns => [ 'id' ],
@@ -42,6 +43,12 @@ __PACKAGE__->meta->setup(
     ],
 
     relationships => [
+        chat_messages => {
+            class      => 'Rplus::Model::ChatMessage',
+            column_map => { id => 'from' },
+            type       => 'one to many',
+        },
+
         clients => {
             class      => 'Rplus::Model::Client',
             column_map => { id => 'agent_id' },

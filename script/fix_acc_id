@@ -5,29 +5,33 @@ use lib "$FindBin::Bin/../lib";
 
 use Rplus::Modern;
 
-use Rplus::Model::Realty;
-use Rplus::Model::Realty::Manager;
-use Rplus::Model::User;
-use Rplus::Model::User::Manager;
+use Rplus::Model::Account;
+use Rplus::Model::Account::Manager;
+use Rplus::Model::Option;
+use Rplus::Model::Option::Manager;
 
-
+use JSON;
 use Data::Dumper;
 
 say 'fixxxxing!';
-say fix_acc_id() . ' object fixed';
+say fix_options() . ' object fixed';
 
-sub fix_acc_id {
+sub fix_options {
     my $count = 0;
 
-    my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(query => ['!agent_id' => undef, account_id => undef,]);
-    while (my $realty = $realty_iter->next) {
-        if ($realty->agent_id != 10000) {
-            my $user = Rplus::Model::User::Manager->get_objects(query => [id => $realty->agent_id])->[0];
+    my $account_iter = Rplus::Model::Account::Manager->get_objects_iterator(query => []);
+    while (my $account = $account_iter->next) {
+    
+        my $options = Rplus::Model::Option::Manager->get_objects(query => [account_id => $account->id])->[0];
+        
+        my $opt = from_json($options->options);
+        if ($opt->{multylisting}->{'company-name'}) {
+            say $opt->{multylisting}->{'company-name'};
+            $account->company_name($opt->{multylisting}->{'company-name'});
+            $account->save;
             $count ++;
-            $realty->account_id($user->account_id);
-            $realty->save(changes_only => 1);
         }
     }
-
+    
     return $count;
 }

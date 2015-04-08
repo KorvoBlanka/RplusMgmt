@@ -142,7 +142,7 @@
 <div class="row">
   <h3 class="page-header"><%= ucfloc q{export advertisement} %></h3>
   <ul class="nav nav-tabs">
-    % my $loc_id = $self->session('user')->{location_id};      # костыль!
+    % my $loc_id = $self->config->{location_id};
     % if ($loc_id == 1) {
     <li class="active"><a href="#export-avito" data-toggle="tab">Avito</a></li>      
     <li><a href="#export-irr" data-toggle="tab">Из рук в руки</a></li>

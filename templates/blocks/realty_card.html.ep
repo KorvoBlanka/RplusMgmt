@@ -175,6 +175,16 @@
     color: #aeaeae;
   }
 
+  .slash {
+    display: inline-block;
+  }
+  
+  .required {
+    border-color: #E96666;
+    outline: 0;
+    -webkit-box-shadow: inset 0 1px 1px rgba(0,0,0,0.075),0 0 8px rgba(233, 102, 102, 0.6);
+    box-shadow: inset 0 1px 1px rgba(0,0,0,0.075),0 0 8px rgba(233, 102, 102, 0.6);  
+  }
 </style>
 % end
 
@@ -204,7 +214,7 @@
 
 % end
 
-% content_for javascript => begin
+% content_for javascript => begin   
 <script type="application/javascript">
   "use strict";
 
@@ -269,6 +279,7 @@
       for (x in formData) {
         if ((typeof formData[x] == 'object') && (formData[x] instanceof Array) && !formData[x].length) formData[x] = null;
       }
+      
       $.ajax({
         type: "POST",
         url: "/api/realty/save",
@@ -285,7 +296,7 @@
           }
 
           setRealtyView(realty);
-          //setRealtyEditView(realty);
+          setRealtyEditView(realty);
           setMode(0);
         })
         .fail(function (jqXHR, textStatus, errorThrown) {
@@ -318,7 +329,8 @@
       $('#realty-color-tag-1').addClass('card-color-tag-' + realty.color_tag_id);
       
       //if (realty.agent_id != null && realty.agent_id != '<%= $self->stash('user')->{id} %>' && realty.title != 'Новый' && '<%= $self->stash('user')->{role} %>' != 'manager' && '<%= $self->stash('user')->{role} %>' != 'agent_plus') {
-      var my_id = <%= $self->stash('user')->{id} %>;
+      var account_id = <%= $self->session->{'user'}->{account_id} %>;
+	  var my_id = <%= $self->stash('user')->{id} %>;
       var my_role = '<%= $self->stash('user')->{role} %>';
 
       if (my_role == 'top' || my_role == 'manager' && !realty.agent_id || realty.agent_id == my_id || (realty.agent_id && Rplus.Table['users'][realty.agent_id].superior == my_id) || realty.title == 'Новый') {
@@ -327,6 +339,10 @@
         $('#unlock-btn').addClass('hidden');
       }
 
+	  if (realty.account_id != null && account_id != realty.account_id) {
+		$('#unlock-btn').addClass('hidden');
+	  }
+	  
       if (realty.owner_phones && realty.owner_phones.length > 0) {
         $('#dg_p_contacts_label', $realty_modal).removeClass('hidden');
         $('#dg_p_contacts', $realty_modal).removeClass('hidden');
@@ -380,7 +396,7 @@
       var formArray = $('#realty-form').serializeArray();
       for (var i = 0; i < formArray.length; i++) {
         var x = formArray[i];
-        if (x.name != 'export_media') {
+        if (x.name != 'export_media' && x.name != 'multylisting') {
           var el = $('[name="' + x.name + '"]:input', $realty_modal);
           el.val('');
         }
@@ -448,6 +464,12 @@
         } else if (f == 'reference' && v) {
           $('a[data-name="reference"]', $realty_modal).attr('href', v);
           $('a[data-name="reference"]', $realty_modal).text('Ссылка на объявление...');
+        } else if (f == 'multylisting') {
+          if (v) {
+            el.prop( "checked", true );
+          } else {
+            el.prop( "checked", false );
+          }
         } else if (el.length) {
           el.val(v);
         }
@@ -459,6 +481,8 @@
       $('#tag-select > .card-color-tag-' + realty.color_tag_id + '').addClass('tag-selected');
       selected_tag_id = realty.color_tag_id || 0;
 
+      $('#typeInput').change();
+      
       pushPhotos(realty.id);
 
       $('#fileupload', $realty_modal).fileupload({
@@ -735,7 +759,269 @@
 
       return $this;
     };
+    
   })();
+</script>
+
+<script type="text/javascript">
+    
+    var fields = [
+        'type_code', 'offer_type_code', 'state_code',
+        'address_object_name', 'house_num', 'house_type_id', 'ap_num', 'ap_scheme_id',
+        'rooms_count', 'rooms_offer_count', 'room_scheme_id',
+        'floor', 'floors_count', 'levels_count', 'condition_id', 'balcony_id', 'bathroom_id',
+        'square_total', 'square_living', 'square_kitchen', 'square_land', 'square_land_type',
+        'description', 'owner_info', 'owner_price', 'work_info', 'agent_id', 'agency_price',
+        'sublandmark_id', 'multylisting', 'mls_price', 'mls_price_type', 'owner_phones',
+    ];
+    var exclude = {
+        apartment: [
+            'square_land',
+            'square_land_type',
+            'rooms_offer_count',
+        ],
+        apartment_new: [
+            'square_land',
+            'square_land_type',
+            'rooms_offer_count',
+        ],
+        townhouse: [
+            'square_land',
+            'square_land_type',
+            'rooms_offer_count',
+        ],
+        apartment_small: [
+            'square_land',
+            'square_land_type',
+            'rooms_offer_count',
+            'square_living', 'square_kitchen'
+        ],
+
+        house: [
+            'room_scheme_id',
+            'ap_scheme_id',
+            'ap_num',
+        ],
+        cottage: [
+            'room_scheme_id',
+            'ap_scheme_id',
+            'ap_num',
+        ],
+        
+        room: [
+            'square_land',
+            'square_land_type'            
+        ],
+        
+        dacha: [
+            'room_scheme_id',
+            'ap_scheme_id',
+            'ap_num', 
+        ],
+        
+        land: [
+            'house_type_id', 'ap_num', 'ap_scheme_id',
+            'rooms_count', 'rooms_offer_count', 'room_scheme_id',
+            'floor', 'floors_count', 'levels_count', 'condition_id', 'balcony_id', 'bathroom_id',
+            'square_total', 'square_living', 'square_kitchen',
+            'sublandmark_id', 
+        ],
+        
+        office: [
+            'house_type_id', 'ap_num', 'ap_scheme_id',
+            'rooms_count', 'rooms_offer_count', 'room_scheme_id',
+            'floor', 'floors_count', 'levels_count', 'balcony_id', 'bathroom_id',
+            'square_land', 'square_land_type', 'square_living', 'square_kitchen',
+        ],
+        
+        other: [
+            'house_type_id', 'ap_num', 'ap_scheme_id',
+            'rooms_count', 'rooms_offer_count', 'room_scheme_id',
+            'floor', 'floors_count', 'levels_count', 'balcony_id', 'bathroom_id',
+            'square_land', 'square_land_type', 'square_living', 'square_kitchen',
+            'condition_id', 
+        ],
+    };
+
+    var required = {
+        apartment: [
+            'address_object_name', 'house_num', 'house_type_id', 'ap_scheme_id',
+            'rooms_count', 'room_scheme_id',
+            'floor', 'floors_count', 'condition_id', 'balcony_id', 'bathroom_id',
+            'square_total',
+            'description', 'owner_price', 'agent_id', 'mls_price', 'owner_phones',
+        ],
+        apartment_new: [
+            'address_object_name', 'house_num', 'house_type_id', 'ap_scheme_id',
+            'rooms_count', 'room_scheme_id',
+            'floor', 'floors_count', 'condition_id', 'balcony_id', 'bathroom_id',
+            'square_total',
+            'description', 'owner_price', 'agent_id', 'mls_price', 'owner_phones',
+        ],
+        townhouse: [
+            'address_object_name', 'house_num', 'house_type_id', 'ap_scheme_id',
+            'rooms_count', 'room_scheme_id',
+            'floor', 'floors_count', 'condition_id', 'balcony_id', 'bathroom_id',
+            'square_total',
+            'description', 'owner_price', 'agent_id', 'mls_price', 'owner_phones',
+        ],
+        apartment_small: [
+            'address_object_name', 'house_num', 'house_type_id', 'ap_scheme_id',
+            'rooms_count', 'room_scheme_id',
+            'floor', 'floors_count', 'condition_id', 'balcony_id', 'bathroom_id',
+            'square_total',
+            'description', 'owner_price', 'agent_id', 'mls_price', 'owner_phones',
+        ],
+        room: [
+            'address_object_name', 'house_num', 'house_type_id', 'ap_scheme_id',
+            'rooms_count', 'rooms_offer_count', 'room_scheme_id',
+            'floor', 'floors_count', 'condition_id', 'balcony_id', 'bathroom_id',
+            'square_total',
+            'description', 'owner_price', 'agent_id', 'mls_price', 'owner_phones',
+        ],
+
+        house: [
+            'address_object_name', 'house_num', 'house_type_id',
+            'rooms_count', 'rooms_offer_count',
+            'condition_id', 'bathroom_id',
+            'square_total',
+            'description', 'owner_price', 'agent_id', 'mls_price', 'owner_phones',
+        ],
+        cottage: [
+            'address_object_name', 'house_num', 'house_type_id',
+            'rooms_count', 'rooms_offer_count',
+            'condition_id', 'bathroom_id',
+            'square_total',
+            'description', 'owner_price', 'agent_id', 'mls_price', 'owner_phones',
+        ],
+
+        dacha: [
+            'address_object_name', 'house_num', 'house_type_id',
+            'rooms_count', 'rooms_offer_count',
+            'condition_id', 'bathroom_id',
+            'square_total',
+            'description', 'owner_price', 'agent_id', 'mls_price', 'owner_phones',
+        ],
+        
+        land: [
+            'square_land', 'square_land_type',
+            'description', 'owner_price', 'agent_id',
+            'mls_price', 'owner_phones',
+        ],
+        
+        office: [
+            'address_object_name', 'house_num',
+            'square_total',
+            'description', 'owner_price', 'agent_id',
+            'mls_price', 'owner_phones',
+        ],
+        
+        other: [
+            'description', 'owner_price', 'agent_id',
+            'mls_price', 'owner_phones',
+        ],
+    };
+    
+    function setView(realty_type, multylisting_checked) {
+        var exclude_fields = exclude[realty_type];
+        var rq_fields = required[realty_type];
+
+        var idx;
+        for (idx = 0; idx < fields.length; ++idx) {
+            var field = fields[idx];
+            var el = $('[name="' + field + '"]:input', $('#realtyCard_modal'));
+            if (field == 'rooms_offer_count' || field == 'square_living' || field == 'square_kitchen' || field == 'ap_num') {
+                el.removeClass('hidden');
+                el.siblings('.slash').removeClass('hidden');
+            } else {
+                el.closest('.edit-group').removeClass('hidden');
+            }
+        }
+
+        if (exclude_fields) {
+            for (idx = 0; idx < exclude_fields.length; ++idx) {
+                var field = exclude_fields[idx];
+                var el = $('[name="' + field + '"]:input', $('#realtyCard_modal'));
+                if (field == 'rooms_offer_count' || field == 'square_living' || field == 'square_kitchen' || field == 'ap_num') {
+                    el.addClass('hidden');
+                    el.siblings('.slash').addClass('hidden');
+                } else {
+                    el.closest('.edit-group').addClass('hidden');
+                }
+            }
+        }
+
+        for (idx = 0; idx < fields.length; ++idx) {
+            var field = fields[idx];
+            var el;
+            el = $('[name="' + field + '"]:input', $('#realtyCard_modal'));
+            el.removeClass('required');
+            if (field == 'address_object_name') {
+                el = $('[name="address_object_id"]:input', $('#realtyCard_modal')).siblings('.input-group').find('.input-group-addon');
+                el.removeClass('required');
+            }
+        }
+        
+       if (multylisting_checked) {
+            if (rq_fields) {
+                for (idx = 0; idx < rq_fields.length; ++idx) {
+                    var field = rq_fields[idx];
+                    var el;
+                    el = $('[name="' + field + '"]:input', $('#realtyCard_modal'));
+                    if (field == 'owner_phones') {
+                        var light_up = true;
+                        el.each(function () {
+                            if ($(this).val()) {
+                                light_up = false;
+                            }
+                        });
+                        if (light_up) {
+                            el.first().addClass('required');
+                        }
+                    } else {
+                        if (!el.val()) {
+                            el.addClass('required');
+                            if (field == 'address_object_name') {
+                                el = $('[name="address_object_id"]:input', $('#realtyCard_modal')).siblings('.input-group').find('.input-group-addon');
+                                el.addClass('required');
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    $('#typeInput').change( function () {
+        var $this = $(this);
+        var multylisting_checked = $('[name="multylisting"]:input', $('#realtyCard_modal')).is(':checked');
+        setView($this.val(), multylisting_checked)
+    });
+
+    $('[name="multylisting"]:input', $('#realtyCard_modal')).change( function () {
+        var $this = $(this);
+        var multylisting_checked = $this.is(':checked');
+        setView($('#typeInput', $('#realtyCard_modal')).val(), multylisting_checked)
+    });
+    
+    $('input', $('#realtyCard_modal')).change( function () {
+        console.log('!');
+        var $this = $(this);
+        var multylisting_checked = $('[name="multylisting"]:input', $('#realtyCard_modal')).is(':checked');
+        setView($('#typeInput', $('#realtyCard_modal')).val(), multylisting_checked)    
+    });
+    
+    $('select', $('#realtyCard_modal')).change( function () {
+        var $this = $(this);
+        var multylisting_checked = $('[name="multylisting"]:input', $('#realtyCard_modal')).is(':checked');
+        setView($('#typeInput', $('#realtyCard_modal')).val(), multylisting_checked)    
+    });
+    
+    $('textarea', $('#realtyCard_modal')).change( function () {
+        var $this = $(this);
+        var multylisting_checked = $('[name="multylisting"]:input', $('#realtyCard_modal')).is(':checked');
+        setView($('#typeInput', $('#realtyCard_modal')).val(), multylisting_checked)    
+    });    
 </script>
 % end
 
@@ -953,7 +1239,9 @@
           <div class="form-group edit-group">
             <label class="col-md-3 col-lg-3 control-label" for="houseNumInput"><%= ucfloc 'num' %></label>
             <div class="col-md-9 col-lg-9">
-              <input type="text" class="form-control input-sm" name="house_num" id="houseNumInput" placeholder="<%= ucfloc 'house' %>" style="width: 45%; display: inline-block;">&nbsp;/&nbsp;<input type="text" class="form-control input-sm" name="ap_num" placeholder="<%= ucfloc 'ap' %>" style="width: 45%; display: inline-block;">
+              <input type="text" class="form-control input-sm" name="house_num" id="houseNumInput" placeholder="<%= ucfloc 'house' %>" style="width: 45%; display: inline-block;">
+              <div class="slash">&nbsp;/&nbsp;</div>
+              <input type="text" class="form-control input-sm" name="ap_num" placeholder="<%= ucfloc 'ap' %>" style="width: 45%; display: inline-block;">
             </div>
           </div>
           
@@ -1005,14 +1293,20 @@
           <div class="form-group edit-group">
             <label class="col-md-3 col-lg-3 control-label" for="roomsCountInput"><%= ucfloc 'rooms' %></label>
             <div class="col-md-9 col-lg-9">
-              <input type="text" class="form-control input-sm" name="rooms_offer_count" placeholder="<%= ucfloc 'sale' %>" style="width: 45%; display: inline-block;">&nbsp;/&nbsp;<input type="text" class="form-control input-sm" id="roomsCountInput" name="rooms_count" placeholder="<%= ucfloc 'total' %>" style="width: 45%; display: inline-block;">
+              <input type="text" class="form-control input-sm" name="rooms_offer_count" placeholder="<%= ucfloc 'sale' %>" style="width: 45%; display: inline-block;">
+              <div class="slash">&nbsp;/&nbsp;</div>
+              <input type="text" class="form-control input-sm" id="roomsCountInput" name="rooms_count" placeholder="<%= ucfloc 'total' %>" style="width: 45%; display: inline-block;">
             </div>
           </div>
 
           <div class="form-group edit-group">
             <label class="col-md-3 col-lg-3 control-label" for="floorInput"><%= ucfloc 'floors' %></label>
             <div class="col-md-9 col-lg-9">
-              <input type="text" class="form-control input-sm" name="floor" id="floorInput" placeholder="<%= ucfloc 'floor' %>" style="width: 28%; display: inline-block;">&nbsp;/&nbsp;<input type="text" class="form-control input-sm" name="floors_count" placeholder="<%= ucfloc 'total' %>" style="width: 28%; display: inline-block;">&nbsp;/&nbsp;<input type="text" class="form-control input-sm" name="levels_count" placeholder="<%= ucfloc 'levels' %>" style="width: 28%; display: inline-block;">
+              <input type="text" class="form-control input-sm" name="floor" id="floorInput" placeholder="<%= ucfloc 'floor' %>" style="width: 28%; display: inline-block;">
+              <div class="slash">&nbsp;/&nbsp;</div>
+              <input type="text" class="form-control input-sm" name="floors_count" placeholder="<%= ucfloc 'total' %>" style="width: 28%; display: inline-block;">
+              <div class="slash">&nbsp;/&nbsp;</div>
+              <input type="text" class="form-control input-sm" name="levels_count" placeholder="<%= ucfloc 'levels' %>" style="width: 28%; display: inline-block;">
             </div>
           </div>
 
@@ -1031,7 +1325,11 @@
           <div class="form-group edit-group">
             <label class="col-md-3 col-lg-3 control-label" for="squareTotalInput"><%= ucfloc 'square' %></label>
             <div class="col-md-9 col-lg-9">
-              <input type="text" class="form-control input-sm" name="square_total" id="squareTotalInput" placeholder="<%= ucfloc 'total' %>" style="width: 28%; display: inline-block;">&nbsp;/&nbsp;<input type="text" class="form-control input-sm" name="square_living" placeholder="<%= ucfloc 'living' %>" style="width: 28%; display: inline-block;">&nbsp;/&nbsp;<input type="text" class="form-control input-sm" name="square_kitchen" placeholder="<%= ucfloc 'kitchen' %>" style="width: 28%; display: inline-block;">
+              <input type="text" class="form-control input-sm" name="square_total" id="squareTotalInput" placeholder="<%= ucfloc 'total' %>" style="width: 28%; display: inline-block;">
+              <div class="slash">&nbsp;/&nbsp;</div>
+              <input type="text" class="form-control input-sm" name="square_living" placeholder="<%= ucfloc 'living' %>" style="width: 28%; display: inline-block;">
+              <div class="slash">&nbsp;/&nbsp;</div>
+              <input type="text" class="form-control input-sm" name="square_kitchen" placeholder="<%= ucfloc 'kitchen' %>" style="width: 28%; display: inline-block;">
             </div>
           </div>
 
@@ -1074,10 +1372,12 @@
           <div class="form-group edit-group">
             <label class="col-md-3 col-lg-3 control-label" for="ownerPriceInput"><%= ucfloc 'price' %></label>
             <div class="col-md-9 col-lg-9">
-              <input type="text" class="form-control input-sm" name="owner_price" id="ownerPriceInput" placeholder="<%= ucfloc 'owner' %>" style="width: 45%; display: inline-block;">&nbsp;/&nbsp;<input type="text" class="form-control input-sm" name="agency_price" placeholder="<%= ucfloc 'agency' %>" style="width: 45%; display: inline-block;">
+              <input type="text" class="form-control input-sm" name="owner_price" id="ownerPriceInput" placeholder="<%= ucfloc 'owner' %>" style="width: 45%; display: inline-block;">
+              <div class="slash">&nbsp;/&nbsp;</div>
+              <input type="text" class="form-control input-sm" name="agency_price" id="agencyPriceInput" placeholder="<%= ucfloc 'agency' %>" style="width: 45%; display: inline-block;">
             </div>
           </div>
-
+          
           <div class="form-group edit-group">
             <label class="col-md-3 col-lg-3 control-label" for="ownerPhoneInput"><%= ucfloc 'phones' %>&nbsp;<span style="top: 0px; font-size: 10px; color: rgb(221, 41, 41);" class="glyphicon glyphicon-asterisk"></span></label>
             <div class="col-md-9 col-lg-9">
@@ -1100,6 +1400,29 @@
               <textarea class="form-control input-sm" name="work_info" id="workInfoInput" rows="3" placeholder="<%= ucfloc 'work info' %>"></textarea>
             </div>
           </div>
+          
+          <div class="cardheader mainheader" style="margin-bottom: 10px;">
+            <div class="input-group ccard-input-group">
+              <span class="rcard-input-group-addon glyphicon glyphicon-file"></span>
+              <p> Мультилистинг</p>
+            </div>
+          </div>          
+          
+          <div class="checkbox" style="margin-left: 15px;">
+            <input type="checkbox" name="multylisting" value="1" form="realty-form"> <small>Показывать в списке мультилистинга</small>
+          </div>          
+          
+          <div class="form-group edit-group">
+            <label class="col-md-3 col-lg-3 control-label" for="mlsPriceInput">Условия MLS</label>
+            <div class="col-md-9 col-lg-9">
+              <input type="text" class="form-control input-sm" name="mls_price" placeholder="" style="width: 45%; display: inline-block;">
+              <select class="form-control input-sm" name="mls_price_type" id="mlsPriceTypeInput" style="display: inline-block; width: 95px;">
+                <option value="rub" selected>тыс. руб.</option>
+                <option value="perc">%</option>
+              </select>
+            </div>
+          </div>
+          
         </form>
 
           <div class="cardheader mainheader">
@@ -1126,6 +1449,8 @@
                 <input type="checkbox" name="export_media" value="<%= $x->id %>" form="realty-form"> <small><%= $x->name %></small>
               </div>
             % }
+            </div>
+            <div class="col-md-4 col-lg-4">
             </div>            
           </div>
 

@@ -28,9 +28,9 @@ sub run {
             $config = from_json($options->{options})->{'notifications'};
         }
 
-        next unless $config->{active};
-
-        say Dumper $config;
+        if ($config->{active} ne '1' && $config->{active} ne 'true') {
+            next;
+        }
 
         my $sm_iter = Rplus::Model::SmsMessage::Manager->get_objects_iterator(query => [status => 'queued', account_id => $acc_id,], sort_by => 'id');
         $stop = 0;
@@ -57,7 +57,7 @@ sub run {
                     if ($x->{'error_code'}) {
                         $sm->status('error');
                         $sm->last_error_msg(sprintf("(%s) %s", $x->{'error_code'}, $x->{'error'}));
-                        if ($x->{'error_code'} == 2 || $x->{'error_code'} == 4) {
+                        if ($x->{'error_code'} == 2 || $x->{'error_code'} == 3 || $x->{'error_code'} == 4) {
                             $stop = 1;
                         }
                     } else {
@@ -66,6 +66,7 @@ sub run {
                 } else {
                     $sm->status('error');
                     $sm->last_error_msg("Cannot parse a response as json");
+                    $stop = 1;
                 }
             } else {
                 my ($err, $code) = $tx->error;

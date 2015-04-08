@@ -2,6 +2,8 @@ package RplusMgmt::Controller::API::Options;
 
 use Mojo::Base 'Mojolicious::Controller';
 
+use Rplus::Model::Account;
+use Rplus::Model::Account::Manager;
 use Rplus::Model::Option;
 use Rplus::Model::Option::Manager;
 
@@ -40,13 +42,21 @@ sub set_multiple {
 
     my $opt = from_json($options->{options});
     while (my ($key, $value) = each %$opt_hash) {
-        $opt->{$category}->{$key} = $value;
+
+        if ($opt->{$category}) {
+            $opt->{$category}->{$key} = $value;
+        } else {
+            $opt->{$category} = {
+                $key => $value,
+            };
+        }        
+        
     }
 
     $options->options(encode_json($opt));
     $options->save;
     
-    return $self->render(json => {status => 'success'});    
+    return $self->render(json => {status => 'success', options => $opt->{$category}});
 }
 
 sub set {
@@ -62,11 +72,39 @@ sub set {
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $options;
 
     my $opt = from_json($options->{options});
-    $opt->{$category}->{$name} = $val;
+    if ($opt->{$category}) {
+        $opt->{$category}->{$name} = $val;
+    } else {
+        $opt->{$category} = {
+            $name => $val,
+        };
+    }
     $options->options(encode_json($opt));
     $options->save;
     
     return $self->render(json => {status => 'success'});
+}
+
+sub get_company_name {
+    my $self = shift;
+    
+    my $acc_id = $self->session('user')->{account_id};
+    my $account = Rplus::Model::Account::Manager->get_objects(query => [id => $acc_id,])->[0];
+    
+    return $self->render(json => {status => 'success', name => $account->company_name});
+}
+
+sub set_company_name {
+    my $self = shift;
+    my $name = $self->param('name');
+    
+    my $acc_id = $self->session('user')->{account_id};
+    my $account = Rplus::Model::Account::Manager->get_objects(query => [id => $acc_id,])->[0];
+    
+    $account->company_name($name);
+    $account->save(changes_only => 1);
+    
+    return $self->render(json => {status => 'success', name => $account->company_name});
 }
 
 1;

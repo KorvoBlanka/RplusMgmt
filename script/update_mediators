@@ -17,7 +17,7 @@ use Data::Dumper;
 use Rplus::Util::Mediator qw(delete_mediator_by_phone);
 
 say 'checking realty';
-say delete_mediators('not_med.txt') . ' objects updated';
+say wtf() . ' objects updated';
 
 sub check_mediators {
     my %count_hash = ();
@@ -76,4 +76,20 @@ sub delete_mediators {
     close $fh;
 
     return 0;
+}
+
+sub wtf {
+    my $mediator_iter = Rplus::Model::Mediator::Manager->get_objects_iterator(query => [company_id => 439]);
+    my $count = 0;
+    while (my $x = $mediator_iter->next) {
+        eval {
+            $x->delete_date(undef);
+            $x->save;
+            $count += 1;
+        } or do {
+            
+        };
+    }
+    
+    return $count;
 }

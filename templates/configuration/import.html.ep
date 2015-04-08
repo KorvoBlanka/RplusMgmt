@@ -35,16 +35,32 @@
     if ('<%= $self->session('user')->{mode} %>' == 'all') {
 
     } else if ('<%= $self->session('user')->{mode} %>' == 'sale') {
-      //$('.rent-checkbox').prop('checked', false);
-      $('.rent-checkbox').attr('disabled', true);
+      $('#rent-all').attr('disabled', true);
       $('.rent-column').addClass('inactive');
     } else {
-      //$('.sale-checkbox').prop('checked', false);
-      $('.sale-checkbox').attr('disabled', true);
+      $('#sale-all').attr('disabled', true);
       $('.sale-column').addClass('inactive');
     }
 
-
+    function setGroupCheckboxes() {
+      var checked = true;
+      $(".sale-column .type-checkbox").each(function(e) {
+        if (!$('input', $(this)).is(':checked')) {
+          checked = false;
+          return;
+        }
+      });
+      $('input', $('#sale-all')).prop('checked', checked);
+      checked = true;
+      $(".rent-column .type-checkbox").each(function(e) {
+        if (!$('input', $(this)).is(':checked')) {
+          checked = false;
+          return;
+        }
+      });
+      $('input', $('#rent-all')).prop('checked', checked);    
+    }
+    
     function listOptions() {
       $.ajax({
         type: "POST",
@@ -56,23 +72,11 @@
         .done(function (data, textStatus, jqXHR) {
           for (var key in data.options) {
             var r = data.options[key];
-            $('input', $('#' + key)).attr('checked', r == 'true' || r == '1' ? true : false);
+            $('input', $('#' + key)).prop('checked', r == 'true' || r == '1' ? true : false);
           }
-          $(".group-checkbox").each(function(e) {
-            var name = $(this).attr('id');
-            var checked = true;
-            $("div[id^=" + name + "]").each(function(e) {
-              var cb_name = $(this).attr('id');
-              if (cb_name != name) {
-                if (!$('input', $(this)).is(':checked')) {
-                  checked = false;
-                  return false;
-                }
-              }
-            });
-            $('input', $(this)).prop('checked', checked);
-          });
 
+           setGroupCheckboxes();
+          
         }).fail(function (jqXHR, textStatus, errorThrown) {
           alert('<%= loc q{An error occurred while fetching options} %>');
         })
@@ -90,9 +94,7 @@
         }
       })
         .done(function (data, textStatus, jqXHR) {
-          if (data.status == 'success') {
-
-          }
+          if (data.status == 'success') {}
         })
         .fail(function (jqXHR, textStatus, errorThrown) {
           alert('<%= loc q{An error occurred while saving options} %>');
@@ -112,7 +114,10 @@
       })
         .done(function (data, textStatus, jqXHR) {
           if (data.status == 'success') {
-
+            for (var key in data.options) {
+              var r = data.options[key];
+              $('input', $('#' + key)).prop('checked', r == 'true' || r == '1' ? true : false);
+            }
           }
         })
         .fail(function (jqXHR, textStatus, errorThrown) {
@@ -122,28 +127,33 @@
     }
 
     $(function () {
-      $(".checkbox").change(function(e) {
+      $(".type-checkbox").change(function(e) {
         var name = $(this).attr('id');
         var val = $('input', $(this)).is(':checked');
-        if (/^(sale|rent)-\w+$/.test(name)) {
-          var opt_hash = {};
-          $(".checkbox").each(function(e) {
-            var cb_name = $(this).attr('id');
-            if ((new RegExp('^' + name + '-\\w+$')).test(cb_name)) {
-              if (val) {
-                $('input', $(this)).prop('checked', true);
-              } else {
-                $('input', $(this)).prop('checked', false);
-              }
-              opt_hash[cb_name] = val;
-            }
-          });
-          saveOptions(opt_hash);
-        } else {
-          saveOption(name, val);
-        }
+
+        saveOption(name, val);
+        setGroupCheckboxes();
       });
 
+      $(".group-checkbox").change(function(e) {
+        var name = $(this).attr('id');
+        var val = $('input', $(this)).is(':checked');
+        console.log(name);
+        if (name == "sale-all") {
+            var opt_hash = {};
+            % for my $c (@{Rplus::Model::RealtyType::Manager->get_objects(query => [], sort_by => 'id')}) {
+            opt_hash["sale-<%= $c->code %>"] = val;
+            % }
+            saveOptions(opt_hash);
+        } else {
+            var opt_hash = {};
+            % for my $c (@{Rplus::Model::RealtyType::Manager->get_objects(query => [], sort_by => 'id')}) {
+            opt_hash["rent-<%= $c->code %>"] = val;
+            % }
+            saveOptions(opt_hash);
+        }
+      });
+      
       listOptions();
 
     });
@@ -161,62 +171,40 @@
 
   <h3 class="page-header">Импорт объектов</h3>
   <ul class="nav nav-tabs">
-    % for my $x (@{Rplus::Model::Media::Manager->get_objects(query => [type => 'import'], sort_by => 'id')}) {
-    %     my $loc_id = $self->session('user')->{location_id};      # костыль, сделать получение списка доступных источников с сервера!
-    %     if ($loc_id == 1) {
-    %         next if $x->id == 11 || $x->id == 12;
-    %     } elsif ($loc_id == 2) {
-    %         next if $x->id == 1 || $x->id == 7 || $x->id == 8;
-    %     } elsif ($loc_id == 3) {
-    %         next if $x->id == 1 || $x->id == 7 || $x->id == 8 || $x->id == 11 || $x->id == 12 || $x->id == 14;
-    %     }
-      <li data-loc="<%= $self->session('user')->{location_id} %>" data-id="<%= $x->id %>" class="<%= $loc_id == 1 && $x->id == 1 || $loc_id == 2 && $x->id == 5 ? 'active': '' %>"><a href="#import-<%= $x->code %>" data-toggle="tab"> <%= $x->name %></a></li>
-    % }
-  </ul>
   
   <!-- Tab panes -->
   <div class="tab-content">
-    % for my $x (@{Rplus::Model::Media::Manager->get_objects(query => [type => 'import'], sort_by => 'id')}) {
-    %     my $loc_id = $self->session('user')->{location_id};    # костыль, сделать получение списка доступных источников с сервера!
-    %     if ($loc_id == 1) {
-    %         next if $x->id == 11 || $x->id == 12;
-    %     } else {
-    %         next if $x->id == 1 || $x->id == 7 || $x->id == 8;
-    %     }
-      <div class="tab-pane <%= $loc_id == 1 && $x->id == 1 || $loc_id == 2 && $x->id == 5 ? 'active': '' %>" id="import-<%= $x->code %>">
-        <div class="col-lg-4 sale-column">
-          <div class="checkbox group-checkbox" id="sale-<%= $x->code %>">
-            <label>
-              <input type="checkbox" class="sale-checkbox"><b> Продажа</b>
-            </label>
-          </div>
-          <p></p>
-    % for my $c (@{Rplus::Model::RealtyType::Manager->get_objects(query => [], sort_by => 'id')}) {
-          <div class="checkbox" id="sale-<%= $x->code %>-<%= $c->code %>">
-            <label>
-              <input type="checkbox" class="sale-checkbox"> <%= $c->name %>
-            </label>
-          </div>
-    % }
+    <div class="tab-pane active" id="import-options">
+      <div class="col-lg-4 sale-column">
+        <div class="checkbox group-checkbox" id="sale-all">
+          <label>
+            <input type="checkbox"><b> Продажа</b>
+          </label>
         </div>
-        <div class="col-lg-4 rent-column">
-          <div class="checkbox group-checkbox" id="rent-<%= $x->code %>">
-            <label>
-              <input type="checkbox" class="rent-checkbox"><b> Аренда</b>
-            </label>
-          </div>
-          <p></p>
+        <p></p>
     % for my $c (@{Rplus::Model::RealtyType::Manager->get_objects(query => [], sort_by => 'id')}) {
-          <div class="checkbox" id="rent-<%= $x->code %>-<%= $c->code %>">
-            <label>
-              <input type="checkbox" class="rent-checkbox"> <%= $c->name %>
-            </label>
-          </div>
+        <div class="checkbox type-checkbox" id="sale-<%= $c->code %>">
+          <label>
+            <input type="checkbox"> <%= $c->name %>
+          </label>
+        </div>
     % }
-        </div>        
-        
       </div>
+      <div class="col-lg-4 rent-column">
+        <div class="checkbox group-checkbox" id="rent-all">
+          <label>
+            <input type="checkbox"><b> Аренда</b>
+          </label>
+        </div>
+        <p></p>
+    % for my $c (@{Rplus::Model::RealtyType::Manager->get_objects(query => [], sort_by => 'id')}) {
+        <div class="checkbox type-checkbox" id="rent-<%= $c->code %>">
+          <label>
+            <input type="checkbox"> <%= $c->name %>
+          </label>
+        </div>
     % }
+      </div>        
     </div>
   </div>
 </div>

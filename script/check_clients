@@ -1,0 +1,59 @@
+#!/usr/bin/env perl
+
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+
+use Rplus::Modern;
+
+use Rplus::Model::Client;
+use Rplus::Model::Client::Manager;
+use Rplus::Model::Subscription;
+use Rplus::Model::Subscription::Manager;
+
+use Mojo::Collection;
+use Data::Dumper;
+
+say 'checking clients';
+say check_clients();
+
+sub check_clients {
+
+    my $query = Mojo::Collection->new(['1 комнатная центр']);
+
+    my $bad_client_count = 0;
+    my $clients_iter = Rplus::Model::Client::Manager->get_objects_iterator(
+        query => [
+            delete_date => undef,
+        ],
+    );
+
+    while (my $client = $clients_iter->next) {
+
+        my $subscription_count = Rplus::Model::Subscription::Manager->get_objects_count (
+            query => [
+                client_id => $client->id,
+                delete_date => undef,
+            ],
+        );
+        if ($subscription_count == 0) {
+            say $client->id;
+            $bad_client_count += 1;
+            my $subscription = Rplus::Model::Subscription->new(user_id => 12);
+            
+            $subscription->client_id($client->id);
+            $subscription->offer_type_code('sale');
+            $subscription->queries($query);
+            $subscription->end_date(undef);
+            $subscription->realty_limit(1);
+            $subscription->send_owner_phone(0);
+            $subscription->add_date('now()');
+
+            $subscription->save(insert => 1);
+            
+        }
+
+    }
+
+    return $bad_client_count;
+}
+

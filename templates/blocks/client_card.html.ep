@@ -498,21 +498,6 @@
 
         })
       ;
-      
-      setTimeout(function () {
-        $.ajax({
-          type: "POST",
-          url: "/api/client/update_offer_types",
-          data: {id: client.id},
-          beforeSend: function (jqXHR, settings) {},
-          complete: function (jqXHR, textStatus) {},
-        })
-          .done(function (data, textStatus, jqXHR) {
-              console.log('update_offer_types');
-          })
-        ;
-      }, 1500);
-      
     }
 
     var cached_client = null;
@@ -830,20 +815,29 @@
               <input class="" type="checkbox" id="phonecb" name="send_owner_phone" style="margin-top: 10px"></textarea>
             </div>
 
-            <hr width="90%" align="right">
-            <div class="input-group ccard-input-group">
+            <hr class="hidden" width="90%" align="right">
+            <div class="input-group ccard-input-group hidden">
               <span class="ccard-input-group-addon glyphicon glyphicon-user"></span>
               <select class="form-control input-sm" name="agent_id" id="agentInput" style="border: 0; box-shadow: 0 0 0 0; font-size: 14px;">
               %# check read (!) permission to prevent empty list
               % if (has_permission(clients => read => undef)) {
                 <option class="text-muted" value="">-</option>
               % }
-              % for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [account_id => $self->session('user')->{account_id}, role => ['agent', 'agent_ext', 'manager'], delete_date => undef], sort_by => 'name')}) {
-                % if ($self->stash('user')->{role} eq 'manager' || $x->id == $self->stash('user')->{id}) {
-                  <option value="<%= $x->id %>"><%= $x->name %></option>
-                % } else {
-                  <option disabled value="<%= $x->id %>"><%= $x->name %></option>
-                % }
+              
+              % if ($self->stash('user')->{role} eq 'manager') {
+              %   if (scalar (@{$self->stash('user')->{subordinate}})) {
+              %     for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [account_id => $self->session('user')->{account_id},  id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {                  
+                <option value="<%= $x->id %>"><%= $x->name %></option>
+              %     }
+              %   }
+              % } elsif ($self->stash('user')->{role} eq 'top') {
+              %     for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [account_id => $self->session('user')->{account_id},  role => ['top', 'manager'], delete_date => undef], sort_by => 'name')}) {                  
+                <option value="<%= $x->id %>"><%= $x->name %></option>
+              %     }
+              % } else {
+              %     for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [account_id => $self->session('user')->{account_id},  id => $self->session('user')->{id}, delete_date => undef], sort_by => 'name')}) {                  
+                <option value="<%= $x->id %>"><%= $x->name %></option>
+              %     }                  
               % }
               </select>
             </div>

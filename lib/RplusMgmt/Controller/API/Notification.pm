@@ -121,7 +121,7 @@ sub by_email {
         }        
         # TODO: Add template settings
         my $sender = Rplus::Model::User::Manager->get_objects(query => [id => $self->stash('user')->{id}, delete_date => undef])->[0];
-        my $message = get_digest($realty, \@photos, $config->{'contact_info'} ? $config->{'contact_info'} : '', $sender);
+        my $message = get_digest($self, $realty, \@photos, $config->{'contact_info'} ? $config->{'contact_info'} : '', $sender);
 
         $status = Rplus::Util::Email->send($self, $client->email, $message, $config);
     }
@@ -130,44 +130,120 @@ sub by_email {
 }
 
 sub get_digest {
-    my ($r, $photos, $contact_info, $sender) = @_;
+    my ($c, $r, $photos, $contact_info, $sender) = @_;
 
-    my @digest;
+    my $no_photo_url = 'http://storage.rplusmgmt.com/rplus/no-photo.gif';
+    my $no_photo_big_url = 'http://storage.rplusmgmt.com/rplus/no-photo-big.gif';
+    
+    my $sender_block = '';
+    my $header_block = '';
+    my $info_block = '';
 
-    push @digest, '<strong>' . $r->type->name . '</strong>';
-    push @digest, $r->rooms_count . 'к' if ($r->rooms_count);
+    $sender_block .= '<hr>';
+
+    my $use_sender_data = 0;
+    my $user_photo = '';
+    my $path = $c->config->{'storage'}->{'url'} . '/' . $c->session->{'user'}->{'account_name'};
+    if ($sender->role eq 'manager' || $sender->role eq 'top') {
+        if ($r->agent_id && $r->agent_id != 10000) {
+            $use_sender_data = 0;
+            $user_photo = $r->agent->photo_url;
+        } else {
+            $use_sender_data = 1;
+            $user_photo = $sender->photo_url;
+        }
+    } else {
+        $use_sender_data = 1;
+        $user_photo = $sender->photo_url;
+    }
+
+    if ($user_photo) {
+        my $photo_url = $path . $user_photo;
+        $sender_block .= '<div style="width: 150px; padding: 10px; display: inline-block; float: left;">';
+        $sender_block .= "<img style=\"width: 100%;\" src=\"$photo_url\">";
+        $sender_block .= '</div>';
+    } else {
+        $sender_block .= '<div style="width: 150px; padding: 10px; display: inline-block; float: left;">';
+        $sender_block .= "<img style=\"width: 100%;\" src=\"$no_photo_url\">";
+        $sender_block .= '</div>';
+    }
+        
+    if ($use_sender_data) {
+        $sender_block .= '<div style="width: 350px; padding: 10px; padding-top: 30px; display: inline-block; float: left;">';
+        $sender_block .= '<span>' . $contact_info . '</span>';
+        $sender_block .= '<br>';
+        $sender_block .= '<span>Агент:&nbsp;' . ($sender->public_name || $sender->name) . ', ' . ($sender->public_phone_num || $sender->phone_num) . '</span>';
+        $sender_block .= '</div>';
+    } else {
+        $sender_block .= '<div style="width: 350px; padding: 10px; padding-top: 30px; display: inline-block; float: left;">';
+        $sender_block .= '<span>' . $contact_info . '</span>';
+        $sender_block .= '<br>';
+        $sender_block .= '<span>Агент:&nbsp; ' . ($r->agent->public_name || $r->agent->name) . ', ' . ($r->agent->public_phone_num || $r->agent->phone_num) . '</span>';
+        $sender_block .= '</div>';
+    }
+    $sender_block  .=  '<hr style="clear: both;">';
+    
+    
+    $header_block  .=  '<strong>' . $r->type->name . '</strong>';
+    $header_block  .=  '&nbsp;' . $r->rooms_count . 'к' if ($r->rooms_count);
     if ($r->address_object) {
-        push @digest, $r->address_object->name . ' ' . $r->address_object->short_type . '. ' . ($r->house_num ? $r->house_num : '') . ($r->sublandmark ? ' (' . $r->sublandmark->name . ')' : '');
+        $header_block  .=  ', &nbsp;' . $r->address_object->name . ' ' . $r->address_object->short_type . '. ' . ($r->house_num ? $r->house_num : '') . ($r->sublandmark ? ' (' . $r->sublandmark->name . ')' : '');
         #push @digest, $r->address_object->addr_parts->[1]->name . ' ' . $r->address_object->addr_parts->[1]->short_type;
     }
+
+    
+     if ($r->price) {
+        $info_block  .=  '<br><span style="font-size: 20px;">Цена:&nbsp;<i style="color: #d9534f;">' . $r->price . ' тыс. руб.</i></span><br>';
+    }
+    
     if ($r->ap_scheme) {
-        push @digest, $r->ap_scheme->metadata ? from_json($r->ap_scheme->metadata)->{description} : $r->ap_scheme->name;
+        $info_block  .=  'Планировка:&nbsp;';
+        $info_block  .=  $r->ap_scheme->metadata ? from_json($r->ap_scheme->metadata)->{description} : $r->ap_scheme->name;
+        $info_block  .=  '<br>';
     }
     if ($r->house_type) {
         #push @digest, $r->house_type->metadata ? from_json($r->house_type->metadata)->{description} : $r->house_type->name;
-        push @digest, $r->house_type->name;
+        $info_block  .=  'Тип дома:&nbsp;';
+        $info_block  .=  $r->house_type->name;
+        $info_block  .=  '<br>';
     }
     if ($r->room_scheme) {
         #push @digest, $r->room_scheme->metadata ? from_json($r->room_scheme->metadata)->{description} : $r->room_scheme->name;
-        push @digest, $r->room_scheme->name;
+        $info_block  .=  'Комнаты:&nbsp;';
+        $info_block  .=  $r->room_scheme->name;
+        $info_block  .=  '<br>';
+    }
+    if ($r->rooms_count) {
+        $info_block  .=  'Кол-во комнат:&nbsp;';
+        $info_block  .=  $r->rooms_count;
+        $info_block  .=  '<br>';    
     }
     if ($r->floor && $r->floors_count) {
-        push @digest, $r->floor . '/' . $r->floors_count . ' эт.';
+        $info_block  .=  'Этаж:&nbsp;';
+        $info_block  .=  $r->floor . '/' . $r->floors_count . ' эт.';
+        $info_block  .=  '<br>';
     } elsif ($r->floor || $r->floors_count) {
-        push @digest, $r->floor || $r->floors_count . ' эт.';
+        $info_block  .=  'Этаж:&nbsp;';
+        $info_block  .=  $r->floor || $r->floors_count . ' эт.';
+        $info_block  .=  '<br>';
     }
-
     if ($r->condition) {
+        $info_block  .= 'Состояние:&nbsp;';
         #push @digest, $r->condition->metadata ? from_json($r->condition->metadata)->{description} : $r->condition->name;
-        push @digest, $r->condition->name;
+        $info_block  .=  $r->condition->name;
+        $info_block  .= '<br>';
     }
     if ($r->balcony) {
+        $info_block  .= 'Балкон:&nbsp;';
         #push @digest, $r->balcony->metadata ? from_json($r->balcony->metadata)->{description} : $r->balcony->name;
-        push @digest, $r->balcony->name;
+        $info_block  .= $r->balcony->name;
+        $info_block  .= '<br>';
     }
     if ($r->bathroom) {
+        $info_block  .= 'Санузел:&nbsp;';
         #push @digest, $r->bathroom->metadata ? from_json($r->bathroom->metadata)->{description} : $r->bathroom->name;
-        push @digest, $r->bathroom->name;
+        $info_block  .= $r->bathroom->name;
+        $info_block  .= '<br>';
     }
 
     my @squares;
@@ -182,37 +258,46 @@ sub get_digest {
             push @squares, $r->square_kitchen;
         }
         if (scalar @squares) {
-            push @digest, ((join '/', @squares) . ' кв. м.');
+            $info_block  .= 'Площадь:&nbsp;';
+            $info_block  .= ((join '/', @squares) . ' кв. м.');
+            $info_block  .= '<br>';
         }
     }
 
     if ($r->square_land && $r->square_land_type) {
-        push @digest, $r->square_land . ' ' . ($r->square_land_type eq 'ar' ? 'сот.' : 'га');
+        $info_block  .= 'Земля:&nbsp;';
+        $info_block  .= $r->square_land . ' ' . ($r->square_land_type eq 'ar' ? 'сот.' : 'га');
+        $info_block  .= '<br>';
     }
+    
     if ($r->description) {
-        push @digest, $r->description;
-    }
-    if ($r->price) {
-        push @digest, '<br><span style="color: #428bca;">' . $r->price . ' тыс. руб.</span>';
-    }
-    if ($r->agent_id) {
-        if ($r->agent_id == 10000) {
-            push @digest, '<br><span>Агент: ' . ($sender->public_name || $sender->name) . ', ' . ($sender->public_phone_num || $sender->phone_num) . '</span>';
-        } else {
-            push @digest, '<br><span>Агент: ' . ($r->agent->public_name || $r->agent->name) . ', ' . ($r->agent->public_phone_num || $r->agent->phone_num) . '</span>';
-        }
-    } else {
-        push @digest, '<br><span>Агент: ' . ($sender->public_name || $sender->name) . ', ' . ($sender->public_phone_num || $sender->phone_num) . '</span>';
-    }
-    push @digest, '<br>'.$contact_info;
-
-    push @digest, '</div>';
-
+        $info_block  .= '<br><br><span style="font-size: 20px;">Описание:</span>';
+        $info_block  .= '<br>' . $r->description . '</br>';
+    }    
+    
     my $message = $template_head;
-    $message .= join ', ', @digest;
+
+    $message .= '<div style="">';
+    $message .= $sender_block;
+    $message .= '</div>';
+    
+    $message .= '<div style="font-size: 22px;">';
+    $message .= $header_block;
+    $message .= '</div>';
+    
+    $message .= '<div style="width: 65%; padding: 10px; display: inline-block; float: left;">';
     foreach(@$photos) {
-        $message .= "<img style=\"margin-top: 10px; margin-bottom: 10px;\" width=\"80%\" src=\"$_\">";
+        $message .= "<img style=\"\" width=\"100%\" src=\"$_\">";
     }
+    unless (scalar @$photos) {
+        $message .= "<img style=\"\" width=\"100%\" src=\"$no_photo_big_url\">";
+    }
+    $message .= '</div>';    
+    
+    $message .= '<div style="width: 25%; padding: 10px; display: inline-block; float: left;">';
+    $message .= $info_block;
+    $message .= '</div>';
+    
 
     $message .= $template_tail;
     return $message;

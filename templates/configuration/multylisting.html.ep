@@ -1,0 +1,116 @@
+% layout 'default';
+
+% content_for header => begin
+<style type="text/css">
+  .form-group {
+    height: 30px;
+  }
+
+
+</style>
+% end
+
+% content_for javascript => begin
+<script type="text/javascript">
+  "use strict";
+
+    registerGlobalAjaxEvents();
+
+  (function () {
+    var $form;
+
+    function listOptions() {
+
+      $.ajax({
+        type: "POST",
+        url: "/api/options/get_company_name",
+        data: {},
+      })
+        .done(function (data, textStatus, jqXHR) {
+
+          $('[name="company-name"]:input').val(data.name);
+          
+        }).fail(function (jqXHR, textStatus, errorThrown) {
+          alert('<%= loc q{An error occurred while fetching options} %>');
+        })
+      ;
+    }
+
+    function saveOptions(company_name, opt_hash) {
+      var opts = JSON.stringify(opt_hash);
+      $.ajax({
+        type: "POST",
+        url: "/api/options/set_company_name",
+        data: {
+          name: company_name,
+        }
+      })
+        .done(function (data, textStatus, jqXHR) {
+          if (data.status == 'success') {
+
+          }
+        })
+        .fail(function (jqXHR, textStatus, errorThrown) {
+          alert('<%= loc q{An error occurred while saving options} %>');
+        })
+      ;
+    }
+
+    $(function () {
+      $( ".btn-save" ).click(function(e) {
+        
+        var t;
+        var opt_hash = {};
+
+        var company_name = $('[name="company-name"]:input').val();
+        
+        /*
+        t = $('[name="company-name"]:input').val();
+        opt_hash['company-name'] = t;
+        */
+        
+        saveOptions(company_name, opt_hash);
+      });
+      
+      listOptions();   
+    });
+  })();
+
+  (function () {
+    var $modal, $form;
+
+
+  })();
+</script>
+% end
+
+% content_for modals => begin
+
+% end
+
+<div class="row">
+  <h3 class="page-header">Мультилистинг</h3>
+  <form class="form-horizontal" role="form">
+    <div class="form-group" style="padding-top: 15px;">
+      <label class="col-lg-3 control-label">Имя компании</label>
+      <div class="col-lg-9">
+        <input type="text" class="form-control" name="company-name" style="width: 200px;" placeholder="Имя компании">
+      </div>
+    </div>
+    <div class="form-group" style="margin-top: 15px">
+      <button type="" class="btn btn-primary btn-save">Сохранить</button>
+    </div>    
+  </form>
+</div>
+
+
+<div class="row">
+  <div style="height: 100px">
+  </div>
+</div>
+
+<nav class="navbar navbar-default navbar-fixed-bottom">
+  <div class="container">
+    <p class="navbar-text navbar-right"><span class="glyphicon glyphicon-refresh animation-rotate invisible indicator-ajax"></span></p>
+  </div>
+</nav>

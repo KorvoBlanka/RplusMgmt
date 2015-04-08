@@ -4,6 +4,8 @@ use Mojo::Base 'Mojolicious::Controller';
 
 use Rplus::Model::Task;
 use Rplus::Model::Task::Manager;
+use Rplus::Model::User;
+use Rplus::Model::User::Manager;
 
 use Rplus::Util::GoogleCalendar;
 
@@ -238,6 +240,8 @@ sub update {
 sub save {
     my $self = shift;
 
+    my $acc_id = $self->session('user')->{account_id};
+    
     #return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(subscriptions => 'write');
     my $task_type_id = $self->param('task_type_id');
     my $assigned_user_id = $self->param('assigned_user_id');
@@ -258,6 +262,12 @@ sub save {
     }
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $task;
 
+    my $assigned_user = Rplus::Model::User::Manager->get_objects(query => [id => $assigned_user_id, account_id => $acc_id, delete_date => undef])->[0];
+    # если пытаемся назначить задачу пользователю другого агенства, то назначим ее себе
+    unless ($assigned_user) {
+        $assigned_user_id = $self->stash('user')->{id};
+    }
+    
     $task->summary($summary);
     $task->description($description);
     $task->start_date($start_date);

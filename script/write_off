@@ -7,99 +7,36 @@ use Rplus::Modern;
 
 use Rplus::Model::Account;
 use Rplus::Model::Account::Manager;
+use Rplus::Model::Realty;
+use Rplus::Model::Realty::Manager;
 
-use MIME::Lite;
-use IPC::Open2;
-
+use Mojo::UserAgent;
 use JSON;
 
-
-my $mail_message = <<'END_MESSAGE';
-
-<html lang="ru">
-<!-- BEGIN HEAD -->
-<head>
-  <meta charset="utf-8" />
-  <style tyle="text/css">
-  </style>
-</head>
-<body>
-  <p>
-    Уважаемый пользователь, на вашем счету заканчиваются средства. 
-  </p>
-  <p>
-    Не забудьте пополнить счет в личном <a href="http://rplusmgmt.com/cabinet">кабинете</a>.
-  </p>
-</body>
-</html>
-
-END_MESSAGE
-
-open (LOG, '>>/home/raven/projects/RplusMgmt/script/write_off.log');
-
-print LOG localtime . ": write_off start\n";
+my $ua = Mojo::UserAgent->new;
 
 my $account_iter = Rplus::Model::Account::Manager->get_objects_iterator(query => [del_date => undef]);
 while (my $account = $account_iter->next) {
-
-    eval {
-
-        print LOG "\t" . $account->name . "\n";
-
-        my $balance = $account->balance;
-        my $user_count = $account->user_count;
-        my $mode = $account->mode;
-        #my $use_mediators = (from_json($account->{options}))->{use_mediators_buffer} eq 'true' ? 1 : 0;
-
-        my $write_off = 0;
-        if ($balance >= 0) {
-
-            if($mode eq 'all') {
-                $write_off = 80 + 20 * ($user_count - 1);
-            } else {
-                $write_off = 40 + 20 * ($user_count - 1);
+    
+    my $acc_data;
+    my $tx = $ua->get('http://rplusmgmt.com/api/account/get_by_name?name=' . $account->name);
+    if (my $res = $tx->success) {
+        if ($res->json->{'status'} eq 'ok') {
+            $acc_data = $res->json->{'data'};
+            if ($acc_data->{balance} < 0) {
+                say $account->name;
+                say $acc_data->{balance};
+                
+                my $num_rows_updated = Rplus::Model::Realty::Manager->update_objects(
+                    set => {multylisting => 0},
+                    where => [account_id => $account->id],
+                );
+                say $num_rows_updated  . "\n";
             }
-
-            $account->balance($balance - $write_off);
-
-            if(2 * $write_off > $balance) {
-                eval {
-                    send_email($account->email, 'RplusMgmt', $mail_message);
-                } or do {
-                    print LOG $@;    
-                }                        
-            }
-        } else {
-
         }
-
-        print LOG "\tbalance: " . $account->balance . ' write_off: ' . $write_off . "\n\n";
-        $account->save(changes_only => 1);
-    } or do {
-        print LOG $@;
     }
 }
 
-print LOG localtime . ": write_off done\n\n";
+sub disable_mls {
 
-close (LOG);
-
-
-sub send_email {
-    
-    my $to = shift;
-    my $subject = shift;
-    my $message = shift;
-    
-    my $from = 'info@rplusmgmt.com';
-  
-    my $msg = MIME::Lite->new(
-                   From     => $from,
-                   To       => $to,
-                   Subject  => $subject,
-                   Data     => $message
-                   );
-                   
-    $msg->attr("content-type" => "text/html; charset=UTF-8");     
-    $msg->send('smtp', 'smtp.yandex.ru', AuthUser=>'info@rplusmgmt.com', AuthPass=>'ckj;ysqgfhjkm', Port => 587);
 }

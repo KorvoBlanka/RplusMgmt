@@ -22,48 +22,38 @@ sub auth {
 sub signin {
     my $self = shift;
 
-    my $account_name = $self->param('account_name');
     my $login = $self->param_n('login');
     my $password = $self->param('password');
     my $remember_me = $self->param_b('remember_me');
-
+    
     return $self->render(json => {status => 'failed', reason => 'no_data'}) unless $login && defined $password;
 
-    my $account = Rplus::Model::Account::Manager->get_objects(
-        query => [
-            name => $account_name, del_date => undef
-        ],
-        require_objects => ['location'],
-    )->[0];
-    return $self->render(json => {status => 'failed', reason => 'account_not_found'}) unless $account;
+    my $acc_data = $self->get_acc_data();
+    return $self->render(json => {status => 'failed', reason => 'account_not_found'}) unless $acc_data->{id};
 
-    say $account->id;
-    my $user = Rplus::Model::User::Manager->get_objects(query => [account_id => $account->id, login => $login, password => $password, delete_date => undef])->[0];
+    my $user = Rplus::Model::User::Manager->get_objects(query => [account_id => $acc_data->{id}, login => $login, password => $password, delete_date => undef])->[0];
     return $self->render(json => {status => 'failed', reason => 'user_not_found'}) unless $user;
 
-    return $self->render(json => {status => 'failed', reason => 'no_money'}) if $account->{balance} < 0;
-    return $self->render(json => {status => 'failed', reason => 'user_limit'}) if $self->log_in_check($account->{user_count} * 1, $user->id) == 0;
-
-    my $coords = from_json($account->location->map_coords);
-
-    say Dumper $coords;
+    return $self->render(json => {status => 'failed', reason => 'no_money'}) if $acc_data->{balance} < 0;
+    #return $self->render(json => {status => 'failed', reason => 'user_limit'}) if $self->log_in_check($acc_data->{user_count} * 1, $user->id) == 0;
 
     $self->session->{'user'} = {
-        account_name => $account_name,
-        account_id => $account->{id},
+        account_name => $acc_data->{name},
+        account_id => $acc_data->{id},
+
         id => $user->id,
         login => $user->login,
         role => $user->role,
 
-        mode => $account->mode,
-        location_id => $account->location_id,
-        city_guid => $account->location->city_guid,
-        phone_prefix => $account->location->phone_prefix,
-        map_lat => $coords->{lat},
-        map_lng => $coords->{lng},
+        mode => $acc_data->{mode},
+        location_id => $acc_data->{location_id},
+        
+        phone_prefix => '4212',
+        city_guid => 'a4859da8-9977-4b62-8436-4e1b98c5d13f',
+        
+        map_lat => 48.480232846617845,
+        map_lng => 135.07203340530396,
     };
-
-    say Dumper $self->session->{'user'};
 
     $self->session(sid => int(rand(100000)));
 
@@ -75,7 +65,7 @@ sub signin {
 
     $self->log_in($user->id);
 
-    return $self->render(json => {status => 'success', account_id => $account->{id}});
+    return $self->render(json => {status => 'success', account_id => $acc_data->{id}});
 }
 
 sub signout {

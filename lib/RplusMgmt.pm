@@ -22,6 +22,7 @@ use DateTime::Format::Strptime qw();
 use Time::HiRes qw( time usleep );
 use Cache::FastMmap;
 use POSIX;
+use Data::Dumper;
 
 my $fmap = Cache::FastMmap->new();
 my $ua = Mojo::UserAgent->new;
@@ -29,8 +30,10 @@ my $ua = Mojo::UserAgent->new;
 sub startup {
     my $self = shift;
 
+    $fmap->set('users_logged_in', {});
+    $fmap->set('chat_last_id', {});
     $fmap->set('logins', {});
-    $fmap->set('acc_data', {ts => 0, data => {}});
+    $fmap->set('acc_cache', {});
 
     # Plugins
     my $config = $self->plugin('Config' => {file => 'app.conf'});
@@ -51,40 +54,95 @@ sub startup {
         assets_url => $config->{assets}->{url} || '/assets',
     );
 
-    $self->helper(get_acc_config => sub {
-        my ($self) = @_;
-
-        return {};
+     $self->helper(new_message => sub {
+        my ($self, $id, $from, $to) = @_;
+        
+        $fmap->set('chat_last_id', {
+            id => $id,
+            from => $from,
+            to => $to,
+        });
+        
+        return;
+    });
+    
+    $self->helper(is_logged_in => sub {
+        my ($self, $user_id) = @_;
+        
+        my $users_logged_in = $fmap->get('users_logged_in');
+        
+        return $users_logged_in->{$user_id};
     });
 
     $self->helper(get_acc_data => sub {
         my ($self) = @_;
+        
+        my $acc_name = $self->session->{'account_name'};
+        my $acc_data;
+        
+        my $acc_cache = $fmap->get('acc_cache');
+        my $r = $acc_cache->{$acc_name};
+        if (time - $r->{'ts'} < 120 && $r->{data}) {
+            $acc_data = $r->{data};
+        } else {      
+            my $tx = $ua->get('http://rplusmgmt.com/api/account/get_by_name?name=' . $acc_name);
+            if (my $res = $tx->success) {
+                if ($res->json->{'status'} eq 'ok') {
+                    $acc_data = $res->json->{'data'};
+        
+                    my $account = Rplus::Model::Account::Manager->get_objects(query => [name => $acc_name, del_date => undef])->[0];
 
-        return {
-            user_count => 100,
-            blocked => 0,
-            phone_prefix => '4212',
-            mode => 'all',
-            city_guid => 'a4859da8-9977-4b62-8436-4e1b98c5d13f',
-        };
+                    $acc_data = {
+                        id => $account->id,
+                        name => $account->name,
+                        balance => $acc_data->{balance},
+                        user_count => $acc_data->{user_count},
+                        mode => $acc_data->{mode},
+                        location_id => $acc_data->{location_id},
+                        phone_prefix => '4212',
+                        city_guid => 'a4859da8-9977-4b62-8436-4e1b98c5d13f',
+                    };
+
+                    my $r ={
+                        'ts' => time,
+                        'data' => $acc_data,
+                    };
+
+                    $acc_cache->{$acc_name} = $r;
+                    $fmap->set('acc_cache', $acc_cache);
+                }
+            }
+        }
+
+        if ($acc_data) {
+            return $acc_data;
+        } else {
+            return {
+                balance => -1,
+                user_count => 1,
+                location_id => 1,
+                phone_prefix => '4212',
+                city_guid => 'a4859da8-9977-4b62-8436-4e1b98c5d13f',
+            };
+        }
     });
 
     $self->helper(session_check => sub {
         my ($self, $login) = @_;
 
-        return 1 if $self->config->{account_type} eq 'demo' || $self->config->{account_type} eq 'dev';
+        #return 1 if $self->config->{account_type} eq 'demo' || $self->config->{account_type} eq 'dev';
 
         my $acc_data = $self->get_acc_data();
+        return 0 unless $acc_data;
+
         my $max_users = $acc_data->{user_count} * 1;
 
         my $login_struct = $fmap->get('logins');
 
-        return 1;       # временно
-
-        return 0 if $acc_data->{blocked};
-        return 0 unless exists $login_struct->{$login};
-        return 0 if scalar keys $login_struct > $max_users;
-        return 0 if $self->session->{sid} != $login_struct->{$login};
+        return 0 if $acc_data->{balance} < 0;
+        #return 0 unless exists $login_struct->{$login};
+        #return 0 if scalar keys $login_struct > $max_users;
+        #return 0 if $self->session->{sid} != $login_struct->{$login};
 
         return 1;
     });
@@ -295,13 +353,20 @@ sub startup {
         ucfirst $self->loc(@_);
     });
 
-    # Permissions
+    # 
     $self->hook(before_routes => sub {
         my $c = shift;
+
+        my $host = $c->req->url->to_abs->host;
+        my @parts = split(/\./, $host);
+        my $account_name = $parts[0];
+
+        $c->session->{'account_name'} = $account_name;
 
         if (my $user_id = $c->session->{user}->{id}) {
             if (my $user = Rplus::Model::User::Manager->get_objects(query => [id => $user_id, delete_date => undef])->[0]) {
                 $c->stash(user => {
+
                     id => $user->id,
                     login => $user->login,
                     name => $user->name,
@@ -336,6 +401,54 @@ sub startup {
         $r2->post('/signin')->to('authentication#signin');
         $r2->get('/signout')->to('authentication#signout');
 
+        $r2->get('/events')->to(cb => sub {
+            my $self = shift;
+            my $pound_count = 0;
+
+            # Increase inactivity timeout for connection a bit :)
+            Mojo::IOLoop->stream($self->tx->connection)->timeout(0);
+
+            my $user_id = $self->stash('user')->{id};
+            
+            my $users_logged_in = $fmap->get('users_logged_in');
+            $users_logged_in->{$user_id} = 1;
+            $fmap->set('users_logged_in', $users_logged_in);
+            
+            # Change content type
+            $self->res->headers->content_type('text/event-stream');
+            my $last_msg_id = 0;
+            my $timer_id_1 = Mojo::IOLoop->recurring(1 => sub {
+                my $msg = $fmap->get('chat_last_id');
+
+                if ($last_msg_id == 0) {
+                    $last_msg_id = $msg->{id};
+                }
+                
+                if ($msg->{id} != $last_msg_id && ((!$msg->{to} && $msg->{from} != $user_id) || $msg->{to} == $user_id)) {
+                    $last_msg_id = $msg->{id};
+                    my $to = $msg->{to};
+                    $self->write_chunk("event:chat_message\ndata: $to\n\n");
+                }
+            });
+            
+            my $timer_id_10 = Mojo::IOLoop->recurring(15 => sub {
+                $self->write_chunk("event:heartbeat\ndata: pound $pound_count\n\n");
+                $pound_count++;
+            });            
+
+            # Unsubscribe from event again once we are done
+            $self->on(finish => sub {
+                my $self = shift;
+                
+                my $users_logged_in = $fmap->get('users_logged_in');
+                $users_logged_in->{$user_id} = 0;
+                $fmap->set('users_logged_in', $users_logged_in);
+                
+                Mojo::IOLoop->remove($timer_id_1);
+                Mojo::IOLoop->remove($timer_id_10);
+            });
+        });
+        
         # Tasks
         $r2->get('/tasks/:action')->to(controller => 'tasks');
         # Backdoor

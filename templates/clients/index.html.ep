@@ -1013,7 +1013,7 @@
 
       // Infinite scrolling
       $('#clientTreeWrapper').scroll(function (e) {
-        if ($(this).scrollTop() + $(this).innerHeight() >= $(this)[0].scrollHeight) {
+        if ($(this).scrollTop() + $(this).innerHeight() >= $(this)[0].scrollHeight - 1) {
           listClients(clientsLastPage + 1);
         }
       });
@@ -1497,17 +1497,14 @@
                 client_id: client_id,
                 realty_id: $(this).data('id'),
               },
-              async: false, // (!)
-              success: function (data, textStatus, jqXHR) {
+            })
+            .done(function (data, textStatus, jqXHR) {
                 if(data.status != 'success') {
                     alert('не удалось отправить sms');
-                } else {
-
-                }
-              },
-              error: function (jqXHR, textStatus, errorThrown) {
+                } else {}
+            })
+            .fail(function (jqXHR, textStatus, errorThrown) {
                 alert('не удалось отправить СМС, проверьте настройки');
-              },
             });
           });
         });
@@ -1527,19 +1524,18 @@
                 client_id: client_id,
                 realty_id: $(this).data('id'),
               },
-              async: false, // (!)
-              success: function (data, textStatus, jqXHR) {
+            })
+            .done(function (data, textStatus, jqXHR) {
                 if(data.status != 'success') {
                   if(data.status == 'not sent') {
                     alert('В карточке клиента не указан email');
                   } else {
                     alert('не удалось отправить e-mail');
                   }
-                } 
-              },
-              error: function (jqXHR, textStatus, errorThrown) {
+                }
+            })
+            .fail(function (jqXHR, textStatus, errorThrown) {
                 alert('не удалось отправить e-mail');
-              },
             });
           });
         });

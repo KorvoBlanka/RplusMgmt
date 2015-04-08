@@ -2,6 +2,8 @@ package RplusMgmt::Controller::API::Realty;
 
 use Mojo::Base 'Mojolicious::Controller';
 
+use Rplus::Model::Account;
+use Rplus::Model::Account::Manager;
 use Rplus::Model::Realty;
 use Rplus::Model::Realty::Manager;
 use Rplus::Model::Landmark;
@@ -16,6 +18,8 @@ use Rplus::Model::ColorTag;
 use Rplus::Model::ColorTag::Manager;
 use Rplus::Model::SubscriptionRealty;
 use Rplus::Model::SubscriptionRealty::Manager;
+use Rplus::Model::Option;
+use Rplus::Model::Option::Manager;
 
 use Rplus::Util::PhoneNum;
 use Rplus::Util::Query;
@@ -30,6 +34,13 @@ use Time::Piece;
 use Data::Dumper;
 
 no warnings 'experimental::smartmatch';
+
+my %accounts_hash;
+
+my $accounts_iter = Rplus::Model::Account::Manager->get_objects_iterator(query => [del_date => undef],);
+while (my $x = $accounts_iter->next) {
+    $accounts_hash{$x->id} = $x->company_name ? $x->company_name : $x->name;
+}
 
 my $_make_copy = sub {
     my $self = shift;
@@ -72,6 +83,11 @@ my $_make_copy = sub {
     Rplus::Model::SubscriptionRealty::Manager->update_objects(
         set => {realty_id => $new_record->id},
         where => [realty_id => $realty->id],
+    );    
+    
+    Rplus::Model::ColorTag::Manager->update_objects(
+        set => {realty_id => $new_record->id},
+        where => [realty_id => $realty->id, user_id => $self->stash('user')->{id},],
     );
 
     return $new_record;
@@ -83,10 +99,21 @@ my $_serialize = sub {
     my @realty_objs = (ref($_[0]) eq 'ARRAY' ? @{shift()} : shift);
     my %params = @_;
 
-    my @exclude_fields = qw(ap_num source_media_id source_media_text owner_phones work_info reference);
+    my $acc_id = $self->session('user')->{account_id};
+
+    my @exclude_fields = qw(ap_num source_media_id source_media_text owner_phones work_info reference source_url);
 
     my (@serialized, %realty_h);
     for my $realty (@realty_objs) {
+        my $anothers_obj = 0;
+        my $company = '';
+        if ($realty->mediator_company && $realty->agent_id == 10000) {
+            $company = $realty->mediator_company->name;
+        } elsif ($realty->account_id && $realty->account_id != $acc_id) {
+            $anothers_obj = 1;
+            $company = $accounts_hash{$realty->account_id};
+        } 
+
         my $x = {
             (map { $_ => ($_ =~ /_date$/ ? $self->format_datetime($realty->$_) : scalar($realty->$_)) } grep { !($_ ~~ [qw(delete_date geocoords landmarks metadata fts)]) } $realty->meta->column_names),
 
@@ -101,7 +128,7 @@ my $_serialize = sub {
             sublandmark => $realty->sublandmark ? {id => $realty->sublandmark->id, name => $realty->sublandmark->name} : undef,
             main_photo_thumbnail => undef,
             color_tag_id => undef,            
-            mediator_company => ($realty->mediator_company && $realty->agent_id == 10000) ? $realty->mediator_company->name : '',
+            mediator_company => $company,
             source_url => $realty->source_url,
         };
 
@@ -115,8 +142,9 @@ my $_serialize = sub {
         }
 
         # Exclude fields for read permission "2"
-        if ($self->has_permission(realty => read => $realty->agent_id) == 2 && $realty->agent_id != 10000 && !($realty->agent_id ~~ @{$self->stash('user')->{subordinate}})) {
+        if ($anothers_obj || $self->has_permission(realty => read => $realty->agent_id) == 2 && $realty->agent_id != 10000 && !($realty->agent_id ~~ @{$self->stash('user')->{subordinate}})) {
             $x->{$_} = undef for @exclude_fields;
+            $x->{export_media} = [];
             if ($realty->agent_id) {
                 my $user = Rplus::Model::User::Manager->get_objects(query => [id => $realty->agent_id, delete_date => undef])->[0];
                 $x->{owner_phones} = [$user->public_phone_num];
@@ -255,9 +283,46 @@ sub list {
     my $rq_id = $self->param("rq_id") || 42;
     my $acc_id = $self->session('user')->{account_id};
 
+    my $multy = 0;
+    if ($state_code eq 'multy') {
+        $multy = 1;
+        $state_code = 'work';
+    }
+
     # "where" query
     my @query;
     {
+        my @types;
+        if (1 != 2) {
+            my $options = Rplus::Model::Option->new(account_id => $acc_id)->load();
+            my $opt = from_json($options->{options});
+            my $import = $opt->{import};
+            
+            my $mode = $self->session->{'user'}->{'mode'};
+            
+            eval {
+                while (my ($key, $value) = each %{$import}) {
+                
+                    if ($mode eq 'rent') {
+                        next if $key !~ /rent/;
+                    } elsif ($mode eq 'sale') {
+                        next if $key !~ /sale/;
+                    } else {
+                
+                    }
+                
+                    if ($key =~ /$offer_type_code-(\w+)/ && ($value eq 'true' || $value eq '1')) {
+                        push @types, $1;
+                    }
+                }                
+                if (scalar @types) {
+                    push @query, 'type_code' => \@types ;
+                } else {
+                    push @query, 'type_code' => 'none';
+                }
+            } or do {}
+        }
+    
         if ($color_tag_id ne 'any') {
             push @query, and => [
                 'color_tags.color_tag_id' => $color_tag_id,
@@ -331,12 +396,17 @@ sub list {
     # Parse query
     push @query, Rplus::Util::Query->parse($q, $self);
 
+    if ($multy) {
+        push @query, multylisting => 1;
+    } else {
+        push @query, or => [account_id => undef, account_id => $acc_id];
+        push @query, \("NOT hidden_for && '{".$acc_id."}'");
+    }
+
     my $res = {
         count => Rplus::Model::Realty::Manager->get_objects_count(
             query => [
                 @query,
-                or => [account_id => undef, account_id => $acc_id],
-                \("NOT hidden_for && '{".$acc_id."}'"),
                 delete_date => undef
             ],
             with_objects => ['color_tags', @with_objects]
@@ -352,8 +422,6 @@ sub list {
         $res->{count} = Rplus::Model::Realty::Manager->get_objects_count(
             query => [
                 @query,
-                or => [account_id => undef, account_id => $acc_id],
-                \("NOT hidden_for && '{".$acc_id."}'"),
                 delete_date => undef,
             ],
             with_objects => ['color_tags', @with_objects]
@@ -367,14 +435,12 @@ sub list {
             push @{$res->{'mediators'}}, {id => $mediator->id, company => $mediator->company->name, phone_num => $mediator->phone_num};
         }
     }
-    
+
     # Fetch realty objects
     my $realty_objs = Rplus::Model::Realty::Manager->get_objects(
         select => ['realty.*', (map { 'address_object.'.$_ } qw(id name short_type expanded_name metadata))],
         query => [
             @query,
-            or => [account_id => undef, account_id => $acc_id],
-            \("NOT hidden_for && '{".$acc_id."}'"),
             delete_date => undef,
         ],
         sort_by => [@sort_by, 'realty.last_seen_date desc'],
@@ -455,8 +521,9 @@ sub save {
         'floor', 'floors_count', 'levels_count', 'condition_id', 'balcony_id', 'bathroom_id',
         'square_total', 'square_living', 'square_kitchen', 'square_land', 'square_land_type',
         'description', 'owner_info', 'owner_price', 'work_info', 'agent_id', 'agency_price',
-        'latitude', 'longitude', 'sublandmark_id',
+        'latitude', 'longitude', 'sublandmark_id', 'multylisting', 'mls_price', 'mls_price_type',
     );
+
     my @fields_array = ('owner_phones', 'tags', 'export_media');
 
     my @errors;
@@ -481,7 +548,7 @@ sub save {
 
     my $realty;
     if (my $id = $self->param('id')) {
-        $realty = Rplus::Model::Realty::Manager->get_objects(query => [id => $id, \("NOT hidden_for && '{".$acc_id."}'"), delete_date => undef])->[0];
+        $realty = Rplus::Model::Realty::Manager->get_objects(query => [id => $id, or => [account_id => undef, account_id => $acc_id], \("NOT hidden_for && '{".$acc_id."}'"), delete_date => undef])->[0];
     } else {
         $realty = Rplus::Model::Realty->new(
             creator_id => $self->stash('user')->{id},
@@ -552,8 +619,8 @@ sub save {
     }
 
     my $a = $realty->owner_phones;
-    if (scalar @{ $a }) {
-        my $x = Rplus::Model::Mediator::Manager->get_objects(query => [phone_num => $a, delete_date => undef], require_objects => ['company'], limit => 1,)->[0];
+    if (scalar @{$a}) {
+        my $x = Rplus::Model::Mediator::Manager->get_objects(query => [phone_num => [@{$a}], delete_date => undef], require_objects => ['company'], limit => 1,)->[0];
         if ($x) {
             $realty->mediator_company_id($x->company->id);
             $realty->agent_id(10000);
@@ -561,6 +628,88 @@ sub save {
                 $realty->state_code('raw');
             }
         }
+    }
+
+    if ($realty->state_code eq 'work' && (!$realty->agent_id || $realty->agent_id == 10000) ) {
+        $realty->state_code('raw');
+    }
+
+    if (!$realty->agent_id || $realty->agent_id == 10000) {
+        $realty->export_media(Mojo::Collection->new());
+    }    
+    
+    # 
+    my @mls_fields_apartment = (
+        'address_object_id', 'house_num', 'house_type_id', 'ap_scheme_id',
+        'rooms_count', 'room_scheme_id',
+        'floor', 'floors_count', 'condition_id', 'balcony_id', 'bathroom_id',
+        'square_total',
+        'description', 'owner_price', 'agent_id', 'mls_price',
+    );
+
+    # 
+    my @mls_fields_rooms = (
+        'address_object_id', 'house_num', 'house_type_id', 'ap_scheme_id',
+        'rooms_count', 'rooms_offer_count', 'room_scheme_id',
+        'floor', 'floors_count', 'condition_id', 'balcony_id', 'bathroom_id',
+        'square_total',
+        'description', 'owner_price', 'agent_id', 'mls_price',
+    );
+    
+    my @mls_fields_house = (
+        'address_object_id', 'house_num', 'house_type_id',
+        'rooms_count', 'rooms_offer_count',
+        'condition_id', 'bathroom_id',
+        'square_total',
+        'description', 'owner_price', 'agent_id', 'mls_price',
+    );
+    
+    # 
+    my @mls_fields_land = (
+        'square_land', 'square_land_type',
+        'description', 'owner_price', 'agent_id',
+        'mls_price',
+    );
+
+    # 
+    my @mls_fields_office = (
+        'address_object_id', 'house_num',
+        'square_total',
+        'description', 'owner_price', 'agent_id',
+        'mls_price',
+    );
+    
+    # 
+    my @mls_fields_other = (
+        'description', 'owner_price', 'agent_id',
+        'mls_price',
+    );
+    
+    my @mls_fields;
+    
+    if ($realty->type_code eq 'room') {
+        @mls_fields = @mls_fields_rooms;
+    } elsif ($realty->type_code eq 'apartment' || $realty->type_code eq 'apartment_small' || $realty->type_code eq 'apartment_new' || $realty->type_code eq 'townhouse') {
+        @mls_fields = @mls_fields_apartment;
+    } elsif ($realty->type_code eq 'house' || $realty->type_code eq 'cottage' || $realty->type_code eq 'dacha') {
+        @mls_fields = @mls_fields_house;
+    } elsif ($realty->type_code eq 'land') {
+        @mls_fields = @mls_fields_land;
+    } elsif ($realty->type_code eq 'office') {
+        @mls_fields = @mls_fields_office;
+    } elsif ($realty->type_code eq 'other') {
+        @mls_fields = @mls_fields_other;
+    }
+
+    for (@mls_fields) {
+        unless ($realty->$_) {
+            $realty->multylisting(0);
+            last;
+        }        
+    }
+    
+    if ($realty->state_code ne 'work') {
+        $realty->multylisting(0);
     }
 
     eval {
@@ -632,6 +781,43 @@ sub save {
     $self->render(json => $res);
 }
 
+sub set_color_tag {
+    my $self = shift;
+
+    my $acc_id = $self->session('user')->{account_id};
+    my $user_id = $self->stash('user')->{id};
+    my $id = $self->param('id');
+    my $color_tag_id = $self->param('color_tag_id');
+
+    my $realty = Rplus::Model::Realty::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
+    return $self->render(json => {error => 'Not Found'}, status => 404) unless $realty;
+
+    my $color_tag = Rplus::Model::ColorTag::Manager->get_objects(query => [realty_id => $realty->id, user_id => $user_id,])->[0];
+    if ($color_tag) {
+        if ($color_tag_id != $color_tag->color_tag_id) {
+          $color_tag->color_tag_id($color_tag_id);
+        } else {
+          $color_tag->color_tag_id(undef);
+        }
+        $color_tag->save(changes_only => 1);
+    } else {
+        $color_tag = Rplus::Model::ColorTag->new(
+            realty_id => $realty->id,
+            user_id => $user_id,
+            color_tag_id => $color_tag_id,
+        );
+        $color_tag->save(insert => 1);
+    }
+    
+    my $res = {
+        status => 'success',
+        id => $realty->id,
+        realty => $_serialize->($self, $realty),
+    };
+
+    return $self->render(json => $res);
+}
+
 sub update {
     my $self = shift;
 
@@ -642,7 +828,7 @@ sub update {
 
     my $id = $self->param('id');
     my $create_event = 0;
-    my $realty = Rplus::Model::Realty::Manager->get_objects(query => [id => $id, \("NOT hidden_for && '{".$acc_id."}'"), delete_date => undef])->[0];
+    my $realty = Rplus::Model::Realty::Manager->get_objects(query => [id => $id, or => [account_id => undef, account_id => $acc_id], \("NOT hidden_for && '{".$acc_id."}'"), delete_date => undef])->[0];
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $realty;
 
 
@@ -682,8 +868,9 @@ sub update {
                 $realty->agent_id($agent_id);
                 if ($agent_id == 10000) {
                     add_mediator('ПОСРЕДНИК В НЕДВИЖИМОСТИ', $realty->owner_phones->[0], 'user_' . $user_id);
+                } else {
+                    $create_event = 1;
                 }
-
             }
 
             $realty->assign_date('now()');
@@ -727,6 +914,10 @@ sub update {
 
     if (!$realty->agent_id || $realty->agent_id == 10000) {
         $realty->export_media(Mojo::Collection->new());
+    }
+
+    if ($realty->state_code ne 'work') {
+        $realty->multylisting(0);
     }
 
     # Save data

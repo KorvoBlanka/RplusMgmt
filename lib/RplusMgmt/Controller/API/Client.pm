@@ -80,14 +80,15 @@ sub list {
         ],
         query => [
             account_id => $acc_id,
-            or => [
-                subscription_offer_types => $subscription_offer_types,
-                subscription_offer_types => 'both',
-            ],
+            'subscriptions.offer_type_code' => $subscription_offer_types,
+            #or => [
+            #    subscription_offer_types => $subscription_offer_types,
+            #    subscription_offer_types => 'both',
+            #],
             @query,
             delete_date => undef,
         ],
-        with_objects => ['client_color_tags'],
+        with_objects => ['client_color_tags', 'subscriptions'],
         sort_by => 'change_date desc',
         page => $page,
         per_page => $per_page,
@@ -110,7 +111,6 @@ sub list {
             subscriptions => [],
             color_tag_id => 0,
             agent_id => $client->agent_id,
-            subscription_offer_types => $client->subscription_offer_types,
         };
 
         if($client->client_color_tags) {
@@ -121,7 +121,7 @@ sub list {
                 }
             }
         }
-        
+
         my $subscription_iter = Rplus::Model::Subscription::Manager->get_objects_iterator(
             query => [
                 client_id => $client->id,
@@ -132,7 +132,6 @@ sub list {
             ],
         );
         
-        my $offer_type_code = 'none';
         while (my $subscription = $subscription_iter->next) {
             my $sub = {
                 id => $subscription->id,
@@ -144,15 +143,8 @@ sub list {
                 realty_limit => $subscription->realty_limit,
                 send_owner_phone => $subscription->send_owner_phone ? \1 : \0,
             };
-            if ($offer_type_code eq 'none') {
-                $offer_type_code = $subscription->offer_type_code;
-            } elsif ($offer_type_code ne $subscription->offer_type_code) {
-                $offer_type_code = 'both';
-            }
             push @{$x->{subscriptions}}, $sub;
         }
-        $client->subscription_offer_types($offer_type_code);
-        $client->save();
         push @{$res->{list}}, $x;
     }
 
@@ -191,7 +183,6 @@ sub get {
         send_owner_phone => $client->send_owner_phone,
         color_tag_id => 0,
         agent_id => $client->agent_id,
-        subscription_offer_types => $client->subscription_offer_types,
     };
 
     if($client->client_color_tags) {
@@ -235,37 +226,6 @@ sub get {
     return $self->render(json => $res);
 }
 
-sub update_offer_types {
-    my $self = shift;
-
-    # Retrieve client
-    my $id = $self->param('id');
-    my $acc_id = $self->session('user')->{account_id};
-    my $client = Rplus::Model::Client::Manager->get_objects(query => [account_id => $acc_id, id => $id, delete_date => undef])->[0];
-
-    my $subscription_iter = Rplus::Model::Subscription::Manager->get_objects_iterator(
-        query => [
-            client_id => $client->id,
-            delete_date => undef,                
-            #'!end_date' => undef,
-            #'subscription_realty.delete_date' => undef,
-        ],
-    );
-
-    my $offer_type_code = 'none';
-    while (my $subscription = $subscription_iter->next) {
-        if ($offer_type_code eq 'none') {
-            $offer_type_code = $subscription->offer_type_code;
-        } elsif ($offer_type_code ne $subscription->offer_type_code) {
-            $offer_type_code = 'both';
-        }
-    } 
-    $client->subscription_offer_types($offer_type_code);
-    $client->save();
-
-    return $self->render(json => {offer_type => $offer_type_code, status => 'success'});    
-}
-
 sub save {
     my $self = shift;
 
@@ -301,7 +261,6 @@ sub save {
     my $send_owner_phone = $self->param_b('send_owner_phone');
     my $color_tag_id = $self->param('color_tag_id');
     my $agent_id = $self->param('agent_id');
-    my $subscription_offer_types = $self->param('subscription_offer_types');
 
     # Save
     $client->name($name);
@@ -326,7 +285,6 @@ sub save {
     }
 
     $client->change_date('now()');
-    $client->subscription_offer_types($subscription_offer_types);
     
     eval {
         $client->save($client->id ? (changes_only => 1) : (insert => 1));
@@ -530,24 +488,6 @@ sub subscribe {
     );
     $subscription->save;
 
-    my $subscription_iter = Rplus::Model::Subscription::Manager->get_objects_iterator(
-        query => [
-            client_id => $client->id,
-            delete_date => undef,
-        ],
-    );
-
-    my $subscription_offer_types = 'none';    
-    while (my $subscription = $subscription_iter->next) {
-        if ($subscription_offer_types eq 'none') {
-            $subscription_offer_types = $subscription->offer_type_code;
-        } elsif ($subscription_offer_types ne $subscription->offer_type_code) {
-            $subscription_offer_types = 'both';
-        }
-    }
-    $client->subscription_offer_types($subscription_offer_types);
-    $client->save();
-
     my $options = Rplus::Model::Option->new(account_id => $acc_id)->load();
     my $contact_info = '';
     if ($options) {
@@ -617,7 +557,7 @@ sub subscribe {
                         push @parts, 'Клиент: '.$self->format_phone_num($phone_num);
                     }
                     my $sms_text = join(', ', @parts);
-                    Rplus::Model::SmsMessage->new(phone_num => $realty->agent->phone_num, text => $sms_text)->save;
+                    Rplus::Model::SmsMessage->new(phone_num => $realty->agent->phone_num, text => $sms_text, account_id => $acc_id)->save;
                 }
             }
         }

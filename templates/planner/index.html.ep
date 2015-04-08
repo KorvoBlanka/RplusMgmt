@@ -1747,6 +1747,7 @@ a:focus {
         %   }
         % } elsif ($self->stash('user')->{role} eq 'manager') {
           <li><a href="#" data-val="<%= $self->stash('user')->{id} %>" data-type="text"><strong> Мои задачи</strong></a></li>
+          <li><a href="#" data-val="a<%= $self->stash('user')->{id} %>" data-type="text"><strong> Мои агенты</strong></a></li>
         % if (scalar (@{$self->stash('user')->{subordinate}})) {
         % for my $a (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('user')->{account_id}, id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
           <li><a href="#" data-val="<%= $a->id %>" data-type="text"> <%= $a->name %></a></li>

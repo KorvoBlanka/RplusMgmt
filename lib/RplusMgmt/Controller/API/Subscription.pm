@@ -13,6 +13,11 @@ use Rplus::Model::Photo::Manager;
 use Rplus::Model::ColorTag;
 use Rplus::Model::ColorTag::Manager;
 
+use Rplus::Model::Client;
+use Rplus::Model::Client::Manager;
+
+use Rplus::Model::Option;
+use Rplus::Model::Option::Manager;
 
 use JSON;
 use Mojo::Util qw(trim);
@@ -273,6 +278,8 @@ sub realty_list {
     my $sr_state_code = $self->param("sr_state_code") || 'any';
     my $sr_offered = $self->param("sr_offered") || 'any';
 
+    my $acc_id = $self->session('user')->{account_id};
+    
     my $subscription = Rplus::Model::Subscription::Manager->get_objects(query => [id => $subscription_id, delete_date => undef])->[0];
     if ($page eq '1') {
         realty_update($self, $subscription->id);
@@ -318,6 +325,8 @@ sub realty_list {
         } else {
             push @query, '!realty.state_code' => 'deleted';
         }
+        push @query, or => ['realty.account_id' => undef, 'realty.account_id' => $acc_id];
+        #push @query, \("NOT realty.hidden_for && '{".$acc_id."}'");
     }
 
     my $res = {
@@ -374,6 +383,25 @@ sub realty_update {
         # Skip FTS data
         my @query = map { ref($_) eq 'SCALAR' && $$_ =~ /^t1\.fts/ ? () : $_ } (Rplus::Util::Query->parse($q, $self));
 
+        my @types;
+        if (1 != 2) {
+            my $offer_type_code = $subscription->offer_type_code;
+            my $options = Rplus::Model::Option->new(account_id => $acc_id)->load();
+            my $opt = from_json($options->{options});
+            my $import = $opt->{import};
+            
+            while (my ($key, $value) = each %{$import}) {
+                if ($key =~ /$offer_type_code-(\w+)/ && ($value eq 'true' || $value eq '1')) {
+                    push @types, $1;
+                }
+            }
+            if (scalar @types) {
+                push @query, 'type_code' => \@types ;
+            } else {
+                push @query, 'type_code' => 'none';
+            }
+        }        
+        
         my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
             query => [
                 @query,
@@ -544,7 +572,7 @@ sub save {
                 }
                 my $sms_body = join(', ', @parts);
                 my $sms_text = 'Вы интересовались: '.$sms_body.($sms_body =~ /\.$/ ? '' : '.') . ' ' . $contact_info;
-                Rplus::Model::SmsMessage->new(phone_num => $client->phone_num, text => $sms_text)->save;
+                Rplus::Model::SmsMessage->new(phone_num => $client->phone_num, text => $sms_text, account_id => $acc_id)->save;
             }
 
             # Prepare SMS for agent
@@ -559,7 +587,7 @@ sub save {
                     push @parts, 'Клиент: '.$self->format_phone_num($client->phone_num);
                 }
                 my $sms_text = join(', ', @parts);
-                Rplus::Model::SmsMessage->new(phone_num => $realty->agent->phone_num, text => $sms_text)->save;
+                Rplus::Model::SmsMessage->new(phone_num => $realty->agent->phone_num, text => $sms_text, account_id => $acc_id)->save;
             }
         }
     }

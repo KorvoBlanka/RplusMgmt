@@ -86,15 +86,6 @@
         $('.form-signin').submit(function (e) {
           e.preventDefault();
 
-          var account_name = '';
-          var d_idx = window.location.host.indexOf('.');
-          
-          if(d_idx !== -1)
-          {
-            account_name = window.location.host.substring(0, d_idx);
-          }
-          console.log(account_name);
-
           var login = $('input[name="login"]').val();
           var password = $('input[name="password"]').val();
           var rememberMe = $('input[name="remember_me"]').prop('checked');
@@ -102,7 +93,7 @@
           $.ajax({
             type: "POST",
             url: "/signin",
-            data: {account_name: account_name, login: login, password: password, remember_me: rememberMe},
+            data: {login: login, password: password, remember_me: rememberMe},
             beforeSend: function (jqXHR, settings) { $('.form-signin button[type="submit"]').button('loading'); },
           })
             .done(function (data, textStatus, jqXHR) {
