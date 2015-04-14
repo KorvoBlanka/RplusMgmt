@@ -11,6 +11,8 @@ use Rplus::Model::Mediator;
 use Rplus::Model::Mediator::Manager;
 use Rplus::Model::MediatorCompany;
 use Rplus::Model::MediatorCompany::Manager;
+use Rplus::Model::MediatorRealty;
+use Rplus::Model::MediatorRealty::Manager;
 
 use Data::Dumper;
 
@@ -79,16 +81,14 @@ sub delete_mediators {
 }
 
 sub wtf {
-    my $mediator_iter = Rplus::Model::Mediator::Manager->get_objects_iterator(query => [company_id => 439]);
     my $count = 0;
-    while (my $x = $mediator_iter->next) {
-        eval {
-            $x->delete_date(undef);
-            $x->save;
-            $count += 1;
-        } or do {
-            
-        };
+    my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(query => ['!mediator_company_id' => undef, delete_date => undef,]);
+    while (my $realty = $realty_iter->next) {
+        my $mr = Rplus::Model::MediatorRealty->new(
+            realty_id => $realty->id,
+            mediator_company_id => $realty->mediator_company_id,
+        )->save;
+        $count += 1;
     }
     
     return $count;

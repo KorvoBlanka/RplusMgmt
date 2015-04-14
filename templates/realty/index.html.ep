@@ -630,7 +630,7 @@
       _listRealty_started = true;
  
       clearTimeout(_tid);
-      _tid = setTimeout(function(){updateRealty()},10000);
+      _tid = setTimeout(function(){updateRealty()}, 15000);
       rq_id ++;
       $.ajax({
         type: "POST",
@@ -738,7 +738,7 @@
       })
         .done(function (data, textStatus, jqXHR) {
 
-          _tid = setTimeout(function(){updateRealty()},10000);
+          _tid = setTimeout(function(){updateRealty()}, 15000);
 
           if (data.rq_id != rq_id) {
             return 0;
@@ -788,6 +788,8 @@
             $tr.addClass('opened');
           }
           card_opened = true;
+          $tr.data('lat', r.latitude);
+          $tr.data('lng', r.longitude);
         },
         saved: function (r) {
           // Update object row in the table
@@ -1448,7 +1450,33 @@
               var lat = $(this).data('lat'),
                   lng = $(this).data('lng'),
                   r   = $(this).data('obj');
-              if (lat && lng) {
+              if (!lat || !lng) {
+                  $.ajax({
+                    type: "POST",
+                    url: "/api/realty/check_coords",
+                    data: {
+                      id: r.id,
+                    },
+                  })
+                    .done(function (data, textStatus, jqXHR) {
+                      if (data.status == 'success') {
+                        $(this).data('lat', data.lat);
+                        $(this).data('lng', data.lng);
+
+                        var marker = L.marker([data.lat, data.lng]).addTo(markerLG);
+                        bounds.push([data.lat, data.lng]);
+                        marker.bindPopup(Rplus.Realty.getDigest(r));
+                        
+                          setTimeout(function () {
+                            geoMap.fitBounds(bounds);
+                          }, 1000);
+                      } else {
+
+                      }
+                    }).fail(function (jqXHR, textStatus, errorThrown) {
+
+                    });
+              } else {
                 var marker = L.marker([lat, lng]).addTo(markerLG);
                 bounds.push([lat, lng]);
                 marker.bindPopup(Rplus.Realty.getDigest(r));
@@ -1666,7 +1694,7 @@
                 % }
                 % if (has_permission(realty => 'read')->{others}) {
                 <li><a href="#" data-val="all" data-type="text"><strong><%= ucfloc 'all agents' %></strong></a></li>
-                <li><a href="#" data-val="10000" data-type="text"><strong> Посредник</strong></a></li>
+                <li><a href="#" data-val="med" data-type="text"><strong> Посредник</strong></a></li>
                 <li><a href="#" data-val="not_med" data-type="text"><strong> Собственник</strong></a></li>
                 <li><a href="#" data-val="<%= $self->stash('user')->{id} %>" data-type="text"><strong> Мои объекты</strong></a></li>
                 % }

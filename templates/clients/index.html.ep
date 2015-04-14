@@ -2366,7 +2366,7 @@
               % }
               % if (has_permission(realty => 'read')->{others}) {
               <li><a href="#" data-val="all" data-type="text"><strong><%= ucfloc 'all agents' %></strong></a></li>
-              <li><a href="#" data-val="10000" data-type="text"><strong> Посредник</strong></a></li>
+              <li><a href="#" data-val="med" data-type="text"><strong> Посредник</strong></a></li>
               <li><a href="#" data-val="not_med" data-type="text"><strong> Собственник</strong></a></li>
               <li><a href="#" data-val="<%= $self->stash('user')->{id} %>" data-type="text"><strong> Мои объекты</strong></a></li>
               % }

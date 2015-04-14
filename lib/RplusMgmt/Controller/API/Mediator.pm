@@ -8,14 +8,15 @@ use Rplus::Model::Mediator;
 use Rplus::Model::Mediator::Manager;
 use Rplus::Model::Realty;
 use Rplus::Model::Realty::Manager;
+use Rplus::Util::Mediator qw(add_mediator);
+use Rplus::Model::MediatorRealty;
+use Rplus::Model::MediatorRealty::Manager;
 
 use Mojo::Collection;
 
-use Data::Dumper;
-
 sub list {
     my $self = shift;
-
+    my $acc_id = $self->session('user')->{account_id};
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(mediators => 'read');
 
     my $company_id = $self->param('company_id');
@@ -28,6 +29,8 @@ sub list {
 
     my $mediator_iter = Rplus::Model::Mediator::Manager->get_objects_iterator(
         query => [
+            or => [account_id => undef, account_id => $acc_id],
+            \("NOT t1.hidden_for_aid && '{".$acc_id."}'"),
             ($company_id ? (company_id => $company_id) : ()),
             delete_date => undef,
         ],
@@ -52,6 +55,7 @@ sub list {
 
 sub get {
     my $self = shift;
+    my $acc_id = $self->session('user')->{account_id};
 
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(mediators => 'read');
 
@@ -76,6 +80,7 @@ sub get {
 
 sub save {
     my $self = shift;
+    my $acc_id = $self->session('user')->{account_id};
 
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(mediators => 'write');
 
@@ -85,6 +90,7 @@ sub save {
         $mediator = Rplus::Model::Mediator::Manager->get_objects(query => [id => $id, delete_date => undef], require_objects => ['company'])->[0];
     } else {
         $mediator = Rplus::Model::Mediator->new;
+        $mediator->account_id($acc_id);
     }
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $mediator;
 
@@ -120,6 +126,7 @@ sub save {
             $company = Rplus::Model::MediatorCompany::Manager->get_objects(query => [[\'lower(name) = ?' => lc($company_name)], delete_date => undef], db => $db)->[0];
             if (!$company) {
                 $company = Rplus::Model::MediatorCompany->new(name => $company_name, db => $db);
+                $company->account_id($acc_id);
                 $company->save;
                 $reload_company_list = 1;
             }
@@ -132,10 +139,13 @@ sub save {
         my $found_phones = Mojo::Collection->new();
         my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(query => [delete_date => undef, \("owner_phones && '{".$phone_num."}'")], db => $db);
         while (my $realty = $realty_iter->next) {
-            $realty->agent_id(10000);
-            $realty->state_code('raw') if $realty->state_code eq 'work';
-            $realty->mediator_company_id($mediator->company->id);
-            $realty->save(changes_only => 1);
+            #$realty->mediator_company_id($mediator->company->id);
+            #$realty->save(changes_only => 1);
+            my $mr = Rplus::Model::MediatorRealty->new(
+                realty_id => $realty->id,
+                mediator_company_id => $company->id,
+                account_id => $acc_id,
+            )->save;
             push @$found_phones, ($realty->owner_phones);
         }
         $found_phones = $found_phones->uniq;
@@ -174,6 +184,7 @@ sub get_obj_count {
 
 sub delete {
     my $self = shift;
+    my $acc_id = $self->session('user')->{account_id};
 
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(mediators => 'write');
 
@@ -183,6 +194,12 @@ sub delete {
 
     my $found_phones = Mojo::Collection->new();
     my $mediator = Rplus::Model::Mediator::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
+    
+    my $hidden_for = Mojo::Collection->new(@{$mediator->hidden_for_aid});
+    push @$hidden_for, ($acc_id);
+    $mediator->hidden_for_aid($hidden_for->compact->uniq);
+    $mediator->save(changes_only => 1);
+    
     my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(query => [delete_date => undef, \("owner_phones && '{".$mediator->phone_num."}'")]);
     while (my $realty = $realty_iter->next) {
         push @$found_phones, ($realty->owner_phones);
@@ -196,15 +213,20 @@ sub delete {
 
             $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(query => [delete_date => undef, \("owner_phones && '{".$_."}'")]);
             while (my $realty = $realty_iter->next) {
-                $realty->agent_id(undef);
-                $realty->mediator_company_id(undef);
-                $realty->save(changes_only => 1);
+                #$realty->mediator_company_id(undef);
+                #$realty->save(changes_only => 1);
+                Rplus::Model::MediatorRealty::Manager->delete_objects(
+                    where => [
+                        realty_id => $realty->id,
+                        account_id => $acc_id,
+                    ]
+                );
             }
 
-            my $num_rows_updated = Rplus::Model::Mediator::Manager->update_objects(
-                set => {delete_date => \'now()'},
-                where => [phone_num => $_, delete_date => undef],
-            );
+            #my $num_rows_updated = Rplus::Model::Mediator::Manager->update_objects(
+            #    set => {delete_date => \'now()'},
+            #    where => [phone_num => $_, delete_date => undef],
+            #);
 
         }
     }    

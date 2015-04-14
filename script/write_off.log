@@ -68224,3 +68224,1167 @@ SMTP auth() command failed:
 
 Wed Apr  8 00:00:06 2015: write_off done
 
+Thu Apr  9 00:00:02 2015: write_off start
+	zodiac
+	balance: -40 write_off: 0
+
+	dev
+	balance: 89580 write_off: 80
+
+	rplusmakler
+	balance: 29943460 write_off: 220
+
+	pcn
+SMTP auth() command failed: 
+5.7.7 Email sending without SSL/TLS encryption is not allowed. Please see: http://help.yandex.ru/mail/mail-clients/ssl.xml
+
+	balance: 60 write_off: 100
+
+	show_khb
+	balance: 1177340 write_off: 80
+
+	account453
+	balance: 1060 write_off: 40
+
+	account457
+SMTP auth() command failed: 
+5.7.7 Email sending without SSL/TLS encryption is not allowed. Please see: http://help.yandex.ru/mail/mail-clients/ssl.xml
+
+	balance: 0 write_off: 60
+
+	account458
+	balance: -40 write_off: 0
+
+	show_kms
+	balance: 1179590 write_off: 80
+
+	account451
+	balance: 120 write_off: 80
+
+	account522
+	balance: 1570 write_off: 60
+
+	account472
+	balance: 200 write_off: 120
+
+	account519
+SMTP auth() command failed: 
+5.7.7 Email sending without SSL/TLS encryption is not allowed. Please see: http://help.yandex.ru/mail/mail-clients/ssl.xml
+
+	balance: -40 write_off: 40
+
+	account520
+	balance: 60 write_off: 40
+
+	account521
+	balance: 840 write_off: 40
+
+	account361
+	balance: -40 write_off: 0
+
+	account561
+	balance: 160 write_off: 60
+
+	account564
+	balance: 680 write_off: 40
+
+	account440
+SMTP auth() command failed: 
+5.7.7 Email sending without SSL/TLS encryption is not allowed. Please see: http://help.yandex.ru/mail/mail-clients/ssl.xml
+
+	balance: -40 write_off: 40
+
+	account552
+	balance: 2300 write_off: 60
+
+	account389
+	balance: 80 write_off: 40
+
+	account578
+	balance: -40 write_off: 0
+
+	account541
+	balance: 1040 write_off: 40
+
+	account542
+	balance: 560 write_off: 40
+
+	account602
+	balance: 640 write_off: 40
+
+	account540
+	balance: 880 write_off: 40
+
+	account550
+	balance: 1040 write_off: 40
+
+	account628
+	balance: 5880 write_off: 240
+
+	account613
+	balance: 2080 write_off: 180
+
+	account688
+	balance: 960 write_off: 40
+
+	account675
+	balance: 840 write_off: 40
+
+	account560
+	balance: 1380 write_off: 80
+
+	account676
+	balance: 840 write_off: 40
+
+	account641
+	balance: 700 write_off: 260
+
+	account640
+	balance: -20 write_off: 0
+
+	account583
+	balance: 21660 write_off: 760
+
+	account686
+SMTP auth() command failed: 
+5.7.7 Email sending without SSL/TLS encryption is not allowed. Please see: http://help.yandex.ru/mail/mail-clients/ssl.xml
+
+	balance: 0 write_off: 120
+
+	account545
+	balance: -40 write_off: 0
+
+	account642
+	balance: 180 write_off: 60
+
+	account679
+	balance: 840 write_off: 40
+
+	account644
+	balance: 520 write_off: 40
+
+	account570
+	balance: 1380 write_off: 100
+
+	account695
+SMTP auth() command failed: 
+5.7.7 Email sending without SSL/TLS encryption is not allowed. Please see: http://help.yandex.ru/mail/mail-clients/ssl.xml
+
+	balance: -40 write_off: 40
+
+	account645
+	balance: 600 write_off: 40
+
+	account494
+	balance: 800 write_off: 40
+
+	account603
+	balance: 1980 write_off: 100
+
+	account669
+	balance: 680 write_off: 40
+
+	account677
+	balance: 840 write_off: 40
+
+	account582
+	balance: 1160 write_off: 120
+
+	account699
+SMTP auth() command failed: 
+5.7.7 Email sending without SSL/TLS encryption is not allowed. Please see: http://help.yandex.ru/mail/mail-clients/ssl.xml
+
+	balance: -80 write_off: 80
+
+	account700
+SMTP auth() command failed: 
+5.7.7 Email sending without SSL/TLS encryption is not allowed. Please see: http://help.yandex.ru/mail/mail-clients/ssl.xml
+
+	balance: -80 write_off: 80
+
+	account584
+	balance: 520 write_off: 40
+
+	account639
+	balance: 520 write_off: 40
+
+	account643
+	balance: 1260 write_off: 140
+
+	account701
+SMTP auth() command failed: 
+5.7.7 Email sending without SSL/TLS encryption is not allowed. Please see: http://help.yandex.ru/mail/mail-clients/ssl.xml
+
+	balance: -40 write_off: 40
+
+Thu Apr  9 00:00:06 2015: write_off done
+
+Fri Apr 10 00:00:02 2015: write_off start
+	zodiac
+	balance: -40 write_off: 0
+
+	dev
+	balance: 89500 write_off: 80
+
+	rplusmakler
+	balance: 29943240 write_off: 220
+
+	pcn
+SMTP auth() command failed: 
+5.7.7 Email sending without SSL/TLS encryption is not allowed. Please see: http://help.yandex.ru/mail/mail-clients/ssl.xml
+
+	balance: -40 write_off: 100
+
+	show_khb
+	balance: 1177260 write_off: 80
+
+	account453
+	balance: 1020 write_off: 40
+
+	show_kms
+	balance: 1179510 write_off: 80
+
+	account457
+	balance: 60 write_off: 60
+
+	account458
+	balance: -40 write_off: 0
+
+	account451
+SMTP auth() command failed: 
+5.7.7 Email sending without SSL/TLS encryption is not allowed. Please see: http://help.yandex.ru/mail/mail-clients/ssl.xml
+
+	balance: 40 write_off: 80
+
+	account522
+	balance: 1510 write_off: 60
+
+	account472
+SMTP auth() command failed: 
+5.7.7 Email sending without SSL/TLS encryption is not allowed. Please see: http://help.yandex.ru/mail/mail-clients/ssl.xml
+
+	balance: 80 write_off: 120
+
+	account519
+	balance: -40 write_off: 0
+
+	account520
+SMTP auth() command failed: 
+5.7.7 Email sending without SSL/TLS encryption is not allowed. Please see: http://help.yandex.ru/mail/mail-clients/ssl.xml
+
+	balance: 20 write_off: 40
+
+	account521
+	balance: 1220 write_off: 60
+
+	account361
+	balance: -40 write_off: 0
+
+	account561
+	balance: 100 write_off: 60
+
+	account564
+	balance: 640 write_off: 40
+
+	account440
+	balance: 120 write_off: 40
+
+	account552
+	balance: 2240 write_off: 60
+
+	account389
+	balance: 40 write_off: 40
+
+	account578
+	balance: -40 write_off: 0
+
+	account541
+	balance: 1000 write_off: 40
+
+	account542
+	balance: 520 write_off: 40
+
+	account602
+	balance: 600 write_off: 40
+
+	account540
+	balance: 840 write_off: 40
+
+	account550
+	balance: 1000 write_off: 40
+
+	account628
+	balance: 5640 write_off: 240
+
+	account641
+	balance: 440 write_off: 260
+
+	account583
+	balance: 20940 write_off: 720
+
+	account686
+SMTP auth() command failed: 
+5.7.7 Email sending without SSL/TLS encryption is not allowed. Please see: http://help.yandex.ru/mail/mail-clients/ssl.xml
+
+	balance: -120 write_off: 120
+
+	account642
+	balance: 120 write_off: 60
+
+	account679
+	balance: 800 write_off: 40
+
+	account644
+	balance: 480 write_off: 40
+
+	account640
+	balance: -20 write_off: 0
+
+	account570
+	balance: 1280 write_off: 100
+
+	account645
+	balance: 560 write_off: 40
+
+	account545
+	balance: -40 write_off: 0
+
+	account494
+	balance: 760 write_off: 40
+
+	account603
+	balance: 1880 write_off: 100
+
+	account669
+	balance: 640 write_off: 40
+
+	account677
+	balance: 800 write_off: 40
+
+	account582
+	balance: 1040 write_off: 120
+
+	account699
+	balance: -80 write_off: 0
+
+	account700
+	balance: -80 write_off: 0
+
+	account584
+	balance: 480 write_off: 40
+
+	account613
+	balance: 1900 write_off: 180
+
+	account639
+	balance: 480 write_off: 40
+
+	account701
+	balance: -40 write_off: 0
+
+	account688
+	balance: 920 write_off: 40
+
+	account643
+	balance: 1120 write_off: 140
+
+	account675
+	balance: 800 write_off: 40
+
+	account560
+	balance: 1300 write_off: 80
+
+	account704
+	balance: 6380 write_off: 220
+
+	account676
+	balance: 800 write_off: 40
+
+	account695
+	balance: -40 write_off: 0
+
+	account703
+	balance: 360 write_off: 40
+
+	account705
+	balance: 1160 write_off: 40
+
+	account707
+	balance: 1160 write_off: 40
+
+Fri Apr 10 00:00:06 2015: write_off done
+
+Sat Apr 11 00:00:02 2015: write_off start
+	zodiac
+	balance: -40 write_off: 0
+
+	dev
+	balance: 89420 write_off: 80
+
+	rplusmakler
+	balance: 29943020 write_off: 220
+
+	pcn
+	balance: 860 write_off: 100
+
+	show_khb
+	balance: 1177180 write_off: 80
+
+	account453
+	balance: 980 write_off: 40
+
+	show_kms
+	balance: 1179430 write_off: 80
+
+	account457
+SMTP auth() command failed: 
+5.7.7 Email sending without SSL/TLS encryption is not allowed. Please see: http://help.yandex.ru/mail/mail-clients/ssl.xml
+
+	balance: 0 write_off: 60
+
+	account471
+	balance: 142500 write_off: 260
+
+	account458
+	balance: -40 write_off: 0
+
+	account519
+	balance: -40 write_off: 0
+
+	account451
+SMTP auth() command failed: 
+5.7.7 Email sending without SSL/TLS encryption is not allowed. Please see: http://help.yandex.ru/mail/mail-clients/ssl.xml
+
+	balance: -40 write_off: 80
+
+	account522
+	balance: 1450 write_off: 60
+
+	account472
+SMTP auth() command failed: 
+5.7.7 Email sending without SSL/TLS encryption is not allowed. Please see: http://help.yandex.ru/mail/mail-clients/ssl.xml
+
+	balance: -40 write_off: 120
+
+	account520
+SMTP auth() command failed: 
+5.7.7 Email sending without SSL/TLS encryption is not allowed. Please see: http://help.yandex.ru/mail/mail-clients/ssl.xml
+
+	balance: -20 write_off: 40
+
+	account521
+	balance: 1160 write_off: 60
+
+	account361
+	balance: -40 write_off: 0
+
+	account561
+SMTP auth() command failed: 
+5.7.7 Email sending without SSL/TLS encryption is not allowed. Please see: http://help.yandex.ru/mail/mail-clients/ssl.xml
+
+	balance: 40 write_off: 60
+
+	account564
+	balance: 600 write_off: 40
+
+	account440
+	balance: 80 write_off: 40
+
+	account552
+	balance: 2180 write_off: 60
+
+	account389
+SMTP auth() command failed: 
+5.7.7 Email sending without SSL/TLS encryption is not allowed. Please see: http://help.yandex.ru/mail/mail-clients/ssl.xml
+
+	balance: 0 write_off: 40
+
+	account578
+	balance: -40 write_off: 0
+
+	account541
+	balance: 960 write_off: 40
+
+	account542
+	balance: 480 write_off: 40
+
+	account602
+	balance: 560 write_off: 40
+
+	account540
+	balance: 800 write_off: 40
+
+	account550
+	balance: 960 write_off: 40
+
+	account628
+	balance: 5400 write_off: 240
+
+	account701
+	balance: 1120 write_off: 40
+
+	account695
+	balance: 1120 write_off: 40
+
+	account640
+	balance: -20 write_off: 0
+
+	account545
+	balance: -40 write_off: 0
+
+	account699
+	balance: -80 write_off: 0
+
+	account700
+	balance: -80 write_off: 0
+
+	account641
+SMTP auth() command failed: 
+5.7.7 Email sending without SSL/TLS encryption is not allowed. Please see: http://help.yandex.ru/mail/mail-clients/ssl.xml
+
+	balance: 180 write_off: 260
+
+	account583
+	balance: 20220 write_off: 720
+
+	account686
+	balance: -120 write_off: 0
+
+	account642
+	balance: 60 write_off: 60
+
+	account679
+	balance: 760 write_off: 40
+
+	account644
+	balance: 440 write_off: 40
+
+	account645
+	balance: 520 write_off: 40
+
+	account570
+	balance: 1180 write_off: 100
+
+	account494
+	balance: 720 write_off: 40
+
+	account603
+	balance: 1780 write_off: 100
+
+	account669
+	balance: 600 write_off: 40
+
+	account677
+	balance: 760 write_off: 40
+
+	account582
+	balance: 920 write_off: 120
+
+	account584
+	balance: 440 write_off: 40
+
+	account613
+	balance: 1720 write_off: 180
+
+	account639
+	balance: 440 write_off: 40
+
+	account688
+	balance: 880 write_off: 40
+
+	account643
+	balance: 980 write_off: 140
+
+	account675
+	balance: 760 write_off: 40
+
+	account560
+	balance: 1220 write_off: 80
+
+	account676
+	balance: 760 write_off: 40
+
+	account704
+	balance: 6160 write_off: 220
+
+	account705
+	balance: 1120 write_off: 40
+
+	account707
+	balance: 1120 write_off: 40
+
+	account703
+	balance: 320 write_off: 40
+
+Sat Apr 11 00:00:06 2015: write_off done
+
+Sun Apr 12 00:00:01 2015: write_off start
+	rplusmakler
+	balance: 29942800 write_off: 220
+
+	pcn
+	balance: 760 write_off: 100
+
+	zodiac
+	balance: -40 write_off: 0
+
+	dev
+	balance: 89340 write_off: 80
+
+	show_khb
+	balance: 1177100 write_off: 80
+
+	account453
+	balance: 940 write_off: 40
+
+	show_kms
+	balance: 1179350 write_off: 80
+
+	account471
+	balance: 142240 write_off: 260
+
+	account458
+	balance: -40 write_off: 0
+
+	account457
+SMTP auth() command failed: 
+5.7.7 Email sending without SSL/TLS encryption is not allowed. Please see: http://help.yandex.ru/mail/mail-clients/ssl.xml
+
+	balance: -40 write_off: 40
+
+	account521
+	balance: 1100 write_off: 60
+
+	account451
+	balance: 400 write_off: 80
+
+	account519
+	balance: -40 write_off: 0
+
+	account522
+	balance: 1390 write_off: 60
+
+	account472
+	balance: -40 write_off: 0
+
+	account520
+	balance: -20 write_off: 0
+
+	account361
+	balance: -40 write_off: 0
+
+	account440
+	balance: 40 write_off: 40
+
+	account561
+SMTP auth() command failed: 
+5.7.7 Email sending without SSL/TLS encryption is not allowed. Please see: http://help.yandex.ru/mail/mail-clients/ssl.xml
+
+	balance: -20 write_off: 60
+
+	account564
+	balance: 560 write_off: 40
+
+	account552
+	balance: 2120 write_off: 60
+
+	account389
+SMTP auth() command failed: 
+5.7.7 Email sending without SSL/TLS encryption is not allowed. Please see: http://help.yandex.ru/mail/mail-clients/ssl.xml
+
+	balance: -40 write_off: 40
+
+	account541
+	balance: 920 write_off: 40
+
+	account542
+	balance: 440 write_off: 40
+
+	account578
+	balance: -40 write_off: 0
+
+	account602
+	balance: 520 write_off: 40
+
+	account540
+	balance: 760 write_off: 40
+
+	account550
+	balance: 920 write_off: 40
+
+	account628
+	balance: 5160 write_off: 240
+
+	account640
+	balance: -20 write_off: 0
+
+	account701
+	balance: 1080 write_off: 40
+
+	account695
+	balance: 1080 write_off: 40
+
+	account545
+	balance: -40 write_off: 0
+
+	account641
+SMTP auth() command failed: 
+5.7.7 Email sending without SSL/TLS encryption is not allowed. Please see: http://help.yandex.ru/mail/mail-clients/ssl.xml
+
+	balance: -80 write_off: 260
+
+	account583
+	balance: 19500 write_off: 720
+
+	account642
+SMTP auth() command failed: 
+5.7.7 Email sending without SSL/TLS encryption is not allowed. Please see: http://help.yandex.ru/mail/mail-clients/ssl.xml
+
+	balance: 0 write_off: 60
+
+	account679
+	balance: 720 write_off: 40
+
+	account644
+	balance: 400 write_off: 40
+
+	account699
+	balance: -80 write_off: 0
+
+	account700
+	balance: -80 write_off: 0
+
+	account645
+	balance: 480 write_off: 40
+
+	account686
+	balance: -120 write_off: 0
+
+	account570
+	balance: 1080 write_off: 100
+
+	account494
+	balance: 680 write_off: 40
+
+	account603
+	balance: 1680 write_off: 100
+
+	account669
+	balance: 560 write_off: 40
+
+	account677
+	balance: 720 write_off: 40
+
+	account582
+	balance: 800 write_off: 120
+
+	account584
+	balance: 400 write_off: 40
+
+	account613
+	balance: 1540 write_off: 180
+
+	account639
+	balance: 400 write_off: 40
+
+	account688
+	balance: 840 write_off: 40
+
+	account643
+	balance: 840 write_off: 140
+
+	account675
+	balance: 720 write_off: 40
+
+	account560
+	balance: 1140 write_off: 80
+
+	account676
+	balance: 720 write_off: 40
+
+	account704
+	balance: 5940 write_off: 220
+
+	account705
+	balance: 1080 write_off: 40
+
+	account707
+	balance: 1080 write_off: 40
+
+	account703
+	balance: 280 write_off: 40
+
+Sun Apr 12 00:00:05 2015: write_off done
+
+Mon Apr 13 00:00:02 2015: write_off start
+	rplusmakler
+	balance: 29942580 write_off: 220
+
+	pcn
+	balance: 660 write_off: 100
+
+	dev
+	balance: 89260 write_off: 80
+
+	zodiac
+	balance: -40 write_off: 0
+
+	show_khb
+	balance: 1177020 write_off: 80
+
+	account458
+	balance: -40 write_off: 0
+
+	account453
+	balance: 900 write_off: 40
+
+	show_kms
+	balance: 1179270 write_off: 80
+
+	account471
+	balance: 141980 write_off: 260
+
+	account457
+	balance: -40 write_off: 0
+
+	account521
+	balance: 1040 write_off: 60
+
+	account451
+	balance: 320 write_off: 80
+
+	account519
+	balance: -40 write_off: 0
+
+	account522
+	balance: 1330 write_off: 60
+
+	account472
+	balance: -40 write_off: 0
+
+	account520
+	balance: -20 write_off: 0
+
+	account361
+	balance: -40 write_off: 0
+
+	account440
+SMTP auth() command failed: 
+5.7.7 Email sending without SSL/TLS encryption is not allowed. Please see: http://help.yandex.ru/mail/mail-clients/ssl.xml
+
+	balance: 0 write_off: 40
+
+	account561
+	balance: -20 write_off: 0
+
+	account564
+	balance: 520 write_off: 40
+
+	account552
+	balance: 2060 write_off: 60
+
+	account389
+	balance: -40 write_off: 0
+
+	account578
+	balance: -40 write_off: 0
+
+	account541
+	balance: 880 write_off: 40
+
+	account542
+	balance: 400 write_off: 40
+
+	account602
+	balance: 480 write_off: 40
+
+	account540
+	balance: 720 write_off: 40
+
+	account550
+	balance: 880 write_off: 40
+
+	account628
+	balance: 4920 write_off: 240
+
+	account644
+	balance: 360 write_off: 40
+
+	account645
+	balance: 440 write_off: 40
+
+	account640
+	balance: -20 write_off: 0
+
+	account545
+	balance: -40 write_off: 0
+
+	account699
+	balance: -80 write_off: 0
+
+	account700
+	balance: -80 write_off: 0
+
+	account701
+	balance: 1040 write_off: 40
+
+	account695
+	balance: 1040 write_off: 40
+
+	account641
+	balance: -80 write_off: 0
+
+	account583
+	balance: 18780 write_off: 720
+
+	account642
+SMTP auth() command failed: 
+5.7.7 Email sending without SSL/TLS encryption is not allowed. Please see: http://help.yandex.ru/mail/mail-clients/ssl.xml
+
+	balance: -60 write_off: 60
+
+	account679
+	balance: 680 write_off: 40
+
+	account686
+	balance: -120 write_off: 0
+
+	account675
+	balance: 680 write_off: 40
+
+	account560
+	balance: 1060 write_off: 80
+
+	account676
+	balance: 680 write_off: 40
+
+	account704
+	balance: 5720 write_off: 220
+
+	account705
+	balance: 1040 write_off: 40
+
+	account707
+	balance: 1040 write_off: 40
+
+	account703
+	balance: 240 write_off: 40
+
+	account570
+	balance: 980 write_off: 100
+
+	account494
+	balance: 640 write_off: 40
+
+	account603
+	balance: 1580 write_off: 100
+
+	account669
+	balance: 520 write_off: 40
+
+	account677
+	balance: 680 write_off: 40
+
+	account582
+	balance: 680 write_off: 120
+
+	account584
+	balance: 360 write_off: 40
+
+	account613
+	balance: 1360 write_off: 180
+
+	account639
+	balance: 360 write_off: 40
+
+	account688
+	balance: 800 write_off: 40
+
+	account643
+	balance: 700 write_off: 140
+
+Mon Apr 13 00:00:06 2015: write_off done
+
+Tue Apr 14 00:00:02 2015: write_off start
+	rplusmakler
+	balance: 29942360 write_off: 220
+
+	pcn
+	balance: 560 write_off: 100
+
+	zodiac
+	balance: -40 write_off: 0
+
+	dev
+	balance: 89180 write_off: 80
+
+	show_khb
+	balance: 1176940 write_off: 80
+
+	account458
+	balance: -40 write_off: 0
+
+	account453
+	balance: 860 write_off: 40
+
+	show_kms
+	balance: 1179190 write_off: 80
+
+	account471
+	balance: 141720 write_off: 260
+
+	account457
+SMTP auth() command failed: 
+5.7.7 Email sending without SSL/TLS encryption is not allowed. Please see: http://help.yandex.ru/mail/mail-clients/ssl.xml
+
+	balance: -40 write_off: 40
+
+	account519
+	balance: -40 write_off: 0
+
+	account521
+	balance: 980 write_off: 60
+
+	account451
+	balance: 240 write_off: 80
+
+	account522
+	balance: 1270 write_off: 60
+
+	account472
+	balance: 840 write_off: 120
+
+	account520
+	balance: -20 write_off: 0
+
+	account361
+	balance: -40 write_off: 0
+
+	account440
+SMTP auth() command failed: 
+5.7.7 Email sending without SSL/TLS encryption is not allowed. Please see: http://help.yandex.ru/mail/mail-clients/ssl.xml
+
+	balance: -40 write_off: 40
+
+	account564
+	balance: 480 write_off: 40
+
+	account561
+	balance: 1120 write_off: 60
+
+	account389
+	balance: -40 write_off: 0
+
+	account552
+	balance: 2000 write_off: 60
+
+	account578
+	balance: -40 write_off: 0
+
+	account541
+	balance: 840 write_off: 40
+
+	account542
+	balance: 360 write_off: 40
+
+	account602
+	balance: 440 write_off: 40
+
+	account540
+	balance: 680 write_off: 40
+
+	account550
+	balance: 840 write_off: 40
+
+	account628
+	balance: 4680 write_off: 240
+
+	account644
+	balance: 320 write_off: 40
+
+	account645
+	balance: 400 write_off: 40
+
+	account701
+	balance: 1000 write_off: 40
+
+	account695
+	balance: 1000 write_off: 40
+
+	account640
+	balance: -20 write_off: 0
+
+	account583
+	balance: 18060 write_off: 720
+
+	account545
+	balance: -40 write_off: 0
+
+	account679
+	balance: 640 write_off: 40
+
+	account641
+	balance: 1560 write_off: 260
+
+	account642
+	balance: 830 write_off: 60
+
+	account686
+	balance: -120 write_off: 0
+
+	account675
+	balance: 640 write_off: 40
+
+	account560
+	balance: 980 write_off: 80
+
+	account676
+	balance: 640 write_off: 40
+
+	account704
+	balance: 5500 write_off: 220
+
+	account705
+	balance: 1000 write_off: 40
+
+	account707
+	balance: 1000 write_off: 40
+
+	account703
+	balance: 200 write_off: 40
+
+	account570
+	balance: 880 write_off: 100
+
+	account494
+	balance: 600 write_off: 40
+
+	account603
+	balance: 1480 write_off: 100
+
+	account669
+	balance: 480 write_off: 40
+
+	account677
+	balance: 640 write_off: 40
+
+	account582
+	balance: 560 write_off: 120
+
+	account584
+	balance: 320 write_off: 40
+
+	account613
+	balance: 1180 write_off: 180
+
+	account639
+	balance: 320 write_off: 40
+
+	account688
+	balance: 760 write_off: 40
+
+	account643
+	balance: 560 write_off: 140
+
+Tue Apr 14 00:00:05 2015: write_off done
+

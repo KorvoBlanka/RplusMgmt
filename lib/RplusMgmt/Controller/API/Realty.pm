@@ -26,6 +26,7 @@ use Rplus::Util::Query;
 use Rplus::Util::Realty;
 use Rplus::Util::Mediator qw(add_mediator);
 use Rplus::Util::Task;
+use Rplus::Util::Geo;
 
 use JSON;
 use Mojo::Collection;
@@ -36,6 +37,7 @@ use Data::Dumper;
 no warnings 'experimental::smartmatch';
 
 my %accounts_hash;
+#my %mediators_hash;
 
 my $accounts_iter = Rplus::Model::Account::Manager->get_objects_iterator(query => [del_date => undef],);
 while (my $x = $accounts_iter->next) {
@@ -79,7 +81,7 @@ my $_make_copy = sub {
         $new_photo->thumbnail_filename($photo->thumbnail_filename);
         $new_photo->save;          
     }
-
+    
     Rplus::Model::SubscriptionRealty::Manager->update_objects(
         set => {realty_id => $new_record->id},
         where => [realty_id => $realty->id],
@@ -96,6 +98,7 @@ my $_make_copy = sub {
 # Private function: serialize realty object(s)
 my $_serialize = sub {
     my $self = shift;
+    my $fake_filter = shift;
     my @realty_objs = (ref($_[0]) eq 'ARRAY' ? @{shift()} : shift);
     my %params = @_;
 
@@ -107,12 +110,40 @@ my $_serialize = sub {
     for my $realty (@realty_objs) {
         my $anothers_obj = 0;
         my $company = '';
-        if ($realty->mediator_company && $realty->agent_id == 10000) {
-            $company = $realty->mediator_company->name;
-        } elsif ($realty->account_id && $realty->account_id != $acc_id) {
+        if ($realty->account_id && $realty->account_id != $acc_id) {
             $anothers_obj = 1;
             $company = $accounts_hash{$realty->account_id};
-        } 
+        } else {
+            my $a = $realty->owner_phones;
+            if (scalar @{$a}) {
+                my $x = Rplus::Model::Mediator::Manager->get_objects(
+                    query => [
+                        phone_num => [@{$a}],
+                        delete_date => undef,
+                        or => [account_id => undef, account_id => $acc_id],
+                        \("NOT t1.hidden_for_aid && '{".$acc_id."}'"),
+                    ],
+                    require_objects => ['company'],
+                    limit => 1,
+                )->[0];
+                if ($x) {
+                    $company = $x->company->name;
+                }
+            }
+        }
+        #elsif ($realty->mediator_realty) {
+        #    my %mr_hash;
+        #    foreach($realty->mediator_realty) {
+        #        if ($_->account_id) {
+        #            $mr_hash{$_->account_id} = $_->mediator_company->name;
+        #        } else {
+        #            $company = $_->mediator_company->name;
+        #        }
+        #    }
+        #    if ($mr_hash{$acc_id}) {
+        #        $company = $mr_hash{$acc_id};
+        #    }
+        #}
 
         my $x = {
             (map { $_ => ($_ =~ /_date$/ ? $self->format_datetime($realty->$_) : scalar($realty->$_)) } grep { !($_ ~~ [qw(delete_date geocoords landmarks metadata fts)]) } $realty->meta->column_names),
@@ -141,8 +172,18 @@ my $_serialize = sub {
             }
         }
 
+        #if ($realty->realty_color_tag) {
+        #    for (my $i=0; $i <= 7; $i++) {
+        #        my $tag_name = 'tag' . $i;
+        #        if ($self->stash('user')->{id} ~~ @{$realty->realty_color_tag->$tag_name}) {
+        #            $x->{color_tag_id} = $i;
+        #            last;
+        #        }
+        #    }
+        #}
+        
         # Exclude fields for read permission "2"
-        if ($anothers_obj || $self->has_permission(realty => read => $realty->agent_id) == 2 && $realty->agent_id != 10000 && !($realty->agent_id ~~ @{$self->stash('user')->{subordinate}})) {
+        if ($anothers_obj || ($realty->agent_id != 10000 && $self->has_permission(realty => read => $realty->agent_id) == 2 && !($realty->agent_id ~~ @{$self->stash('user')->{subordinate}}))) {
             $x->{$_} = undef for @exclude_fields;
             $x->{export_media} = [];
             if ($realty->agent_id) {
@@ -174,6 +215,10 @@ my $_serialize = sub {
             }
         }
 
+        if ($fake_filter eq 'no_med' && $x->{mediator_company} || $fake_filter eq 'med' && !$x->{mediator_company}) {
+            next;        
+        }
+        
         push @serialized, $x;
         $realty_h{$realty->id} = $x;
     }
@@ -255,10 +300,12 @@ sub list_for_plot {
 sub list {
     my $self = shift;
 
+    my $fake_filter = '';
+    
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => 'read');
 
     # Input validation
-    $self->validation->optional('agent_id')->like(qr/^(?:\d+|any|all|not_med|nobody|a\d+)$/);
+    $self->validation->optional('agent_id')->like(qr/^(?:\d+|any|all|not_med|med|nobody|a\d+)$/);
     $self->validation->optional('page')->like(qr/^\d+$/);
     $self->validation->optional('per_page')->like(qr/^\d+$/);
 
@@ -324,9 +371,11 @@ sub list {
         }
     
         if ($color_tag_id ne 'any') {
+            #push @query, \($self->stash('user')->{id} . ' = ANY (realty_color_tags.tag' . $color_tag_id . ')');
             push @query, and => [
                 'color_tags.color_tag_id' => $color_tag_id,
-                'color_tags.user_id' => $self->stash('user')->{id}];
+                'color_tags.user_id' => $self->stash('user')->{id}
+            ];
         }
           
         if ($state_code ne 'any') { push @query, state_code => $state_code } else { push @query, '!state_code' => 'deleted' };
@@ -337,7 +386,14 @@ sub list {
             push @query, and => ['!agent_id' => undef, '!agent_id' => 10000];
             $agent_ok = 1;
         } elsif ($agent_id eq 'not_med') {
-            push @query, 'agent_id' => undef;
+            $fake_filter = 'no_med';
+            push @query, and => ['mediator_company_id' => undef, agent_id => undef];
+            #push @query, 
+            #[\"NOT t1.owner_phones && (SELECT M.phone_num FROM mediators M WHERE M.account_id = ? OR (M.account_id IS NULL AND NOT M.hidden_for_aid && '{$acc_id}'))" => $acc_id];
+            $agent_ok = 1;
+        } elsif ($agent_id eq 'med') {
+            $fake_filter = 'med';
+            push @query, '!mediator_company_id' => undef;
             $agent_ok = 1;
         } elsif ($agent_id =~ /^a(\d+)$/) {
             my $manager = Rplus::Model::User::Manager->get_objects(query => [id => $1, delete_date => undef])->[0];
@@ -430,7 +486,15 @@ sub list {
 
     # Additionaly check found phones for mediators
     if (@owner_phones) {
-        my $mediator_iter = Rplus::Model::Mediator::Manager->get_objects_iterator(query => [phone_num => \@owner_phones, delete_date => undef], require_objects => ['company']);
+        my $mediator_iter = Rplus::Model::Mediator::Manager->get_objects_iterator(
+            query => [
+                phone_num => \@owner_phones,
+                delete_date => undef,
+                or => [account_id => undef, account_id => $acc_id],
+                \("NOT t1.hidden_for_aid && '{".$acc_id."}'"),
+            ],
+            require_objects => ['company']
+        );
         while (my $mediator = $mediator_iter->next) {
             push @{$res->{'mediators'}}, {id => $mediator->id, company => $mediator->company->name, phone_num => $mediator->phone_num};
         }
@@ -446,10 +510,11 @@ sub list {
         sort_by => [@sort_by, 'realty.last_seen_date desc'],
         page => $page,
         per_page => $per_page,
-        with_objects => ['address_object', 'sublandmark', 'color_tags', 'mediator_company', @with_objects],
+        with_objects => ['address_object', 'sublandmark', 'color_tags', @with_objects],
+        #with_objects => ['address_object', 'sublandmark', 'color_tags', 'mediator_company', 'mediator_realty', @with_objects],
     );
     
-    $res->{list} = [$_serialize->($self, $realty_objs)];
+    $res->{list} = [$_serialize->($self, $fake_filter, $realty_objs)];
 
     return $self->render(json => $res);
 }
@@ -466,7 +531,17 @@ sub get {
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $realty;
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => read => $realty->agent_id);
     
-    my $res = $_serialize->($self, $realty, with_sublandmarks => 1);
+    unless ($realty->latitude) {
+        if ($realty->address_object && $realty->house_num) {
+            my %coords = Rplus::Util::Geo::get_coords_by_addr($realty->address_object, $realty->house_num);
+            if (%coords) {
+                $realty->latitude($coords{latitude});
+                $realty->longitude($coords{longitude});
+                $realty->save(changes_only => 1);
+            }
+        }
+    }
+    my $res = $_serialize->($self, '', $realty, with_sublandmarks => 1);
 
     return $self->render(json => $res);
 }
@@ -579,14 +654,14 @@ sub save {
     }
 
     # Tags
-    my $tags_ok = Rplus::DB->new_or_cached->dbh->selectall_hashref(q{SELECT T.id, T.name FROM tags T WHERE T.delete_date IS NULL}, 'id');
-    $data{tags} = Mojo::Collection->new($self->param('tags[]'))->grep(sub { exists $tags_ok->{$_} })->uniq;
+    #my $tags_ok = Rplus::DB->new_or_cached->dbh->selectall_hashref(q{SELECT T.id, T.name FROM tags T WHERE T.delete_date IS NULL}, 'id');
+    #$data{tags} = Mojo::Collection->new($self->param('tags[]'))->grep(sub { exists $tags_ok->{$_} })->uniq;
 
     # Export media
     my $export_media_ok = Rplus::DB->new_or_cached->dbh->selectall_hashref(q{SELECT M.id, M.name FROM media M WHERE M.type = 'export' AND M.delete_date IS NULL}, 'id');
     $data{export_media} = Mojo::Collection->new($self->param('export_media[]'))->grep(sub { exists $export_media_ok->{$_} })->uniq;
 
-    if (!$realty->agent_id || $realty->agent_id == 10000) {
+    if (!$realty->agent_id) {
         $realty->export_media(Mojo::Collection->new());
     }
 
@@ -594,7 +669,7 @@ sub save {
     #my $similar_realty_id = Rplus::Util::Realty->find_similar(%data, state_code => ['raw', 'work', 'suspended']);
     #my $similar_realty = Rplus::Model::Realty->new(id => $similar_realty_id)->load(with => ['address_object']) if $similar_realty_id;
 
-    if ($data{agent_id} && $data{agent_id} != 10000) {
+    if ($data{agent_id}) {
         if ($realty->id) {
             if ($realty->agent_id != $data{agent_id}) {
                 $create_event = 1;
@@ -618,25 +693,13 @@ sub save {
         $realty->change_date('now()');
     }
 
-    my $a = $realty->owner_phones;
-    if (scalar @{$a}) {
-        my $x = Rplus::Model::Mediator::Manager->get_objects(query => [phone_num => [@{$a}], delete_date => undef], require_objects => ['company'], limit => 1,)->[0];
-        if ($x) {
-            $realty->mediator_company_id($x->company->id);
-            $realty->agent_id(10000);
-            if($realty->state_code eq 'work') {
-                $realty->state_code('raw');
-            }
-        }
-    }
-
-    if ($realty->state_code eq 'work' && (!$realty->agent_id || $realty->agent_id == 10000) ) {
+    if ($realty->state_code eq 'work' && !$realty->agent_id) {
         $realty->state_code('raw');
     }
 
-    if (!$realty->agent_id || $realty->agent_id == 10000) {
+    if (!$realty->agent_id) {
         $realty->export_media(Mojo::Collection->new());
-    }    
+    }
     
     # 
     my @mls_fields_apartment = (
@@ -773,7 +836,7 @@ sub save {
     my $res = {
         status => 'success',
         id => $realty->id,
-        realty => $_serialize->($self, $realty),
+        realty => $_serialize->($self, '', $realty),
         #similar_realty_id => $similar_realty_id,
         #($similar_realty ? (similar_realty => $_serialize->($self, $similar_realty)) : ()),
     };
@@ -812,7 +875,7 @@ sub set_color_tag {
     my $res = {
         status => 'success',
         id => $realty->id,
-        realty => $_serialize->($self, $realty),
+        realty => $_serialize->($self, '', $realty),
     };
 
     return $self->render(json => $res);
@@ -837,12 +900,9 @@ sub update {
         if ($_ eq 'agent_id') {
             my $agent_id = $self->param_n('agent_id');
 
-            return $self->render(json => {error => 'Forbidden'}, status => 403) if $realty->agent_id == 10000;
-
             unless ($self->has_permission(realty => write => $realty->agent_id)) {
                 return $self->render(json => {error => 'Forbidden'}, status => 403 , data => {uid => $user_id, aid => $agent_id,},) unless $self->has_permission(realty => 'write')->{can_assign} && $agent_id == $user_id;
             }
-
         } elsif ($_ eq 'color_tag_id') {
             # без проверок
         } elsif ($_ eq 'state_code' || $_ eq 'export_media' || $_ eq 'export_media[]') {
@@ -861,14 +921,12 @@ sub update {
             my $agent_id = $self->param_n('agent_id');
 
             unless ($agent_id) {
-
                 $realty->agent_id(undef);
-
             } else {
-                $realty->agent_id($agent_id);
                 if ($agent_id == 10000) {
-                    add_mediator('ПОСРЕДНИК В НЕДВИЖИМОСТИ', $realty->owner_phones->[0], 'user_' . $user_id);
+                    add_mediator('ПОСРЕДНИК В НЕДВИЖИМОСТИ', $realty->owner_phones->[0], 'user_' . $user_id, $acc_id);
                 } else {
+                    $realty->agent_id($agent_id);
                     $create_event = 1;
                 }
             }
@@ -908,11 +966,11 @@ sub update {
         }
     }
 
-    if ($realty->state_code eq 'work' && (!$realty->agent_id || $realty->agent_id == 10000) ) {
+    if ($realty->state_code eq 'work' && !$realty->agent_id) {
         $realty->state_code('raw');
     }
 
-    if (!$realty->agent_id || $realty->agent_id == 10000) {
+    if (!$realty->agent_id) {
         $realty->export_media(Mojo::Collection->new());
     }
 
@@ -965,10 +1023,38 @@ sub update {
     my $res = {
         status => 'success',
         id => $realty->id,
-        realty => $_serialize->($self, $realty),
+        realty => $_serialize->($self, '', $realty),
     };
 
     return $self->render(json => $res);
+}
+
+sub check_coords {
+    my $self = shift;
+
+    my $id = $self->param('id');
+    my $acc_id = $self->session('user')->{account_id};
+    my $user_id = $self->stash('user')->{id};
+
+    my $realty = Rplus::Model::Realty::Manager->get_objects(query => [id => $id, or => [account_id => undef, account_id => $acc_id], \("NOT hidden_for && '{".$acc_id."}'"), delete_date => undef])->[0];
+    return $self->render(json => {error => 'Not Found'}, status => 404) unless $realty;
+    
+    unless ($realty->latitude) {
+        if ($realty->address_object && $realty->house_num) {
+            my %coords = Rplus::Util::Geo::get_coords_by_addr($realty->address_object, $realty->house_num);
+            if (%coords) {
+                $realty->latitude($coords{latitude});
+                $realty->longitude($coords{longitude});
+                $realty->save(changes_only => 1);
+            }
+        }
+    }
+    
+    if ($realty->latitude) {
+        return $self->render(json => {status => 'success', lat => $realty->latitude, lng => $realty->longitude});
+    } else {
+        return $self->render(json => {status => 'not_found'});
+    }
 }
 
 1;

@@ -313,17 +313,20 @@ sub upload_photo {
 
 sub delete {
     my $self = shift;
-
+    my $acc_id = $self->session('user')->{account_id};
     my $id = $self->param('id');
 
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(users => 'manage');
     return $self->render(json => {error => 'Forbidden'}, status => 403) if ($self->account_type() eq 'demo');
 
-    my $acc_id = $self->session('user')->{account_id};
-
     my $user = Rplus::Model::User::Manager->get_objects(query => [account_id => $acc_id, id => $id, delete_date => undef])->[0];
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $user;
 
+    if ($user->role eq 'top') {
+        my $top_count = Rplus::Model::User::Manager->get_objects_count(query => [account_id => $acc_id, role => 'top', delete_date => undef]);
+        return $self->render(json => {error => 'last_top'}, status => 200) if $top_count < 2;
+    }
+    
     my $realty_count = Rplus::Model::Realty::Manager->get_objects_count(query => [agent_id => $id, delete_date => undef]);
     return $self->render(json => {error => 'Has Realty'}, status => 200) if $realty_count > 0;
 

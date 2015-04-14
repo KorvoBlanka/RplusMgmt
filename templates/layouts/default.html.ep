@@ -599,11 +599,11 @@
 
  
         .message-right:before {
-            border: 10px solid transparent;
+            /*border: 10px solid transparent;
             border-bottom-color: rgba(90,90,90,1.0);
             bottom: 0;
             right: -9px;
-            z-index: -2;
+            z-index: -2;*/
         }
 
         .message-right:after {
@@ -614,11 +614,11 @@
         }
         
         .message-left:before {
-            border: 10px solid transparent;
+            /*border: 10px solid transparent;
             border-bottom-color: rgba(90,90,90,1.0);
             bottom: 0;
             left: -9px;
-            z-index: -2;
+            z-index: -2;*/
         }
 
         .message-left:after {
@@ -842,12 +842,24 @@
             .hide-if-small {
                 display: none !important;
             }
+            .navbar-right {
+                margin-top: 7px;
+                margin-bottom: 0;
+            }
         }
 
         @media screen and (min-width: 1025px) {
             .hide-if-big {
                 display: none !important;
             }
+        }
+        
+        .navbar .divider-vertical {
+          top: 5px;
+          height: 40px;
+          margin: 0 9px;
+          border-right: 1px double #ffffff;
+          border-left: 1px solid #E0E0E0;
         }
         
     </style>
@@ -1149,7 +1161,9 @@
                 <span class="glyphicon glyphicon-comment"></span>
                 <span id="message-count-notifier" class="badge badge-default quick-notifier hidden" style="position: absolute; right: -12px; top: 4px;"></span>
             </a>
-            [<a href="/signout" class="navbar-link hide-if-small"><%= $user->{'name'} %></a><a href="/signout" class="navbar-link hide-if-big">X</a>]
+            <a href="/signout" class="navbar-link hide-if-small">[<%= $user->{'name'} %>]</a>
+            <a class="divider-vertical hide-if-big" style="padding-top: 12px; padding-bottom: 12px; border-right-color: #797979; border-left-color: #111111;"></a>
+            <a href="/signout" class="navbar-link hide-if-big"><img style="height: 40px;" src="<%= $self->config->{'assets'}->{'url'} %>/power_off_button.png"></a>
           </p>
         </div>
       </div>
@@ -1389,7 +1403,7 @@
             if (e.keyCode == 13) {            
                 var selected_contact_id = $('.contact-active').data('id');
                 var text = $('#chatInput').val();
-                var attachment = $('#fileForm').data('file_url');
+                var attachment = '';
                 
                 postMessage(selected_contact_id, text, attachment);            
                 
@@ -1515,6 +1529,18 @@
             addContact(id);
             $this.html('<span class="glyphicon glyphicon-ok"><span>');
         });
+
+        $('#chatMessageList').on('click', 'a[data-action="contact-add"]', function(e) {
+            e.stopPropagation();
+            var $this = $(this);
+            var id = $this.data('id');
+            addContact(id, function (c) {
+                $('#chatContactList').append(buildHtmlForContact(c, true));
+                scrollToContact(id);
+                openDialog(id);
+            });
+            //$this.html('<span class="glyphicon glyphicon-ok"><span>');
+        });
         
         function buildHtmlForContact(contact, my_contacts) {
             
@@ -1591,7 +1617,7 @@
                 xhtml += '</div>';
                 xhtml += '<div class="chat-message message-left">';
             } else {
-                xhtml += '<div class="message-sender">' + (msg.to ? '' : msg.from_name);
+                xhtml += '<div class="message-sender"><a href="#" data-id="' + msg.from + '" data-action="contact-add">' + (msg.to ? '' : msg.from_name) + '</a>';
                 xhtml += '<span class="message-ts">' + ts_str + '</span>';
                 xhtml += '</div>';
                 xhtml += '<div class="chat-message message-right">';
@@ -1645,7 +1671,12 @@
                 return;
             }
             
-             $.ajax({
+            if (text == '*' || text == '\'') {
+                return;
+            }
+            
+            $('#chatInput').val('');
+            $.ajax({
                 type: "POST",
                 url: "/api/chat/post",
                 data: {
@@ -1668,6 +1699,7 @@
         }
         
         function listMessages(from_id) {
+            $('#chatMessageList').html('');
             $.ajax({
                 type: "POST",
                 url: "/api/chat/list",

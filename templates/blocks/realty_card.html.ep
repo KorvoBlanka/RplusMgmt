@@ -354,7 +354,7 @@
         $('#dg_p_contacts', $realty_modal).html('');
       }
       
-      if (realty.agent_id == 10000) {   // посредник
+      if (realty.mediator_company) {   // посредник
         $('#dg_p9_label', $realty_modal).html('Предложение');
         $('span[data-name="dg_p9"]', $realty_modal).html(realty.mediator_company);
       } else {

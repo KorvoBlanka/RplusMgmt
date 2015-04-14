@@ -16,6 +16,8 @@ __PACKAGE__->meta->setup(
         delete_date    => { type => 'timestamp with time zone', remarks => 'Дата/время удаления' },
         added_by       => { type => 'varchar', remarks => 'кто добавил посредника, (buffer - добавлено из буфера)' },
         last_seen_date => { type => 'timestamp with time zone', default => 'now()', not_null => 1, remarks => 'дата, когда последний раз был получена недвижимость с телефоном этого посредника' },
+        hidden_for_aid => { type => 'array', default => '{}', not_null => 1 },
+        account_id     => { type => 'integer' },
     ],
 
     primary_key_columns => [ 'id' ],

@@ -11,6 +11,8 @@ use Rplus::Model::Mediator;
 use Rplus::Model::Mediator::Manager;
 use Rplus::Model::RuntimeParam;
 use Rplus::Model::RuntimeParam::Manager;
+use Rplus::Model::MediatorRealty;
+use Rplus::Model::MediatorRealty::Manager;
 
 use Rplus::Util::Image;
 use Rplus::Util::Realty;
@@ -29,20 +31,6 @@ run(Rplus::Util::Config::get_config());
 
 sub run {
     my $config = shift;
-
-    # Загрузим базу телефонов посредников
-    my %MEDIATOR_PHONES;
-    {
-        my $mediator_iter = Rplus::Model::Mediator::Manager->get_objects_iterator(query => [delete_date => undef], require_objects => ['company']);
-        while (my $x = $mediator_iter->next) {
-            $MEDIATOR_PHONES{$x->phone_num} = {
-                id => $x->id,
-                name => $x->name,
-                company => $x->company->name,
-                company_id => $x->company->id,
-            };
-        }
-    }
 
     my $ua = Mojo::UserAgent->new;
     
@@ -67,7 +55,6 @@ sub run {
         realty_buffer_url => 'http://192.168.5.1:3000',
     };
 
-
     while (my ($key, $value) = each $import_obj) {
         my @t = split '-', $key;
         my $offer_type = $t[0];
@@ -91,18 +78,21 @@ sub run {
             my $realty_data = $res->json->{list};
             for my $data (@$realty_data) {
                 say '-----------------------';
-                for (@{$data->{'owner_phones'}}) {
-                    my $mediator = $MEDIATOR_PHONES{$_};
+                if (scalar @{$data->{'owner_phones'}} > 0) {
+                    my $mediator = Rplus::Model::Mediator::Manager->get_objects(
+                        query => [
+                            phone_num => [@{$data->{'owner_phones'}}],
+                            delete_date => undef,
+                        ],
+                        limit => 1,
+                    )->[0];
                     if ($mediator) {
                         say 'mediator detected!';
-                        #say Dumper $mediator;
-                        $data->{agent_id} = 10000;
                         $data->{mediator_company_id} = $mediator->{company_id};
-                        last;
                     }
                 }
-                # Закомментил на время тестирования
-                next if ($data->{agent_id} == 10000 && $offer_type eq 'rent');
+
+                next if ($data->{mediator_company_id} && $offer_type eq 'rent');
 
                 my @realtys = @{Rplus::Util::Realty->find_similar(%$data, state_code => ['raw', 'work', 'suspended', 'deleted'])};
                 if (scalar @realtys > 0) {
@@ -130,10 +120,7 @@ sub run {
                         foreach (@{$o_realty->owner_phones}) {
                             push @phones, $_;
                         }
-                        #foreach (@{$data->{owner_phones}}) {
-                        #    push @phones, $_;   
-                        #}
-                        say Dumper @phones;
+
                         $o_realty->owner_phones(Mojo::Collection->new(@phones)->compact->uniq);
 
                         if ($data->{state_code} ne 'work') {
@@ -184,7 +171,7 @@ sub run {
                                 $new_photo->save;
                             }
                         }
-
+                        
                         # Сохраним историю
                         #if ($id && !Rplus::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $data->{source_media_id}, media_num => '', realty_id => $id])) {
                         #    Rplus::Model::MediaImportHistory->new(media_id => $data->{source_media_id}, media_num => '', media_text => $data->{'source_media_text'}, realty_id => $id)->save;                    
