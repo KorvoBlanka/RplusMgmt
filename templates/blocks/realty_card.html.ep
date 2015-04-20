@@ -185,6 +185,23 @@
     -webkit-box-shadow: inset 0 1px 1px rgba(0,0,0,0.075),0 0 8px rgba(233, 102, 102, 0.6);
     box-shadow: inset 0 1px 1px rgba(0,0,0,0.075),0 0 8px rgba(233, 102, 102, 0.6);  
   }
+  
+  .attachment-row {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .attachment-row:hover .attachment-remove {
+      opacity: 1;
+  }
+  
+  .attachment-remove {
+      opacity: 0;
+      
+      position: absolute;
+      right: 10px;
+  }
 </style>
 % end
 
@@ -231,8 +248,18 @@
     var cmode = 0;
     var selected_tag_id = 0;
     
+    function buildHtmlForAttachment(a) {
+        var xhtml = '';
+        xhtml += '<p class="attachment-row">';
+        xhtml += '<a target="_blank" href="' + a + '">' + a.substring(a.lastIndexOf('/') + 1) + '</a>';
+        xhtml += '<a href="#" class="attachment-remove" data-action="file-remove"><span class="glyphicon glyphicon-minus"></span></a>';
+        xhtml += '<input type="text" name="attachments" class="hidden" value="' + a + '">'
+        xhtml += '</p>';
+        
+        return xhtml;
+    }
+    
     function setMode(mode) {
-      
       cmode = mode;
       if(mode == 0) {
         $('.rmode').addClass("hidden");
@@ -254,18 +281,28 @@
     }
     
     function save() {
+
+      if ($('.required', $realty_modal).length > 0) {
+        $realty_modal.addClass('shaker');
+        setTimeout(function () { $realty_modal.removeClass("shaker") }, 1000);
+        alert('Перед сохранением заполните поля отмеченные красным');
+        return;
+      }
+
       var formData = {
         id: realty.id,
         export_media: [],
         owner_phones: [],
+        attachments: [],
         latitude: realty.latitude,
         longitude: realty.longitude,
         color_tag_id: selected_tag_id,
       };
       var formArray = $('#realty-form').serializeArray();
+
       for (var i = 0; i < formArray.length; i++) {
-        
         var x = formArray[i];
+
         if ((typeof formData[x.name] == 'object') && (formData[x.name] instanceof Array)) {
           if (x.value) formData[x.name].push(x.value);
         } else
@@ -400,8 +437,11 @@
           var el = $('[name="' + x.name + '"]:input', $realty_modal);
           el.val('');
         }
+        
       }
 
+      $('#attachmentsContainer', $realty_modal).html('');
+      
       $('[data-name="source_media_text"]', $realty_modal).html('');
       $('[data-name="source_media_name"]', $realty_modal).html('?');
       
@@ -470,6 +510,10 @@
           } else {
             el.prop( "checked", false );
           }
+        } else if (f == 'attachments') {
+            for (var i = 0; i < v.length; i ++) {
+                $('#attachmentsContainer').prepend(buildHtmlForAttachment(v[i]));
+            }
         } else if (el.length) {
           el.val(v);
         }
@@ -654,6 +698,55 @@
     
     $(function () {
       $realty_modal = $('#realtyCard_modal').modal({show: false, backdrop: false});
+
+      $realty_modal.on('click', '[data-action="file-attach"]', function (e) {
+        $('#attachmentFileInput').off();
+        $('#attachmentFileInput').val('');
+        $('#attachmentFileInput').change(function(){
+            var file = this.files[0];
+                       
+            if (file.size > maxFileSize) {
+                alert('размер файла превышает максимально допустимый');
+                return;
+            }
+
+            var form_data = new FormData($('#attachmentFileForm')[0]);
+            $.ajax({
+                type: 'POST',
+                url: '/api/realty/upload_file',  //Server script to process data
+                xhr: function() {  // Custom XMLHttpRequest
+                    var myXhr = $.ajaxSettings.xhr();
+                    if(myXhr.upload){ // Check if upload property exists
+                        myXhr.upload.addEventListener('progress', progressHandlingFunction, false); // For handling the progress of the upload
+                    }
+                    return myXhr;
+                },
+                //Ajax events
+                /*beforeSend: beforeSendHandler,
+                success: completeHandler,
+                error: errorHandler,*/
+                // Form data
+                data: form_data,
+                //Options to tell jQuery not to process data or worry about content-type.
+                cache: false,
+                contentType: false,
+                processData: false
+            })
+                .done(function (data, textStatus, jqXHR) {
+                    $('#attachmentsContainer').prepend(buildHtmlForAttachment(data.file_url));
+                })
+                .fail(function () {
+                    
+                });
+            
+        });
+        $('#attachmentFileInput').click();
+      });
+      
+      $realty_modal.on('click', '[data-action="file-remove"]', function (e) {
+          var $this = $(this);
+          $this.closest('.attachment-row').remove();
+      });
       
       $realty_modal.on('click', '[data-action="realty-unlock"]', function (e) {
         setMode(1);
@@ -922,12 +1015,118 @@
         ],
     };
     
-    function setView(realty_type, multylisting_checked) {
+    var required_export = {
+        irr: {
+            apartment: {
+                sale: [
+                    'agent_id', 'owner_price', 'address_object_name', 'house_num', 'floor', 'rooms_count', 'square_total',
+                ],
+                rent: [
+                    'agent_id', 'owner_price', 'address_object_name', 'house_num', 'floor', 'rooms_count', 'square_total',
+                ],
+            },
+            apartment_new: {
+                sale: [
+                    'agent_id', 'owner_price', 'address_object_name', 'house_num', 'floor', 'rooms_count', 'square_total',
+                ],
+                rent: [
+                    'agent_id', 'owner_price', 'address_object_name', 'house_num', 'floor', 'rooms_count', 'square_total',
+                ],
+            },
+            townhouse: {
+                sale: [
+                    'agent_id', 'owner_price', 'address_object_name', 'house_num', 'floor', 'rooms_count', 'square_total',
+                ],
+                rent: [
+                    'agent_id', 'owner_price', 'address_object_name', 'house_num', 'floor', 'rooms_count', 'square_total',
+                ],
+            },
+            apartment_small: {
+                sale: [
+                    'agent_id', 'owner_price', 'address_object_name', 'house_num', 'floor', 'rooms_count', 'square_total',
+                ],
+                rent: [
+                    'agent_id', 'owner_price', 'address_object_name', 'house_num', 'floor', 'rooms_count', 'square_total',
+                ],
+            },
+            room: {
+                sale: [
+                    'agent_id', 'owner_price', 'address_object_name', 'house_num', 'rooms_count', 'floor',
+                ],
+                rent: [
+                    'agent_id', 'owner_price', 'address_object_name', 'house_num', 'rooms_count', 'rooms_offer_count',,
+                ],
+            },
+            house: {
+                sale: [
+                    'agent_id', 'owner_price', 'address_object_name', 'house_num', 'square_total',
+                ],
+                rent: [
+                    'agent_id', 'owner_price', 'address_object_name', 'house_num', 'square_total',
+                ],
+            },
+            cottage: {
+                sale: [
+                    'agent_id', 'owner_price', 'address_object_name', 'house_num', 'square_total',
+                ],
+                rent: [
+                    'agent_id', 'owner_price', 'address_object_name', 'house_num', 'square_total',
+                ],
+            },
+
+            dacha: {
+                sale: [
+                    'agent_id', 'owner_price', 'address_object_name', 'house_num', 'square_total',
+                ],
+                rent: [
+                    'agent_id', 'owner_price', 'address_object_name', 'house_num', 'square_total',
+                ],
+            },
+            
+            land: {
+                sale: [
+                    'agent_id', 'owner_price', 'square_land', 'square_land_type',
+                ],
+                rent: [
+                    'agent_id', 'owner_price', 'square_land', 'square_land_type',
+                ],
+            },
+            
+            office: {
+                sale: [
+                    'agent_id', 'owner_price', 'address_object_name', 'square_total',
+                ],
+                rent: [
+                    'agent_id', 'owner_price', 'address_object_name', 'square_total',
+                ],
+            },
+            
+            other: {
+                sale: [
+                    'agent_id', 'owner_price',
+                ],
+                rent: [
+                    'agent_id', 'owner_price',
+                ],
+            },
+        }
+    };
+    
+    var media_dict = {
+    % for my $x (@{Rplus::Model::Media::Manager->get_objects(query => [type => 'export', delete_date => undef],)}) {
+        <%= $x->id %>: '<%= $x->code %>',
+    % }
+    };
+    
+    function setView() {
+        var realty_type = $('#typeInput', $('#realtyCard_modal')).val();
+        var offer_type = $('#offerTypeInput', $('#realtyCard_modal')).val();
+        var multylisting_checked = $('[name="multylisting"]:input', $('#realtyCard_modal')).is(':checked');
+        
         var exclude_fields = exclude[realty_type];
         var rq_fields = required[realty_type];
 
-        var idx;
-        for (idx = 0; idx < fields.length; ++idx) {
+        for (var idx = 0; idx < fields.length; ++idx) {
             var field = fields[idx];
             var el = $('[name="' + field + '"]:input', $('#realtyCard_modal'));
             if (field == 'rooms_offer_count' || field == 'square_living' || field == 'square_kitchen' || field == 'ap_num') {
@@ -938,8 +1137,15 @@
             }
         }
 
+        var rt_el = $('[name="rent_type"]:input', $('#realtyCard_modal'));
+        if (offer_type != 'rent') {
+            rt_el.closest('.edit-group').addClass('hidden');
+        } else {
+            rt_el.closest('.edit-group').removeClass('hidden');
+        }
+        
         if (exclude_fields) {
-            for (idx = 0; idx < exclude_fields.length; ++idx) {
+            for (var idx = 0; idx < exclude_fields.length; ++idx) {
                 var field = exclude_fields[idx];
                 var el = $('[name="' + field + '"]:input', $('#realtyCard_modal'));
                 if (field == 'rooms_offer_count' || field == 'square_living' || field == 'square_kitchen' || field == 'ap_num') {
@@ -951,7 +1157,7 @@
             }
         }
 
-        for (idx = 0; idx < fields.length; ++idx) {
+        for (var idx = 0; idx < fields.length; ++idx) {
             var field = fields[idx];
             var el;
             el = $('[name="' + field + '"]:input', $('#realtyCard_modal'));
@@ -990,37 +1196,75 @@
                 }
             }
         }
+        
+        var export_media = [];
+        var formArray = $('#realty-form').serializeArray();
+      
+        for (var i = 0; i < formArray.length; i++) {
+            var x = formArray[i];
+            
+            if (x.name == 'export_media') {
+                export_media.push(x.value);
+            }
+        }
+        for (var i = 0; i < export_media.length; i++) {
+            var m_name = media_dict[export_media[i]];
+            if (!required_export[m_name]) {
+              continue;
+            }
+            var m_rq_fields = required_export[m_name][realty_type][offer_type];
+            if (m_rq_fields) {
+                for (idx = 0; idx < m_rq_fields.length; ++idx) {
+                    var field = m_rq_fields[idx];
+                    var el;
+                    el = $('[name="' + field + '"]:input', $('#realtyCard_modal'));
+                    if (field == 'owner_phones') {
+                        var light_up = true;
+                        el.each(function () {
+                            if ($(this).val()) {
+                                light_up = false;
+                            }
+                        });
+                        if (light_up) {
+                            el.first().addClass('required');
+                        }
+                    } else {
+                        if (!el.val()) {
+                            el.addClass('required');
+                            if (field == 'address_object_name') {
+                                el = $('[name="address_object_id"]:input', $('#realtyCard_modal')).siblings('.input-group').find('.input-group-addon');
+                                el.addClass('required');
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
     
     $('#typeInput').change( function () {
         var $this = $(this);
-        var multylisting_checked = $('[name="multylisting"]:input', $('#realtyCard_modal')).is(':checked');
-        setView($this.val(), multylisting_checked)
+        setView();
     });
 
     $('[name="multylisting"]:input', $('#realtyCard_modal')).change( function () {
         var $this = $(this);
-        var multylisting_checked = $this.is(':checked');
-        setView($('#typeInput', $('#realtyCard_modal')).val(), multylisting_checked)
+        setView();
     });
     
     $('input', $('#realtyCard_modal')).change( function () {
-        console.log('!');
         var $this = $(this);
-        var multylisting_checked = $('[name="multylisting"]:input', $('#realtyCard_modal')).is(':checked');
-        setView($('#typeInput', $('#realtyCard_modal')).val(), multylisting_checked)    
+        setView();
     });
     
     $('select', $('#realtyCard_modal')).change( function () {
         var $this = $(this);
-        var multylisting_checked = $('[name="multylisting"]:input', $('#realtyCard_modal')).is(':checked');
-        setView($('#typeInput', $('#realtyCard_modal')).val(), multylisting_checked)    
+        setView();
     });
     
     $('textarea', $('#realtyCard_modal')).change( function () {
         var $this = $(this);
-        var multylisting_checked = $('[name="multylisting"]:input', $('#realtyCard_modal')).is(':checked');
-        setView($('#typeInput', $('#realtyCard_modal')).val(), multylisting_checked)    
+        setView();
     });    
 </script>
 % end
@@ -1199,7 +1443,17 @@
               </select>
             </div>
           </div>
-        
+
+          <div class="form-group edit-group">
+            <label class="col-md-3 col-lg-3 control-label" for="rentTypeInput"> Аренда</label>
+            <div class="col-md-9 col-lg-9">
+              <select class="form-control input-sm" name="rent_type" id="rentTypeInput">
+                <option value="long">Долгосрочная</option>
+                <option value="short">Краткосрочная</option>
+              </select>
+            </div>
+          </div>
+          
           <div class="form-group edit-group">
             <label class="col-md-3 col-lg-3 control-label" for="agentInput"><%= ucfloc 'agent' %></label>
             <div class="col-md-9 col-lg-9">
@@ -1394,10 +1648,27 @@
             </div>
           </div>
 
+          <div class="cardheader mainheader" style="margin-bottom: 10px;">
+            <div class="input-group ccard-input-group">
+              <span class="rcard-input-group-addon glyphicon glyphicon-pencil"></span>
+              <p> Служебная информация</p>
+            </div>
+          </div>
+          
           <div class="form-group edit-group">
-            <label class="col-md-3 col-lg-3 control-label" for="workInfoInput"><%= ucfloc 'work info' %></label>
-            <div class="col-md-9 col-lg-9">
+            <div class="col-md-12 col-lg-12">
               <textarea class="form-control input-sm" name="work_info" id="workInfoInput" rows="3" placeholder="<%= ucfloc 'work info' %>"></textarea>
+            </div>
+          </div>
+
+          <div class="form-group edit-group">
+            <label class="col-md-3 col-lg-3 control-label" for="attachments"> Прикрепленные файлы</label>
+            <div class="col-md-9 col-lg-9">
+              <div class="" style="margin-top: 5px;" name="attachmentsDiv" id="attachmentsDiv">
+                <div class="" name="attachmentsContainer" id="attachmentsContainer">
+                </div>
+                <a href="#" data-action="file-attach"><span class="glyphicon glyphicon-plus"></span></a>
+              </div>
             </div>
           </div>
           
@@ -1406,11 +1677,11 @@
               <span class="rcard-input-group-addon glyphicon glyphicon-file"></span>
               <p> Мультилистинг</p>
             </div>
-          </div>          
+          </div>
           
           <div class="checkbox" style="margin-left: 15px;">
             <input type="checkbox" name="multylisting" value="1" form="realty-form"> <small>Показывать в списке мультилистинга</small>
-          </div>          
+          </div>
           
           <div class="form-group edit-group">
             <label class="col-md-3 col-lg-3 control-label" for="mlsPriceInput">Условия MLS</label>
@@ -1425,6 +1696,10 @@
           
         </form>
 
+        <form class="hidden" enctype="multipart/form-data" id="attachmentFileForm">
+           <input class="" type="file" name="file" id="attachmentFileInput">
+        </form>
+        
           <div class="cardheader mainheader">
             <div class="input-group ccard-input-group">
               <span class="rcard-input-group-addon glyphicon glyphicon-export"></span>

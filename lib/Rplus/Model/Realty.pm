@@ -70,6 +70,8 @@ __PACKAGE__->meta->setup(
         multylisting        => { type => 'boolean', default => 'false', not_null => 1 },
         mls_price_type      => { type => 'varchar', default => 'rub', length => 255, not_null => 1 },
         mls_price           => { type => 'float', scale => 4 },
+        attachments         => { type => 'array', default => '{}', not_null => 1 },
+        rent_type           => { type => 'varchar', default => 'long', length => 8, not_null => 1 },
     ],
 
     primary_key_columns => [ 'id' ],

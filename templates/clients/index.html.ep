@@ -1771,11 +1771,12 @@
         var new_tag_id = $(this).data('val');
         var $selected = $('#realtyTable > tbody > tr.selected');
         $selected.each(function () {
+            
           var $this = $(this);
           var id = $this.data('id');
           $.ajax({
             type: "POST",
-            url: "/api/realty/update",
+            url: "/api/realty/set_color_tag",
             data: {id: id, color_tag_id: new_tag_id}
           })
             .done(function (data, textStatus, jqXHR) {

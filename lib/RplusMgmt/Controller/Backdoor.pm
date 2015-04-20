@@ -60,7 +60,7 @@ sub create_account {
     my $db = $self->db;
     $db->begin_work;
     
-    eval {    
+    eval {
         $account = Rplus::Model::Account->new (
             email => $email,
             name => $name,

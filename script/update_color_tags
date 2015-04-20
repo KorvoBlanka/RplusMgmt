@@ -1,0 +1,37 @@
+#!/usr/bin/env perl
+
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+
+use Rplus::Modern;
+
+use Rplus::Model::ColorTag;
+use Rplus::Model::ColorTag::Manager;
+use Rplus::Model::RealtyColorTag;
+use Rplus::Model::RealtyColorTag::Manager;
+
+use Mojo::Collection;
+
+
+say 'checking realty';
+say check_tags() . ' objects updated';
+
+sub check_tags {
+    my $tag_iter = Rplus::Model::ColorTag::Manager->get_objects_iterator(query => [],);
+    while (my $tag = $tag_iter->next) {
+        my $realty_tag = Rplus::Model::RealtyColorTag::Manager->get_objects(query => [realty_id => $tag->realty_id],)->[0];
+        if (!$realty_tag) {
+            $realty_tag = Rplus::Model::RealtyColorTag->new(realty_id => $tag->realty_id);
+        }
+        
+        next unless $tag->color_tag_id;
+        my $tag_name = 'tag' . $tag->color_tag_id;
+        
+        my $new_tags = Mojo::Collection->new(@{$realty_tag->$tag_name});
+        push @$new_tags, ($tag->user_id);
+        $realty_tag->$tag_name($new_tags->compact->uniq);
+        $realty_tag->save(changes_only => 1);
+    }
+
+    return 0;
+}

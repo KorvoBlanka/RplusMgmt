@@ -243,7 +243,16 @@
   (function () {
     // Configuration of the realty table
     $('#offer-type-filter').data('val', Rplus.Variables['User'].offer_mode);
-    $('#offer-type-filter > a > span').text(Rplus.Variables['User'].offer_mode == 'sale' ? 'Продажа' : 'Аренда');
+    if (Rplus.Variables['User'].offer_mode == 'sale') {
+      $('#offer-type-filter > a > span').text('Продажа');
+    } else if (Rplus.Variables['User'].offer_mode == 'rent') {
+      $('#offer-type-filter > a > span').text('Аренда');
+    } else if (Rplus.Variables['User'].offer_mode == 'rent-short') {
+      $('#offer-type-filter > a > span').text('Краткосрочная');
+    } else {
+      $('#offer-type-filter > a > span').text('Долгосрочная');
+    }
+    
 
     var realtyTableConf = {
       fields: [
@@ -616,14 +625,30 @@
       ]);
     }
 
+    function getOfferType() {
+      var offer_filter = $('[data-filter="offer_type_code"]').data('val')
+      if (offer_filter.match(/sale/)) return 'sale';
+      return 'rent';
+    }
+    function getRentType() {
+      var offer_filter = $('[data-filter="offer_type_code"]').data('val')
+      console.log(offer_filter);
+      if (offer_filter.match(/short/)) return 'short';
+      if (offer_filter.match(/long/)) return 'long';
+      return '';
+    }
+
     var _listRealty_started = false, _listRealty_finished = false;
     var _tid = 0;
-
     var rq_id = 0;
     function listRealty(page) {
       var q = $('#searchQuery').val();
       var stateCode = $('[data-filter="state_code"]').data('val');
-      var offerTypeCode = $('[data-filter="offer_type_code"]').data('val');
+
+      var offerTypeCode = getOfferType();
+      var rentType = getRentType();
+
+
       var agentId = $('[data-filter="agent_id"]').data('val');
       var sortBy = $('#realtyTable').data('sort');
       var colorTagId = $('[data-filter="color_tag_id"]').data('val');
@@ -635,7 +660,7 @@
       $.ajax({
         type: "POST",
         url: "/api/realty/list",
-        data: {q: q, state_code: stateCode, offer_type_code: offerTypeCode, agent_id: agentId, color_tag_id: colorTagId, sort_by: sortBy, rq_id: rq_id, page: page, per_page: 34},
+        data: {q: q, state_code: stateCode, offer_type_code: offerTypeCode, rent_type: rentType, agent_id: agentId, color_tag_id: colorTagId, sort_by: sortBy, rq_id: rq_id, page: page, per_page: 34},
         complete: function () { _listRealty_started = false; }
       })
         .done(function (data, textStatus, jqXHR) {
@@ -718,7 +743,8 @@
     function updateRealty() {
       var q = $('#searchQuery').val();
       var stateCode = $('[data-filter="state_code"]').data('val');
-      var offerTypeCode = $('[data-filter="offer_type_code"]').data('val');
+      var offerTypeCode = getOfferType();
+      var rentType = getRentType();
       var agentId = $('[data-filter="agent_id"]').data('val');
       var sortBy = $('#realtyTable').data('sort');
       var colorTagId = $('[data-filter="color_tag_id"]').data('val');
@@ -730,7 +756,7 @@
       $.ajax({
         type: "POST",
         url: "/api/realty/list",
-        data: {q: q, state_code: stateCode, offer_type_code: offerTypeCode, agent_id: agentId, color_tag_id: colorTagId, sort_by: sortBy, rq_id: rq_id, page: 1, per_page: 34},
+        data: {q: q, state_code: stateCode, offer_type_code: offerTypeCode, rent_type: rentType, agent_id: agentId, color_tag_id: colorTagId, sort_by: sortBy, rq_id: rq_id, page: 1, per_page: 34},
         complete: function () { 
           _listRealty_started = false;
           supressAjaxIndicator(0);
@@ -841,7 +867,7 @@
           type_code: 'apartment',
           state_code: 'raw',
           agent_id: '<%= $self->stash('user')->{id} %>',
-          offer_type_code: $('[data-filter="offer_type_code"]').data('val'),
+          offer_type_code: getOfferType(),
         });
       }
     }
@@ -877,26 +903,22 @@
 
       // Filters
       $('[data-filter] > ul a').click(function (e) {
-        var $display = $(this).closest('[data-filter]').data('val', $(this).data('val')).find('> a [role="display"]');
+        var $filter = $(this).closest('[data-filter]');
+        var $display = $filter.data('val', $(this).data('val')).find('> a [role="display"]');
         if ($(this).data('type') == 'text') { $display.text($(this).text()) } else { $display.html($(this).html()) };
         listRealty(1);
-      });
 
-      $('#offer-type-filter > ul > li > a').click(function (e) {
-        var $display = $(this).closest('[data-filter]').data('val', $(this).data('val')).find('> a [role="display"]');
-        if ($(this).data('type') == 'text') { 
-          $display.text($(this).text()) } else { $display.html($(this).html()) 
-        };
-
-            $.ajax({
-              type: "POST",
-              url: "/api/user/set_offer_mode",
-              data: {id: <%= $self->session('user')->{id} %>, offer_mode: $('#offer-type-filter').data('val')},
-            })
-              .done(function (data, textStatus, jqXHR) {
-                Rplus.Variables['User'].offer_mode = $('#offer-type-filter').data('val');
-                Rplus.Functions.getActiveSubCount();
-              });
+        if($filter[0].id == 'offer-type-filter') {
+          $.ajax({
+            type: "POST",
+            url: "/api/user/set_offer_mode",
+            data: {id: <%= $self->session('user')->{id} %>, offer_mode: $('#offer-type-filter').data('val')},
+          })
+            .done(function (data, textStatus, jqXHR) {
+              Rplus.Variables['User'].offer_mode = $('#offer-type-filter').data('val');
+              Rplus.Functions.getActiveSubCount();
+            });
+        }
       });
 
       // Init realty table and menu
@@ -1171,7 +1193,7 @@
       $('[data-action="client-open"]').click(function (e) {
         
         var q = $('#searchQuery').val().trim(),
-            offerTypeCode = $('[data-filter="offer_type_code"]').data('val'),
+            offerTypeCode = getOfferType(),
             realtyIds = [],
             phoneNum = '';
         $('#realtyTable > tbody > tr.selected').each(function (idx, elem) {
@@ -1234,74 +1256,124 @@
         var agentId = $(this).data('val');
         var $selected = $('#realtyTable > tbody > tr.selected');
 
+        var ids = [];
         $selected.each(function () {
           var $this = $(this);
-          var id = $this.data('id');
-          $.ajax({
-            type: "POST",
-            async: false,
-            url: "/api/realty/update",
-            data: {id: id, agent_id: agentId},
-            success: function (data, textStatus, jqXHR) {
-              if (data.status == 'success') {
-                var r = data.realty;
-                $this.data('id', r.id);
-                $this.data('prev_id', id);
-                $this.attr('data-id', r.id);
-                $this.attr('data-prev_id', id);
+          ids.push($this.data('id'));
+        });
+
+        $.ajax({
+          type: "POST",
+          url: "/api/realty/update_multiple",
+          data: {id: ids, agent_id: agentId},
+        })
+          .done(function (data, textStatus, jqXHR) {
+            if (data.status == 'success') {
+              var list = data.list;
+              jQuery.each(list, function (old_id, realty) {
+                var r = realty;
+                var $tr = $('#realtyTable > tbody > tr[data-id="' + old_id + '"]');
+
+                $tr.data('id', r.id);
+                $tr.data('prev_id', old_id);
+                $tr.attr('data-id', r.id);
+                $tr.attr('data-prev_id', old_id);
                 // Update row data in realty table
                 for (var j = 0; j < realtyTableConf.fields.length; j++) {
                   var f = realtyTableConf.fields[j];
-                  $('td:nth-child(' + (j + 1) + ')', $this).html(f.val(r));
+                  $('td:nth-child(' + (j + 1) + ')', $tr).html(f.val(r));
                 }
-                $this.data('obj', r);
-                $this.removeClass('selected').addClass('modified');
+                $tr.data('obj', r);
+                $tr.removeClass('selected').addClass('modified');
                 putToHistory(r.id, "selected", 0);
                 putToHistory(r.id, "modified", 1);
-              }
-            },
-            error: function (jqXHR, textStatus, errorThrown) {},
-          });
-        });
-
+              });
+            }
+          }).fail(function (jqXHR, textStatus, errorThrown) {});
       });
 
       // Change state
       $('[data-action="realty-set-state"]').click(function (e) {
         var stateCode = $(this).data('val');
         var $selected = $('#realtyTable > tbody > tr.selected');
+
+        var ids = [];
         $selected.each(function () {
           var $this = $(this);
-          if (!$this.hasClass('opened')) {
-            var id = $this.data('id');
-            $.ajax({
-              type: "POST",
-              url: "/api/realty/update",
-              data: {id: id, state_code: stateCode},
-            })
-              .done(function (data, textStatus, jqXHR) {
-                if (data.status == 'success') {
-                  var r = data.realty;
-                  // Update row data in realty table
-                  $this.data('id', r.id);
-                  $this.data('prev_id', id);
-                  $this.attr('data-id', r.id);
-                  $this.attr('data-prev_id', id);
-                  for (var j = 0; j < realtyTableConf.fields.length; j++) {
-                    var f = realtyTableConf.fields[j];
-                    $('td:nth-child(' + (j + 1) + ')', $this).html(f.val(r));
-                  }
-                  if(r.state_code == 'deleted') {
-                      $this.removeClass('selected').removeClass('modified').removeClass('opened').removeClass('shown').addClass('deleted');
-                  } else {
-                      $this.removeClass('selected').removeClass('deleted').addClass('modified');
-                  }
-                  putToHistory(r.id, "selected", 0);
-                  putToHistory(r.id, "modified", 1);
-                }
-              });
-          }
+          ids.push($this.data('id'));
         });
+        var $this = $(this);
+        var id = $this.data('id');
+        $.ajax({
+          type: "POST",
+          url: "/api/realty/update_multiple",
+          data: {id: ids, state_code: stateCode},
+        })
+        .done(function (data, textStatus, jqXHR) {
+          if (data.status == 'success') {
+            var list = data.list;
+            jQuery.each(list, function (old_id, realty) {
+              var r = realty;
+              var $tr = $('#realtyTable > tbody > tr[data-id="' + old_id + '"]');
+
+              $tr.data('id', r.id);
+              $tr.data('prev_id', old_id);
+              $tr.attr('data-id', r.id);
+              $tr.attr('data-prev_id', old_id);
+              // Update row data in realty table
+              for (var j = 0; j < realtyTableConf.fields.length; j++) {
+                var f = realtyTableConf.fields[j];
+                $('td:nth-child(' + (j + 1) + ')', $tr).html(f.val(r));
+              }
+              $tr.data('obj', r);
+              $tr.removeClass('selected').addClass('modified');
+              putToHistory(r.id, "selected", 0);
+              putToHistory(r.id, "modified", 1);
+            });
+          }
+        }).fail(function (jqXHR, textStatus, errorThrown) {});
+      });
+
+      // Set export
+      $('[data-action="realty-set-export"]').click(function (e) {
+        var export_media_id = $(this).data('val');
+        var $selected = $('#realtyTable > tbody > tr.selected');
+
+        var ids = [];
+        $selected.each(function () {
+          var $this = $(this);
+          ids.push($this.data('id'));
+        });
+
+        $.ajax({
+          type: "POST",
+          url: "/api/realty/update_multiple",
+          data: {id: ids, export_media: export_media_id},
+        })
+          .done(function (data, textStatus, jqXHR) {
+            if (data.status == 'success') {
+              var list = data.list;
+              jQuery.each(list, function (old_id, realty) {
+                var r = realty;
+                var $tr = $('#realtyTable > tbody > tr[data-id="' + old_id + '"]');
+
+                media_export[r.id] = r.export_media;
+                $tr.data('id', r.id);
+                $tr.data('prev_id', old_id);
+                $tr.attr('data-id', r.id);
+                $tr.attr('data-prev_id', old_id);
+                // Update row data in realty table
+                for (var j = 0; j < realtyTableConf.fields.length; j++) {
+                  var f = realtyTableConf.fields[j];
+                  $('td:nth-child(' + (j + 1) + ')', $tr).html(f.val(r));
+                }
+                $tr.data('obj', r);
+                $tr.removeClass('selected').addClass('modified');
+                putToHistory(r.id, "selected", 0);
+                putToHistory(r.id, "modified", 1);
+              });
+            }
+          }).fail(function (jqXHR, textStatus, errorThrown) {});
       });
 
       // Set color tag for realty object
@@ -1329,52 +1401,7 @@
                   $('td:nth-child(' + (j + 1) + ')', $this).html(f.val(r));
                 }
               }
-            });
-        });
-      });
-
-      // Set export
-      $('[data-action="realty-set-export"]').click(function (e) {
-        var export_code = $(this).data('val');
-        var $selected = $('#realtyTable > tbody > tr.selected');
-        $selected.each(function () {
-          var $this = $(this);
-          var id = $this.data('id');
-          var export_array = media_export[id].slice(0);
-          var index = $.inArray(export_code, export_array);
-          if(index > -1) {
-            export_array.splice(index, 1);
-          } else {
-            export_array.push(export_code);
-          }
-          var ajax_array = export_array;
-          if (ajax_array.length == 0) {
-            ajax_array = null;
-          }
-          $.ajax({
-            type: "POST",
-            url: "/api/realty/update",
-            data: {id: id, export_media: ajax_array},
-          })
-            .done(function (data, textStatus, jqXHR) {
-              if (data.status == 'success') {
-                var r = data.realty;
-                $this.data('id', r.id);
-                $this.data('prev_id', id);
-                $this.attr('data-id', r.id);
-                $this.attr('data-prev_id', id);
-                // Update row data in realty table
-                for (var j = 0; j < realtyTableConf.fields.length; j++) {
-                  var f = realtyTableConf.fields[j];
-                  $('td:nth-child(' + (j + 1) + ')', $this).html(f.val(r));
-                }
-                media_export[r.id] = export_array;
-                $this.removeClass('selected').addClass('modified');
-                putToHistory(r.id, "selected", 0);
-                putToHistory(r.id, "modified", 1);
-              }
             }).fail(function (jqXHR, textStatus, errorThrown) {});
-          ;
         });
       });
 
@@ -1413,9 +1440,7 @@
                   } else {
 
                   }
-                }).fail(function (jqXHR, textStatus, errorThrown) {
-
-                });
+                }).fail(function (jqXHR, textStatus, errorThrown) {});
             });              
             card.close();
           },
@@ -1727,9 +1752,16 @@
             <li class="dropdown" id="offer-type-filter" data-filter="offer_type_code" data-val="">
               <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span role="display"></span> <b class="caret"></b></a>
               <ul class="dropdown-menu">
-                % for my $x (@{Rplus::Model::RealtyOfferType::Manager->get_objects(sort_by => 'id')}) {
-                  <li><a href="#" data-val="<%= $x->code %>"><%= $x->name %></a></li>
-                % }
+                %# for my $x (@{Rplus::Model::RealtyOfferType::Manager->get_objects(sort_by => 'id')}) {
+                  <li><a href="#" data-val="sale"> Продажа</a></li>
+                  <li class="dropdown-submenu">
+                    <a href="#" data-val="rent"> Аренда</a>
+                    <ul class="dropdown-menu dropdown-context dropdown-context-sub compressed-context" style="bottom: auto;">
+                        <li><a href="#" data-val="rent-short" data-type="text"> Краткосрочная</a></li>
+                        <li><a href="#" data-val="rent-long" data-type="text"> Долгосрочная</a></li>
+                    </ul>
+                  </li>
+                %# }
               </ul>
             </li>
 

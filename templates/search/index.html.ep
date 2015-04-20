@@ -216,6 +216,7 @@
 %= js_once "$assets_url/typeahead.js/$typeaheadjs_ver/js/typeahead.js";
 %= js_once "$assets_url/jquery.webSpeech/jquery.webSpeech-1.0.1.js";
 %= js_once "/js/leaflet/layer-2gis.js";
+%= js_once "/js/contextmenu/context.js";
 % end
 
 % content_for javascript => begin
@@ -225,8 +226,19 @@
 <script type="application/javascript">
   "use strict";
 
+  context.init({preventDoubleContext: true, compress: true, above: 'auto',}, function(e){});
+
+  // Configuration of the realty table
   $('#offer-type-filter').data('val', Rplus.Variables['User'].offer_mode);
-  $('#offer-type-filter > a > span').text(Rplus.Variables['User'].offer_mode == 'sale' ? 'Продажа' : 'Аренда');
+  if (Rplus.Variables['User'].offer_mode == 'sale') {
+    $('#offer-type-filter > a > span').text('Продажа');
+  } else if (Rplus.Variables['User'].offer_mode == 'rent') {
+    $('#offer-type-filter > a > span').text('Аренда');
+  } else if (Rplus.Variables['User'].offer_mode == 'rent-short') {
+    $('#offer-type-filter > a > span').text('Краткосрочная');
+  } else {
+    $('#offer-type-filter > a > span').text('Долгосрочная');
+  }
 
   registerGlobalAjaxEvents();
 
@@ -275,9 +287,23 @@
         shadowRetinaUrl: '<%= "$assets_url/leaflet/$leafletjs_ver/images/marker-shadow.png" %>',        
     });
 
+    function getOfferType() {
+      var offer_filter = $('[data-filter="offer_type_code"]').data('val')
+      if (offer_filter.match(/sale/)) return 'sale';
+      return 'rent';
+    }
+    function getRentType() {
+      var offer_filter = $('[data-filter="offer_type_code"]').data('val')
+      console.log(offer_filter);
+      if (offer_filter.match(/short/)) return 'short';
+      if (offer_filter.match(/long/)) return 'long';
+      return '';
+    }
+
     function listRealty(page) {
       var q = $('#searchQuery').val();
-      var offerTypeCode = $('[data-filter="offer_type_code"]').data('val');
+      var offerTypeCode = getOfferType();
+      var rentType = getRentType();
 
       //if (!q) return;
 
@@ -285,7 +311,7 @@
       $.ajax({
         type: "POST",
         url: "<%= url_for q{/api/realty/list} %>",
-        data: {q: q, state_code: 'work', offer_type_code: offerTypeCode, page: page, per_page: 30},
+        data: {q: q, state_code: 'work', offer_type_code: offerTypeCode, rent_type: rentType, page: page, per_page: 30},
         complete: function () { _listRealty_started = false; }
       })
         .done(function (data) {
@@ -376,27 +402,23 @@
       $('form[role="search"]').submit(function (e) { e.preventDefault(); });
 
       // Filters
-      $('[data-filter] > ul > li > a').click(function (e) {
-        var $display = $(this).closest('[data-filter]').data('val', $(this).data('val')).find('> a [role="display"]');
+      $('[data-filter] > ul a').click(function (e) {
+        var $filter = $(this).closest('[data-filter]');
+        var $display = $filter.data('val', $(this).data('val')).find('> a [role="display"]');
         if ($(this).data('type') == 'text') { $display.text($(this).text()) } else { $display.html($(this).html()) };
         listRealty(1);
-      });
 
-      $('#offer-type-filter > ul > li > a').click(function (e) {
-        var $display = $(this).closest('[data-filter]').data('val', $(this).data('val')).find('> a [role="display"]');
-        if ($(this).data('type') == 'text') { 
-          $display.text($(this).text()) } else { $display.html($(this).html()) 
-        };
-
-            $.ajax({
-              type: "POST",
-              url: "/api/user/set_offer_mode",
-              data: {id: <%= $self->session('user')->{id} %>, offer_mode: $('#offer-type-filter').data('val')},
-            })
-              .done(function (data, textStatus, jqXHR) {
-                Rplus.Variables['User'].offer_mode = $('#offer-type-filter').data('val');                
-                Rplus.Functions.getActiveSubCount();
-              });
+        if($filter[0].id == 'offer-type-filter') {
+          $.ajax({
+            type: "POST",
+            url: "/api/user/set_offer_mode",
+            data: {id: <%= $self->session('user')->{id} %>, offer_mode: $('#offer-type-filter').data('val')},
+          })
+            .done(function (data, textStatus, jqXHR) {
+              Rplus.Variables['User'].offer_mode = $('#offer-type-filter').data('val');
+              Rplus.Functions.getActiveSubCount();
+            });
+        }
       });
 
       // Geo
@@ -653,12 +675,20 @@
     <div class="navbar-right">
       <ul class="nav navbar-nav">
         <!-- Offer type filter -->
-        <li class="dropdown" id="offer-type-filter" data-filter="offer_type_code" data-val="sale">
-          <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span role="display"><%= ucfloc 'sale' %></span> <b class="caret"></b></a>
+        % my $m = $self->session->{'user'}->{offer_mode};
+        <li class="dropdown" id="offer-type-filter" data-filter="offer_type_code" data-val="">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span role="display"></span> <b class="caret"></b></a>
           <ul class="dropdown-menu">
-            % for my $x (@{Rplus::Model::RealtyOfferType::Manager->get_objects(sort_by => 'id')}) {
-              <li><a href="#" data-val="<%= $x->code %>"><%= $x->name %></a></li>
-            % }
+            %# for my $x (@{Rplus::Model::RealtyOfferType::Manager->get_objects(sort_by => 'id')}) {
+              <li><a href="#" data-val="sale"> Продажа</a></li>
+              <li class="dropdown-submenu">
+                <a href="#" data-val="rent"> Аренда</a>
+                <ul class="dropdown-menu dropdown-context dropdown-context-sub compressed-context" style="bottom: auto;">
+                    <li><a href="#" data-val="rent-short" data-type="text"> Краткосрочная</a></li>
+                    <li><a href="#" data-val="rent-long" data-type="text"> Долгосрочная</a></li>
+                </ul>
+              </li>
+            %# }
           </ul>
         </li>
       </ul>

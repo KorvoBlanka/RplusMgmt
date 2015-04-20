@@ -238,6 +238,11 @@
           <input type="checkbox" checked="checked" id="houses"> Дома, коттеджи
         </label>
       </div>
+      <div class="checkbox">
+        <label>
+          <input type="checkbox" checked="checked" id="offices"> Коммерческая недвижимость
+        </label>
+      </div>
       <div class="row hidden" style="padding-top: 15px;">
         <label class="col-lg-2 control-label">Телефоны</label>
         <div class="col-lg-5">

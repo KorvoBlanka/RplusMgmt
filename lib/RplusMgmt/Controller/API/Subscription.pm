@@ -10,8 +10,11 @@ use Rplus::Model::Realty;
 use Rplus::Model::Realty::Manager;
 use Rplus::Model::Photo;
 use Rplus::Model::Photo::Manager;
-use Rplus::Model::ColorTag;
-use Rplus::Model::ColorTag::Manager;
+use Rplus::Model::RealtyColorTag;
+use Rplus::Model::RealtyColorTag::Manager;
+
+use Rplus::Model::Mediator;
+use Rplus::Model::Mediator::Manager;
 
 use Rplus::Model::Client;
 use Rplus::Model::Client::Manager;
@@ -34,17 +37,41 @@ no warnings 'experimental::smartmatch';
 # Private function: serialize realty object(s)
 my $_serialize = sub {
     my $self = shift;
+    my $ff = shift;
     my @realty_objs = (ref($_[0]) eq 'ARRAY' ? @{shift()} : shift);
     my %params = @_;
 
     my @exclude_fields = qw(ap_num source_media_id source_media_text owner_phones work_info reference);
 
+    my $acc_id = $self->session('user')->{account_id};
+    
     my (@serialized, %realty_h);
     for my $realty (@realty_objs) {
 
+        my $company = '';
+        if ($realty->account_id && $realty->account_id != $acc_id) {
+            $company = '';
+        } else {
+            my $a = $realty->owner_phones;
+            if (scalar @{$a}) {
+                my $x = Rplus::Model::Mediator::Manager->get_objects(
+                    query => [
+                        phone_num => [@{$a}],
+                        delete_date => undef,
+                        or => [account_id => undef, account_id => $acc_id],
+                        \("NOT t1.hidden_for_aid && '{".$acc_id."}'"),
+                    ],
+                    require_objects => ['company'],
+                    limit => 1,
+                )->[0];
+                if ($x) {
+                    $company = $x->company->name;
+                }
+            }
+        }
+
         my $x = {
             (map { $_ => ($_ =~ /_date$/ ? $self->format_datetime($realty->$_) : scalar($realty->$_)) } grep { !($_ ~~ [qw(delete_date geocoords landmarks metadata fts)]) } $realty->meta->column_names),
-            
             address_object => $realty->address_object_id ? {
                 id => $realty->address_object->id,
                 name => $realty->address_object->name,
@@ -52,20 +79,20 @@ my $_serialize = sub {
                 expanded_name => $realty->address_object->expanded_name,
                 addr_parts => from_json($realty->address_object->metadata)->{'addr_parts'},
             } : undef,
-
             color_tag_id => undef,
             sublandmark => $realty->sublandmark ? {id => $realty->sublandmark->id, name => $realty->sublandmark->name} : undef,
             main_photo_thumbnail => undef,
-            mediator_company => ($realty->mediator_company && $realty->agent_id == 10000) ? $realty->mediator_company->name : '',
+            mediator_company => $company,
             reference => '',
             sr_state_code => $realty->{sr_state_code},
             sr_offered => $realty->{sr_offered},
         };
 
-        if($realty->color_tags) {
-            foreach($realty->color_tags) {
-                if ($_->{user_id} == $self->stash('user')->{id}) {
-                    $x->{color_tag_id} = $_->{color_tag_id};
+        if ($realty->realty_color_tag) {
+            for (my $i = 0; $i <= 7; $i ++) {
+                my $tag_name = 'tag' . $i;
+                if ($self->stash('user')->{id} ~~ @{$realty->realty_color_tag->$tag_name}) {
+                    $x->{color_tag_id} = $i;
                     last;
                 }
             }
@@ -102,7 +129,13 @@ my $_serialize = sub {
                 $x->{sublandmarks} = [];
             }
         }
-
+        
+        if ($ff eq 'not_med') {
+            $x->{mediator_company} = '';
+        } elsif ($ff eq 'med' && !$x->{mediator_company}) {
+            $x->{mediator_company} = 'ПОСРЕДНИК В НЕДВИЖИМОСТИ';
+        }
+        
         push @serialized, $x;
         $realty_h{$realty->id} = $x;
     }
@@ -280,6 +313,8 @@ sub realty_list {
 
     my $acc_id = $self->session('user')->{account_id};
     
+    my $ff = '';
+    
     my $subscription = Rplus::Model::Subscription::Manager->get_objects(query => [id => $subscription_id, delete_date => undef])->[0];
     if ($page eq '1') {
         realty_update($self, $subscription->id);
@@ -302,7 +337,18 @@ sub realty_list {
             if ($agent_id eq 'all' && $self->has_permission(realty => 'read')->{others}) {
                 push @query, and => ['!realty.agent_id' => undef, '!realty.agent_id' => 10000];
             } elsif ($agent_id eq 'not_med') {
-                push @query, 'realty.agent_id' => undef;
+                $ff = 'not_med';
+                push @query, agent_id => undef;
+                push @query, 'realty.mediator_company_id' => undef;
+                #push @query,
+                    #[\"NOT EXISTS (SELECT 1 FROM mediators WHERE mediators.phone_num = ANY (t3.owner_phones) AND mediators.delete_date IS NULL AND ((mediators.account_id IS NULL AND NOT mediators.hidden_for_aid && '{4}') OR mediators.account_id = 4) LIMIT 1)"];
+                
+            } elsif ($agent_id eq 'med') {
+                $ff = 'med';
+                push @query, '!realty.mediator_company_id' => undef;
+                #push @query,
+                    #[\"EXISTS (SELECT 1 FROM mediators WHERE mediators.phone_num = ANY (t3.owner_phones) AND mediators.delete_date IS NULL AND ((mediators.account_id IS NULL AND NOT mediators.hidden_for_aid && '{4}') OR mediators.account_id = 4) LIMIT 1)"];
+                
             } elsif ($agent_id =~ /^a(\d+)$/) {
                 my $manager = Rplus::Model::User::Manager->get_objects(query => [id => $1, delete_date => undef])->[0];
                 if (scalar (@{$manager->subordinate})) {
@@ -317,8 +363,9 @@ sub realty_list {
 
         }
         if ($color_tag_id ne 'any') {
-            push @query, 'color_tag.color_tag_id' => $color_tag_id;
-            push @query, 'color_tag.user_id' => $self->stash('user')->{id};
+            push @query, and => [
+                'realty_color_tag.tag' . $color_tag_id  => $self->stash('user')->{id},
+            ];
         }
         if ($state_code ne 'any') {
             push @query, 'realty.state_code' => $state_code;
@@ -342,7 +389,7 @@ sub realty_list {
             '!state_code' => 'del',
         ],
         require_objects => ['realty'],
-        with_objects => ['color_tag'],        
+        with_objects => ['realty_color_tag'],        
     );
 
     my $realty_iter = Rplus::Model::SubscriptionRealty::Manager->get_objects_iterator(
@@ -351,7 +398,7 @@ sub realty_list {
             @query,
             '!state_code' => 'del',
         ],
-        with_objects => ['realty', 'color_tag'],
+        with_objects => ['realty', 'realty_color_tag'],
         sort_by => 'subscription_realty.state_code ASC',
         page => $page,
         per_page => $per_page,
@@ -368,7 +415,7 @@ sub realty_list {
         }
     }
 
-    $res->{list} = [$_serialize->($self, $realty_objs)];
+    $res->{list} = [$_serialize->($self, $ff, $realty_objs)];
 
     return $self->render(json => $res);
 }

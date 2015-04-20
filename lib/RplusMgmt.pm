@@ -82,7 +82,7 @@ sub startup {
         
         my $acc_cache = $fmap->get('acc_cache');
         my $r = $acc_cache->{$acc_name};
-        if (time - $r->{'ts'} < 120 && $r->{data}) {
+        if ($r->{data} && (time - $r->{'ts'} < 120)) {
             $acc_data = $r->{data};
         } else {      
             my $tx = $ua->get('http://rplusmgmt.com/api/account/get_by_name?name=' . $acc_name);
@@ -419,15 +419,15 @@ sub startup {
             my $last_msg_id = 0;
             my $timer_id_1 = Mojo::IOLoop->recurring(1 => sub {
                 my $msg = $fmap->get('chat_last_id');
-
-                if ($last_msg_id == 0) {
-                    $last_msg_id = $msg->{id};
-                }
-                
-                if ($msg->{id} != $last_msg_id && ((!$msg->{to} && $msg->{from} != $user_id) || $msg->{to} == $user_id)) {
-                    $last_msg_id = $msg->{id};
-                    my $to = $msg->{to};
-                    $self->write_chunk("event:chat_message\ndata: $to\n\n");
+                if ($msg && $msg->{id}) {
+                    if ($last_msg_id == 0) {
+                        $last_msg_id = $msg->{id};
+                    }
+                    if ($msg->{id} != $last_msg_id && ((!$msg->{to} && $msg->{from} != $user_id) || $msg->{to} == $user_id)) {
+                        $last_msg_id = $msg->{id};
+                        my $to = $msg->{to};
+                        $self->write_chunk("event:chat_message\ndata: $to\n\n");
+                    }
                 }
             });
             

@@ -14,8 +14,8 @@ use Rplus::Model::Mediator;
 use Rplus::Model::Mediator::Manager;
 use Rplus::Model::Photo;
 use Rplus::Model::Photo::Manager;
-use Rplus::Model::ColorTag;
-use Rplus::Model::ColorTag::Manager;
+use Rplus::Model::RealtyColorTag;
+use Rplus::Model::RealtyColorTag::Manager;
 use Rplus::Model::SubscriptionRealty;
 use Rplus::Model::SubscriptionRealty::Manager;
 use Rplus::Model::Option;
@@ -27,6 +27,9 @@ use Rplus::Util::Realty;
 use Rplus::Util::Mediator qw(add_mediator);
 use Rplus::Util::Task;
 use Rplus::Util::Geo;
+
+use File::Path qw(make_path);
+use POSIX qw(strftime);
 
 use JSON;
 use Mojo::Collection;
@@ -50,47 +53,63 @@ my $_make_copy = sub {
 
     my $acc_id = $self->session('user')->{account_id};
 
-    $realty->geocoords(undef);
-    my $x = {
-        (map { $_ => scalar($realty->$_) } $realty->meta->column_names),
-    };
-
     my $new_record;
+    # Begin transaction
+    my $db = $self->db;
+    $db->begin_work;
     eval {
-        $new_record = Rplus::Model::Realty->new(%{$x});    
-    };
-    if ($@) {
+        #$realty->geocoords(undef);
+        my $x = {
+            (map { $_ => scalar($realty->$_) } $realty->meta->column_names),
+        };
+        delete $x->{geocoords};
+        $new_record = Rplus::Model::Realty->new(%{$x}, db => $db);    
+
+        $new_record->id(undef);
+        $new_record->account_id($acc_id);
+        $new_record->hidden_for(undef);
+        $new_record->save;
+
+        my $photo_iter = Rplus::Model::Photo::Manager->get_objects_iterator(query => [realty_id => $realty->id, delete_date => undef]);
+        while (my $photo = $photo_iter->next) {
+            my $new_photo = Rplus::Model::Photo->new(db => $db);
+            $new_photo->realty_id($new_record->id);
+            $new_photo->filename($photo->filename);
+            $new_photo->thumbnail_filename($photo->thumbnail_filename);
+            $new_photo->save;          
+        }
+        
+        Rplus::Model::SubscriptionRealty::Manager->update_objects(
+            set => {realty_id => $new_record->id},
+            where => [realty_id => $realty->id],
+            db => $db
+        );    
+        
+        my $color_tag = Rplus::Model::RealtyColorTag::Manager->get_objects(query => [realty_id => $realty->id])->[0];
+        if ($color_tag) {
+            Rplus::Model::RealtyColorTag->new (
+                realty_id => $new_record->id,
+                tag0 => [$color_tag->tag0],
+                tag1 => [$color_tag->tag1],
+                tag2 => [$color_tag->tag2],
+                tag3 => [$color_tag->tag3],
+                tag4 => [$color_tag->tag4],
+                tag5 => [$color_tag->tag5],
+                tag6 => [$color_tag->tag6],
+                tag7 => [$color_tag->tag7],
+                db => $db
+            )->save;
+        }
+
+        my $hidden_for = Mojo::Collection->new(@{$realty->hidden_for});
+        push @$hidden_for, ($acc_id);
+        $realty->hidden_for($hidden_for->compact->uniq);
+        $realty->save(changes_only => 1);
+    } or do {
+        $db->rollback;
         return undef;
-    }
-
-    my $hidden_for = Mojo::Collection->new(@{$realty->hidden_for});
-    push @$hidden_for, ($acc_id);
-    $realty->hidden_for($hidden_for->compact->uniq);
-    $realty->save(changes_only => 1);
-
-    $new_record->id(undef);
-    $new_record->account_id($acc_id);
-    $new_record->hidden_for(undef);
-    $new_record->save;
-
-    my $photo_iter = Rplus::Model::Photo::Manager->get_objects_iterator(query => [realty_id => $realty->id, delete_date => undef]);
-    while (my $photo = $photo_iter->next) {
-        my $new_photo = Rplus::Model::Photo->new;
-        $new_photo->realty_id($new_record->id);
-        $new_photo->filename($photo->filename);
-        $new_photo->thumbnail_filename($photo->thumbnail_filename);
-        $new_photo->save;          
-    }
-    
-    Rplus::Model::SubscriptionRealty::Manager->update_objects(
-        set => {realty_id => $new_record->id},
-        where => [realty_id => $realty->id],
-    );    
-    
-    Rplus::Model::ColorTag::Manager->update_objects(
-        set => {realty_id => $new_record->id},
-        where => [realty_id => $realty->id, user_id => $self->stash('user')->{id},],
-    );
+    };
+    $db->commit;
 
     return $new_record;
 };
@@ -98,7 +117,6 @@ my $_make_copy = sub {
 # Private function: serialize realty object(s)
 my $_serialize = sub {
     my $self = shift;
-    my $fake_filter = shift;
     my @realty_objs = (ref($_[0]) eq 'ARRAY' ? @{shift()} : shift);
     my %params = @_;
 
@@ -163,24 +181,24 @@ my $_serialize = sub {
             source_url => $realty->source_url,
         };
 
-        if ($realty->color_tags) {
-            foreach($realty->color_tags) {
-                if ($_->{user_id} == $self->stash('user')->{id}) {
-                    $x->{color_tag_id} = $_->{color_tag_id};
-                    last;
-                }
-            }
-        }
-
-        #if ($realty->realty_color_tag) {
-        #    for (my $i=0; $i <= 7; $i++) {
-        #        my $tag_name = 'tag' . $i;
-        #        if ($self->stash('user')->{id} ~~ @{$realty->realty_color_tag->$tag_name}) {
-        #            $x->{color_tag_id} = $i;
+        #if ($realty->color_tags) {
+        #    foreach($realty->color_tags) {
+        #        if ($_->{user_id} == $self->stash('user')->{id}) {
+        #            $x->{color_tag_id} = $_->{color_tag_id};
         #            last;
         #        }
         #    }
         #}
+
+        if ($realty->realty_color_tag) {
+            for (my $i = 0; $i <= 7; $i ++) {
+                my $tag_name = 'tag' . $i;
+                if ($self->stash('user')->{id} ~~ @{$realty->realty_color_tag->$tag_name}) {
+                    $x->{color_tag_id} = $i;
+                    last;
+                }
+            }
+        }
         
         # Exclude fields for read permission "2"
         if ($anothers_obj || ($realty->agent_id != 10000 && $self->has_permission(realty => read => $realty->agent_id) == 2 && !($realty->agent_id ~~ @{$self->stash('user')->{subordinate}}))) {
@@ -215,10 +233,6 @@ my $_serialize = sub {
             }
         }
 
-        if ($fake_filter eq 'no_med' && $x->{mediator_company} || $fake_filter eq 'med' && !$x->{mediator_company}) {
-            next;        
-        }
-        
         push @serialized, $x;
         $realty_h{$realty->id} = $x;
     }
@@ -299,8 +313,6 @@ sub list_for_plot {
 
 sub list {
     my $self = shift;
-
-    my $fake_filter = '';
     
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => 'read');
 
@@ -321,6 +333,8 @@ sub list {
     my $q = $self->param_n('q');
     my $state_code = $self->param('state_code') || 'any';
     my $offer_type_code = $self->param('offer_type_code') || 'any';
+    my $rent_type = $self->param('rent_type') || 'any';
+    
     my $agent_id = $self->param('agent_id') || 'any';
     my $sort_by = $self->param('sort_by');
     my $page = $self->param("page") || 1;
@@ -371,29 +385,32 @@ sub list {
         }
     
         if ($color_tag_id ne 'any') {
-            #push @query, \($self->stash('user')->{id} . ' = ANY (realty_color_tags.tag' . $color_tag_id . ')');
             push @query, and => [
-                'color_tags.color_tag_id' => $color_tag_id,
-                'color_tags.user_id' => $self->stash('user')->{id}
+                'realty_color_tags.tag' . $color_tag_id  => $self->stash('user')->{id},
             ];
         }
-          
+        
         if ($state_code ne 'any') { push @query, state_code => $state_code } else { push @query, '!state_code' => 'deleted' };
-        if ($offer_type_code ne 'any') { push @query, offer_type_code => $offer_type_code };
+        if ($offer_type_code ne 'any') {
+            push @query, offer_type_code => $offer_type_code;
+        };
+
+        if ($offer_type_code eq 'rent' && $rent_type ne 'any') {
+            push @query, rent_type => $rent_type;
+        }
 
         my $agent_ok;
         if ($agent_id eq 'all' && $self->has_permission(realty => 'read')->{others}) {
             push @query, and => ['!agent_id' => undef, '!agent_id' => 10000];
             $agent_ok = 1;
         } elsif ($agent_id eq 'not_med') {
-            $fake_filter = 'no_med';
-            push @query, and => ['mediator_company_id' => undef, agent_id => undef];
-            #push @query, 
-            #[\"NOT t1.owner_phones && (SELECT M.phone_num FROM mediators M WHERE M.account_id = ? OR (M.account_id IS NULL AND NOT M.hidden_for_aid && '{$acc_id}'))" => $acc_id];
+            push @query, agent_id => undef;
+            push @query,
+                [\"NOT EXISTS (SELECT 1 FROM mediators WHERE mediators.phone_num = ANY (t1.owner_phones) AND mediators.delete_date IS NULL AND ((mediators.account_id IS NULL AND NOT mediators.hidden_for_aid && '{$acc_id}') OR mediators.account_id = $acc_id) LIMIT 1)"];
             $agent_ok = 1;
         } elsif ($agent_id eq 'med') {
-            $fake_filter = 'med';
-            push @query, '!mediator_company_id' => undef;
+            push @query,
+                [\"EXISTS (SELECT 1 FROM mediators WHERE mediators.phone_num = ANY (t1.owner_phones) AND mediators.delete_date IS NULL AND ((mediators.account_id IS NULL AND NOT mediators.hidden_for_aid && '{$acc_id}') OR mediators.account_id = $acc_id) LIMIT 1)"];
             $agent_ok = 1;
         } elsif ($agent_id =~ /^a(\d+)$/) {
             my $manager = Rplus::Model::User::Manager->get_objects(query => [id => $1, delete_date => undef])->[0];
@@ -465,7 +482,7 @@ sub list {
                 @query,
                 delete_date => undef
             ],
-            with_objects => ['color_tags', @with_objects]
+            with_objects => ['realty_color_tag', @with_objects]
         ),
         list => [],
         page => $page,
@@ -480,7 +497,7 @@ sub list {
                 @query,
                 delete_date => undef,
             ],
-            with_objects => ['color_tags', @with_objects]
+            with_objects => ['realty_color_tag', @with_objects]
         );
     }
 
@@ -510,11 +527,11 @@ sub list {
         sort_by => [@sort_by, 'realty.last_seen_date desc'],
         page => $page,
         per_page => $per_page,
-        with_objects => ['address_object', 'sublandmark', 'color_tags', @with_objects],
+        with_objects => ['address_object', 'sublandmark', 'realty_color_tag', @with_objects],
         #with_objects => ['address_object', 'sublandmark', 'color_tags', 'mediator_company', 'mediator_realty', @with_objects],
     );
     
-    $res->{list} = [$_serialize->($self, $fake_filter, $realty_objs)];
+    $res->{list} = [$_serialize->($self, $realty_objs)];
 
     return $self->render(json => $res);
 }
@@ -541,7 +558,7 @@ sub get {
             }
         }
     }
-    my $res = $_serialize->($self, '', $realty, with_sublandmarks => 1);
+    my $res = $_serialize->($self, $realty, with_sublandmarks => 1);
 
     return $self->render(json => $res);
 }
@@ -597,6 +614,7 @@ sub save {
         'square_total', 'square_living', 'square_kitchen', 'square_land', 'square_land_type',
         'description', 'owner_info', 'owner_price', 'work_info', 'agent_id', 'agency_price',
         'latitude', 'longitude', 'sublandmark_id', 'multylisting', 'mls_price', 'mls_price_type',
+        'rent_type',
     );
 
     my @fields_array = ('owner_phones', 'tags', 'export_media');
@@ -617,6 +635,9 @@ sub save {
         $data{$_} =~ s/,/./ if $data{$_} && $_ =~ /_price$/;
     }
 
+    # attachments
+    $data{attachments} = Mojo::Collection->new($self->param('attachments[]'))->compact->uniq;
+    
     # Owner phones
     $data{owner_phones} = Mojo::Collection->new($self->param('owner_phones[]'))->map(sub { $self->parse_phone_num($_) })->compact->uniq;
     push @errors, {owner_phones => 'Empty phones'} unless @{$data{owner_phones}};
@@ -786,22 +807,27 @@ sub save {
 
     eval {
         my $user_id = $self->stash('user')->{id};
-        my $color_tag = Rplus::Model::ColorTag::Manager->get_objects(query => [realty_id => $realty->id, user_id => $user_id,])->[0];
-        if ($color_tag) {
-            if ($color_tag_id != $color_tag->color_tag_id) {
-              $color_tag->color_tag_id($color_tag_id);
+        my $realty_tag = Rplus::Model::RealtyColorTag::Manager->get_objects(query => [realty_id => $realty->id],)->[0];
+        if (!$realty_tag) {
+            $realty_tag = Rplus::Model::RealtyColorTag->new(realty_id => $realty->id);
+        }
+        for (my $i = 0; $i <= 7; $i ++) {
+            my $tag_name = 'tag' . $i;
+            if ($i == $color_tag_id) {
+                if ($self->stash('user')->{id} ~~ @{$realty_tag->$tag_name}) {
+                    my $t_tags = Mojo::Collection->new(grep { $_ != $self->stash('user')->{id} } @{$realty_tag->$tag_name});
+                    $realty_tag->$tag_name($t_tags->compact->uniq);
+                } else {
+                    my $t_tags = Mojo::Collection->new(@{$realty_tag->$tag_name});
+                    push @$t_tags, ($user_id);
+                    $realty_tag->$tag_name($t_tags->compact->uniq);
+                }
             } else {
-              #$color_tag->color_tag_id(undef);
+                my $t_tags = Mojo::Collection->new(grep { $_ != $self->stash('user')->{id} } @{$realty_tag->$tag_name});
+                $realty_tag->$tag_name($t_tags->compact->uniq);
             }
-            $color_tag->save(changes_only => 1);
-        } else {
-            $color_tag = Rplus::Model::ColorTag->new(
-                realty_id => $realty->id,
-                user_id => $user_id,
-                color_tag_id => $color_tag_id,
-            );
-            $color_tag->save(insert => 1);
-        }    
+        } 
+        $realty_tag->save;
 
         if ($create_event) {
             my $start_date = localtime;
@@ -836,7 +862,7 @@ sub save {
     my $res = {
         status => 'success',
         id => $realty->id,
-        realty => $_serialize->($self, '', $realty),
+        realty => $_serialize->($self, $realty),
         #similar_realty_id => $similar_realty_id,
         #($similar_realty ? (similar_realty => $_serialize->($self, $similar_realty)) : ()),
     };
@@ -855,27 +881,34 @@ sub set_color_tag {
     my $realty = Rplus::Model::Realty::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $realty;
 
-    my $color_tag = Rplus::Model::ColorTag::Manager->get_objects(query => [realty_id => $realty->id, user_id => $user_id,])->[0];
-    if ($color_tag) {
-        if ($color_tag_id != $color_tag->color_tag_id) {
-          $color_tag->color_tag_id($color_tag_id);
-        } else {
-          $color_tag->color_tag_id(undef);
-        }
-        $color_tag->save(changes_only => 1);
-    } else {
-        $color_tag = Rplus::Model::ColorTag->new(
-            realty_id => $realty->id,
-            user_id => $user_id,
-            color_tag_id => $color_tag_id,
-        );
-        $color_tag->save(insert => 1);
+    my $realty_tag = Rplus::Model::RealtyColorTag::Manager->get_objects(query => [realty_id => $id],)->[0];
+    if (!$realty_tag) {
+        $realty_tag = Rplus::Model::RealtyColorTag->new(realty_id => $id);
     }
-    
+
+    for (my $i = 0; $i <= 7; $i ++) {
+        my $tag_name = 'tag' . $i;
+        if ($i == $color_tag_id) {
+            if ($self->stash('user')->{id} ~~ @{$realty_tag->$tag_name}) {
+                my $t_tags = Mojo::Collection->new(grep { $_ != $self->stash('user')->{id} } @{$realty_tag->$tag_name});
+                $realty_tag->$tag_name($t_tags->compact->uniq);
+            } else {
+                my $t_tags = Mojo::Collection->new(@{$realty_tag->$tag_name});
+                push @$t_tags, ($user_id);
+                $realty_tag->$tag_name($t_tags->compact->uniq);
+            }
+        } else {
+            my $t_tags = Mojo::Collection->new(grep { $_ != $self->stash('user')->{id} } @{$realty_tag->$tag_name});
+            $realty_tag->$tag_name($t_tags->compact->uniq);
+        }
+    }
+
+    $realty_tag->save(changes_only => 1);
+
     my $res = {
         status => 'success',
-        id => $realty->id,
-        realty => $_serialize->($self, '', $realty),
+        id => $id,
+        realty => $_serialize->($self, $realty),
     };
 
     return $self->render(json => $res);
@@ -939,23 +972,6 @@ sub update {
             $realty->state_code(scalar $self->param('state_code'));
             $realty->change_date('now()');
         } elsif ($_ eq 'color_tag_id') {
-            my $color_tag_id = $self->param('color_tag_id');
-            my $color_tag = Rplus::Model::ColorTag::Manager->get_objects(query => [realty_id => $realty->id, user_id => $user_id,])->[0];
-            if ($color_tag) {
-                if ($color_tag_id != $color_tag->color_tag_id) {
-                  $color_tag->color_tag_id($color_tag_id);
-                } else {
-                  $color_tag->color_tag_id(undef);
-                }
-                $color_tag->save(changes_only => 1);
-            } else {
-                $color_tag = Rplus::Model::ColorTag->new(
-                    realty_id => $realty->id,
-                    user_id => $user_id,
-                    color_tag_id => $color_tag_id,
-                );
-                $color_tag->save(insert => 1);
-            }
 
         } elsif ($_ eq 'export_media[]') {
             my $export_media_ok = Rplus::DB->new_or_cached->dbh->selectall_hashref(q{SELECT M.id, M.name FROM media M WHERE M.type = 'export' AND M.delete_date IS NULL}, 'id');
@@ -1023,7 +1039,180 @@ sub update {
     my $res = {
         status => 'success',
         id => $realty->id,
-        realty => $_serialize->($self, '', $realty),
+        realty => $_serialize->($self, $realty),
+    };
+
+    return $self->render(json => $res);
+}
+
+sub update_multiple {
+    my $self = shift;
+
+    # Increase inactivity timeout for connection a bit
+    Mojo::IOLoop->stream($self->tx->connection)->timeout(600);
+    #return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => 'write');
+
+    my $acc_id = $self->session('user')->{account_id};
+    my $user_id = $self->stash('user')->{id};
+
+    my $ids = Mojo::Collection->new($self->param('id[]'));
+
+    my %realtys;
+    my @errors;
+
+    $ids->each(sub {
+        my ($id, $idx) = @_;
+
+        my $create_event = 0;
+        my $realty = Rplus::Model::Realty::Manager->get_objects(query => [id => $id, or => [account_id => undef, account_id => $acc_id], \("NOT hidden_for && '{".$acc_id."}'"), delete_date => undef])->[0];
+        unless ($realty) {
+            push @errors, $id;
+            return;
+        }
+        my $old_id = $realty->id;
+
+        for ($self->param) {
+
+            if ($_ eq 'agent_id') {
+                my $agent_id = $self->param_n('agent_id');
+
+                unless ($self->has_permission(realty => write => $realty->agent_id)) {
+                    unless ($self->has_permission(realty => 'write')->{can_assign} && $agent_id == $user_id) {
+                        push @errors, $id;
+                        return;
+                    }
+                }
+            } elsif ($_ eq 'color_tag_id') {
+                
+            } elsif ($_ eq 'export_media') {
+                my $export_media_id = $self->param_n('export_media');
+                my $export_media_ok = Rplus::DB->new_or_cached->dbh->selectall_hashref(q{SELECT M.id, M.name FROM media M WHERE M.type = 'export' AND M.delete_date IS NULL}, 'id');
+
+                unless ($self->has_permission(realty => write => $realty->agent_id) || !exists $export_media_ok->{$export_media_id}) {
+                    push @errors, $id;
+                    return;
+                }
+            } elsif ($_ eq 'state_code') {
+                unless ($self->has_permission(realty => write => $realty->agent_id)) {
+                    push @errors, $id;
+                    return;
+                }
+            } 
+        }
+
+        unless ($realty->account_id) {
+            $realty = $_make_copy->($self, $realty);
+            unless ($realty) {
+                push @errors, $id;
+                return;
+            }
+        }
+
+        for ($self->param) {
+
+            if ($_ eq 'agent_id') {
+                my $agent_id = $self->param_n('agent_id');
+
+                unless ($agent_id) {
+                    $realty->agent_id(undef);
+                } else {
+                    if ($agent_id == 10000) {
+                        add_mediator('ПОСРЕДНИК В НЕДВИЖИМОСТИ', $realty->owner_phones->[0], 'user_' . $user_id, $acc_id);
+                    } else {
+                        $realty->agent_id($agent_id);
+                        $create_event = 1;
+                    }
+                }
+
+                $realty->assign_date('now()');
+                $realty->change_date('now()');
+
+
+            } elsif ($_ eq 'state_code') {
+                $realty->state_code(scalar $self->param('state_code'));
+                $realty->change_date('now()');
+            } elsif ($_ eq 'color_tag_id') {
+
+            } elsif ($_ eq 'export_media') {
+                my $export_media_id = $self->param_n('export_media');
+
+                if ($export_media_id ~~ @{$realty->export_media}) {
+                    my $new_export_media = Mojo::Collection->new(grep { $_ != $export_media_id } @{$realty->export_media});
+                    $realty->export_media($new_export_media->compact->uniq);
+                } else {
+                    my $new_export_media = Mojo::Collection->new(@{$realty->export_media});
+                    push @$new_export_media, ($export_media_id);
+                    $realty->export_media($new_export_media->compact->uniq);
+                }
+            } elsif ($_ eq 'export_media') {
+                $realty->export_media(Mojo::Collection->new());
+            }
+        }
+
+        if ($realty->state_code eq 'work' && !$realty->agent_id) {
+            $realty->state_code('raw');
+        }
+
+        if (!$realty->agent_id) {
+            $realty->export_media(Mojo::Collection->new());
+        }
+
+        if ($realty->state_code ne 'work') {
+            $realty->multylisting(0);
+        }
+
+        # Save data
+        eval {
+            $realty->save(changes_only => 1);
+            1;
+        } or do {
+            unless ($realty) {
+                push @errors, $id;
+                return;
+            }
+        };
+
+        $realty->load;
+
+        $realtys{$old_id} = $_serialize->($self, $realty);
+
+        eval {
+            if ($create_event) {
+                my $start_date = localtime;
+                my $end_date = $start_date + 15 * 60;
+                my $start_date_str = $start_date->datetime . '+' . ($start_date->tzoffset / (60 * 60));
+                my $end_date_str = $end_date->datetime . '+' . ($start_date->tzoffset / (60 * 60));
+
+                my @parts;
+                {
+                    push @parts, $realty->type->name;
+                    push @parts, $realty->rooms_count.'к' if $realty->rooms_count;
+                    push @parts, $realty->address_object->name.' '.$realty->address_object->short_type.($realty->house_num ? ', '.$realty->house_num : '') if $realty->address_object;
+                    push @parts, $realty->price.' тыс. руб.' if $realty->price;
+                }
+                my $summary = join(', ', @parts);
+
+                Rplus::Util::Task::qcreate($self, {
+                        task_type_id => 9, # назначен объект
+                        assigned_user_id => $realty->agent_id,
+                        start_date => $start_date_str,
+                        end_date => $end_date_str,
+                        summary => $summary,
+                        client_id => undef,
+                        realty_id => $realty->id,
+                    });        
+            }    
+        };
+        if ($@) {
+            
+        }
+
+    });
+
+    my $res = {
+        status => 'success',
+        list => {%realtys},
+        errors => [@errors],
     };
 
     return $self->render(json => $res);
@@ -1055,6 +1244,32 @@ sub check_coords {
     } else {
         return $self->render(json => {status => 'not_found'});
     }
+}
+
+sub upload_file {
+    my $self = shift;
+
+    my $file_url = '';
+    my $cat = '/users/files/';
+    
+    if (my $file = $self->param('file')) {
+        my $ts = (Time::HiRes::time =~ s/\.//r);
+        $cat .= $ts . '/';
+        my $path = $self->config->{'storage'}->{'path'} . $cat;
+        my $name = strftime('%d.%m %H:%M',localtime) . ' ' . $file->filename;
+
+        eval {
+            make_path($path);
+            $file->move_to($path . $name);
+            $file_url = $cat . $name;
+        } or do {
+            return $self->render(json => {error => $@}, status => 500);
+        };
+
+        return $self->render(json => {status => 'success', file_url => $self->config->{'storage'}->{'url'} . $file_url});
+    }
+
+    return $self->render(json => {error => 'Bad Request'}, status => 400);
 }
 
 1;

@@ -40,7 +40,10 @@ my $filename_hash = {
     'sale-apartments' => 'real-estate.apartments-sale.secondary.csv',
     'rent-apartments' => 'real-estate.rent.csv',
     'sale-houses' => 'real-estate.out-of-town.houses.csv',
-    'rent-houses' => 'real-estate.out-of-town-rent.csv',    
+    'rent-houses' => 'real-estate.out-of-town-rent.csv',
+
+    'sale-offices' => 'real-estate.commercial.offices.csv',
+    'rent-offices' => 'real-estate.commercial-rent.csv',
 };
 
 my %templates_hash = (
@@ -64,7 +67,7 @@ my %templates_hash = (
                     return $d->price ? $d->price * 1000 : '';
                 },
             "Валюта" => sub {
-                    return 'Рубли';
+                    return 'rur';
                 },
             "До метро (мин/пеш)" => sub {
                     return '';
@@ -220,7 +223,7 @@ my %templates_hash = (
                     return $d->price ? $d->price * 1000 : '';
                 },
             "Валюта" => sub {
-                    return 'Рубли';
+                    return 'rur';
                 },
             "Удаленность, км" => sub {
                     return '';
@@ -369,10 +372,7 @@ my %templates_hash = (
                     return $d->price ? $d->price * 1000 : '';
                 },
             "Валюта" => sub {
-                    return 'Рубли';
-                },
-            "Удаленность, км" => sub {
-                    return '';
+                    return 'rur';
                 },
             "До метро, мин/пеш" => sub {
                     return '';
@@ -493,6 +493,145 @@ my %templates_hash = (
                 },
 
         ),
+        offices => ordered_hash_ref (
+            "ID" => sub {
+                    my $d = shift;
+                    return $d->id;
+                },
+            "Город" => sub {
+                    return 'Хабаровск';
+                },
+            "Метро" => sub {
+                    return '';
+                },
+            "Шоссе" => sub {
+                    return '';
+                },
+            "Общая площадь от" => sub {
+                    my $d = shift;
+                    return $d->square_total;
+                },
+            "Цена общая" => sub {
+                    my $d = shift;
+                    return $d->price ? $d->price * 1000 : '';
+                },
+            "Валюта" => sub {
+                    return 'rur';
+                },
+            "Улица" => sub {
+                    my $d = shift;
+                    my $location = '';
+                    if ($d->address_object) {
+                        my $addr_obj = $d->address_object;
+                        $location = $addr_obj->name . ($addr_obj->short_type ne 'ул' ? ' ' . $addr_obj->short_type : '');
+                    }
+                    
+                    return $d->address_object ? $d->address_object->name : '';
+                },
+            "Дом" => sub {
+                    my $d = shift;
+                    return $d->house_num ? $d->house_num : '';
+                },
+            "До метро, мин/пеш" => sub {
+                    return '';
+                },
+            "Класс" => sub {
+                    return '';
+                },
+            "Тип здания" => sub {
+                    return '';
+                },
+            "Серия здания" => sub {
+                    return '';
+                },
+            "Материал стен" => sub {
+                    my $d = shift;
+                    return $d->house_type ? $d->house_type->name : '';
+                },
+            "Год постройки/сдачи (г)" => sub {
+                    return '';
+                },
+            "Количество этажей" => sub {
+                    my $d = shift;
+                    return $d->floors_count;
+                },
+            "Лифты в здании" => sub {
+                    return '';
+                },
+            "Система отопления" => sub {
+                    return '';
+                },
+            "Охрана здания" => sub {
+                    return '';
+                },
+            "Высота потолков" => sub {
+                    return '';
+                },
+            "Парковка" => sub {
+                    return '';
+                },
+            "Общее количество машиномест" => sub {
+                    return '';
+                },
+            "Этаж" => sub {
+                    return '';
+                },
+            "Городской телефон" => sub {
+                    return '';
+                },
+            "Ремонт" => sub {
+                    my $d = shift;
+                    return $d->condition ? $d->condition->name : '';
+                },
+            "1-я линия" => sub {
+                    return '';
+                },
+            "Отдельный вход" => sub {
+                    return '';
+                },
+            "Охрана парковки" => sub {
+                    return '';
+                },
+            "Удаленность, км" => sub {
+                    return '';
+                },
+            "Дополнительные сведения" => sub {
+                    my $d = shift;
+                    return $d->description ? $d->description : '';
+                },
+            "Фото" => sub {
+                    my $d = shift;
+                    my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $d->id, delete_date => undef], sort_by => 'id ASC', limit => 2)};
+                    return join(", ", map {
+                        (URI->new($_->filename)->path_segments)[-2] . '_' . (URI->new($_->filename)->path_segments)[-1];
+                    } @photos);
+                },
+            "www-адрес" => sub {
+                    return $site_url;
+                },               
+            "Контактное лицо" => sub {
+                    my $d = shift;
+                    my $name = '';
+                    if ($d->agent_id) {
+                        $name = $d->agent->public_name || '';
+                    }
+                    return $name;
+                },
+            "Контактный телефон" => sub {
+                    my $d = shift;
+                    my $phones = $contact_phones;
+                    if ($agent_phone == 1 && $d->agent) {
+                        my $x = $d->agent->public_phone_num || $d->agent->phone_num;
+                        $phones =  $x . ', ' . $phones;
+                    }
+
+                    return $phones;
+                },
+            "e-mail" => sub {
+                    return $contact_email;
+                },
+        ),
+
     },
     rent => {
         apartments => ordered_hash_ref (
@@ -514,7 +653,7 @@ my %templates_hash = (
                     return $d->price ? $d->price * 1000 : '';
                 },
             "Валюта" => sub {
-                    return 'Рубли';
+                    return 'rur';
                 },
             "Период аренды" => sub {
                     return 'долгосрочная';
@@ -601,7 +740,7 @@ my %templates_hash = (
             "Интернет" => sub {
                     return '';
                 },
-            "Мебель" => sub {
+            "Без мебели" => sub {
                     return '';
                 },
             "Бытовая техника" => sub {
@@ -683,10 +822,10 @@ my %templates_hash = (
                     return $d->price ? $d->price * 1000 : '';
                 },
             "Валюта" => sub {
-                    return 'Рубли';
+                    return 'rur';
                 },
             "Период аренды" => sub {
-                    return 'Рубли';
+                    return '';
                 },
             "Краткосрочная аренда" => sub {
                     return 'долгосрочная';
@@ -752,7 +891,7 @@ my %templates_hash = (
                     my $d = shift;
                     return $d->condition ? $d->condition->name : '';
                 },
-            "Мебель" => sub {
+            "Без мебели" => sub {
                     return '';
                 },
             "Бытовая техника" => sub {
@@ -813,7 +952,9 @@ my %templates_hash = (
             "Комиссия" => sub {
                     return 'без комиссии';
                 },
-
+            "Общежитие" => sub {
+                    return '';
+                },
         ),
         houses => ordered_hash_ref (
             "ID" => sub {
@@ -834,7 +975,7 @@ my %templates_hash = (
                     return $d->price ? $d->price * 1000 : '';
                 },
             "Валюта" => sub {
-                    return 'Рубли';
+                    return 'rur';
                 },
             "До метро, мин/пеш" => sub {
                     return '';
@@ -973,6 +1114,154 @@ my %templates_hash = (
                     return 'без комиссии';
                 },
         ),
+
+
+        offices => ordered_hash_ref (
+            "ID" => sub {
+                    my $d = shift;
+                    return $d->id;
+                },
+            "Город" => sub {
+                    return 'Хабаровск';
+                },
+            "Метро" => sub {
+                    return '';
+                },
+            "Шоссе" => sub {
+                    return '';
+                },
+            "Общая площадь от" => sub {
+                    my $d = shift;
+                    return $d->square_total;
+                },
+            "Цена общая" => sub {
+                    my $d = shift;
+                    return $d->price ? $d->price * 1000 : '';
+                },
+            "Валюта" => sub {
+                    return 'rur';
+                },
+            "Улица" => sub {
+                    my $d = shift;
+                    my $location = '';
+                    if ($d->address_object) {
+                        my $addr_obj = $d->address_object;
+                        $location = $addr_obj->name . ($addr_obj->short_type ne 'ул' ? ' ' . $addr_obj->short_type : '');
+                    }
+                    
+                    return $d->address_object ? $d->address_object->name : '';
+                },
+            "Дом" => sub {
+                    my $d = shift;
+                    return $d->house_num ? $d->house_num : '';
+                },
+            "До метро, мин/пеш" => sub {
+                    return '';
+                },
+            "Класс" => sub {
+                    return '';
+                },
+            "Тип здания" => sub {
+                    return '';
+                },
+            "Серия здания" => sub {
+                    return '';
+                },
+            "Материал стен" => sub {
+                    my $d = shift;
+                    return $d->house_type ? $d->house_type->name : '';
+                },
+            "Год постройки/сдачи (г)" => sub {
+                    return '';
+                },
+            "Количество этажей" => sub {
+                    my $d = shift;
+                    return $d->floors_count;
+                },
+            "Лифты в здании" => sub {
+                    return '';
+                },
+            "Система отопления" => sub {
+                    return '';
+                },
+            "Охрана здания" => sub {
+                    return '';
+                },
+            "Высота потолков" => sub {
+                    return '';
+                },
+            "Парковка" => sub {
+                    return '';
+                },
+            "Общее количество машиномест" => sub {
+                    return '';
+                },
+            "Этаж" => sub {
+                    return '';
+                },
+            "Городской телефон" => sub {
+                    return '';
+                },
+            "Ремонт" => sub {
+                    my $d = shift;
+                    return $d->condition ? $d->condition->name : '';
+                },
+            "1-я линия" => sub {
+                    return '';
+                },
+            "Отдельный вход" => sub {
+                    return '';
+                },
+            "Охрана парковки" => sub {
+                    return '';
+                },
+            "Удаленность, км" => sub {
+                    return '';
+                },
+            "Дополнительные сведения" => sub {
+                    my $d = shift;
+                    return $d->description ? $d->description : '';
+                },
+            "Фото" => sub {
+                    my $d = shift;
+                    my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $d->id, delete_date => undef], sort_by => 'id ASC', limit => 2)};
+                    return join(", ", map {
+                        (URI->new($_->filename)->path_segments)[-2] . '_' . (URI->new($_->filename)->path_segments)[-1];
+                    } @photos);
+                },
+            "www-адрес" => sub {
+                    return $site_url;
+                },               
+            "Контактное лицо" => sub {
+                    my $d = shift;
+                    my $name = '';
+                    if ($d->agent_id) {
+                        $name = $d->agent->public_name || '';
+                    }
+                    return $name;
+                },
+            "Контактный телефон" => sub {
+                    my $d = shift;
+                    my $phones = $contact_phones;
+                    if ($agent_phone == 1 && $d->agent) {
+                        my $x = $d->agent->public_phone_num || $d->agent->phone_num;
+                        $phones =  $x . ', ' . $phones;
+                    }
+
+                    return $phones;
+                },
+            "e-mail" => sub {
+                    return $contact_email;
+                },
+            "" => sub {
+                    return '';
+                },
+            "Комиссия" => sub {
+                    return '';
+                },
+
+        ),
+
     },
 );
 
@@ -1040,6 +1329,10 @@ sub index {
         push @tc, (type_code => 'cottage');
         push @tc, (type_code => 'dacha');
         push @tc, (type_code => 'land');
+    }
+
+    if ($realty_type =~ /offices/) {
+        push @tc, (type_code => 'offices');
     }
 
     my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
