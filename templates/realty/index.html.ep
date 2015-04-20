@@ -1316,19 +1316,24 @@
               var r = realty;
               var $tr = $('#realtyTable > tbody > tr[data-id="' + old_id + '"]');
 
-              $tr.data('id', r.id);
-              $tr.data('prev_id', old_id);
-              $tr.attr('data-id', r.id);
-              $tr.attr('data-prev_id', old_id);
-              // Update row data in realty table
-              for (var j = 0; j < realtyTableConf.fields.length; j++) {
-                var f = realtyTableConf.fields[j];
-                $('td:nth-child(' + (j + 1) + ')', $tr).html(f.val(r));
+              var state_mode = $('[data-filter="state_code"]').data('val');
+              if (r.state_code == 'deleted' && state_mode != 'deleted') {
+                $tr.remove();
+              } else {
+                $tr.data('id', r.id);
+                $tr.data('prev_id', old_id);
+                $tr.attr('data-id', r.id);
+                $tr.attr('data-prev_id', old_id);
+                // Update row data in realty table
+                for (var j = 0; j < realtyTableConf.fields.length; j++) {
+                  var f = realtyTableConf.fields[j];
+                  $('td:nth-child(' + (j + 1) + ')', $tr).html(f.val(r));
+                }
+                $tr.data('obj', r);
+                $tr.removeClass('selected').addClass('modified');
+                putToHistory(r.id, "selected", 0);
+                putToHistory(r.id, "modified", 1);
               }
-              $tr.data('obj', r);
-              $tr.removeClass('selected').addClass('modified');
-              putToHistory(r.id, "selected", 0);
-              putToHistory(r.id, "modified", 1);
             });
           }
         }).fail(function (jqXHR, textStatus, errorThrown) {});
@@ -1380,29 +1385,41 @@
       $('[data-action="realty-set-color_tag_id"]').click(function (e) {
         var new_tag_id = $(this).data('val');
         var $selected = $('#realtyTable > tbody > tr.selected');
+        var ids = [];
         $selected.each(function () {
           var $this = $(this);
-          var id = $this.data('id');
-          $.ajax({
-            type: "POST",
-            url: "/api/realty/set_color_tag",
-            data: {id: id, color_tag_id: new_tag_id}
-          })
-            .done(function (data, textStatus, jqXHR) {
-              if (data.status == 'success') {
-                var r = data.realty;
-                $this.data('id', r.id);
-                $this.data('prev_id', id);
-                $this.attr('data-id', r.id);
-                $this.attr('data-prev_id', id);
+          ids.push($this.data('id'));
+        });
+
+        $.ajax({
+          type: "POST",
+          url: "/api/realty/set_color_tag_multiple",
+          data: {id: ids, color_tag_id: new_tag_id}
+        })
+          .done(function (data, textStatus, jqXHR) {
+            if (data.status == 'success') {
+              var list = data.list;
+              jQuery.each(list, function (old_id, realty) {
+                var r = realty;
+                var $tr = $('#realtyTable > tbody > tr[data-id="' + old_id + '"]');
+
+                media_export[r.id] = r.export_media;
+                $tr.data('id', r.id);
+                $tr.data('prev_id', old_id);
+                $tr.attr('data-id', r.id);
+                $tr.attr('data-prev_id', old_id);
                 // Update row data in realty table
                 for (var j = 0; j < realtyTableConf.fields.length; j++) {
                   var f = realtyTableConf.fields[j];
-                  $('td:nth-child(' + (j + 1) + ')', $this).html(f.val(r));
+                  $('td:nth-child(' + (j + 1) + ')', $tr).html(f.val(r));
                 }
-              }
-            }).fail(function (jqXHR, textStatus, errorThrown) {});
-        });
+                $tr.data('obj', r);
+                $tr.removeClass('selected').addClass('modified');
+                putToHistory(r.id, "selected", 0);
+                putToHistory(r.id, "modified", 1);
+              });
+            }
+          }).fail(function (jqXHR, textStatus, errorThrown) {});
       });
 
       $('[data-action="task-create"]').click(function (e) {

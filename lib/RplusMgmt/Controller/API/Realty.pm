@@ -813,20 +813,13 @@ sub save {
         }
         for (my $i = 0; $i <= 7; $i ++) {
             my $tag_name = 'tag' . $i;
-            if ($i == $color_tag_id) {
-                if ($self->stash('user')->{id} ~~ @{$realty_tag->$tag_name}) {
-                    my $t_tags = Mojo::Collection->new(grep { $_ != $self->stash('user')->{id} } @{$realty_tag->$tag_name});
-                    $realty_tag->$tag_name($t_tags->compact->uniq);
-                } else {
-                    my $t_tags = Mojo::Collection->new(@{$realty_tag->$tag_name});
-                    push @$t_tags, ($user_id);
-                    $realty_tag->$tag_name($t_tags->compact->uniq);
-                }
-            } else {
-                my $t_tags = Mojo::Collection->new(grep { $_ != $self->stash('user')->{id} } @{$realty_tag->$tag_name});
-                $realty_tag->$tag_name($t_tags->compact->uniq);
-            }
-        } 
+            my $t_tags = Mojo::Collection->new(grep { $_ != $self->stash('user')->{id} } @{$realty_tag->$tag_name});
+            $realty_tag->$tag_name($t_tags->compact->uniq);
+        }
+        my $tag_name = 'tag' . $color_tag_id;
+        my $t_tags = Mojo::Collection->new(@{$realty_tag->$tag_name});
+        push @$t_tags, ($user_id);
+        $realty_tag->$tag_name($t_tags->compact->uniq);
         $realty_tag->save;
 
         if ($create_event) {
@@ -909,6 +902,61 @@ sub set_color_tag {
         status => 'success',
         id => $id,
         realty => $_serialize->($self, $realty),
+    };
+
+    return $self->render(json => $res);
+}
+
+sub set_color_tag_multiple {
+    my $self = shift;
+
+    my $acc_id = $self->session('user')->{account_id};
+    my $user_id = $self->stash('user')->{id};
+
+    my $color_tag_id = $self->param('color_tag_id');
+    my $ids = Mojo::Collection->new($self->param('id[]'));
+
+    my %realtys;
+    my @errors;
+
+    $ids->each(sub {
+        my ($id, $idx) = @_;
+        my $realty = Rplus::Model::Realty::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
+        unless ($realty) {
+            push @errors, $id;
+            return;
+        }
+
+        my $realty_tag = Rplus::Model::RealtyColorTag::Manager->get_objects(query => [realty_id => $id],)->[0];
+        if (!$realty_tag) {
+            $realty_tag = Rplus::Model::RealtyColorTag->new(realty_id => $id);
+        }
+
+        for (my $i = 0; $i <= 7; $i ++) {
+            my $tag_name = 'tag' . $i;
+            if ($i == $color_tag_id) {
+                if ($self->stash('user')->{id} ~~ @{$realty_tag->$tag_name}) {
+                    my $t_tags = Mojo::Collection->new(grep { $_ != $self->stash('user')->{id} } @{$realty_tag->$tag_name});
+                    $realty_tag->$tag_name($t_tags->compact->uniq);
+                } else {
+                    my $t_tags = Mojo::Collection->new(@{$realty_tag->$tag_name});
+                    push @$t_tags, ($user_id);
+                    $realty_tag->$tag_name($t_tags->compact->uniq);
+                }
+            } else {
+                my $t_tags = Mojo::Collection->new(grep { $_ != $self->stash('user')->{id} } @{$realty_tag->$tag_name});
+                $realty_tag->$tag_name($t_tags->compact->uniq);
+            }
+        }
+
+        $realty_tag->save(changes_only => 1);
+        $realtys{$realty->id} = $_serialize->($self, $realty);
+    });
+
+    my $res = {
+        status => 'success',
+        list => {%realtys},
+        errors => [@errors],
     };
 
     return $self->render(json => $res);
