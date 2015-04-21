@@ -2314,14 +2314,21 @@
 
       function getActiveSubCount() {
         var offer_type = 'sale';
+        var rent_type = '';
         if (Rplus.Variables['User'].offer_mode.match(/rent/)) {
           offer_type = 'rent';
         }
+        if (Rplus.Variables['User'].offer_mode.match(/short/)) {
+          rent_type = 'short';
+        } else if (Rplus.Variables['User'].offer_mode.match(/long/)) {
+          rent_type = 'long';
+        }
+
         supressAjaxIndicator(1);
         $.ajax({
           type: "POST",
           url: "/api/client/get_active_count",
-          data: {offer_type_code: offer_type},
+          data: {offer_type_code: offer_type, rent_type: rent_type,},
           complete: function () {}
         })
           .done(function (data, textStatus, jqXHR) {

@@ -584,7 +584,8 @@ sub get_active_count {
 
     my $acc_id = $self->session('user')->{account_id};
 
-    my $offer_type_code = $self->param('offer_type_code') || 'none';
+    my $offer_type_code = $self->param('offer_type_code');
+    my $rent_type = $self->param('rent_type') || 'any';
 
     my $clients_count = 0;
 
@@ -596,6 +597,10 @@ sub get_active_count {
             push @query, agent_id => $t;
         } elsif ($self->stash('user')->{role} eq 'agent' || $self->stash('user')->{role} eq 'agent_plus') {
             push @query, agent_id => $self->stash('user')->{id};
+        }
+
+        if ($rent_type ne 'any') {
+            push @query, 'rent_type' => $rent_type;
         }
     }
 
