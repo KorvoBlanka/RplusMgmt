@@ -476,6 +476,7 @@ sub subscribe {
     my $phone_num = $self->parse_phone_num(scalar $self->param('phone_num'));
     my $q = $self->param_n('q');
     my $offer_type_code = $self->param('offer_type_code');
+    my $rent_type = $self->param('rent_type');
     my $realty_ids = Mojo::Collection->new($self->param('realty_ids[]'))->compact->uniq;
     my $end_date = $self->parse_datetime(scalar $self->param('end_date'));
 
@@ -497,6 +498,7 @@ sub subscribe {
         user_id => $self->session->{user}->{id},
         queries => [$q],
         offer_type_code => $offer_type_code,
+        rent_type => $rent_type,
         end_date => $end_date,
     );
     $subscription->save;

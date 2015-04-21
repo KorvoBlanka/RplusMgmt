@@ -61,6 +61,10 @@ sub run {
                     # Skip FTS data
                     my @query = map { ref($_) eq 'SCALAR' && $$_ =~ /^t1\.fts/ ? () : $_ } (Rplus::Util::Query->parse($q, $c));
 
+                    if ($subscr->rent_type) {
+                        push @query, rent_type => $subscr->rent_type;
+                    }
+
                     my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
                         query => [
                             offer_type_code => $subscr->offer_type_code,

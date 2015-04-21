@@ -461,9 +461,9 @@
 
       // Subscribe client
       $('[data-action="client-subscribe"]').click(function (e) {
-        console.log('!');
         var q = $('#searchQuery').val().trim(),
-            offerTypeCode = $('[data-filter="offer_type_code"]').data('val'),
+            offerTypeCode = getOfferType(),
+            rentType = getRentType(),
             days = $(this).data('days'),
             realtyIds = [],
             phoneNum = $('#sfPhoneNum').val();
@@ -471,9 +471,7 @@
           realtyIds.push($(this).data('id'));
         });
 
-        console.log(q);
-        console.log(days);
-        console.log(phoneNum);
+
 
         if (!q) { alert("<%= ucfloc 'query cannot be empty' %>"); return; };
         //if (!days ) return;
@@ -485,6 +483,7 @@
           data: {
             q: q,
             offer_type_code: offerTypeCode,
+            rent_type: rentType,
             end_date: days ? moment().add('days', days).format('YYYY-MM-DDTHH:mm:ssZZ') : null,
             phone_num: phoneNum,
             realty_ids: realtyIds,
