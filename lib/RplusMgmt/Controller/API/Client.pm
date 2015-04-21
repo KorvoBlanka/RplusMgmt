@@ -43,7 +43,8 @@ sub list {
     }
 
     # Input params
-    my $subscription_offer_types = $self->param("subscription_offer_types") || 'none';
+    my $subscription_offer_types = $self->param("subscription_offer_types") || 'any';
+    my $subscription_rent_type = $self->param("subscription_rent_type") || 'any';
     my $color_tag_id = $self->param("color_tag_id") || 'any';
     my $agent_id = $self->param("agent_id") || 'any';
     my $page = $self->param("page") || 1;
@@ -71,6 +72,9 @@ sub list {
         if ($color_tag_id ne 'any') {
             push @query, 'client_color_tags.color_tag_id' => $color_tag_id;
             push @query, 'client_color_tags.user_id' => $self->stash('user')->{id};
+        }
+        if ($subscription_rent_type ne 'any') {
+            push @query, 'subscriptions.rent_type' => $subscription_rent_type;
         }
     }
 
@@ -122,8 +126,15 @@ sub list {
             }
         }
 
+        my @query; 
+        {
+            if ($subscription_rent_type ne 'any') {
+                push @query, 'rent_type' => $subscription_rent_type;
+            }
+        }
         my $subscription_iter = Rplus::Model::Subscription::Manager->get_objects_iterator(
             query => [
+                @query,
                 client_id => $client->id,
                 offer_type_code => $subscription_offer_types,
                 delete_date => undef,
@@ -137,6 +148,7 @@ sub list {
                 id => $subscription->id,
                 queries => scalar $subscription->queries,
                 offer_type_code => $subscription->offer_type_code,
+                rent_type => $subscription->rent_type,
                 add_date => $self->format_datetime($subscription->add_date),
                 end_date => $self->format_datetime($subscription->end_date),
                 realty_count => scalar @{$subscription->subscription_realty},
@@ -212,6 +224,7 @@ sub get {
             my $x = {
                 id => $subscription->id,
                 offer_type_code => $subscription->offer_type_code,
+                rent_type => $subscription->rent_type,
                 queries => scalar $subscription->queries,
                 add_date => $self->format_datetime($subscription->add_date),
                 end_date => $self->format_datetime($subscription->end_date),

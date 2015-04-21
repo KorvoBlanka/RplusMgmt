@@ -20,6 +20,7 @@ __PACKAGE__->meta->setup(
         last_check_date  => { type => 'timestamp with time zone', remarks => 'Дата/время последней проверки (поиска вариантов)' },
         realty_limit     => { type => 'integer', default => '0', not_null => 1, remarks => 'Ограничение макс. количества подобранных объектов недвижимости' },
         send_owner_phone => { type => 'boolean', default => 'false', not_null => 1, remarks => 'Отправлять в СМС номер собственника или нет' },
+        rent_type        => { type => 'varchar', length => 2044 },
     ],
 
     primary_key_columns => [ 'id' ],

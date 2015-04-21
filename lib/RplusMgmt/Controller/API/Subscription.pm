@@ -184,6 +184,7 @@ sub list {
     my $date_from = $self->parse_datetime(scalar $self->param('date_from'));
     my $date_to = $self->parse_datetime(scalar $self->param('date_to'));
     my $offer_type_code = $self->param('offer_type_code');
+    my $rent_type = $self->param('rent_type');
     my $active = $self->param_b('active');
     my $with_realty = $self->param_b('with_realty');
     my $client_id = $self->param('client_id');
@@ -226,6 +227,7 @@ sub list {
             id => $subscription->id,
             client_id => $subscription->client_id,
             offer_type_code => $subscription->offer_type_code,
+            rent_type => $subscription->rent_type,
             client => {
                 id => $subscription->client->id,
                 name => $subscription->client->name,
@@ -449,6 +451,10 @@ sub realty_update {
             }
         }        
         
+        if ($subscription->rent_type) {
+            push @query, rent_type => $subscription->rent_type;
+        }
+
         my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
             query => [
                 @query,
@@ -537,6 +543,7 @@ sub save {
     # Prepare data
     my $client_id = $self->param('client_id');
     my $offer_type_code = $self->param('offer_type_code');
+    my $rent_type = $self->param('rent_type');
     my $end_date = $self->parse_datetime(scalar $self->param('end_date'));
     my $queries = Mojo::Collection->new($self->param('queries[]'))->map(sub { trim $_ })->compact->uniq;
     my $realty_limit = $self->param('realty_limit') || 20;
@@ -548,6 +555,7 @@ sub save {
     # Save
     $subscription->client_id($client_id);
     $subscription->offer_type_code($offer_type_code);
+    $subscription->rent_type($rent_type);
     $subscription->queries($queries);
     $subscription->end_date($end_date);
     $subscription->realty_limit($realty_limit);

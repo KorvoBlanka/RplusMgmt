@@ -2313,11 +2313,15 @@
       });
 
       function getActiveSubCount() {
+        var offer_type = 'sale';
+        if (Rplus.Variables['User'].offer_mode.match(/rent/)) {
+          offer_type = 'rent';
+        }
         supressAjaxIndicator(1);
         $.ajax({
           type: "POST",
           url: "/api/client/get_active_count",
-          data: {offer_type_code: Rplus.Variables['User'].offer_mode},
+          data: {offer_type_code: offer_type},
           complete: function () {}
         })
           .done(function (data, textStatus, jqXHR) {

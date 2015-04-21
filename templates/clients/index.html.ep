@@ -346,10 +346,31 @@
 
   (function () {
 
+    // Configuration of the realty table
     $('#offer-type-filter').data('val', Rplus.Variables['User'].offer_mode);
-    $('#offer-type-filter > a > span').text(Rplus.Variables['User'].offer_mode == 'sale' ? 'Продажа' : 'Аренда');
+    if (Rplus.Variables['User'].offer_mode == 'sale') {
+      $('#offer-type-filter > a > span').text('Продажа');
+    } else if (Rplus.Variables['User'].offer_mode == 'rent') {
+      $('#offer-type-filter > a > span').text('Аренда');
+    } else if (Rplus.Variables['User'].offer_mode == 'rent-short') {
+      $('#offer-type-filter > a > span').text('Краткосрочная');
+    } else {
+      $('#offer-type-filter > a > span').text('Долгосрочная');
+    }
 
     $('#searchQuery').val(localStorage.getItem('CLIENTS_Q'));
+
+    function getOfferType() {
+      var offer_filter = $('[data-filter="offer_type_code"]').data('val')
+      if (offer_filter.match(/sale/)) return 'sale';
+      return 'rent';
+    }
+    function getRentType() {
+      var offer_filter = $('[data-filter="offer_type_code"]').data('val')
+      if (offer_filter.match(/short/)) return 'short';
+      if (offer_filter.match(/long/)) return 'long';
+      return '';
+    }
 
     function initSpeech() {
       $('#searchQuery').webSpeech({ 
@@ -415,7 +436,6 @@
           var id = $this.data('id');
           var obj = $this.data('obj');
 
-          console.log(obj);
           var s_id = Rplus.Table['users'][obj.agent_id] ? Rplus.Table['users'][obj.agent_id].superior : null;
 
           var media_export_row = media_export[id];
@@ -644,7 +664,10 @@
     function listRealty(page) {
       scroll_type = 0;
       var q = $('#searchQuery').val();
-      var offerTypeCode = $('[data-filter="offer_type_code"]').data('val');
+
+      var offerTypeCode = getOfferType();
+      var rentType = getRentType();
+
       var stateCode = $('[data-filter-realty="state_code"]').data('val');
       var agentId = $('[data-filter-realty="agent_id"]').data('val');
       var colorTagId = $('[data-filter-realty="color_tag_id"]').data('val');
@@ -653,7 +676,7 @@
       $.ajax({
         type: "POST",
         url: "/api/realty/list",
-        data: {q: q, state_code: stateCode, offer_type_code: offerTypeCode, agent_id: agentId, color_tag_id: colorTagId, page: page, per_page: 34},
+        data: {q: q, state_code: stateCode, offer_type_code: offerTypeCode, rent_type: rentType, agent_id: agentId, color_tag_id: colorTagId, page: page, per_page: 34},
         complete: function () { _listRealty_started = false; }
       })
         .done(function (data, textStatus, jqXHR) {
@@ -709,7 +732,6 @@
 
 
     function buildHtmlForClient (client, insert_class) {
-      var offer_type = $('[data-filter="offer_type_code"]').data('val');
       node_id ++;
       var first_node = node_id;
       var xhtml = '';
@@ -737,28 +759,26 @@
       var client_active = false;
       var c_class = 'inactive';
       for(var si in client.subscriptions) {
+        node_id ++;
         var subscription = client.subscriptions[si];
-        if (subscription.offer_type_code == offer_type) {
-          node_id ++;
-          var s_class = 'inactive';
-          var end_date_str = '';
-          if (subscription.end_date) {
-              var end_date = moment(subscription.end_date);
-              end_date_str = moment(end_date).format("DD.MM.YY HH:mm")
-              if (end_date.isAfter(now)) {
-                  s_class = '';
-                  client_active = true;
-              }
-          }
-
-          xhtml += '<tr data-page=' + 1 + ' data-offer_type=' + subscription.offer_type_code +
-            ' data-subscription=' + subscription.id + ' class="subscription-node ' + s_class + ' treegrid-' + node_id + ' treegrid-parent-' + parent + '">';
-          xhtml += '<td></td>';
-          xhtml += '<td class="query">' + subscription.queries + '</td>';
-          xhtml += '<td style="padding-top: 0px;padding-bottom: 10px;"><span style="font-size: 10px;">' + end_date_str + '</span><br>&nbsp;</td>';
-          xhtml += '<td style="padding-left: 0px;"></td>';
-          xhtml += '</tr>';
+        var s_class = 'inactive';
+        var end_date_str = '';
+        if (subscription.end_date) {
+            var end_date = moment(subscription.end_date);
+            end_date_str = moment(end_date).format("DD.MM.YY HH:mm")
+            if (end_date.isAfter(now)) {
+                s_class = '';
+                client_active = true;
+            }
         }
+
+        xhtml += '<tr data-page=' + 1 + ' data-offer_type=' + subscription.offer_type_code +
+          ' data-subscription=' + subscription.id + ' class="subscription-node ' + s_class + ' treegrid-' + node_id + ' treegrid-parent-' + parent + '">';
+        xhtml += '<td></td>';
+        xhtml += '<td class="query">' + subscription.queries + '</td>';
+        xhtml += '<td style="padding-top: 0px;padding-bottom: 10px;"><span style="font-size: 10px;">' + end_date_str + '</span><br>&nbsp;</td>';
+        xhtml += '<td style="padding-left: 0px;"></td>';
+        xhtml += '</tr>';
       }
 
       if (client_active) {
@@ -810,7 +830,8 @@
 
     function listClients(page) {
       clientsLastPage = page;
-      var offer_type = $('[data-filter="offer_type_code"]').data('val');
+      var offer_type = getOfferType();
+      var rent_type = getRentType();
 
       var color_tag_id = $('[data-filter="client-color_tag_id"]').data('val');
       var agent_id = $('[data-filter="client-agent_id"]').data('val');
@@ -821,6 +842,7 @@
         url: '/api/client/list',
         data: {
           subscription_offer_types: offer_type,
+          subscription_rent_type: rent_type,
           color_tag_id: color_tag_id,
           agent_id: agent_id,
           page: page,
@@ -990,7 +1012,7 @@
         listClients(1);
       });
 
-      $('#offer-type-filter > ul > li > a').click(function (e) {
+      $('#offer-type-filter > ul a').click(function (e) {
         var $display = $(this).closest('[data-filter]').data('val', $(this).data('val')).find('> a [role="display"]');
         if ($(this).data('type') == 'text') { 
           $display.text($(this).text()) } else { $display.html($(this).html()) 
@@ -1442,7 +1464,8 @@
 
       $('.tree').on('click', '[data-action="client-add-query"]', function (e) {
         var q = $('#searchQuery').val().trim(),
-          offerTypeCode = $('[data-filter="offer_type_code"]').data('val'),
+          offerTypeCode = getOfferType(),
+          rentTypeCode = getRentType(),
           realtyIds = [];
           
         if (q.length == 0) return;
@@ -1552,9 +1575,8 @@
 
       // Create ClientCard
       $('[data-action="client-create"]').click(function (e) {
-        
+        var offerTypeCode = getOfferType();
         var q = $('#searchQuery').val().trim(),
-            offerTypeCode = $('[data-filter="offer_type_code"]').data('val'),
             realtyIds = [],
             phoneNum = '';
         var saved = false;
@@ -1629,7 +1651,7 @@
         });
         card.create({
           type_code: 'apartment',
-          offer_type_code: $('[data-filter="offer_type_code"]').data('val'),
+          offer_type_code: getOfferType(),
         });
       });
 
@@ -2333,9 +2355,16 @@
           <li class="dropdown" id="offer-type-filter" data-filter="offer_type_code" data-val="" style="float: left;">
             <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span role="display"></span><b class="caret"></b></a>
             <ul class="dropdown-menu">
-              % for my $x (@{Rplus::Model::RealtyOfferType::Manager->get_objects(sort_by => 'id')}) {
-                <li><a href="#" data-val="<%= $x->code %>"><%= $x->name %></a></li>
-              % }
+              %# for my $x (@{Rplus::Model::RealtyOfferType::Manager->get_objects(sort_by => 'id')}) {
+              <li><a href="#" data-val="sale"> Продажа</a></li>
+              <li class="dropdown-submenu">
+                <a href="#" data-val="rent"> Аренда</a>
+                <ul class="dropdown-menu dropdown-context dropdown-context-sub compressed-context" style="bottom: auto;">
+                    <li><a href="#" data-val="rent-short" data-type="text"> Краткосрочная</a></li>
+                    <li><a href="#" data-val="rent-long" data-type="text"> Долгосрочная</a></li>
+                </ul>
+              </li>
+              %# }
             </ul>
           </li>
 

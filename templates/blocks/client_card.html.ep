@@ -245,7 +245,14 @@
   var ClientCard = (function () {
     // Global variables
 
-    var $modal, cmode = 1, events = {}, subs = {}, client = {}, subscription_mode = 'sale';
+    var sub_types = {
+      0: {type: 'sale', rent_type: '', name: 'Продажа'},
+      1: {type: 'rent', rent_type: '', name: 'Аренда'},
+      2: {type: 'rent', rent_type: 'short', name: 'Краткосрочная'},
+      3: {type: 'rent', rent_type: 'long', name: 'Долгосрочная'},
+    };
+
+    var $modal, cmode = 1, events = {}, subs = {}, client = {}, subscription_mode = 'sale', subscription_rent_type = '';
     var selected_tag_id = 0;
 
     // Init here
@@ -262,13 +269,14 @@
       });
       
       $modal.on('click', '[data-action="subscription-type-change"]', function (e) {
-        if (subscription_mode == 'sale') {
-          subscription_mode = 'rent';
-          $("#subscription-type").html('Аренда');
-        } else {
-          subscription_mode = 'sale';
-          $("#subscription-type").html('Продажа');
-        }
+        var $this = $(this);
+        var idx = $this.data('idx') + 1;
+        if (idx >= Object.keys(sub_types).length) idx = 0;
+        $this.data('idx', idx);
+
+        subscription_mode = sub_types[idx].type;
+        subscription_rent_type = sub_types[idx].rent_type;
+        $("#subscription-type").html(sub_types[idx].name);
       });
 
       $modal.on('click', '[data-action="show-proposed"]', function(e) {
@@ -307,6 +315,8 @@
       $modal. on('click', '[data-action="subscription-create"]', function (e) {
         var subscription = new Object;
         subscription.offer_type_code = subscription_mode;
+        subscription.rent_type = subscription_rent_type;
+
         subscription.add_date = moment().format('YYYY-MM-DDTHH:mm:ssZZ');
         subscription.end_date = moment().add('days', 14).format('YYYY-MM-DDTHH:mm:ssZZ');
         subscription.realty_limit = 20;
@@ -524,11 +534,19 @@
       }
       $('#clientCard_clientForm [name="agent_id"]', $modal).val(client.agent_id);
       
-      if (subscription_mode == 'rent') {
-        $("#subscription-type").html('Аренда');
+      if (Rplus.Variables['User'].offer_mode == 'sale') {
+        var idx = 0;
+      } else if (Rplus.Variables['User'].offer_mode == 'rent') {
+        var idx = 1;
+      } else if (Rplus.Variables['User'].offer_mode == 'rent-short') {
+        var idx = 2;
       } else {
-        $("#subscription-type").html('Продажа');
+        var idx = 3;
       }
+      subscription_mode = sub_types[idx].type;
+      subscription_rent_type = sub_types[idx].rent_type;
+      $("#subscription-type").html(sub_types[idx].name);
+      
 
       $('.round-button').each(function(){
         $(this).removeClass('tag-selected');
@@ -562,10 +580,22 @@
       var add_date = moment(subscription.add_date),
           end_date = moment(subscription.end_date);
 
+      var subscription_type_str;
+      if (subscription.offer_type_code == 'rent') {
+        subscription_type_str = 'Аренда';
+        if (subscription.rent_type == 'short') {
+          subscription_type_str = 'Краткосрочная';
+        } else if (subscription.rent_type == 'long') {
+          subscription_type_str = 'Долгосрочная';
+        }
+      } else {
+        subscription_type_str = 'Продажа';
+      }
+
       var xhtml = '<div class="subscription" data-guid="' + subscription.guid + '">';
       xhtml += '<div class="cardheader mainheader">';
       xhtml += '<div class="input-group ccard-input-group">'
-      xhtml += '<span class="ccard-input-group-addon " style="text-align: left;">' + (subscription.offer_type_code == 'sale' ? '&nbspПродажа' : '&nbspАренда') + ': ' + add_date.format('DD.MM.YYYY') + ' - <input readonly data-action="end-date-set" name="end_date" class="date-input spec-label-' + (end_date < moment() ? 'red' : 'green') + '"></span>';
+      xhtml += '<span class="ccard-input-group-addon " style="text-align: left;">&nbsp;' + subscription_type_str + ': ' + add_date.format('DD.MM.YYYY') + ' - <input readonly data-action="end-date-set" name="end_date" class="date-input spec-label-' + (end_date < moment() ? 'red' : 'green') + '"></span>';
       if(subscription.queries[0].length != 0) {
         xhtml += '<div class="ccard-input-group-addon" style="width: 1%;"></div>';
       } else {
@@ -655,6 +685,7 @@
 
       if (options.subscription_mode) {
         subscription_mode = options.subscription_mode;
+        subscription_rent_type = options.subscription_rent_type;
       }
       // Set events
       events = {
@@ -726,6 +757,7 @@
           
           var subscription = {};
           subscription.offer_type_code = typeCode;
+          subscription.rent_type = '';
           subscription.queries = [query,];
           subscription.add_date = moment().format('YYYY-MM-DDTHH:mm:ssZZ');
           subscription.end_date = moment().add('days', 14).format('YYYY-MM-DDTHH:mm:ssZZ');
@@ -863,7 +895,7 @@
               <span class="ccard-input-group-addon smode-btn glyphicon glyp-big glyphicon-send"></span>
               <a href="#" class="ccard-input-group-addon emode-btn hidden" data-action="subscription-create"><span class="glyphicon glyp-big glyphicon-plus-sign text-success"></span></a>
               <p>Запросы клиента</p>
-              <a href="#" style="padding-left: 225px;" class="ccard-input-group-addon ctrl-button emode invisible" data-action="subscription-type-change"><span id="subscription-type">Аренда</span></a>
+              <a href="#" style="padding-left: 185px;" class="ccard-input-group-addon ctrl-button emode invisible" data-idx="0" data-action="subscription-type-change"><span id="subscription-type">Продажа</span></a>
             </div>
           </div>
   

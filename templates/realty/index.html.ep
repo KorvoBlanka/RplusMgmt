@@ -1770,14 +1770,14 @@
               <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span role="display"></span> <b class="caret"></b></a>
               <ul class="dropdown-menu">
                 %# for my $x (@{Rplus::Model::RealtyOfferType::Manager->get_objects(sort_by => 'id')}) {
-                  <li><a href="#" data-val="sale"> Продажа</a></li>
-                  <li class="dropdown-submenu">
-                    <a href="#" data-val="rent"> Аренда</a>
-                    <ul class="dropdown-menu dropdown-context dropdown-context-sub compressed-context" style="bottom: auto;">
-                        <li><a href="#" data-val="rent-short" data-type="text"> Краткосрочная</a></li>
-                        <li><a href="#" data-val="rent-long" data-type="text"> Долгосрочная</a></li>
-                    </ul>
-                  </li>
+                <li><a href="#" data-val="sale"> Продажа</a></li>
+                <li class="dropdown-submenu">
+                  <a href="#" data-val="rent"> Аренда</a>
+                  <ul class="dropdown-menu dropdown-context dropdown-context-sub compressed-context" style="bottom: auto;">
+                      <li><a href="#" data-val="rent-short" data-type="text"> Краткосрочная</a></li>
+                      <li><a href="#" data-val="rent-long" data-type="text"> Долгосрочная</a></li>
+                  </ul>
+                </li>
                 %# }
               </ul>
             </li>
