@@ -546,7 +546,7 @@
       subscription_mode = sub_types[idx].type;
       subscription_rent_type = sub_types[idx].rent_type;
       $("#subscription-type").html(sub_types[idx].name);
-      
+
 
       $('.round-button').each(function(){
         $(this).removeClass('tag-selected');
@@ -741,7 +741,7 @@
           return $this;
         },
         
-        createWithSubscription: function (query, typeCode, realtyIds, agent_id) {
+        createWithSubscription: function (query, typeCode, rent_type, realtyIds, agent_id) {
           var skel = {};
           skel.id = null;
           
@@ -757,7 +757,7 @@
           
           var subscription = {};
           subscription.offer_type_code = typeCode;
-          subscription.rent_type = '';
+          subscription.rent_type = rent_type;
           subscription.queries = [query,];
           subscription.add_date = moment().format('YYYY-MM-DDTHH:mm:ssZZ');
           subscription.end_date = moment().add('days', 14).format('YYYY-MM-DDTHH:mm:ssZZ');

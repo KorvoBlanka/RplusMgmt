@@ -1576,6 +1576,7 @@
       // Create ClientCard
       $('[data-action="client-create"]').click(function (e) {
         var offerTypeCode = getOfferType();
+        var rentType = getRentType();
         var q = $('#searchQuery').val().trim(),
             realtyIds = [],
             phoneNum = '';
@@ -1591,7 +1592,7 @@
             }
             saved = true;
           },
-        }).createWithSubscription(q, offerTypeCode, realtyIds, '<%= $self->stash('user')->{id} %>');
+        }).createWithSubscription(q, offerTypeCode, rentType, realtyIds, '<%= $self->stash('user')->{id} %>');
       });
 
       $('[data-action="client-delete"]').click(function (e) {
