@@ -1404,7 +1404,6 @@
           <div class="form-group edit-group" style="margin-top: 15px;">
             <label class="col-md-3 col-lg-3 control-label" for="typeInput"><%= ucfloc 'type' %></label>
             <div class="col-md-9 col-lg-9">
-              %# New experimental types
               % {
               %   my $type_optgroups = [];
               %   my $realty_types = db->dbh->selectall_arrayref(q{SELECT t1.id, t1.name, t1.code, t2.name AS category_name FROM realty_types t1 JOIN realty_categories t2 ON (t1.category_code = t2.code) ORDER BY t2.id, t1.id}, {Slice => {}});
@@ -1458,9 +1457,10 @@
             <label class="col-md-3 col-lg-3 control-label" for="agentInput"><%= ucfloc 'agent' %></label>
             <div class="col-md-9 col-lg-9">
               <select class="form-control input-sm" name="agent_id" id="agentInput">
-                <option class="text-muted" value="">-</option>
+                <option class="" value="<%= $self->stash('user')->{id} %>"><%= $self->stash('user')->{name} %></option>
                 % if ($self->stash('user')->{role} eq 'top') {
-                % for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [account_id => $self->session('user')->{account_id}, role => ['agent', 'agent_ext', 'manager', 'top'], delete_date => undef], sort_by => 'name')}) {                  
+                <option class="text-muted" value="">-</option>
+                % for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [account_id => $self->session('user')->{account_id}, role => ['agent', 'agent_ext', 'manager'], delete_date => undef], sort_by => 'name')}) {                  
                 <option value="<%= $x->id %>"><%= $x->name %></option>
                 % }
                 % } elsif ($self->stash('user')->{role} eq 'manager') {

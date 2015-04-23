@@ -888,24 +888,24 @@
         <div class="chat-footer">
 
             <div class="footer-element" style="width: 260px; height: 100%; border-right: 1px solid #666;">
-                <div class="button-active" style="display: inline-block; width: 49%; text-align: center; cursor: pointer;" data-action="chat-switch-mycontacts" id="chatMycontacts">
-                    <span class="chat-contactlist-switch-text">Переписка</span>
-                </div>            
-                <div class="" style="display: inline-block; width: 49%; text-align: center;  cursor: pointer;" data-action="chat-switch-search" id="chatSearch">
-                    <span class="chat-contactlist-switch-text">Поиск</span>
-                </div>
+              <div class="button-active" style="display: inline-block; width: 49%; text-align: center; cursor: pointer;" data-action="chat-switch-mycontacts" id="chatMycontacts">
+                <span class="chat-contactlist-switch-text">Переписка</span>
+              </div>            
+              <div class="" style="display: inline-block; width: 49%; text-align: center;  cursor: pointer;" data-action="chat-switch-search" id="chatSearch">
+                <span class="chat-contactlist-switch-text">Поиск</span>
+              </div>
             </div>
             
             <div class="footer-element" style="position: relative; margin-left: 8px;">
-                <input type="text" class="chat-input" style="width: 600px; margin-top: 5px;" id="chatInput"></input>
-                <span class="glyphicon glyphicon-send chat-button" style="position: absolute; top: 9px; right: 7px" data-action="chat-send-message"></span>
+              <input type="text" class="chat-input" style="width: 600px; margin-top: 5px;" id="chatInput"></input>
+              <span class="glyphicon glyphicon-send chat-button" style="position: absolute; top: 9px; right: 7px" data-action="chat-send-message"></span>
             </div>
             
             <div class="footer-element" style="position: relative; float: right;height: 100%; width: 28px;">
-                <span class="glyphicon glyphicon-paperclip chat-button" style="position: absolute; top: 9px; right: 9px" data-action="chat-send-file"></span>
-                <form class="hidden" enctype="multipart/form-data" id="fileForm">
-                   <input class="chat-button" type="file" name="file" id="chatFileInput">
-                </form>
+              <span class="glyphicon glyphicon-paperclip chat-button" style="position: absolute; top: 9px; right: 9px" data-action="chat-send-file"></span>
+              <form class="hidden" enctype="multipart/form-data" id="fileForm">
+                <input class="chat-button" type="file" name="file" id="chatFileInput">
+              </form>
             </div>
         </div>
     </div>

@@ -50,7 +50,6 @@ sub set_multiple {
                 $key => $value,
             };
         }        
-        
     }
 
     $options->options(encode_json($opt));
