@@ -1284,71 +1284,71 @@
         <div id="realty-main" class="main col-md-12 smode-btn" style="padding: 0px;">
           <div id="view-group" class="" style="margin-top: 10px;">
             <div class="form-group view-group">
-              <label class="col-md-4 col-lg-4 control-label view-label">Улица/Район</label>
-              <div class="col-md-8 col-lg-8" style="padding-top: 5px;">
+              <label class="col-sm-4 col-md-4 col-lg-4 control-label view-label">Улица/Район</label>
+              <div class="col-sm-8 col-md-8 col-lg-8" style="padding-top: 5px;">
                 <p class="form-control-static text-left"><span class="" data-name="dg_p1"></span></p>
               </div>
             </div>
 
             <div class="form-group view-group">
-              <label class="col-md-4 col-lg-4 control-label view-label">Планировка/Тип</label>
-              <div class="col-md-8 col-lg-8" style="padding-top: 5px;">
+              <label class="col-sm-4 col-md-4 col-lg-4 control-label view-label">Планировка/Тип</label>
+              <div class="col-sm-8 col-md-8 col-lg-8" style="padding-top: 5px;">
                 <p class="form-control-static text-left"><span class="" data-name="dg_p2"></span></p>
               </div>
             </div>
 
             <div class="form-group view-group">
-              <label class="col-md-4 col-lg-4 control-label view-label">Комнаты/Этаж</label>
-              <div class="col-md-8 col-lg-8" style="padding-top: 5px;">
+              <label class="col-sm-4 col-md-4 col-lg-4 control-label view-label">Комнаты/Этаж</label>
+              <div class="col-sm-8 col-md-8 col-lg-8" style="padding-top: 5px;">
                 <p class="form-control-static text-left"><span class="" data-name="dg_p3"></span></p>
               </div>
             </div>
 
             <div class="form-group view-group">
-              <label class="col-md-4 col-lg-4 control-label view-label">Состояние</label>
-              <div class="col-md-8 col-lg-8" style="padding-top: 5px;">
+              <label class="col-sm-4 col-md-4 col-lg-4 control-label view-label">Состояние</label>
+              <div class="col-sm-8 col-md-8 col-lg-8" style="padding-top: 5px;">
                 <p class="form-control-static text-left"><span class="" data-name="dg_p4"></span></p>
               </div>
             </div>
     
             <div class="form-group view-group">
-              <label class="col-md-4 col-lg-4 control-label view-label">Балконы/Ванные</label>
-              <div class="col-md-8 col-lg-8" style="padding-top: 5px;">
+              <label class="col-sm-4 col-md-4 col-lg-4 control-label view-label">Балконы/Ванные</label>
+              <div class="col-sm-8 col-md-8 col-lg-8" style="padding-top: 5px;">
                 <p class="form-control-static text-left"><span class="" data-name="dg_p5"></span></p>
               </div>
             </div>
 
             <div class="form-group view-group">
-              <label class="col-md-4 col-lg-4 control-label view-label">Площадь</label>
-              <div class="col-md-8 col-lg-8" style="padding-top: 5px;">
+              <label class="col-sm-4 col-md-4 col-lg-4 control-label view-label">Площадь</label>
+              <div class="col-sm-8 col-md-8 col-lg-8" style="padding-top: 5px;">
                 <p class="form-control-static text-left"><span class="" data-name="dg_p6"></span></p>
               </div>
             </div>
 
             <div class="form-group view-group">
-              <label class="col-md-4 col-lg-4 control-label view-label">Описание</label>
-              <div class="col-md-8 col-lg-8" style="padding-top: 5px;">
+              <label class="col-sm-4 col-md-4 col-lg-4 control-label view-label">Описание</label>
+              <div class="col-sm-8 col-md-8 col-lg-8" style="padding-top: 5px;">
                 <p class="form-control-static text-left"><span class="" data-name="dg_p7"></span></p>
               </div>
             </div>          
 
             <div class="form-group view-group">
-              <label class="col-md-4 col-lg-4 control-label view-label">Цена</label>
-              <div class="col-md-8 col-lg-8" style="padding-top: 5px;">
+              <label class="col-sm-4 col-md-4 col-lg-4 control-label view-label">Цена</label>
+              <div class="col-sm-8 col-md-8 col-lg-8" style="padding-top: 5px;">
                 <p class="form-control-static text-left"><span class="" data-name="dg_p8"></span></p>
               </div>
             </div>
             
             <div class="form-group view-group">
-              <label class="col-md-4 col-lg-4 control-label view-label" id="dg_p9_label">Агент</label>
-              <div class="col-md-8 col-lg-8" style="padding-top: 5px;">
+              <label class="col-sm-4 col-md-4 col-lg-4 control-label view-label" id="dg_p9_label">Агент</label>
+              <div class="col-sm-8 col-md-8 col-lg-8" style="padding-top: 5px;">
                 <p class="form-control-static text-left"><span class="" data-name="dg_p9"></span></p>
               </div>
             </div>
 
             <div class="form-group view-group">
-              <label class="col-md-4 col-lg-4 control-label view-label" id="dg_p_contacts_label"></label>
-              <div class="col-md-8 col-lg-8" style="padding-top: 5px;">
+              <label class="col-sm-4 col-md-4 col-lg-4 control-label view-label" id="dg_p_contacts_label"></label>
+              <div class="col-sm-8 col-md-8 col-lg-8" style="padding-top: 5px;">
                 <p class="form-control-static text-left">
                   <span class="" id="dg_p_contacts"></span>
                 </p>
@@ -1356,8 +1356,8 @@
             </div>
 
             <div class="form-group view-group">
-              <label class="col-md-4 col-lg-4 control-label view-label">Тэги</label>
-              <div class="col-md-8 col-lg-8" style="padding-top: 5px;">
+              <label class="col-sm-4 col-md-4 col-lg-4 control-label view-label">Тэги</label>
+              <div class="col-sm-8 col-md-8 col-lg-8" style="padding-top: 5px;">
                 <div id="rcard-tag-group" class="tag-group input-group ccard-input-group" style="padding-left: 0px;">
                   <span id="realty-color-tag-1" class="realty-color-tag round-button" style="margin-top: 0px;"></span>
                 </div>
@@ -1365,10 +1365,10 @@
             </div>
           </div>
           <div class="form-group view-group">
-            <a class="col-md-6 col-lg-6" href="#" target="_blank" id="dg_p_reference">Ссылка на объявление</a>
+            <a class="col-sm-6 col-md-6 col-lg-6" href="#" target="_blank" id="dg_p_reference">Ссылка на объявление</a>
           </div>
           <div class="form-group view-group" style="margin-top: 10px; margin-bottom: 10px;">
-            <a class="col-md-6 col-lg-6" href="#" data-action="realty-geo" style="text-decoration: none !important;">
+            <a class="col-sm-6 col-md-6 col-lg-6" href="#" data-action="realty-geo" style="text-decoration: none !important;">
               Показать на карте&nbsp;&nbsp;&nbsp;<span class="glyphicon glyphicon-globe"></span>
             </a>
           </div>          
@@ -1379,7 +1379,7 @@
         <form class="realty-form" id="realty-form" role="form">
           <!-- Source block -->
           <div class="" id="sourceBlock-{guid}">
-            <div class="col-md-12 col-lg-12" style="padding: 0px;">
+            <div class="col-sm-12 col-md-12 col-lg-12" style="padding: 0px;">
               <div class="panel panel-default panel-sm" style="border-top: 0px; border-radius: 0px;">
                 <div class="panel-body">
                   <small>
@@ -1395,15 +1395,15 @@
           </div>
         
           <div class="form-group edit-group">
-            <label class="col-md-3 col-lg-3 control-label">Дата</label>
-            <div class="col-md-9 col-lg-9" style="padding-top: 5px;">
+            <label class="col-sm-3 col-md-3 col-lg-3 control-label">Дата</label>
+            <div class="col-sm-9 col-md-9 col-lg-9" style="padding-top: 5px;">
               <p class="form-control-static text-left"><small><span class="text-primary" data-name="add_date"></span>&nbsp;/&nbsp;<span class="text-success" data-name="change_date"></span></small></p>
             </div>
           </div>
         
           <div class="form-group edit-group" style="margin-top: 15px;">
-            <label class="col-md-3 col-lg-3 control-label" for="typeInput"><%= ucfloc 'type' %></label>
-            <div class="col-md-9 col-lg-9">
+            <label class="col-sm-3 col-md-3 col-lg-3 control-label" for="typeInput"><%= ucfloc 'type' %></label>
+            <div class="col-sm-9 col-md-9 col-lg-9">
               % {
               %   my $type_optgroups = [];
               %   my $realty_types = db->dbh->selectall_arrayref(q{SELECT t1.id, t1.name, t1.code, t2.name AS category_name FROM realty_types t1 JOIN realty_categories t2 ON (t1.category_code = t2.code) ORDER BY t2.id, t1.id}, {Slice => {}});
@@ -1422,8 +1422,8 @@
           </div>
 
           <div class="form-group edit-group">
-            <label class="col-md-3 col-lg-3 control-label" for="stateInput"><%= ucfloc 'state' %></label>
-            <div class="col-md-9 col-lg-9">
+            <label class="col-sm-3 col-md-3 col-lg-3 control-label" for="stateInput"><%= ucfloc 'state' %></label>
+            <div class="col-sm-9 col-md-9 col-lg-9">
               <select class="form-control input-sm" name="state_code" id="stateInput">
               % for my $x (@{Rplus::Model::RealtyState::Manager->get_objects(sort_by => 'id')}) {
                 <option value="<%= $x->code %>"><%= $x->name %></option>
@@ -1433,8 +1433,8 @@
           </div>
         
           <div class="form-group edit-group">
-            <label class="col-md-3 col-lg-3 control-label" for="offerTypeInput"><%= ucfloc 'offer', 2 %></label>
-            <div class="col-md-9 col-lg-9">
+            <label class="col-sm-3 col-md-3 col-lg-3 control-label" for="offerTypeInput"><%= ucfloc 'offer', 2 %></label>
+            <div class="col-sm-9 col-md-9 col-lg-9">
               <select class="form-control input-sm" name="offer_type_code" id="offerTypeInput">
               % for my $x (@{Rplus::Model::RealtyOfferType::Manager->get_objects(sort_by => 'name')}) {
                 <option value="<%= $x->code %>"><%= $x->name %></option>
@@ -1444,8 +1444,8 @@
           </div>
 
           <div class="form-group edit-group">
-            <label class="col-md-3 col-lg-3 control-label" for="rentTypeInput"> Аренда</label>
-            <div class="col-md-9 col-lg-9">
+            <label class="col-sm-3 col-md-3 col-lg-3 control-label" for="rentTypeInput"> Аренда</label>
+            <div class="col-sm-9 col-md-9 col-lg-9">
               <select class="form-control input-sm" name="rent_type" id="rentTypeInput">
                 <option value="long">Долгосрочная</option>
                 <option value="short">Краткосрочная</option>
@@ -1454,8 +1454,8 @@
           </div>
           
           <div class="form-group edit-group">
-            <label class="col-md-3 col-lg-3 control-label" for="agentInput"><%= ucfloc 'agent' %></label>
-            <div class="col-md-9 col-lg-9">
+            <label class="col-sm-3 col-md-3 col-lg-3 control-label" for="agentInput"><%= ucfloc 'agent' %></label>
+            <div class="col-sm-9 col-md-9 col-lg-9">
               <select class="form-control input-sm" name="agent_id" id="agentInput">
                 % if ($self->stash('user')->{role} eq 'top') {
                 <option class="text-muted" value="">-</option>
@@ -1480,19 +1480,19 @@
           </div>
 
           <div class="form-group edit-group">
-            <label class="col-md-3 col-lg-3 control-label" for="addrObjInput"><%= ucfloc 'addr' %>&nbsp&nbsp</label>
-            <div class="col-md-9 col-lg-9">
+            <label class="col-sm-3 col-md-3 col-lg-3 control-label" for="addrObjInput"><%= ucfloc 'addr' %>&nbsp&nbsp</label>
+            <div class="col-sm-9 col-md-9 col-lg-9">
               <input type="hidden" name="address_object_id">
               <div class="input-group">
                 <a class="input-group-addon" href="#" data-action="realty-geo"><span class="glyphicon glyphicon-globe"></span></a>
-                <input type="text" class="form-control input-sm" name="address_object_name" id="addrObjInput placeholder="<%= ucfloc 'street' %>, <%= ucfloc 'city' %>">
+                <input type="text" class="form-control input-sm" name="address_object_name" id="addrObjInput" placeholder="<%= ucfloc 'street' %>, <%= ucfloc 'city' %>">
               </div>
             </div>
           </div>
 
           <div class="form-group edit-group">
-            <label class="col-md-3 col-lg-3 control-label" for="houseNumInput"><%= ucfloc 'num' %></label>
-            <div class="col-md-9 col-lg-9">
+            <label class="col-sm-3 col-md-3 col-lg-3 control-label" for="houseNumInput"><%= ucfloc 'num' %></label>
+            <div class="col-sm-9 col-md-9 col-lg-9">
               <input type="text" class="form-control input-sm" name="house_num" id="houseNumInput" placeholder="<%= ucfloc 'house' %>" style="width: 45%; display: inline-block;">
               <div class="slash">&nbsp;/&nbsp;</div>
               <input type="text" class="form-control input-sm" name="ap_num" placeholder="<%= ucfloc 'ap' %>" style="width: 45%; display: inline-block;">
@@ -1500,8 +1500,8 @@
           </div>
           
           <div class="form-group edit-group">
-            <label class="col-md-3 col-lg-3 control-label" for="sublandmarkInput"><%= ucfloc 'landmark' %></label>
-            <div class="col-md-9 col-lg-9">
+            <label class="col-sm-3 col-md-3 col-lg-3 control-label" for="sublandmarkInput"><%= ucfloc 'landmark' %></label>
+            <div class="col-sm-9 col-md-9 col-lg-9">
               <select class="form-control input-sm" name="sublandmark_id" id="sublandmarkInput">
                 <option class="text-muted" value="">-</option>
               </select>
@@ -1509,8 +1509,8 @@
           </div>
 
           <div class="form-group edit-group">
-            <label class="col-md-3 col-lg-3 control-label" for="apSchemeInput"><%= ucfloc 'scheme', 2 %></label>
-            <div class="col-md-9 col-lg-9">
+            <label class="col-sm-3 col-md-3 col-lg-3 control-label" for="apSchemeInput"><%= ucfloc 'scheme', 2 %></label>
+            <div class="col-sm-9 col-md-9 col-lg-9">
               <select class="form-control input-sm" name="ap_scheme_id" id="apSchemeInput">
                 <option class="text-muted" value="">-</option>
                 % for my $x (@{Rplus::Model::DictApScheme::Manager->get_objects(sort_by => 'name')}) {
@@ -1521,8 +1521,8 @@
           </div>
 
           <div class="form-group edit-group">
-            <label class="col-md-3 col-lg-3 control-label" for="houseTypeInput"><%= ucfloc 'material' %></label>
-            <div class="col-md-9 col-lg-9">
+            <label class="col-sm-3 col-md-3 col-lg-3 control-label" for="houseTypeInput"><%= ucfloc 'material' %></label>
+            <div class="col-sm-9 col-md-9 col-lg-9">
               <select class="form-control input-sm" name="house_type_id" id="houseTypeInput">
                 <option class="text-muted" value="">-</option>
                 % for my $x (@{Rplus::Model::DictHouseType::Manager->get_objects(sort_by => 'name')}) {
@@ -1533,8 +1533,8 @@
           </div>
 
           <div class="form-group edit-group">
-            <label class="col-md-3 col-lg-3 control-label" for="roomSchemeInput"><%= ucfloc 'rooms' %></label>
-            <div class="col-md-9 col-lg-9">
+            <label class="col-sm-3 col-md-3 col-lg-3 control-label" for="roomSchemeInput"><%= ucfloc 'rooms' %></label>
+            <div class="col-sm-9 col-md-9 col-lg-9">
               <select class="form-control input-sm" name="room_scheme_id" id="roomSchemeInput">
                 <option class="text-muted" value="">-</option>
                 % for my $x (@{Rplus::Model::DictRoomScheme::Manager->get_objects(sort_by => 'name')}) {
@@ -1545,8 +1545,8 @@
           </div>
 
           <div class="form-group edit-group">
-            <label class="col-md-3 col-lg-3 control-label" for="roomsCountInput"><%= ucfloc 'rooms' %></label>
-            <div class="col-md-9 col-lg-9">
+            <label class="col-sm-3 col-md-3 col-lg-3 control-label" for="roomsCountInput"><%= ucfloc 'rooms' %></label>
+            <div class="col-sm-9 col-md-9 col-lg-9">
               <input type="text" class="form-control input-sm" name="rooms_offer_count" placeholder="<%= ucfloc 'sale' %>" style="width: 45%; display: inline-block;">
               <div class="slash">&nbsp;/&nbsp;</div>
               <input type="text" class="form-control input-sm" id="roomsCountInput" name="rooms_count" placeholder="<%= ucfloc 'total' %>" style="width: 45%; display: inline-block;">
@@ -1554,8 +1554,8 @@
           </div>
 
           <div class="form-group edit-group">
-            <label class="col-md-3 col-lg-3 control-label" for="floorInput"><%= ucfloc 'floors' %></label>
-            <div class="col-md-9 col-lg-9">
+            <label class="col-sm-3 col-md-3 col-lg-3 control-label" for="floorInput"><%= ucfloc 'floors' %></label>
+            <div class="col-sm-9 col-md-9 col-lg-9">
               <input type="text" class="form-control input-sm" name="floor" id="floorInput" placeholder="<%= ucfloc 'floor' %>" style="width: 28%; display: inline-block;">
               <div class="slash">&nbsp;/&nbsp;</div>
               <input type="text" class="form-control input-sm" name="floors_count" placeholder="<%= ucfloc 'total' %>" style="width: 28%; display: inline-block;">
@@ -1565,8 +1565,8 @@
           </div>
 
           <div class="form-group edit-group">
-            <label class="col-md-3 col-lg-3 control-label" for="squareLandInput"><%= ucfloc 'land' %></label>
-            <div class="col-md-9 col-lg-9">
+            <label class="col-sm-3 col-md-3 col-lg-3 control-label" for="squareLandInput"><%= ucfloc 'land' %></label>
+            <div class="col-sm-9 col-md-9 col-lg-9">
               <input type="text" class="form-control input-sm" name="square_land" id="squareLandInput" placeholder="<%= ucfloc 'total' %>" style="width: 46%; display: inline-block;">&nbsp;
               <select class="form-control input-sm" name="square_land_type" style="width:46%; display: inline-block;">
                 <option class="text-muted" value="">-</option>
@@ -1577,8 +1577,8 @@
           </div>
 
           <div class="form-group edit-group">
-            <label class="col-md-3 col-lg-3 control-label" for="squareTotalInput"><%= ucfloc 'square' %></label>
-            <div class="col-md-9 col-lg-9">
+            <label class="col-sm-3 col-md-3 col-lg-3 control-label" for="squareTotalInput"><%= ucfloc 'square' %></label>
+            <div class="col-sm-9 col-md-9 col-lg-9">
               <input type="text" class="form-control input-sm" name="square_total" id="squareTotalInput" placeholder="<%= ucfloc 'total' %>" style="width: 28%; display: inline-block;">
               <div class="slash">&nbsp;/&nbsp;</div>
               <input type="text" class="form-control input-sm" name="square_living" placeholder="<%= ucfloc 'living' %>" style="width: 28%; display: inline-block;">
@@ -1588,8 +1588,8 @@
           </div>
 
           <div class="form-group edit-group">
-            <label class="col-md-3 col-lg-3 control-label" for="conditionInput"><%= ucfloc 'condition' %></label>
-            <div class="col-md-9 col-lg-9">
+            <label class="col-sm-3 col-md-3 col-lg-3 control-label" for="conditionInput"><%= ucfloc 'condition' %></label>
+            <div class="col-sm-9 col-md-9 col-lg-9">
               <select class="form-control input-sm" name="condition_id" id="conditionInput">
                 <option class="text-muted" value="">-</option>
                 % for my $x (@{Rplus::Model::DictCondition::Manager->get_objects(sort_by => 'name')}) {
@@ -1600,8 +1600,8 @@
           </div>
 
           <div class="form-group edit-group">
-            <label class="col-md-3 col-lg-3 control-label" for="balconyInput"><%= ucfloc 'balcony' %></label>
-            <div class="col-md-9 col-lg-9">
+            <label class="col-sm-3 col-md-3 col-lg-3 control-label" for="balconyInput"><%= ucfloc 'balcony' %></label>
+            <div class="col-sm-9 col-md-9 col-lg-9">
               <select class="form-control input-sm" name="balcony_id" id="balconyInput">
                 <option class="text-muted" value="">-</option>
                 % for my $x (@{Rplus::Model::DictBalcony::Manager->get_objects(sort_by => 'name')}) {
@@ -1612,8 +1612,8 @@
           </div>
 
           <div class="form-group edit-group">
-            <label class="col-md-3 col-lg-3 control-label" for="bathroomInput"><%= ucfloc 'bathroom' %></label>
-            <div class="col-md-9 col-lg-9">
+            <label class="col-sm-3 col-md-3 col-lg-3 control-label" for="bathroomInput"><%= ucfloc 'bathroom' %></label>
+            <div class="col-sm-9 col-md-9 col-lg-9">
               <select class="form-control input-sm" name="bathroom_id" id="bathroomInput">
                 <option class="text-muted" value="">-</option>
                 % for my $x (@{Rplus::Model::DictBathroom::Manager->get_objects(sort_by => 'name')}) {
@@ -1624,8 +1624,8 @@
           </div>
 
           <div class="form-group edit-group">
-            <label class="col-md-3 col-lg-3 control-label" for="ownerPriceInput"><%= ucfloc 'price' %></label>
-            <div class="col-md-9 col-lg-9">
+            <label class="col-sm-3 col-md-3 col-lg-3 control-label" for="ownerPriceInput"><%= ucfloc 'price' %></label>
+            <div class="col-sm-9 col-md-9 col-lg-9">
               <input type="text" class="form-control input-sm" name="owner_price" id="ownerPriceInput" placeholder="<%= ucfloc 'owner' %>" style="width: 45%; display: inline-block;">
               <div class="slash">&nbsp;/&nbsp;</div>
               <input type="text" class="form-control input-sm" name="agency_price" id="agencyPriceInput" placeholder="<%= ucfloc 'agency' %>" style="width: 45%; display: inline-block;">
@@ -1633,8 +1633,8 @@
           </div>
           
           <div class="form-group edit-group">
-            <label class="col-md-3 col-lg-3 control-label" for="ownerPhoneInput"><%= ucfloc 'phones' %>&nbsp;<span style="top: 0px; font-size: 10px; color: rgb(221, 41, 41);" class="glyphicon glyphicon-asterisk"></span></label>
-            <div class="col-md-9 col-lg-9">
+            <label class="col-sm-3 col-md-3 col-lg-3 control-label" for="ownerPhoneInput"><%= ucfloc 'phones' %>&nbsp;<span style="top: 0px; font-size: 10px; color: rgb(221, 41, 41);" class="glyphicon glyphicon-asterisk"></span></label>
+            <div class="col-sm-9 col-md-9 col-lg-9">
               <input type="text" class="form-control input-sm" style="display: inline-block; width: 30%;" name="owner_phones" id="ownerPhoneInput" placeholder="собственник">&nbsp;&nbsp;
               <input type="text" class="form-control input-sm" style="display: inline-block; width: 30%;" name="owner_phones" placeholder="собственник">&nbsp;&nbsp;
               <input type="text" class="form-control input-sm" style="display: inline-block; width: 30%;" name="owner_phones" placeholder="собственник">
@@ -1642,8 +1642,8 @@
           </div>
 
           <div class="form-group edit-group">
-            <label class="col-md-3 col-lg-3 control-label" for="descriptionInput"><%= ucfloc 'description' %></label>
-            <div class="col-md-9 col-lg-9">
+            <label class="col-sm-3 col-md-3 col-lg-3 control-label" for="descriptionInput"><%= ucfloc 'description' %></label>
+            <div class="col-sm-9 col-md-9 col-lg-9">
               <textarea class="form-control input-sm" name="description" id="descriptionInput" rows="3" placeholder="<%= ucfloc 'additional description' %>"></textarea>
             </div>
           </div>
@@ -1656,14 +1656,14 @@
           </div>
           
           <div class="form-group edit-group">
-            <div class="col-md-12 col-lg-12">
+            <div class="col-sm-12 col-md-12 col-lg-12">
               <textarea class="form-control input-sm" name="work_info" id="workInfoInput" rows="3" placeholder="<%= ucfloc 'work info' %>"></textarea>
             </div>
           </div>
 
           <div class="form-group edit-group">
-            <label class="col-md-3 col-lg-3 control-label" for="attachments"> Прикрепленные файлы</label>
-            <div class="col-md-9 col-lg-9">
+            <label class="col-sm-3 col-md-3 col-lg-3 control-label" for="attachments"> Прикрепленные файлы</label>
+            <div class="col-sm-9 col-md-9 col-lg-9">
               <div class="" style="margin-top: 5px;" name="attachmentsDiv" id="attachmentsDiv">
                 <div class="" name="attachmentsContainer" id="attachmentsContainer">
                 </div>
@@ -1684,8 +1684,8 @@
           </div>
           
           <div class="form-group edit-group">
-            <label class="col-md-3 col-lg-3 control-label" for="mlsPriceInput">Условия MLS</label>
-            <div class="col-md-9 col-lg-9">
+            <label class="col-sm-3 col-md-3 col-lg-3 control-label" for="mlsPriceInput">Условия MLS</label>
+            <div class="col-sm-9 col-md-9 col-lg-9">
               <input type="text" class="form-control input-sm" name="mls_price" placeholder="" style="width: 45%; display: inline-block;">
               <select class="form-control input-sm" name="mls_price_type" id="mlsPriceTypeInput" style="display: inline-block; width: 95px;">
                 <option value="rub" selected>тыс. руб.</option>
@@ -1708,7 +1708,7 @@
           </div>
 
           <div class="form-group edit-group">
-            <div class="col-md-4 col-lg-4">
+            <div class="col-sm-4 col-md-4 col-lg-4">
             % my $loc_id = $self->session('user')->{location_id};      # костыль!
             % for my $x (@{Rplus::Model::Media::Manager->get_objects(query => [type => 'export', delete_date => undef], page => 1, per_page => 3)}) {
             % next if ($loc_id == 2 || $loc_id == 3) && ($x->id == 2 || $x->id == 3);
@@ -1725,7 +1725,7 @@
               </div>
             % }
             </div>
-            <div class="col-md-4 col-lg-4">
+            <div class="col-sm-4 col-md-4 col-lg-4">
             </div>            
           </div>
 
@@ -1779,7 +1779,7 @@
     <a href="#" class="ctrl-button" data-action="close-proposed"><span class="glyphicon glyphicon-arrow-left"></span>  Назад</a>
   </div>
   <div class="modal-body" style="padding-left: 0px; padding-right: 0px; padding-top: 0px;">
-    <div class="realty col-md-12" style="padding: 0px">
+    <div class="realty col-sm-12 col-md-12" style="padding: 0px">
       <table class="table table-striped table-condensed" id="subscriptionRealtyTable">
         <thead></thead>
         <tbody></tbody>

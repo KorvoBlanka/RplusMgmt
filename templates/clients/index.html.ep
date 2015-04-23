@@ -2236,7 +2236,7 @@
 % end
 
   <div class="row">
-    <div class="col-md-12 col-lg-12">
+    <div class="col-sm-12 col-md-12 col-lg-12">
       <form role="search">
         <div class="form-group">
           <!--<i style="z-index: 100;"><span class="glyphicon glyphicon-search"></span></i>-->
@@ -2248,7 +2248,7 @@
   </div>
 
   <div class="row">
-    <div class="col-md-5 col-lg-4" style="padding-right: 0px;">
+    <div class="col-sm-5 col-md-5 col-lg-4" style="padding-right: 0px;">
       <form role="client-search">
         <div class="form-group" style="margin-bottom: 0px; margin-top: 0px;">
           <input type="text" name="cq" id="clientSearchQuery" class="form-control input-sm" placeholder="Поиск">
@@ -2260,7 +2260,7 @@
       </div>
     </div>
 
-    <div class="col-md-7 col-lg-8" style="padding-left: 0px;">
+    <div class="col-sm-7 col-md-7 col-lg-8" style="padding-left: 0px;">
       <div class="table-responsive" id="realtyTableWrapper">
         <table style="overflow: hidden;" class="table table-condensed table-striped table-hover" id="realtyTable" data-toggle="context">
           <thead></thead>

@@ -201,11 +201,11 @@
       <div class="modal-body">
 
         <div class="row">
-          <div class="col-md-6">
+          <div class="col-sm-6 col-md-6">
             <div id="taskDatePicker">
             </div>
           </div>
-          <div class="col-md-6">
+          <div class="col-sm-6 col-md-6">
             <div style="margin-top: 70px;">
             <span class="card-time-display" style="font-size: 62px; font-weight: 100;"></span>
             </div>
