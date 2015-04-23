@@ -1708,9 +1708,9 @@
     <nav class="navbar navbar-default navbar-fixed-bottom">
       <div class="container" id="nav-0">
         <ul class="nav navbar-nav">
-          <li><a href="#" data-action="realty-create"><span class="glyphicon glyphicon-plus"></span> <%= ucfloc 'add' %></a></li>
-          <li><a href="#" data-action="realty-open"><span class="glyphicon glyphicon-folder-open"></span>&nbsp;&nbsp;<%= ucfloc 'open' %></a></li>
-          <li><a href="#" data-action="realty-geo"><span class="glyphicon glyphicon-globe"></span> <%= ucfloc 'geo' %></a></li>
+          <li><a href="#" data-action="realty-create"><span class="glyphicon glyphicon-plus"></span><span class="hide-if-small"> <%= ucfloc 'add' %></span></a></li>
+          <li><a href="#" data-action="realty-open"><span class="glyphicon glyphicon-folder-open"></span><span class="hide-if-small"> <%= ucfloc 'open' %></span></a></li>
+          <li><a href="#" data-action="realty-geo"><span class="glyphicon glyphicon-globe"></span><span class="hide-if-small"> <%= ucfloc 'geo' %></span></a></li>
         </ul>
 
         <div class="navbar-right">
@@ -1803,7 +1803,7 @@
           </ul>
 
           <p class="navbar-text">
-            <span class="text-primary"><%= ucfloc 'found' %></span> <span class="text-primary" id="objectsCount">0</span>
+            <span class="text-primary hide-if-small"><%= ucfloc 'found' %></span> <span class="text-primary" id="objectsCount">0</span>
           </p>
         </div>
       </div>

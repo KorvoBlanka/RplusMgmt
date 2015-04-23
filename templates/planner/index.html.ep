@@ -1640,7 +1640,7 @@ a:focus {
 <div class="row">
   <div class="col-lg-12 col-md-12">
 
-    <div class="simple-calendar-lbar col-lg-3 col-md-3">
+    <div class="simple-calendar-lbar col-lg-3 col-md-3 hide-if-small">
       <div class="calendar" style="">
         <div id="date-picker">
         </div>
@@ -1698,8 +1698,8 @@ a:focus {
 
     <div class="navbar-left">
       <ul class="nav navbar-nav">
-        <li><a href="#" data-action="task-create"><span class="glyphicon glyphicon-plus"></span> <%= ucfloc 'add' %></a></li>
-        <li><a href="#" data-action="task-open"><span class="glyphicon glyphicon-folder-open"></span> <%= ucfloc 'open' %></a></li>
+        <li><a href="#" data-action="task-create"><span class="glyphicon glyphicon-plus"></span><span class="hide-if-small">  <%= ucfloc 'add' %></span></a></li>
+        <li><a href="#" data-action="task-open"><span class="glyphicon glyphicon-folder-open"></span><span class="hide-if-small">  <%= ucfloc 'open' %></span></a></li>
       </ul>
     </div>
     <div class="navbar-right">
@@ -1772,7 +1772,7 @@ a:focus {
 
       </ul>
         <p class="navbar-text">
-          <span class="text-primary"><%= ucfloc 'found' %></span> <span class="text-primary" id="objectsCount">0</span>
+          <span class="text-primary hide-if-small"><%= ucfloc 'found' %></span> <span class="text-primary" id="objectsCount">0</span>
         </p>
     </div>
   </div>
