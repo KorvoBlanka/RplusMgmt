@@ -54,58 +54,54 @@ sub index {
 
     {
         my $workbook = Spreadsheet::WriteExcel->new($file);
-
+        my $header_fmt = $workbook->add_format(border => 1, bold => 1, bg_color => 'silver', valign  => 'vcenter', align => 'center', text_wrap => 1);
+        my $txt_fmt = $workbook->add_format(num_format => '@');
         my $P = $meta->{'params'};
 
         # Раздел: Квартиры
-        # Включает в себя комнаты + квартиры
-        if ($realty_types =~ /apartments_rooms/) {
-            my $worksheet = $workbook->add_worksheet("Квартиры");
-
+        if ($realty_types =~ /apartments/) {
+            my $worksheet = $workbook->add_worksheet("КВАРТИРЫ");
             # Заголовок листа
-            my $header_fmt1 = $workbook->add_format(border => 1, bold => 1, bg_color => 'silver', valign  => 'vcenter', align => 'center', text_wrap => 1);
-            my $header_fmt2 = $workbook->add_format(); $header_fmt2->copy($header_fmt1);
             my $header = {
-                'A1:A2' => { text => "Тип", width => 5 },
-                'B1:B2' => { text => "Кол.\nкомн." },
-                'C1:C2' => { text => "Р-он" },
-                'D1:D2' => { text => "Подрайон", width => 12 },
-                'E1:E2' => { text => "Расположение", width => 22 },
-                'F1:F2' => { text => "Этаж" },
-                'G1:G2' => { text => "Тип" },
-                'H1:H2' => { text => "План." },
-                'I1:K1' => { text => "Площадь" },
-                'I2' => { text => "общ."},
-                'J2' => { text => "жил."},
-                'K2' => { text => "кух."},
-                'L1:L2' => { text => "Тип\nкомн." },
-                'M1:M2' => { text => "С/у" },
-                'N1:N2' => { text => "Л/Б" },
-                'O1:O2' => { text => "Тел." },
-                'P1:P2' => { text => "Сост.\nкварт." },
-                'Q1:Q2' => { text => "Цена\nтыс. руб." },
-                'R1:R2' => { text => "Телефон", width => 15 },
-                'S1:S2' => { text => "Фирма", width => 10 },
-                'T1:T2' => { text => "ВНХ" }
+                'A1' => { text => "Тип сделки",},
+                'B1' => { text => "Тип объекта",},
+                'С1' => { text => "Тип здания",},
+                'В1' => { text => "Кол-во комнат",},
+                'E1' => { text => "Тип комнат",},
+                'F1' => { text => "Город/Нас. пункт",},
+                'G1' => { text => "Район",},
+                'H1' => { text => "Улица",},
+                'I1' => { text => "Дом",},
+                'J1' => { text => "Этаж",},
+                'K1' => { text => "Всего этажей",},
+                'L1' => { text => "Материал дома",},
+                'M1' => { text => "Планировка",},
+                'N1' => { text => "Общая площадь",},
+                'O1' => { text => "Площадь жилая",},
+                'P1' => { text => "Площадь кухни",},
+                'Q1' => { text => "Санузел",},
+                'R1' => { text => "Балкон",},
+                'S1' => { text => "Остекление",},
+                'T1' => { text => "Лоджия",},
+                'U1' => { text => "Остекление",},
+                'V1' => { text => "Площадь лоджии",},
+                'W1' => { text => "Состояние",},
+                'X1' => { text => "Описание",},
+                'Y1' => { text => "Цена",},
+                'Z1' => { text => "Телефон",},
+                'AA' => { text => "Фото",},
             };
             for my $x (keys %$header) {
-                if ($x =~ /^(\S)\d$/) {
-                    $worksheet->write_string($x, $header->{$x}->{'text'}, $header_fmt1);
-                    $worksheet->set_column("$1:$1", $header->{$x}->{'width'}) if exists $header->{$x}->{'width'};
-                } elsif ($x =~ /^(\S)(\d)\:(\S)(\d)$/) {
-                    $worksheet->merge_range($x, $header->{$x}->{'text'}, $header_fmt2);
-                    $worksheet->set_column("$1:$3", $header->{$x}->{'width'}) if exists $header->{$x}->{'width'};
-                }
+                $worksheet->write_string($x, $header->{$x}->{'text'}, $header_fmt);
+                $worksheet->set_column("$x:$x", $header->{$x}->{'width'}) if exists $header->{$x}->{'width'};
             }
-
-            my $txt_fmt = $workbook->add_format(num_format => '@');
 
             # Выборка объектов недвижимости
             my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
                 query => [
                     state_code => 'work',
                     offer_type_code => $offer_type_code,
-                    'type.category_code' => ['room', 'apartment'],
+                    'type.category_code' => ['apartment'],
                     export_media => {'&&' => $media->id},
                     account_id => $acc_id,
                 ],
@@ -158,50 +154,147 @@ sub index {
                     '+',
                 ];
                 for my $col_num (0..(scalar(@$row)-1)) {
-                    if ($col_num == 5) {
-                        $worksheet->write_string($row_num, $col_num, $row->[$col_num], $txt_fmt);
-                    } else {
-                        $worksheet->write($row_num, $col_num, $row->[$col_num]);
+                    #if ($col_num == 5) {
+                    #    $worksheet->write_string($row_num, $col_num, $row->[$col_num], $txt_fmt);
+                    #} 
+                    $worksheet->write($row_num, $col_num, $row->[$col_num]);
+                }
+                $row_num++;
+            }
+        }
+
+        # Раздел: Комнаты
+        if ($realty_types =~ /rooms/) {
+            my $worksheet = $workbook->add_worksheet("КОМНАТЫ");
+            # Заголовок листа
+            my $header = {
+                'A1' => { text => "Тип сделки",},
+                'B1' => { text => "Тип объекта",},
+                'С1' => { text => "Тип здания",},
+                'D1' => { text => "Комнат на продажу",},
+                'E1' => { text => "Комнат в квартире",},
+                'F1' => { text => "Город/Нас. пункт",},
+                'G1' => { text => "Район",},
+                'H1' => { text => "Улица",},
+                'I1' => { text => "Дом",},
+                'J1' => { text => "Этаж",},
+                'K1' => { text => "Всего этажей",},
+                'L1' => { text => "Материал дома",},
+                'M1' => { text => "Планировка",},
+                'N1' => { text => "Общая площадь",},
+                'O1' => { text => "Площадь жилая",},
+                'P1' => { text => "Площадь кухни",},
+                'Q1' => { text => "Санузел",},
+                'R1' => { text => "Балкон",},
+                'S1' => { text => "Остекление",},
+                'T1' => { text => "Лоджия",},
+                'U1' => { text => "Остекление",},
+                'V1' => { text => "Площадь лоджии",},
+                'W1' => { text => "Состояние",},
+                'X1' => { text => "Описание",},
+                'Y1' => { text => "Цена",},
+                'Z1' => { text => "Телефон",},
+                'AA' => { text => "Фото",},
+            };
+            for my $x (keys %$header) {
+                $worksheet->write_string($x, $header->{$x}->{'text'}, $header_fmt);
+                $worksheet->set_column("$x:$x", $header->{$x}->{'width'}) if exists $header->{$x}->{'width'};
+            }
+
+            # Выборка объектов недвижимости
+            my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
+                query => [
+                    state_code => 'work',
+                    offer_type_code => $offer_type_code,
+                    'type.category_code' => ['room'],
+                    export_media => {'&&' => $media->id},
+                    account_id => $acc_id,
+                ],
+                sort_by => 'address_object.expanded_name',
+                with_objects => ['address_object', 'sublandmark', 'type', 'agent'],
+            );
+            my $row_num = 2;
+            while(my $realty = $realty_iter->next) {
+                my $location = '';
+                if ($realty->address_object_id) {
+                    my $addrobj = $realty->address_object;
+                    my $meta = from_json($addrobj->metadata);
+                    $location = $addrobj->name.($addrobj->short_type ne 'ул' ? ' '.$addrobj->short_type : '');
+                    if ($realty->sublandmark_id) {
+                        $location .= ' ('.$realty->sublandmark->name.')';
                     }
+                }
+                my ($area, $subarea);
+                if (@{$realty->landmarks}) {
+                    $area = Rplus::Model::Landmark::Manager->get_objects(query => [id => scalar($realty->landmarks), type => 'vnh_area', delete_date => undef], limit => 1)->[0];
+                    $subarea = Rplus::Model::Landmark::Manager->get_objects(query => [id => scalar($realty->landmarks), type => 'vnh_subarea', delete_date => undef], limit => 1)->[0];
+                }
+
+                my $phones = $conf_phones;
+                if ($agent_phone == 1 && $realty->agent) {
+                    my $x = $realty->agent->public_phone_num || $realty->agent->phone_num;
+                    $phones =  $x . ', ' . $phones;
+                }
+
+                my $row = [
+                    $P->{'realty_categories'}->{$realty->type->category_code} || '',
+                    $realty->rooms_count || '',
+                    $area ? $area->name : '',
+                    $subarea ? $subarea->name : '',
+                    $location,
+                    $realty->floor || $realty->floors_count ? ($realty->floor || '?').'/'.($realty->floors_count || '?') : '',
+                    $realty->house_type_id ? (($P->{'dict'}->{'house_types'}->{$realty->house_type_id}) // '') : '',
+                    $realty->ap_scheme_id ? (($P->{'dict'}->{'ap_schemes'}->{$realty->ap_scheme_id}) // '') : '',
+                    $realty->square_total,
+                    $realty->square_living,
+                    $realty->square_kitchen,
+                    $realty->room_scheme_id ? (($P->{'dict'}->{'room_schemes'}->{$realty->room_scheme_id}) // '') : '',
+                    $realty->bathroom_id ? (($P->{'dict'}->{'bathrooms'}->{$realty->bathroom_id}) // '') : '',
+                    $realty->balcony_id ? (($P->{'dict'}->{'balconies'}->{$realty->balcony_id}) // '') : '',
+                    '+',
+                    $realty->condition_id ? (($P->{'dict'}->{'conditions'}->{$realty->condition_id}) // '') : '',
+                    $realty->price,
+                    $phones,
+                    $company,
+                    '+',
+                ];
+                for my $col_num (0..(scalar(@$row)-1)) {
+                    #if ($col_num == 5) {
+                    #    $worksheet->write_string($row_num, $col_num, $row->[$col_num], $txt_fmt);
+                    #}
+                    $worksheet->write($row_num, $col_num, $row->[$col_num]);
                 }
                 $row_num++;
             }
         }
 
         # Раздел: Частные дома и коттеджи
-        # Включает в себя дома
         if ($realty_types =~ /houses/)  {
-            my $worksheet = $workbook->add_worksheet("Частные дома и коттеджи");
+            my $worksheet = $workbook->add_worksheet("ДОМА");
 
             # Заголовок листа
-            my $header_fmt1 = $workbook->add_format(border => 1, bold => 1, bg_color => 'silver', valign  => 'vcenter', align => 'center', text_wrap => 1);
-            my $header_fmt2 = $workbook->add_format(); $header_fmt2->copy($header_fmt1);
             my $header = {
-                'A1' => { text => "Р-он" },
-                'B1' => { text => "Подрайон", width => 12 },
-                'C1' => { text => "Расположение", width => 22 },
-                'D1' => { text => "Эт" },
-                'E1' => { text => "Тип" },
-                'F1' => { text => "Уч-к,с." },
-                'G1' => { text => "Площадь дома, кв.м." },
-                'H1' => { text => "Кол. ком." },
-                'I1' => { text => "Дополнительные сведения" },
-                'J1' => { text => "Цена\nтыс. руб." },
-                'K1' => { text => "Телефон", width => 15 },
-                'L1' => { text => "Фирма", width => 10 },
-                'M1' => { text => "ВНХ" }
+                'A1' => { text => "Тип сделки",},
+                'B1' => { text => "Город/Нас. пункт",},
+                'C1' => { text => "Район",},
+                'D1' => { text => "Улица",},
+                'E1' => { text => "№дома",},
+                'F1' => { text => "Всего этажей",},
+                'G1' => { text => "Материал дома",},
+                'H1' => { text => "Участок соток",},
+                'I1' => { text => "Общая площадь",},
+                'J1' => { text => "Площадь жилая",},
+                'K1' => { text => "Площадь кухни",},
+                'L1' => { text => "Количество комнат",},
+                'M1' => { text => "Описание",},
+                'N1' => { text => "Цена",},
+                'O1' => { text => "Телефон",},
+                'P1' => { text => "Фото",},
             };
             for my $x (keys %$header) {
-                if ($x =~ /^(\S)\d$/) {
-                    $worksheet->write_string($x, $header->{$x}->{'text'}, $header_fmt1);
-                    $worksheet->set_column("$1:$1", $header->{$x}->{'width'}) if exists $header->{$x}->{'width'};
-                } elsif ($x =~ /^(\S)(\d)\:(\S)(\d)$/) {
-                    $worksheet->merge_range($x, $header->{$x}->{'text'}, $header_fmt2);
-                    $worksheet->set_column("$1:$3", $header->{$x}->{'width'}) if exists $header->{$x}->{'width'};
-                }
+                $worksheet->write_string($x, $header->{$x}->{'text'}, $header_fmt);
+                $worksheet->set_column("$x:$x", $header->{$x}->{'width'}) if exists $header->{$x}->{'width'};
             }
-
-            my $txt_fmt = $workbook->add_format(num_format => '@');
 
             # Выборка частных домов и коттеджей
             my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
@@ -209,6 +302,236 @@ sub index {
                     state_code => 'work',
                     offer_type_code => $offer_type_code,
                     'type.category_code' => 'house',
+                    export_media => {'&&' => $media->id},
+                    account_id => $acc_id,
+                ],
+                sort_by => 'address_object.expanded_name',
+                with_objects => ['address_object', 'sublandmark', 'type', 'agent'],
+            );
+            my $row_num = 1;
+            while(my $realty = $realty_iter->next) {
+                my $location = '';
+                if ($realty->address_object_id) {
+                    my $addrobj = $realty->address_object;
+                    my $meta = from_json($addrobj->metadata);
+                    $location = $addrobj->name.($addrobj->short_type ne 'ул' ? ' '.$addrobj->short_type : '');
+                    if ($realty->sublandmark_id) {
+                        $location .= ' ('.$realty->sublandmark->name.')';
+                    }
+                }
+                my ($area, $subarea);
+                if (@{$realty->landmarks}) {
+                    $area = Rplus::Model::Landmark::Manager->get_objects(query => [id => scalar($realty->landmarks), type => 'vnh_area', delete_date => undef], limit => 1)->[0];
+                    $subarea = Rplus::Model::Landmark::Manager->get_objects(query => [id => scalar($realty->landmarks), type => 'vnh_subarea', delete_date => undef], limit => 1)->[0];
+                }
+                my $phones = $conf_phones;
+                if ($agent_phone == 1 && $realty->agent) {
+                    my $x = $realty->agent->public_phone_num || $realty->agent->phone_num;
+                    $phones =  $x . ', ' . $phones;
+                }
+                my $row = [
+                    $area ? $area->name : '',
+                    $subarea ? $subarea->name : '',
+                    $location,
+                    $realty->floors_count // '',
+                    $realty->house_type_id ? (($P->{'dict'}->{'house_types'}->{$realty->house_type_id}) // '') : '',
+                    ($realty->square_land_type || '') eq 'ar' && $realty->square_land ? $realty->square_land : '',
+                    $realty->square_total,
+                    $realty->rooms_count // '',
+                    $realty->description,
+                    $realty->price,
+                    $phones,
+                    $company,
+                    '+',
+                ];
+                for my $col_num (0..(scalar(@$row)-1)) {
+                    $worksheet->write($row_num, $col_num, $row->[$col_num]);
+                }
+                $row_num++;
+            }
+        }
+
+        # Раздел: Частные дома и коттеджи
+        if ($realty_types =~ /commercials/)  {
+            my $worksheet = $workbook->add_worksheet("КОММЕРЧЕСКАЯ НЕДВИЖИМОСТЬ");
+
+            # Заголовок листа
+            my $header = {
+                'A1' => { text => "Тип сделки",},
+                'B1' => { text => "Город",},
+                'C1' => { text => "Район",},
+                'D1' => { text => "Улица",},
+                'E1' => { text => "№дома",},
+                'F1' => { text => "Назначение объекта",},
+                'G1' => { text => "Общая площадь, кв.м",},
+                'H1' => { text => "Описание",},
+                'I1' => { text => "Цена",},
+                'J1' => { text => "Телефон",},
+                'K1' => { text => "Фото",},
+            };
+            for my $x (keys %$header) {
+                $worksheet->write_string($x, $header->{$x}->{'text'}, $header_fmt);
+                $worksheet->set_column("$x:$x", $header->{$x}->{'width'}) if exists $header->{$x}->{'width'};
+            }
+
+            # Выборка частных домов и коттеджей
+            my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
+                query => [
+                    state_code => 'work',
+                    offer_type_code => $offer_type_code,
+                    'type.category_code' => 'commercial',
+                    export_media => {'&&' => $media->id},
+                    account_id => $acc_id,
+                ],
+                sort_by => 'address_object.expanded_name',
+                with_objects => ['address_object', 'sublandmark', 'type', 'agent'],
+            );
+            my $row_num = 1;
+            while(my $realty = $realty_iter->next) {
+                my $location = '';
+                if ($realty->address_object_id) {
+                    my $addrobj = $realty->address_object;
+                    my $meta = from_json($addrobj->metadata);
+                    $location = $addrobj->name.($addrobj->short_type ne 'ул' ? ' '.$addrobj->short_type : '');
+                    if ($realty->sublandmark_id) {
+                        $location .= ' ('.$realty->sublandmark->name.')';
+                    }
+                }
+                my ($area, $subarea);
+                if (@{$realty->landmarks}) {
+                    $area = Rplus::Model::Landmark::Manager->get_objects(query => [id => scalar($realty->landmarks), type => 'vnh_area', delete_date => undef], limit => 1)->[0];
+                    $subarea = Rplus::Model::Landmark::Manager->get_objects(query => [id => scalar($realty->landmarks), type => 'vnh_subarea', delete_date => undef], limit => 1)->[0];
+                }
+                my $phones = $conf_phones;
+                if ($agent_phone == 1 && $realty->agent) {
+                    my $x = $realty->agent->public_phone_num || $realty->agent->phone_num;
+                    $phones =  $x . ', ' . $phones;
+                }
+                my $row = [
+                    $area ? $area->name : '',
+                    $subarea ? $subarea->name : '',
+                    $location,
+                    $realty->floors_count // '',
+                    $realty->house_type_id ? (($P->{'dict'}->{'house_types'}->{$realty->house_type_id}) // '') : '',
+                    ($realty->square_land_type || '') eq 'ar' && $realty->square_land ? $realty->square_land : '',
+                    $realty->square_total,
+                    $realty->rooms_count // '',
+                    $realty->description,
+                    $realty->price,
+                    $phones,
+                    $company,
+                    '+',
+                ];
+                for my $col_num (0..(scalar(@$row)-1)) {
+                    $worksheet->write($row_num, $col_num, $row->[$col_num]);
+                }
+                $row_num++;
+            }
+        }
+
+        # Раздел: Частные дома и коттеджи
+        if ($realty_types =~ /lands/)  {
+            my $worksheet = $workbook->add_worksheet("ЗЕМЕЛЬНЫЕ УЧАСТКИ");
+
+            # Заголовок листа
+            my $header = {
+                'A1' => { text => "Тип сделки",},
+                'B1' => { text => "Город",},
+                'C1' => { text => "Район",},
+                'D1' => { text => "Улица",},
+                'E1' => { text => "№дома",},
+                'F1' => { text => "Участок соток",},
+                'G1' => { text => "Описание",},
+                'H1' => { text => "Цена",},
+                'I1' => { text => "Телефон",},
+                'J1' => { text => "Фото",},
+            };
+            for my $x (keys %$header) {
+                $worksheet->write_string($x, $header->{$x}->{'text'}, $header_fmt);
+                $worksheet->set_column("$x:$x", $header->{$x}->{'width'}) if exists $header->{$x}->{'width'};
+            }
+
+            # Выборка частных домов и коттеджей
+            my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
+                query => [
+                    state_code => 'work',
+                    offer_type_code => $offer_type_code,
+                    'type.category_code' => 'land',
+                    export_media => {'&&' => $media->id},
+                    account_id => $acc_id,
+                ],
+                sort_by => 'address_object.expanded_name',
+                with_objects => ['address_object', 'sublandmark', 'type', 'agent'],
+            );
+            my $row_num = 1;
+            while(my $realty = $realty_iter->next) {
+                my $location = '';
+                if ($realty->address_object_id) {
+                    my $addrobj = $realty->address_object;
+                    my $meta = from_json($addrobj->metadata);
+                    $location = $addrobj->name.($addrobj->short_type ne 'ул' ? ' '.$addrobj->short_type : '');
+                    if ($realty->sublandmark_id) {
+                        $location .= ' ('.$realty->sublandmark->name.')';
+                    }
+                }
+                my ($area, $subarea);
+                if (@{$realty->landmarks}) {
+                    $area = Rplus::Model::Landmark::Manager->get_objects(query => [id => scalar($realty->landmarks), type => 'vnh_area', delete_date => undef], limit => 1)->[0];
+                    $subarea = Rplus::Model::Landmark::Manager->get_objects(query => [id => scalar($realty->landmarks), type => 'vnh_subarea', delete_date => undef], limit => 1)->[0];
+                }
+                my $phones = $conf_phones;
+                if ($agent_phone == 1 && $realty->agent) {
+                    my $x = $realty->agent->public_phone_num || $realty->agent->phone_num;
+                    $phones =  $x . ', ' . $phones;
+                }
+                my $row = [
+                    $area ? $area->name : '',
+                    $subarea ? $subarea->name : '',
+                    $location,
+                    $realty->floors_count // '',
+                    $realty->house_type_id ? (($P->{'dict'}->{'house_types'}->{$realty->house_type_id}) // '') : '',
+                    ($realty->square_land_type || '') eq 'ar' && $realty->square_land ? $realty->square_land : '',
+                    $realty->square_total,
+                    $realty->rooms_count // '',
+                    $realty->description,
+                    $realty->price,
+                    $phones,
+                    $company,
+                    '+',
+                ];
+                for my $col_num (0..(scalar(@$row)-1)) {
+                    $worksheet->write($row_num, $col_num, $row->[$col_num]);
+                }
+                $row_num++;
+            }
+        }
+
+        # Раздел: Частные дома и коттеджи
+        if ($realty_types =~ /garages/)  {
+            my $worksheet = $workbook->add_worksheet("ГАРАЖИ");
+
+            # Заголовок листа
+            my $header = {
+                'A1' => { text => "Тип сделки",},
+                'B1' => { text => "Город",},
+                'C1' => { text => "Район",},
+                'D1' => { text => "Улица",},
+                'E1' => { text => "Описание",},
+                'F1' => { text => "Цена",},
+                'G1' => { text => "Телефон",},
+                'H1' => { text => "Фото",},
+            };
+            for my $x (keys %$header) {
+                $worksheet->write_string($x, $header->{$x}->{'text'}, $header_fmt);
+                $worksheet->set_column("$x:$x", $header->{$x}->{'width'}) if exists $header->{$x}->{'width'};
+            }
+
+            # Выборка частных домов и коттеджей
+            my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
+                query => [
+                    state_code => 'work',
+                    offer_type_code => $offer_type_code,
+                    type_code => 'garage',
                     export_media => {'&&' => $media->id},
                     account_id => $acc_id,
                 ],

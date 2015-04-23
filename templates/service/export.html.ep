@@ -357,25 +357,81 @@
 
   <div class="tab-pane" id="export-vnh">
     <div class="" role="form" id="formExportVnh">
-      <div class="row" style="padding-top: 15px;">
-        <div class="col-lg-2">
-          <select class="form-control" name="offer_type_code">
-            <option value="sale">Продажа</option>
-            <option value="rent">Аренда</option>
-          </select>
+
+
+      <div class="row">
+        <div class="col-lg-4" id="sale-column">
+          <label class="type-column-header">
+            <span>Продажа</span>
+          </label>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" checked="checked" id="apartments"> Квартиры
+            </label>
+          </div>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" checked="checked" id="rooms"> Комнаты
+            </label>
+          </div>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" checked="checked" id="houses"> Дома, коттеджи
+            </label>
+          </div>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" checked="checked" id="commercials"> Коммерческая недвижимость
+            </label>
+          </div>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" checked="checked" id="lands"> Земельные участки
+            </label>
+          </div>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" checked="checked" id="garages"> Гаражи
+            </label>
+          </div>
+        </div>
+        <div class="col-lg-4" id="rent-column">
+          <label class="type-column-header">
+            <span>Аренда</span>
+          </label>      
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" checked="checked" id="apartments"> Квартиры
+            </label>
+          </div>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" checked="checked" id="rooms"> Комнаты
+            </label>
+          </div>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" checked="checked" id="houses"> Дома, коттеджи
+            </label>
+          </div>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" checked="checked" id="commercials"> Коммерческая недвижимость
+            </label>
+          </div>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" checked="checked" id="lands"> Земельные участки
+            </label>
+          </div>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" checked="checked" id="garages"> Гаражи
+            </label>
+          </div>
         </div>
       </div>
 
-      <div class="checkbox">
-        <label>
-          <input type="checkbox" id="apartments_rooms" checked="checked"> Квартиры, комнаты
-        </label>
-      </div>
-      <div class="checkbox">
-        <label>
-          <input type="checkbox" id="houses" checked="checked"> Дома, коттеджи
-        </label>
-      </div>
 
       <div class="form-group">
         <button type="submit" class="btn btn-primary btn-save" data-action="export-vnh" style="margin-top: 15px">Экспорт</button>
