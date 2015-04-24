@@ -10,15 +10,19 @@ use Rplus::Model::Landmark;
 use Rplus::Model::Landmark::Manager;
 use Rplus::Model::Option;
 use Rplus::Model::Option::Manager;
+use Rplus::Model::Photo;
+use Rplus::Model::Photo::Manager;
 
 use Mojo::Util qw(trim);
 use File::Temp qw(tmpnam);
-use Spreadsheet::WriteExcel;
+use Excel::Writer::XLSX;
 use JSON;
+use Rplus::Util::Config qw(get_config);
 
 sub index {
     my $self = shift;
 
+    my $config = get_config();
     my $acc_id = $self->session('user')->{account_id};
 
     return $self->render_not_found unless $self->req->method eq 'POST';
@@ -29,8 +33,19 @@ sub index {
 
     my $meta = from_json($media->metadata);
 
-    my $offer_type_code = $self->param('offer_type_code');
-    my $realty_types = $self->param('realty_types');
+    
+    my @sale_realty_types = split ',', $self->param('sale_realty_types');
+    my @rent_realty_types = split ',', $self->param('rent_realty_types');
+
+    my %realty_types;
+
+    for (my $i = 0; $i < @sale_realty_types; $i ++) {
+        $realty_types{$sale_realty_types[$i]}->{sale} = 1;
+    }
+
+    for (my $i = 0; $i < @rent_realty_types; $i ++) {
+        $realty_types{$sale_realty_types[$i]}->{rent} = 1;
+    }
 
     my $company = '';
     my $conf_phones = '';
@@ -53,20 +68,28 @@ sub index {
 
 
     {
-        my $workbook = Spreadsheet::WriteExcel->new($file);
+        my $workbook = Excel::Writer::XLSX->new($file);
         my $header_fmt = $workbook->add_format(border => 1, bold => 1, bg_color => 'silver', valign  => 'vcenter', align => 'center', text_wrap => 1);
         my $txt_fmt = $workbook->add_format(num_format => '@');
         my $P = $meta->{'params'};
 
         # Раздел: Квартиры
-        if ($realty_types =~ /apartments/) {
+        if ($realty_types{apartments}) {
+            my @offer_types;
+            if ($realty_types{apartments}->{sale}) {
+                push @offer_types, 'sale';
+            }
+            if ($realty_types{apartments}->{rent}) {
+                push @offer_types, 'rent';
+            }
+
             my $worksheet = $workbook->add_worksheet("КВАРТИРЫ");
             # Заголовок листа
             my $header = {
                 'A1' => { text => "Тип сделки",},
                 'B1' => { text => "Тип объекта",},
-                'С1' => { text => "Тип здания",},
-                'В1' => { text => "Кол-во комнат",},
+                'C1' => { text => "Тип здания",},
+                'D1' => { text => "Кол-во комнат",},
                 'E1' => { text => "Тип комнат",},
                 'F1' => { text => "Город/Нас. пункт",},
                 'G1' => { text => "Район",},
@@ -89,7 +112,7 @@ sub index {
                 'X1' => { text => "Описание",},
                 'Y1' => { text => "Цена",},
                 'Z1' => { text => "Телефон",},
-                'AA' => { text => "Фото",},
+                'AA1' => { text => "Фото",},
             };
             for my $x (keys %$header) {
                 $worksheet->write_string($x, $header->{$x}->{'text'}, $header_fmt);
@@ -100,7 +123,7 @@ sub index {
             my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
                 query => [
                     state_code => 'work',
-                    offer_type_code => $offer_type_code,
+                    offer_type_code => [@offer_types],
                     'type.category_code' => ['apartment'],
                     export_media => {'&&' => $media->id},
                     account_id => $acc_id,
@@ -108,16 +131,18 @@ sub index {
                 sort_by => 'address_object.expanded_name',
                 with_objects => ['address_object', 'sublandmark', 'type', 'agent'],
             );
-            my $row_num = 2;
+
+            my $row_num = 1;
             while(my $realty = $realty_iter->next) {
-                my $location = '';
+                my $city = 'Хабаровск';
+                my $street = '';
+                my $house_num = '';
                 if ($realty->address_object_id) {
                     my $addrobj = $realty->address_object;
                     my $meta = from_json($addrobj->metadata);
-                    $location = $addrobj->name.($addrobj->short_type ne 'ул' ? ' '.$addrobj->short_type : '');
-                    if ($realty->sublandmark_id) {
-                        $location .= ' ('.$realty->sublandmark->name.')';
-                    }
+                    $street = $addrobj->name.' '.$addrobj->short_type;
+                    #$street = $addrobj->name.($addrobj->short_type ne 'ул' ? ' '.$addrobj->short_type : '');
+                    $house_num = $realty->house_num;
                 }
                 my ($area, $subarea);
                 if (@{$realty->landmarks}) {
@@ -131,27 +156,41 @@ sub index {
                     $phones =  $x . ', ' . $phones;
                 }
 
+                my $photos;
+                my $photo_iter = Rplus::Model::Photo::Manager->get_objects_iterator(query => [realty_id => [$realty->id], delete_date => undef],);
+                while (my $photo = $photo_iter->next) {
+                    $photos = $photo->thumbnail_filename . ', ' . $photos;
+                }
+
                 my $row = [
-                    $P->{'realty_categories'}->{$realty->type->category_code} || '',
+                    $realty->offer_type->name,
+                    'Квартира',
+                    $realty->type_code eq 'apartment_new' ? 'новостройка' : 'вторичка',
                     $realty->rooms_count || '',
+                    $realty->room_scheme_id ? (($P->{'dict'}->{'room_schemes'}->{$realty->room_scheme_id}) // '') : '',
+                    $city,
                     $area ? $area->name : '',
-                    $subarea ? $subarea->name : '',
-                    $location,
-                    $realty->floor || $realty->floors_count ? ($realty->floor || '?').'/'.($realty->floors_count || '?') : '',
+                    $street,
+                    $house_num,
+                    $realty->floor,
+                    $realty->floors_count,
                     $realty->house_type_id ? (($P->{'dict'}->{'house_types'}->{$realty->house_type_id}) // '') : '',
                     $realty->ap_scheme_id ? (($P->{'dict'}->{'ap_schemes'}->{$realty->ap_scheme_id}) // '') : '',
                     $realty->square_total,
                     $realty->square_living,
                     $realty->square_kitchen,
-                    $realty->room_scheme_id ? (($P->{'dict'}->{'room_schemes'}->{$realty->room_scheme_id}) // '') : '',
                     $realty->bathroom_id ? (($P->{'dict'}->{'bathrooms'}->{$realty->bathroom_id}) // '') : '',
-                    $realty->balcony_id ? (($P->{'dict'}->{'balconies'}->{$realty->balcony_id}) // '') : '',
-                    '+',
+                    '', # балкон
+                    '', # остекление
+                    '', # лоджия
+                    '', # остекление
+                    '', # площадь лоджии
+                    #$realty->balcony_id ? (($P->{'dict'}->{'balconies'}->{$realty->balcony_id}) // '') : '',
                     $realty->condition_id ? (($P->{'dict'}->{'conditions'}->{$realty->condition_id}) // '') : '',
+                    $realty->description,
                     $realty->price,
                     $phones,
-                    $company,
-                    '+',
+                    $photos,
                 ];
                 for my $col_num (0..(scalar(@$row)-1)) {
                     #if ($col_num == 5) {
@@ -164,13 +203,20 @@ sub index {
         }
 
         # Раздел: Комнаты
-        if ($realty_types =~ /rooms/) {
+        if ($realty_types{rooms}) {
+            my @offer_types;
+            if ($realty_types{rooms}->{sale}) {
+                push @offer_types, 'sale';
+            }
+            if ($realty_types{rooms}->{rent}) {
+                push @offer_types, 'rent';
+            }
             my $worksheet = $workbook->add_worksheet("КОМНАТЫ");
             # Заголовок листа
             my $header = {
                 'A1' => { text => "Тип сделки",},
                 'B1' => { text => "Тип объекта",},
-                'С1' => { text => "Тип здания",},
+                'C1' => { text => "Тип здания",},
                 'D1' => { text => "Комнат на продажу",},
                 'E1' => { text => "Комнат в квартире",},
                 'F1' => { text => "Город/Нас. пункт",},
@@ -194,7 +240,7 @@ sub index {
                 'X1' => { text => "Описание",},
                 'Y1' => { text => "Цена",},
                 'Z1' => { text => "Телефон",},
-                'AA' => { text => "Фото",},
+                'AA1' => { text => "Фото",},
             };
             for my $x (keys %$header) {
                 $worksheet->write_string($x, $header->{$x}->{'text'}, $header_fmt);
@@ -205,7 +251,7 @@ sub index {
             my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
                 query => [
                     state_code => 'work',
-                    offer_type_code => $offer_type_code,
+                    offer_type_code => [@offer_types],
                     'type.category_code' => ['room'],
                     export_media => {'&&' => $media->id},
                     account_id => $acc_id,
@@ -213,16 +259,16 @@ sub index {
                 sort_by => 'address_object.expanded_name',
                 with_objects => ['address_object', 'sublandmark', 'type', 'agent'],
             );
-            my $row_num = 2;
+            my $row_num = 1;
             while(my $realty = $realty_iter->next) {
-                my $location = '';
+                my $city = 'Хабаровск';
+                my $street = '';
+                my $house_num = '';
                 if ($realty->address_object_id) {
                     my $addrobj = $realty->address_object;
                     my $meta = from_json($addrobj->metadata);
-                    $location = $addrobj->name.($addrobj->short_type ne 'ул' ? ' '.$addrobj->short_type : '');
-                    if ($realty->sublandmark_id) {
-                        $location .= ' ('.$realty->sublandmark->name.')';
-                    }
+                    $street = $addrobj->name.($addrobj->short_type ne 'ул' ? ' '.$addrobj->short_type : '');
+                    $house_num = $realty->house_num;
                 }
                 my ($area, $subarea);
                 if (@{$realty->landmarks}) {
@@ -236,27 +282,41 @@ sub index {
                     $phones =  $x . ', ' . $phones;
                 }
 
+                my $photos;
+                my $photo_iter = Rplus::Model::Photo::Manager->get_objects_iterator(query => [realty_id => [$realty->id], delete_date => undef],);
+                while (my $photo = $photo_iter->next) {
+                    $photos = $photo->thumbnail_filename . ', ' . $photos;
+                }
+
                 my $row = [
-                    $P->{'realty_categories'}->{$realty->type->category_code} || '',
+                    $realty->offer_type->name,
+                    'Комната',
+                    $realty->type_code eq 'apartment_new' ? 'новостройка' : 'вторичка',
+                    $realty->rooms_offer_count || '',
                     $realty->rooms_count || '',
+                    $city,
                     $area ? $area->name : '',
-                    $subarea ? $subarea->name : '',
-                    $location,
-                    $realty->floor || $realty->floors_count ? ($realty->floor || '?').'/'.($realty->floors_count || '?') : '',
+                    $street,
+                    $house_num,
+                    $realty->floor,
+                    $realty->floors_count,
                     $realty->house_type_id ? (($P->{'dict'}->{'house_types'}->{$realty->house_type_id}) // '') : '',
                     $realty->ap_scheme_id ? (($P->{'dict'}->{'ap_schemes'}->{$realty->ap_scheme_id}) // '') : '',
                     $realty->square_total,
                     $realty->square_living,
                     $realty->square_kitchen,
-                    $realty->room_scheme_id ? (($P->{'dict'}->{'room_schemes'}->{$realty->room_scheme_id}) // '') : '',
                     $realty->bathroom_id ? (($P->{'dict'}->{'bathrooms'}->{$realty->bathroom_id}) // '') : '',
-                    $realty->balcony_id ? (($P->{'dict'}->{'balconies'}->{$realty->balcony_id}) // '') : '',
-                    '+',
+                    '', # балкон
+                    '', # остекление
+                    '', # лоджия
+                    '', # остекление
+                    '', # площадь лоджии
+                    #$realty->balcony_id ? (($P->{'dict'}->{'balconies'}->{$realty->balcony_id}) // '') : '',
                     $realty->condition_id ? (($P->{'dict'}->{'conditions'}->{$realty->condition_id}) // '') : '',
+                    $realty->description,
                     $realty->price,
                     $phones,
-                    $company,
-                    '+',
+                    $photos,
                 ];
                 for my $col_num (0..(scalar(@$row)-1)) {
                     #if ($col_num == 5) {
@@ -269,7 +329,14 @@ sub index {
         }
 
         # Раздел: Частные дома и коттеджи
-        if ($realty_types =~ /houses/)  {
+        if ($realty_types{houses})  {
+            my @offer_types;
+            if ($realty_types{houses}->{sale}) {
+                push @offer_types, 'sale';
+            }
+            if ($realty_types{houses}->{rent}) {
+                push @offer_types, 'rent';
+            }
             my $worksheet = $workbook->add_worksheet("ДОМА");
 
             # Заголовок листа
@@ -300,7 +367,7 @@ sub index {
             my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
                 query => [
                     state_code => 'work',
-                    offer_type_code => $offer_type_code,
+                    offer_type_code => [@offer_types],
                     'type.category_code' => 'house',
                     export_media => {'&&' => $media->id},
                     account_id => $acc_id,
@@ -310,39 +377,55 @@ sub index {
             );
             my $row_num = 1;
             while(my $realty = $realty_iter->next) {
-                my $location = '';
+                my $city = 'Хабаровск';
+                my $street = '';
+                my $house_num = '';
                 if ($realty->address_object_id) {
                     my $addrobj = $realty->address_object;
                     my $meta = from_json($addrobj->metadata);
-                    $location = $addrobj->name.($addrobj->short_type ne 'ул' ? ' '.$addrobj->short_type : '');
-                    if ($realty->sublandmark_id) {
-                        $location .= ' ('.$realty->sublandmark->name.')';
-                    }
+                    $street = $addrobj->name.($addrobj->short_type ne 'ул' ? ' '.$addrobj->short_type : '');
+                    $house_num = $realty->house_num;
                 }
                 my ($area, $subarea);
                 if (@{$realty->landmarks}) {
                     $area = Rplus::Model::Landmark::Manager->get_objects(query => [id => scalar($realty->landmarks), type => 'vnh_area', delete_date => undef], limit => 1)->[0];
                     $subarea = Rplus::Model::Landmark::Manager->get_objects(query => [id => scalar($realty->landmarks), type => 'vnh_subarea', delete_date => undef], limit => 1)->[0];
                 }
+
                 my $phones = $conf_phones;
                 if ($agent_phone == 1 && $realty->agent) {
                     my $x = $realty->agent->public_phone_num || $realty->agent->phone_num;
                     $phones =  $x . ', ' . $phones;
                 }
+
+                my $photos;
+                my $photo_iter = Rplus::Model::Photo::Manager->get_objects_iterator(query => [realty_id => [$realty->id], delete_date => undef],);
+                while (my $photo = $photo_iter->next) {
+                    $photos = $photo->thumbnail_filename . ', ' . $photos;
+                }
+
                 my $row = [
+                    $realty->offer_type->name,
+                    $city,
                     $area ? $area->name : '',
-                    $subarea ? $subarea->name : '',
-                    $location,
-                    $realty->floors_count // '',
+                    $street,
+                    $house_num,
+                    $realty->floors_count,
+
                     $realty->house_type_id ? (($P->{'dict'}->{'house_types'}->{$realty->house_type_id}) // '') : '',
-                    ($realty->square_land_type || '') eq 'ar' && $realty->square_land ? $realty->square_land : '',
+
+                    $realty->square_land, # перевести в сотки если не сотки
+
                     $realty->square_total,
-                    $realty->rooms_count // '',
+                    $realty->square_living,
+                    $realty->square_kitchen,
+
+                    $realty->rooms_count,
+
                     $realty->description,
                     $realty->price,
                     $phones,
-                    $company,
-                    '+',
+                    $photos,
                 ];
                 for my $col_num (0..(scalar(@$row)-1)) {
                     $worksheet->write($row_num, $col_num, $row->[$col_num]);
@@ -352,7 +435,14 @@ sub index {
         }
 
         # Раздел: Частные дома и коттеджи
-        if ($realty_types =~ /commercials/)  {
+        if ($realty_types{commercials})  {
+            my @offer_types;
+            if ($realty_types{commercials}->{sale}) {
+                push @offer_types, 'sale';
+            }
+            if ($realty_types{commercials}->{rent}) {
+                push @offer_types, 'rent';
+            }
             my $worksheet = $workbook->add_worksheet("КОММЕРЧЕСКАЯ НЕДВИЖИМОСТЬ");
 
             # Заголовок листа
@@ -378,8 +468,8 @@ sub index {
             my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
                 query => [
                     state_code => 'work',
-                    offer_type_code => $offer_type_code,
-                    'type.category_code' => 'commercial',
+                    offer_type_code => [@offer_types],
+                    'type.category_code' => ['commercial', 'commersial'],
                     export_media => {'&&' => $media->id},
                     account_id => $acc_id,
                 ],
@@ -388,39 +478,45 @@ sub index {
             );
             my $row_num = 1;
             while(my $realty = $realty_iter->next) {
-                my $location = '';
+                my $city = 'Хабаровск';
+                my $street = '';
+                my $house_num = '';
                 if ($realty->address_object_id) {
                     my $addrobj = $realty->address_object;
                     my $meta = from_json($addrobj->metadata);
-                    $location = $addrobj->name.($addrobj->short_type ne 'ул' ? ' '.$addrobj->short_type : '');
-                    if ($realty->sublandmark_id) {
-                        $location .= ' ('.$realty->sublandmark->name.')';
-                    }
+                    $street = $addrobj->name.($addrobj->short_type ne 'ул' ? ' '.$addrobj->short_type : '');
+                    $house_num = $realty->house_num;
                 }
                 my ($area, $subarea);
                 if (@{$realty->landmarks}) {
                     $area = Rplus::Model::Landmark::Manager->get_objects(query => [id => scalar($realty->landmarks), type => 'vnh_area', delete_date => undef], limit => 1)->[0];
                     $subarea = Rplus::Model::Landmark::Manager->get_objects(query => [id => scalar($realty->landmarks), type => 'vnh_subarea', delete_date => undef], limit => 1)->[0];
                 }
+
                 my $phones = $conf_phones;
                 if ($agent_phone == 1 && $realty->agent) {
                     my $x = $realty->agent->public_phone_num || $realty->agent->phone_num;
                     $phones =  $x . ', ' . $phones;
                 }
+
+                my $photos;
+                my $photo_iter = Rplus::Model::Photo::Manager->get_objects_iterator(query => [realty_id => [$realty->id], delete_date => undef],);
+                while (my $photo = $photo_iter->next) {
+                    $photos = $photo->thumbnail_filename . ', ' . $photos;
+                }
+
                 my $row = [
+                    $realty->offer_type->name,
+                    $city,
                     $area ? $area->name : '',
-                    $subarea ? $subarea->name : '',
-                    $location,
-                    $realty->floors_count // '',
-                    $realty->house_type_id ? (($P->{'dict'}->{'house_types'}->{$realty->house_type_id}) // '') : '',
-                    ($realty->square_land_type || '') eq 'ar' && $realty->square_land ? $realty->square_land : '',
+                    $street,
+                    $house_num,
+                    toVnhType($realty->type_code),
                     $realty->square_total,
-                    $realty->rooms_count // '',
                     $realty->description,
                     $realty->price,
                     $phones,
-                    $company,
-                    '+',
+                    $photos,
                 ];
                 for my $col_num (0..(scalar(@$row)-1)) {
                     $worksheet->write($row_num, $col_num, $row->[$col_num]);
@@ -429,8 +525,15 @@ sub index {
             }
         }
 
-        # Раздел: Частные дома и коттеджи
-        if ($realty_types =~ /lands/)  {
+        # Раздел: участки и дачи
+        if ($realty_types{lands})  {
+            my @offer_types;
+            if ($realty_types{lands}->{sale}) {
+                push @offer_types, 'sale';
+            }
+            if ($realty_types{lands}->{rent}) {
+                push @offer_types, 'rent';
+            }
             my $worksheet = $workbook->add_worksheet("ЗЕМЕЛЬНЫЕ УЧАСТКИ");
 
             # Заголовок листа
@@ -455,7 +558,7 @@ sub index {
             my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
                 query => [
                     state_code => 'work',
-                    offer_type_code => $offer_type_code,
+                    offer_type_code => [@offer_types],
                     'type.category_code' => 'land',
                     export_media => {'&&' => $media->id},
                     account_id => $acc_id,
@@ -465,39 +568,44 @@ sub index {
             );
             my $row_num = 1;
             while(my $realty = $realty_iter->next) {
-                my $location = '';
+                my $city = 'Хабаровск';
+                my $street = '';
+                my $house_num = '';
                 if ($realty->address_object_id) {
                     my $addrobj = $realty->address_object;
                     my $meta = from_json($addrobj->metadata);
-                    $location = $addrobj->name.($addrobj->short_type ne 'ул' ? ' '.$addrobj->short_type : '');
-                    if ($realty->sublandmark_id) {
-                        $location .= ' ('.$realty->sublandmark->name.')';
-                    }
+                    $street = $addrobj->name.($addrobj->short_type ne 'ул' ? ' '.$addrobj->short_type : '');
+                    $house_num = $realty->house_num;
                 }
                 my ($area, $subarea);
                 if (@{$realty->landmarks}) {
                     $area = Rplus::Model::Landmark::Manager->get_objects(query => [id => scalar($realty->landmarks), type => 'vnh_area', delete_date => undef], limit => 1)->[0];
                     $subarea = Rplus::Model::Landmark::Manager->get_objects(query => [id => scalar($realty->landmarks), type => 'vnh_subarea', delete_date => undef], limit => 1)->[0];
                 }
+
                 my $phones = $conf_phones;
                 if ($agent_phone == 1 && $realty->agent) {
                     my $x = $realty->agent->public_phone_num || $realty->agent->phone_num;
                     $phones =  $x . ', ' . $phones;
                 }
+
+                my $photos;
+                my $photo_iter = Rplus::Model::Photo::Manager->get_objects_iterator(query => [realty_id => [$realty->id], delete_date => undef],);
+                while (my $photo = $photo_iter->next) {
+                    $photos = $photo->thumbnail_filename . ', ' . $photos;
+                }
+
                 my $row = [
+                    $realty->offer_type->name,
+                    $city,
                     $area ? $area->name : '',
-                    $subarea ? $subarea->name : '',
-                    $location,
-                    $realty->floors_count // '',
-                    $realty->house_type_id ? (($P->{'dict'}->{'house_types'}->{$realty->house_type_id}) // '') : '',
-                    ($realty->square_land_type || '') eq 'ar' && $realty->square_land ? $realty->square_land : '',
-                    $realty->square_total,
-                    $realty->rooms_count // '',
+                    $street,
+                    $house_num,
+                    $realty->square_land,   # пнривести к соткам
                     $realty->description,
                     $realty->price,
                     $phones,
-                    $company,
-                    '+',
+                    $photos,
                 ];
                 for my $col_num (0..(scalar(@$row)-1)) {
                     $worksheet->write($row_num, $col_num, $row->[$col_num]);
@@ -506,8 +614,15 @@ sub index {
             }
         }
 
-        # Раздел: Частные дома и коттеджи
-        if ($realty_types =~ /garages/)  {
+        # Раздел: гаражи
+        if ($realty_types{garages})  {
+            my @offer_types;
+            if ($realty_types{garages}->{sale}) {
+                push @offer_types, 'sale';
+            }
+            if ($realty_types{garages}->{rent}) {
+                push @offer_types, 'rent';
+            }
             my $worksheet = $workbook->add_worksheet("ГАРАЖИ");
 
             # Заголовок листа
@@ -530,7 +645,7 @@ sub index {
             my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
                 query => [
                     state_code => 'work',
-                    offer_type_code => $offer_type_code,
+                    offer_type_code => [@offer_types],
                     type_code => 'garage',
                     export_media => {'&&' => $media->id},
                     account_id => $acc_id,
@@ -540,39 +655,41 @@ sub index {
             );
             my $row_num = 1;
             while(my $realty = $realty_iter->next) {
-                my $location = '';
+                my $city = 'Хабаровск';
+                my $street = '';
+                my $house_num = '';
                 if ($realty->address_object_id) {
                     my $addrobj = $realty->address_object;
                     my $meta = from_json($addrobj->metadata);
-                    $location = $addrobj->name.($addrobj->short_type ne 'ул' ? ' '.$addrobj->short_type : '');
-                    if ($realty->sublandmark_id) {
-                        $location .= ' ('.$realty->sublandmark->name.')';
-                    }
+                    $street = $addrobj->name.($addrobj->short_type ne 'ул' ? ' '.$addrobj->short_type : '');
+                    $house_num = $realty->house_num;
                 }
                 my ($area, $subarea);
                 if (@{$realty->landmarks}) {
                     $area = Rplus::Model::Landmark::Manager->get_objects(query => [id => scalar($realty->landmarks), type => 'vnh_area', delete_date => undef], limit => 1)->[0];
                     $subarea = Rplus::Model::Landmark::Manager->get_objects(query => [id => scalar($realty->landmarks), type => 'vnh_subarea', delete_date => undef], limit => 1)->[0];
                 }
+
                 my $phones = $conf_phones;
                 if ($agent_phone == 1 && $realty->agent) {
                     my $x = $realty->agent->public_phone_num || $realty->agent->phone_num;
                     $phones =  $x . ', ' . $phones;
                 }
+
+                my $photos;
+                my $photo_iter = Rplus::Model::Photo::Manager->get_objects_iterator(query => [realty_id => [$realty->id], delete_date => undef],);
+                while (my $photo = $photo_iter->next) {
+                    $photos = $photo->thumbnail_filename . ', ' . $photos;
+                }
                 my $row = [
+                    $realty->offer_type->name,
+                    $city,
                     $area ? $area->name : '',
-                    $subarea ? $subarea->name : '',
-                    $location,
-                    $realty->floors_count // '',
-                    $realty->house_type_id ? (($P->{'dict'}->{'house_types'}->{$realty->house_type_id}) // '') : '',
-                    ($realty->square_land_type || '') eq 'ar' && $realty->square_land ? $realty->square_land : '',
-                    $realty->square_total,
-                    $realty->rooms_count // '',
+                    $street,
                     $realty->description,
                     $realty->price,
                     $phones,
-                    $company,
-                    '+',
+                    $photos,
                 ];
                 for my $col_num (0..(scalar(@$row)-1)) {
                     $worksheet->write($row_num, $col_num, $row->[$col_num]);
@@ -584,10 +701,50 @@ sub index {
         $workbook->close;
     }
 
-    $self->res->headers->content_disposition('attachment; filename=vnh.xls;');
+    $self->res->headers->content_disposition('attachment; filename=vnh.xlsx;');
     $self->res->content->asset(Mojo::Asset::File->new(path => $file));
 
     return $self->rendered(200);
+}
+
+sub toVnhType {
+    my $type = shift;
+
+    given ($type) {
+        when ('market_place') {
+            return 'магазин';
+        }
+
+        when ('office_place') {
+            return 'офис';
+        }
+
+        when ('building') {
+            return 'офис';
+        }
+
+        when ('production_place') {
+            return 'промышленного назначения';
+        }
+
+        when ('gpurpose_place') {
+            return 'свободного назначения';
+        }
+
+        when ('autoservice_place') {
+            return 'промышленного назначения';
+        }
+
+        when ('service_place') {
+            return 'ресторан';
+        }
+
+        when ('warehouse_place') {
+            return 'база';
+        }
+    }
+
+    return 'свободного назначения';
 }
 
 1;
