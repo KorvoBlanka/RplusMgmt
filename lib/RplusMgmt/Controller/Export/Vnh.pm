@@ -830,16 +830,16 @@ sub getVnhBathroomScheme {
             return 'раздельный';
         }
         when (4) {
-            return '';
+            return 'совмещенный';
         }
         when (5) {
-            return '';
+            return 'раздельный';
         }
         when (6) {
             return 'совмещенный';
         }
         when (7) {
-            return '';
+            return 'совмещенный';
         }
         when (8) {
             return 'совмещенный';
@@ -848,7 +848,7 @@ sub getVnhBathroomScheme {
             return 'совмещенный';
         }
         when (9) {
-            return '';
+            return 'совмещенный';
         }
     }
     return '';
