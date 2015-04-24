@@ -846,6 +846,9 @@
                 margin-top: 0px;
                 margin-bottom: 0;
             }
+            .margin-fix {
+              margin-top: 7px;
+            }
         }
 
         @media screen and (min-width: 1025px) {
@@ -1156,7 +1159,7 @@
             </li>
           % }
           </ul>
-          <p class="navbar-text navbar-right" style="margin-top: 7px;">
+          <p class="navbar-text navbar-right margin-fix">
             <a href="javascript: " class="chat-show" data-action="chat-show" style="position: relative; margin-right: 20px; text-decoration: none;">
                 <span class="glyphicon glyphicon-comment"></span>
                 <span id="message-count-notifier" class="badge badge-default quick-notifier hidden" style="position: absolute; right: -12px; top: 4px;"></span>
