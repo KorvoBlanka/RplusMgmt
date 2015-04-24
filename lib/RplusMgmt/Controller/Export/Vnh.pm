@@ -167,26 +167,26 @@ sub index {
                     'Квартира',
                     $realty->type_code eq 'apartment_new' ? 'новостройка' : 'вторичка',
                     $realty->rooms_count || '',
-                    $realty->room_scheme_id ? (($P->{'dict'}->{'room_schemes'}->{$realty->room_scheme_id}) // '') : '',
+                    getVnhRoomsScheme($realty->room_scheme_id),
                     $city,
                     $area ? $area->name : '',
                     $street,
                     $house_num,
                     $realty->floor,
                     $realty->floors_count,
-                    $realty->house_type_id ? (($P->{'dict'}->{'house_types'}->{$realty->house_type_id}) // '') : '',
-                    $realty->ap_scheme_id ? (($P->{'dict'}->{'ap_schemes'}->{$realty->ap_scheme_id}) // '') : '',
+                    getVnhHouseType($realty->house_type_id),
+                    getVnhApScheme($realty->ap_scheme_id),
                     $realty->square_total,
                     $realty->square_living,
                     $realty->square_kitchen,
-                    $realty->bathroom_id ? (($P->{'dict'}->{'bathrooms'}->{$realty->bathroom_id}) // '') : '',
+                    getVnhBathroomScheme($realty->bathroom_id),
                     '', # балкон
                     '', # остекление
                     '', # лоджия
                     '', # остекление
                     '', # площадь лоджии
                     #$realty->balcony_id ? (($P->{'dict'}->{'balconies'}->{$realty->balcony_id}) // '') : '',
-                    $realty->condition_id ? (($P->{'dict'}->{'conditions'}->{$realty->condition_id}) // '') : '',
+                    getVnhCondition($realty->condition_id),
                     $realty->description,
                     $realty->price,
                     $phones,
@@ -300,19 +300,19 @@ sub index {
                     $house_num,
                     $realty->floor,
                     $realty->floors_count,
-                    $realty->house_type_id ? (($P->{'dict'}->{'house_types'}->{$realty->house_type_id}) // '') : '',
-                    $realty->ap_scheme_id ? (($P->{'dict'}->{'ap_schemes'}->{$realty->ap_scheme_id}) // '') : '',
+                    getVnhHouseType($realty->house_type_id),
+                    getVnhApScheme($realty->ap_scheme_id),
                     $realty->square_total,
                     $realty->square_living,
                     $realty->square_kitchen,
-                    $realty->bathroom_id ? (($P->{'dict'}->{'bathrooms'}->{$realty->bathroom_id}) // '') : '',
+                    getVnhBathroomScheme($realty->bathroom_id),
                     '', # балкон
                     '', # остекление
                     '', # лоджия
                     '', # остекление
                     '', # площадь лоджии
                     #$realty->balcony_id ? (($P->{'dict'}->{'balconies'}->{$realty->balcony_id}) // '') : '',
-                    $realty->condition_id ? (($P->{'dict'}->{'conditions'}->{$realty->condition_id}) // '') : '',
+                    getVnhCondition($realty->condition_id),
                     $realty->description,
                     $realty->price,
                     $phones,
@@ -412,7 +412,7 @@ sub index {
                     $house_num,
                     $realty->floors_count,
 
-                    $realty->house_type_id ? (($P->{'dict'}->{'house_types'}->{$realty->house_type_id}) // '') : '',
+                    getVnhHouseType($realty->house_type_id),
 
                     $realty->square_land, # перевести в сотки если не сотки
 
@@ -709,42 +709,189 @@ sub index {
 
 sub toVnhType {
     my $type = shift;
-
     given ($type) {
         when ('market_place') {
             return 'магазин';
         }
-
         when ('office_place') {
             return 'офис';
         }
-
         when ('building') {
             return 'офис';
         }
-
         when ('production_place') {
             return 'промышленного назначения';
         }
-
         when ('gpurpose_place') {
             return 'свободного назначения';
         }
-
         when ('autoservice_place') {
             return 'промышленного назначения';
         }
-
         when ('service_place') {
             return 'ресторан';
         }
-
         when ('warehouse_place') {
             return 'база';
         }
     }
-
     return 'свободного назначения';
+}
+
+sub getVnhRoomsScheme {
+    my $room_scheme_id = shift;
+    given ($room_scheme_id) {
+        when (1) {
+            return 'студия';
+        }
+        when (2) {
+            return 'другое';
+        }
+        when (3) {
+            return 'раздельные';
+        }
+        when (4) {
+            return 'смежные';
+        }
+        when (5) {
+            return 'икарус';
+        }
+        when (6) {
+            return 'смежно-раздельные';
+        }
+    }
+    return 'другое';
+}
+
+sub getVnhHouseType {
+    my $house_type_id = shift;
+    given ($house_type_id) {
+        when (1) {
+            return 'кирпич';
+        }
+        when (2) {
+            return 'монолит';
+        }
+        when (3) {
+            return 'панель';
+        }
+        when (4) {
+            return 'дерево';
+        }
+        when (5) {
+            return 'брус';
+        }
+        when (6) {
+            return 'дерево';
+        }
+        when (7) {
+            return 'кирпич';
+        }
+    }
+    return '';
+}
+
+sub getVnhApScheme {
+    my $ap_scheme_id = shift;
+    given ($ap_scheme_id) {
+        when (1) {
+            return 'сталинка';
+        }
+        when (2) {
+            return 'хрущевка';
+        }
+        when (3) {
+            return 'улучшенка';
+        }
+        when (4) {
+            return 'новая планировка';
+        }
+        when (5) {
+            return 'индивидуальная';
+        }
+        when (6) {
+            return 'общежитие';
+        }
+    }
+    return '';
+}
+
+sub getVnhBathroomScheme {
+    my $bathroom_id = shift;
+
+    given ($bathroom_id) {
+        when (1) {
+            return '';
+        }
+        when (2) {
+            return '';
+        }
+        when (3) {
+            return 'раздельный';
+        }
+        when (4) {
+            return '';
+        }
+        when (5) {
+            return '';
+        }
+        when (6) {
+            return 'совмещенный';
+        }
+        when (7) {
+            return '';
+        }
+        when (8) {
+            return 'совмещенный';
+        }
+        when (8) {
+            return 'совмещенный';
+        }
+        when (9) {
+            return '';
+        }
+    }
+    return '';
+}
+
+sub getVnhCondition {
+    my $condition_id = shift;
+    given ($condition_id) {
+        when (1) {
+            return 'после строителей';
+        }
+        when (2) {
+            return 'хорошее';
+        }
+        when (3) {
+            return 'хорошее';
+        }
+        when (4) {
+            return 'евроремонт';
+        }
+        when (5) {
+            return 'евроремонт';
+        }
+        when (6) {
+            return 'требуется ремонт';
+        }
+        when (7) {
+            return 'требуется ремонт';
+        }
+        when (9) {
+            return 'удовлетворительное';
+        }
+        when (10) {
+            return 'удовлетворительное';
+        }
+        when (11) {
+            return 'хорошее';
+        }
+        when (11) {
+            return 'отличное';
+        }
+    }
+    return '';
 }
 
 1;
