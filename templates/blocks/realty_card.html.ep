@@ -1109,6 +1109,24 @@
                     'agent_id', 'owner_price',
                 ],
             },
+
+            garage: {
+                sale: [
+                    'agent_id', 'owner_price',
+                ],
+                rent: [
+                    'agent_id', 'owner_price',
+                ],
+            },
+
+            any: {
+                sale: [
+                    'agent_id', 'owner_price', 'address_object_name', 'square_total',
+                ],
+                rent: [
+                    'agent_id', 'owner_price', 'address_object_name', 'square_total',
+                ],
+            }
         },
         vnh: {
             apartment: {
@@ -1203,6 +1221,24 @@
                     'agent_id', 'owner_price',
                 ],
             },
+
+            garage: {
+                sale: [
+                    'agent_id', 'owner_price',
+                ],
+                rent: [
+                    'agent_id', 'owner_price',
+                ],
+            },
+
+            any: {
+                sale: [
+                    'agent_id', 'owner_price', 'address_object_name', 'square_total',
+                ],
+                rent: [
+                    'agent_id', 'owner_price', 'address_object_name', 'square_total',
+                ],
+            }
         }
     };
     
@@ -1296,7 +1332,6 @@
       
         for (var i = 0; i < formArray.length; i++) {
             var x = formArray[i];
-            
             if (x.name == 'export_media') {
                 export_media.push(x.value);
             }
@@ -1306,7 +1341,13 @@
             if (!required_export[m_name]) {
               continue;
             }
-            var m_rq_fields = required_export[m_name][realty_type][offer_type];
+            var m_rq_fields;
+            if (!required_export[m_name][realty_type]) {
+              m_rq_fields = required_export[m_name]['any'][offer_type];
+            } else {
+              m_rq_fields = required_export[m_name][realty_type][offer_type];
+            }
+
             if (m_rq_fields) {
                 for (idx = 0; idx < m_rq_fields.length; ++idx) {
                     var field = m_rq_fields[idx];
