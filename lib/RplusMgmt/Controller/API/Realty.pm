@@ -39,6 +39,241 @@ use Data::Dumper;
 
 no warnings 'experimental::smartmatch';
 
+my $export_media = {
+    13 => 'avito',
+    10 => 'irr',
+    2 => 'present',
+    4 => 'farpost',
+    3 => 'vnh',
+};
+
+my $required_export = {
+    irr => {
+        apartment => {
+            sale => [
+                'agent_id', 'owner_price', 'address_object_name', 'house_num', 'floor', 'rooms_count', 'square_total',
+            ],
+            rent => [
+                'agent_id', 'owner_price', 'address_object_name', 'house_num', 'floor', 'rooms_count', 'square_total',
+            ],
+        },
+        apartment_new => {
+            sale => [
+                'agent_id', 'owner_price', 'address_object_name', 'house_num', 'floor', 'rooms_count', 'square_total',
+            ],
+            rent => [
+                'agent_id', 'owner_price', 'address_object_name', 'house_num', 'floor', 'rooms_count', 'square_total',
+            ],
+        },
+        townhouse => {
+            sale => [
+                'agent_id', 'owner_price', 'address_object_name', 'house_num', 'floor', 'rooms_count', 'square_total',
+            ],
+            rent => [
+                'agent_id', 'owner_price', 'address_object_name', 'house_num', 'floor', 'rooms_count', 'square_total',
+            ],
+        },
+        apartment_small => {
+            sale => [
+                'agent_id', 'owner_price', 'address_object_name', 'house_num', 'floor', 'rooms_count', 'square_total',
+            ],
+            rent => [
+                'agent_id', 'owner_price', 'address_object_name', 'house_num', 'floor', 'rooms_count', 'square_total',
+            ],
+        },
+        room => {
+            sale => [
+                'agent_id', 'owner_price', 'address_object_name', 'house_num', 'rooms_count', 'floor',
+            ],
+            rent => [
+                'agent_id', 'owner_price', 'address_object_name', 'house_num', 'rooms_count', 'rooms_offer_count',,
+            ],
+        },
+        house => {
+            sale => [
+                'agent_id', 'owner_price', 'address_object_name', 'house_num', 'square_total',
+            ],
+            rent => [
+                'agent_id', 'owner_price', 'address_object_name', 'house_num', 'square_total',
+            ],
+        },
+        cottage => {
+            sale => [
+                'agent_id', 'owner_price', 'address_object_name', 'house_num', 'square_total',
+            ],
+            rent => [
+                'agent_id', 'owner_price', 'address_object_name', 'house_num', 'square_total',
+            ],
+        },
+
+        dacha => {
+            sale => [
+                'agent_id', 'owner_price', 'address_object_name', 'house_num', 'square_total',
+            ],
+            rent => [
+                'agent_id', 'owner_price', 'address_object_name', 'house_num', 'square_total',
+            ],
+        },
+        
+        land => {
+            sale => [
+                'agent_id', 'owner_price', 'square_land', 'square_land_type',
+            ],
+            rent => [
+                'agent_id', 'owner_price', 'square_land', 'square_land_type',
+            ],
+        },
+        
+        office => {
+            sale => [
+                'agent_id', 'owner_price', 'address_object_name', 'square_total',
+            ],
+            rent => [
+                'agent_id', 'owner_price', 'address_object_name', 'square_total',
+            ],
+        },
+        
+        other => {
+            sale => [
+                'agent_id', 'owner_price',
+            ],
+            rent => [
+                'agent_id', 'owner_price',
+            ],
+        },
+
+        garage => {
+            sale => [
+                'agent_id', 'owner_price',
+            ],
+            rent => [
+                'agent_id', 'owner_price',
+            ],
+        },
+
+        any => {
+            sale => [
+                'agent_id', 'owner_price', 'address_object_name', 'square_total',
+            ],
+            rent => [
+                'agent_id', 'owner_price', 'address_object_name', 'square_total',
+            ],
+        }
+    },
+    vnh => {
+        apartment => {
+            sale => [
+                'agent_id', 'owner_price', 'address_object_name', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
+            ],
+            rent => [
+                'agent_id', 'owner_price', 'address_object_name', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
+            ],
+        },
+        apartment_new => {
+            sale => [
+                'agent_id', 'owner_price', 'address_object_name', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
+            ],
+            rent => [
+                'agent_id', 'owner_price', 'address_object_name', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
+            ],
+        },
+        townhouse => {
+            sale => [
+                'agent_id', 'owner_price', 'address_object_name', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
+            ],
+            rent => [
+                'agent_id', 'owner_price', 'address_object_name', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
+            ],
+        },
+        apartment_small => {
+            sale => [
+                'agent_id', 'owner_price', 'address_object_name', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
+            ],
+            rent => [
+                'agent_id', 'owner_price', 'address_object_name', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
+            ],
+        },
+        room => {
+            sale => [
+                'agent_id', 'owner_price', 'address_object_name', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_offer_count', 'square_total', 'square_living', 'square_kitchen',
+            ],
+            rent => [
+                'agent_id', 'owner_price', 'address_object_name', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_offer_count', 'square_total', 'square_living', 'square_kitchen',
+            ],
+        },
+        house => {
+            sale => [
+                'agent_id', 'owner_price', 'address_object_name', 'house_type_id', 'square_land', 'square_total',
+            ],
+            rent => [
+                'agent_id', 'owner_price', 'address_object_name', 'house_type_id', 'square_land', 'square_total',
+            ],
+        },
+        cottage => {
+            sale => [
+                'agent_id', 'owner_price', 'address_object_name', 'house_type_id', 'square_land',  'square_total',
+            ],
+            rent => [
+                'agent_id', 'owner_price', 'address_object_name', 'house_type_id', 'square_land',  'square_total',
+            ],
+        },
+
+        dacha => {
+            sale => [
+                'agent_id', 'owner_price', 'address_object_name', 'square_land', 'square_total',
+            ],
+            rent => [
+                'agent_id', 'owner_price', 'address_object_name', 'square_land', 'square_total',
+            ],
+        },
+        
+        land => {
+            sale => [
+                'agent_id', 'owner_price', 'square_land', 'square_land_type',
+            ],
+            rent => [
+                'agent_id', 'owner_price', 'square_land', 'square_land_type',
+            ],
+        },
+        
+        office => {
+            sale => [
+                'agent_id', 'owner_price', 'address_object_name', 'square_total',
+            ],
+            rent => [
+                'agent_id', 'owner_price', 'address_object_name', 'square_total',
+            ],
+        },
+        
+        other => {
+            sale => [
+                'agent_id', 'owner_price',
+            ],
+            rent => [
+                'agent_id', 'owner_price',
+            ],
+        },
+
+        garage => {
+            sale => [
+                'agent_id', 'owner_price',
+            ],
+            rent => [
+                'agent_id', 'owner_price',
+            ],
+        },
+
+        any => {
+            sale => [
+                'agent_id', 'owner_price', 'address_object_name', 'square_total',
+            ],
+            rent => [
+                'agent_id', 'owner_price', 'address_object_name', 'square_total',
+            ],
+        }
+    }
+};
+
 my %accounts_hash;
 #my %mediators_hash;
 
@@ -1097,7 +1332,7 @@ sub update_multiple {
     my $self = shift;
 
     # Increase inactivity timeout for connection a bit
-    Mojo::IOLoop->stream($self->tx->connection)->timeout(600);
+    Mojo::IOLoop->stream($self->tx->connection)->timeout(1200);
     #return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => 'write');
 
     my $acc_id = $self->session('user')->{account_id};
@@ -1140,6 +1375,24 @@ sub update_multiple {
                     push @errors, $id;
                     return;
                 }
+
+                my $exp_media_code = $export_media->{$export_media_id};
+                my $req_fields;
+                if ($required_export->{$exp_media_code}) {
+                    $req_fields = $required_export->{$exp_media_code}->{$realty->type_code}->{$realty->offer_type_code};
+                    unless ($req_fields) {
+                        $req_fields = $required_export->{$exp_media_code}->{'any'}->{$realty->offer_type_code};
+                    } 
+                }
+                if ($req_fields) {
+                    foreach (@$req_fields) {
+                        unless ($realty->$_) {
+                            push @errors, $id;
+                            return;
+                        }
+                    }
+                }
+
             } elsif ($_ eq 'state_code') {
                 unless ($self->has_permission(realty => write => $realty->agent_id)) {
                     push @errors, $id;
@@ -1199,10 +1452,14 @@ sub update_multiple {
 
         if ($realty->state_code eq 'work' && !$realty->agent_id) {
             $realty->state_code('raw');
+            push @errors, $id;
+            return;
         }
 
-        if (!$realty->agent_id) {
+        if (!$realty->agent_id && $realty->export_media) {
             $realty->export_media(Mojo::Collection->new());
+            push @errors, $id;
+            return;
         }
 
         if ($realty->state_code ne 'work') {

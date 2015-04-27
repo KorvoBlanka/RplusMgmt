@@ -140,6 +140,20 @@
     color: #fff;
   }
 
+  #realtyTable > tbody > tr.error > td {
+    background-color: #F08F7D;
+    color: #fff;
+  }
+
+  #realtyTable > tbody > tr.error:hover > td {
+    background-color: #E08A73;
+    color: #fff;
+  }
+
+  #realtyTable > tbody > tr.error > td > a {
+    color: #fff;
+  }
+
   #geoModal .modal-dialog {
     width: 80%;
   }
@@ -717,7 +731,7 @@
           // Mark opened items
           $('#navTab > li > a[data-id]').each(function () {
             var id = $(this).data('id');
-            $('#realtyTable > tbody > tr[data-id="' + id + '"]:not(.opened)').removeClass('selected').addClass('opened');
+            $('#realtyTable > tbody > tr[data-id="' + id + '"]:not(.opened)').removeClass('selected').addClass('opened').removeClass('error');;
             putToHistory(id, "selected", 0);
           });
 
@@ -811,7 +825,7 @@
           // Mark opened realty object in the table
           var $tr = $('#realtyTable > tbody > tr[data-id="' + id + '"]');
           if ($tr) {
-            $tr.addClass('opened');
+            $tr.addClass('opened').removeClass('error');;
           }
           card_opened = true;
           $tr.data('lat', r.latitude);
@@ -1289,6 +1303,10 @@
                 putToHistory(r.id, "selected", 0);
                 putToHistory(r.id, "modified", 1);
               });
+              var errors = data.errors;
+              for (var i = 0; i < errors.length; i++) {
+                $('#realtyTable > tbody > tr[data-id="' + errors[i] + '"]').addClass('error').removeClass('selected');
+              }
             }
           }).fail(function (jqXHR, textStatus, errorThrown) {});
       });
@@ -1331,11 +1349,15 @@
                   $('td:nth-child(' + (j + 1) + ')', $tr).html(f.val(r));
                 }
                 $tr.data('obj', r);
-                $tr.removeClass('selected').addClass('modified');
+                $tr.removeClass('selected').addClass('modified').removeClass('error');
                 putToHistory(r.id, "selected", 0);
                 putToHistory(r.id, "modified", 1);
               }
             });
+            var errors = data.errors;
+            for (var i = 0; i < errors.length; i++) {
+              $('#realtyTable > tbody > tr[data-id="' + errors[i] + '"]').addClass('error').removeClass('selected');
+            }
           }
         }).fail(function (jqXHR, textStatus, errorThrown) {});
       });
@@ -1374,10 +1396,14 @@
                   $('td:nth-child(' + (j + 1) + ')', $tr).html(f.val(r));
                 }
                 $tr.data('obj', r);
-                $tr.removeClass('selected').addClass('modified');
+                $tr.removeClass('selected').addClass('modified').removeClass('error');;
                 putToHistory(r.id, "selected", 0);
                 putToHistory(r.id, "modified", 1);
               });
+              var errors = data.errors;
+              for (var i = 0; i < errors.length; i++) {
+                $('#realtyTable > tbody > tr[data-id="' + errors[i] + '"]').addClass('error').removeClass('selected');
+              }
             }
           }).fail(function (jqXHR, textStatus, errorThrown) {});
       });
@@ -1415,7 +1441,7 @@
                   $('td:nth-child(' + (j + 1) + ')', $tr).html(f.val(r));
                 }
                 $tr.data('obj', r);
-                $tr.removeClass('selected').addClass('modified');
+                $tr.removeClass('selected').addClass('modified').removeClass('error');;
                 putToHistory(r.id, "selected", 0);
                 putToHistory(r.id, "modified", 1);
               });
