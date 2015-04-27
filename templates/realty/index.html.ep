@@ -1358,6 +1358,15 @@
             for (var i = 0; i < errors.length; i++) {
               $('#realtyTable > tbody > tr[data-id="' + errors[i] + '"]').addClass('error').removeClass('selected');
             }
+            if (stateCode == 'work') {
+              if (errors.length == 1) {
+                alert('объект не может быть назначены в рабочую базу');
+              } else if (errors.length > 1 && errors.length < 5) {
+                alert(errors.length + ' объекта не могут быть назначены в рабочую базу');
+              } else if (errors.length > 1 && errors.length >= 5) {
+                alert(errors.length + ' объектов не могут быть назначены в рабочую базу');
+              }
+            }
           }
         }).fail(function (jqXHR, textStatus, errorThrown) {});
       });
@@ -1403,6 +1412,14 @@
               var errors = data.errors;
               for (var i = 0; i < errors.length; i++) {
                 $('#realtyTable > tbody > tr[data-id="' + errors[i] + '"]').addClass('error').removeClass('selected');
+                
+              }
+              if (errors.length == 1) {
+                alert('объект не назначен в импорт, проверьте заполнение необходимых полей');
+              } else if (errors.length > 1 && errors.length < 5) {
+                alert(errors.length + ' объекта не назначено в импорт, проверьте заполнение необходимых полей');
+              } else if (errors.length > 1 && errors.length >= 5) {
+                alert(errors.length + ' объектов не назначено в импорт, проверьте заполнение необходимых полей');
               }
             }
           }).fail(function (jqXHR, textStatus, errorThrown) {});
