@@ -44,7 +44,7 @@ sub index {
     }
 
     for (my $i = 0; $i < @rent_realty_types; $i ++) {
-        $realty_types{$sale_realty_types[$i]}->{rent} = 1;
+        $realty_types{$rent_realty_types[$i]}->{rent} = 1;
     }
 
     my $company = '';
