@@ -887,7 +887,7 @@ sub getVnhCondition {
         when (11) {
             return 'хорошее';
         }
-        when (11) {
+        when (12) {
             return 'отличное';
         }
     }
