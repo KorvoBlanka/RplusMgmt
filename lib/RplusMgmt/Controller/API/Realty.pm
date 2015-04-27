@@ -195,35 +195,35 @@ my $required_export = {
         },
         room => {
             sale => [
-                'agent_id', 'owner_price', 'address_object_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_offer_count', 'square_total', 'square_living', 'square_kitchen',
+                'agent_id', 'owner_price', 'address_object_id', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_offer_count', 'square_total', 'square_living', 'square_kitchen',
             ],
             rent => [
-                'agent_id', 'owner_price', 'address_object_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_offer_count', 'square_total', 'square_living', 'square_kitchen',
+                'agent_id', 'owner_price', 'address_object_id', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_offer_count', 'square_total', 'square_living', 'square_kitchen',
             ],
         },
         house => {
             sale => [
-                'agent_id', 'owner_price', 'address_object_id', 'house_type_id', 'square_land', 'square_total',
+                'agent_id', 'owner_price', 'address_object_id', 'house_type_id', 'floors_count', 'square_land', 'square_total',
             ],
             rent => [
-                'agent_id', 'owner_price', 'address_object_id', 'house_type_id', 'square_land', 'square_total',
+                'agent_id', 'owner_price', 'address_object_id', 'house_type_id', 'floors_count', 'square_land', 'square_total',
             ],
         },
         cottage => {
             sale => [
-                'agent_id', 'owner_price', 'address_object_id', 'house_type_id', 'square_land',  'square_total',
+                'agent_id', 'owner_price', 'address_object_id', 'house_type_id', 'floors_count', 'square_land', 'square_total',
             ],
             rent => [
-                'agent_id', 'owner_price', 'address_object_id', 'house_type_id', 'square_land',  'square_total',
+                'agent_id', 'owner_price', 'address_object_id', 'house_type_id', 'floors_count', 'square_land', 'square_total',
             ],
         },
 
         dacha => {
             sale => [
-                'agent_id', 'owner_price', 'address_object_id', 'square_land', 'square_total',
+                'agent_id', 'owner_price', 'square_land', 'square_land_type',
             ],
             rent => [
-                'agent_id', 'owner_price', 'address_object_id', 'square_land', 'square_total',
+                'agent_id', 'owner_price', 'square_land', 'square_land_type',
             ],
         },
         
