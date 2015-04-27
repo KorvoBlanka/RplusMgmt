@@ -887,7 +887,6 @@
             'square_land',
             'square_land_type',
             'rooms_offer_count',
-            'square_living', 'square_kitchen'
         ],
 
         house: [
