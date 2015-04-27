@@ -1090,7 +1090,7 @@ sub save {
     my $res = {
         status => 'success',
         id => $realty->id,
-        realty => $_serialize->($self, $realty),
+        realty => $_serialize->($self, $realty, with_sublandmarks => 1),
         #similar_realty_id => $similar_realty_id,
         #($similar_realty ? (similar_realty => $_serialize->($self, $similar_realty)) : ()),
     };
