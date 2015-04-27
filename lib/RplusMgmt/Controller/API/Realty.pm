@@ -1456,14 +1456,16 @@ sub update_multiple {
             return;
         }
 
-        if (!$realty->agent_id && $realty->export_media) {
+        if (!$realty->agent_id && @{$realty->export_media}) {
             $realty->export_media(Mojo::Collection->new());
             push @errors, $id;
             return;
         }
 
-        if ($realty->state_code ne 'work') {
+        if ($realty->state_code ne 'work' && $realty->multylisting) {
             $realty->multylisting(0);
+            push @errors, $id;
+            return;
         }
 
         # Save data
