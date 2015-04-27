@@ -821,7 +821,7 @@ sub getVnhBathroomScheme {
 
     given ($bathroom_id) {
         when (1) {
-            return '';
+            return 'раздельный';
         }
         when (2) {
             return '';
