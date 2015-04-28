@@ -42,8 +42,14 @@ my $filename_hash = {
     'sale-houses' => 'real-estate.out-of-town.houses.csv',
     'rent-houses' => 'real-estate.out-of-town-rent.csv',
 
-    'sale-offices' => 'real-estate.commercial.offices.csv',
-    'rent-offices' => 'real-estate.commercial-rent.csv',
+    'sale-commercials' => 'real-estate.commercial.offices.csv',
+    'rent-commercials' => 'real-estate.commercial-rent.csv',
+
+    #'sale-lands' => 'real-estate.commercial.offices.csv',
+    #'rent-lands' => 'real-estate.commercial-rent.csv',
+
+    #'sale-garages' => 'real-estate.garages.csv',
+    #'rent-garages' => 'real-estate.commercial-rent.csv',
 };
 
 my %templates_hash = (
@@ -493,7 +499,7 @@ my %templates_hash = (
                 },
 
         ),
-        offices => ordered_hash_ref (
+        commercials => ordered_hash_ref (
             "ID" => sub {
                     my $d = shift;
                     return $d->id;
@@ -1116,7 +1122,7 @@ my %templates_hash = (
         ),
 
 
-        offices => ordered_hash_ref (
+        commercials => ordered_hash_ref (
             "ID" => sub {
                     my $d = shift;
                     return $d->id;
@@ -1314,10 +1320,7 @@ sub index {
 
     my @tc;
     if ($realty_type =~ /apartments/) {
-        push @tc, (type_code => 'apartment');
-        push @tc, (type_code => 'apartment_small');
-        push @tc, (type_code => 'apartment_new');
-        push @tc, (type_code => 'townhouse');
+        push @tc, ('type.category_code' => ['apartment',]);
     };
 
     if ($realty_type =~ /rooms/) {
@@ -1325,14 +1328,19 @@ sub index {
     }
 
     if ($realty_type =~ /houses/) {
-        push @tc, (type_code => 'house');
-        push @tc, (type_code => 'cottage');
-        push @tc, (type_code => 'dacha');
-        push @tc, (type_code => 'land');
+        push @tc, ('type.category_code' => ['house']);
     }
 
-    if ($realty_type =~ /offices/) {
-        push @tc, (type_code => 'offices');
+    if ($realty_type =~ /commercials/) {
+        push @tc, ('type.category_code' => ['commercial', 'commersial']);
+    }
+
+    if ($realty_type =~ /lands/) {
+        push @tc, ('type.category_code' => ['land']);
+    }
+
+    if ($realty_type =~ /garages/) {
+        
     }
 
     my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(

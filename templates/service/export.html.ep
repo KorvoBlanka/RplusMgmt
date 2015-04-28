@@ -105,39 +105,77 @@
 
     $('[data-action="export-irr"]').on('click', function (e) {
       var offer_type = $('#formExportIrr [name="offer_type_code"]:input').val();
-      var realty_types = [];
-      var i = 0;
-      $(".indicator-download").removeClass('invisible');
-      $('#formExportIrr [type="checkbox"]:input').each( function () {
+      //var realty_types_ = [];
+
+      var realty_types = {
+        sale: [],
+        rent: [],
+      };
+
+      $('#formExportIrr #sale-column [type="checkbox"]:input').each( function () {
         if(this.checked) {
-          realty_types.push(this.id);
-          setTimeout( function (realty_type) {
-            $('<form action="/export/irr" method="POST">' + 
-                '<input name="offer_type_code" value="' + offer_type + '">' +
-                '<input name="realty_type" value="' + realty_type + '">' +
-                '</form>').submit();
-          }, 1500 * i, this.id);
-          i ++;
+          realty_types['sale'].push(this.id);
         }
       });
 
-      setTimeout(function(realty_types_str) {
-      $('<form action="/export/irr" method="POST">' + 
-          '<input name="offer_type_code" value="' + offer_type + '">' +
-          '<input name="realty_type" value="' + realty_types_str + '">' +
-          '<input name="pictures" value="1">' +
-          '</form>').submit();
-      }, 1500 * i, realty_types.join());
-
-      var iid = setInterval(function(realty_types_str) {
-        console.log('!');
-        if (readCookie('download') == 'start') {
-          clearInterval(iid);
-          document.cookie = 'download=inprogress;path=/';
-          $(".indicator-download").addClass('invisible');
+      $('#formExportIrr #rent-column [type="checkbox"]:input').each( function () {
+        if(this.checked) {
+          realty_types['rent'].push(this.id);
         }
-      }, 500);
+      });
 
+      if ($('#formExportIrr #irr-partner').is(':checked')) {
+
+        $.ajax({
+          type: "POST",
+          url: "/export/irr_partner",
+          data: {
+            irr_user_id: '00000001',
+            rent_realty_types: realty_types['rent'].join(','),
+            sale_realty_types: realty_types['sale'].join(','),
+          },
+        })
+          .done(function (data) {
+            console.log(data);
+            $('#irr-file-ref').removeClass('hidden');
+            $('#irr-file-ref').html(data.path);
+          });
+
+      } else {
+
+        $(".indicator-download").removeClass('invisible');
+        var k = 0;
+          
+        Object.keys(realty_types).forEach(function (offer_type) { 
+            var realty_types_arr = realty_types[offer_type];
+            for (var i = 0; i < realty_types_arr.length; i++) {
+              setTimeout( function (realty_type) {
+                $('<form action="/export/irr" method="POST">' + 
+                    '<input name="offer_type_code" value="' + offer_type + '">' +
+                    '<input name="realty_type" value="' + realty_type + '">' +
+                    '</form>').submit();
+              }, 1500 * k, realty_types_arr[i]);
+              k ++;
+            }
+        })
+
+        return;
+
+        setTimeout(function(realty_types_str) {
+        $('<form action="/export/irr" method="POST">' + 
+            '<input name="realty_type" value="' + realty_types_str + '">' +
+            '<input name="pictures" value="1">' +
+            '</form>').submit();
+        }, 1500 * k, JSON.stringify(realty_types));
+
+        var iid = setInterval(function(realty_types_str) {
+          if (readCookie('download') == 'start') {
+            clearInterval(iid);
+            document.cookie = 'download=inprogress;path=/';
+            $(".indicator-download").addClass('invisible');
+          }
+        }, 500);
+      }
     });
 
   }();
@@ -211,6 +249,7 @@
           </div>
         </div>
       </div>
+      <hr>
       <div class="form-group">
         <button type="" class="btn btn-primary btn-save" data-action="export-avito" style="margin-top: 15px">Экспорт</button>
         <span class="glyphicon glyphicon-refresh animation-rotate indicator-download invisible" style="top: 10px; left: 10px;"></span>
@@ -220,44 +259,91 @@
 
   <div class="tab-pane" id="export-irr">
     <div class="" role="form" id="formExportIrr">
-      <div class="row" style="padding-top: 15px;">
-        <div class="col-lg-2">
-          <select class="form-control" name="offer_type_code">
-            <option value="sale">Продажа</option>
-            <option value="rent">Аренда</option>
-          </select>
+
+      <div class="row">
+        <div class="col-lg-4" id="sale-column">
+          <label class="type-column-header">
+            <span>Продажа</span>
+          </label>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" checked="checked" id="apartments"> Квартиры
+            </label>
+          </div>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" checked="checked" id="rooms"> Комнаты
+            </label>
+          </div>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" checked="checked" id="houses"> Дома, коттеджи
+            </label>
+          </div>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" checked="checked" id="commercials"> Коммерческая недвижимость
+            </label>
+          </div>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" checked="checked" id="lands"> Земельные участки
+            </label>
+          </div>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" checked="checked" id="garages"> Гаражи
+            </label>
+          </div>
+        </div>
+        <div class="col-lg-4" id="rent-column">
+          <label class="type-column-header">
+            <span>Аренда</span>
+          </label>      
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" checked="checked" id="apartments"> Квартиры
+            </label>
+          </div>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" checked="checked" id="rooms"> Комнаты
+            </label>
+          </div>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" checked="checked" id="houses"> Дома, коттеджи
+            </label>
+          </div>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" checked="checked" id="commercials"> Коммерческая недвижимость
+            </label>
+          </div>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" checked="checked" id="lands"> Земельные участки
+            </label>
+          </div>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" checked="checked" id="garages"> Гаражи
+            </label>
+          </div>
         </div>
       </div>
-      <div class="checkbox">
-        <label>
-          <input type="checkbox" checked="checked" id="rooms"> Комнаты
-        </label>
-      </div>
-      <div class="checkbox">
-        <label>
-          <input type="checkbox" checked="checked" id="apartments"> Квартиры
-        </label>
-      </div>
-      <div class="checkbox">
-        <label>
-          <input type="checkbox" checked="checked" id="houses"> Дома, коттеджи
-        </label>
-      </div>
-      <div class="checkbox">
-        <label>
-          <input type="checkbox" checked="checked" id="offices"> Коммерческая недвижимость
-        </label>
-      </div>
-      <div class="row hidden" style="padding-top: 15px;">
-        <label class="col-lg-2 control-label">Телефоны</label>
-        <div class="col-lg-5">
-          <input type="text" class="form-control" name="phones" placeholder="">
+      <hr>
+      <div class="form-group">
+        <div class="checkbox">
+          <label>
+            <input type="checkbox" id="irr-partner"> Формат XML
+          </label>
         </div>
       </div>
       <div class="form-group">
-        <button type="" class="btn btn-primary btn-save" data-action="export-irr" style="margin-top: 15px">Экспорт</button>
-        <span class="glyphicon glyphicon-refresh animation-rotate indicator-download invisible" style="top: 10px; left: 10px;"></span>
-      </div>          
+        <button type="submit" class="btn btn-primary btn-save" data-action="export-irr" style="margin-top: 15px">Экспорт</button>
+        <span class="hidden" id="irr-file-ref" style="margin-left: 25px;">123</span>
+      </div>
     </div>
   </div>
 
@@ -316,9 +402,10 @@
             </div>
         </div>
       </div>
+      <hr>
       <div class="form-group">
         <button type="submit" class="btn btn-primary btn-save" data-action="export-farpost" style="margin-top: 15px">Экспорт</button>
-      </div>          
+      </div>
     </div>
   </div>
 
@@ -353,7 +440,7 @@
           <input type="checkbox" id="houses" checked="checked"> Дома и коттеджи
         </label>
       </div>
-
+      <hr>
       <div class="form-group">
         <button type="" class="btn btn-primary btn-save" data-action="export-present" style="margin-top: 15px">Экспорт</button>
       </div>          
@@ -436,8 +523,7 @@
           </div>
         </div>
       </div>
-
-
+      <hr>
       <div class="form-group">
         <button type="submit" class="btn btn-primary btn-save" data-action="export-vnh" style="margin-top: 15px">Экспорт</button>
       </div>
