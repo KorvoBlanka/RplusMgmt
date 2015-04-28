@@ -53,7 +53,7 @@ sub list {
     my $acc_id = $self->session('user')->{account_id};
 
     my $res = {
-        count => Rplus::Model::Client::Manager->get_objects_count(query => [account_id => $acc_id, delete_date => undef]),
+        count => 0,#Rplus::Model::Client::Manager->get_objects_count(query => [account_id => $acc_id, delete_date => undef]),
         list => [],
         page => $page,
     };
