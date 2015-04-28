@@ -156,10 +156,10 @@ sub index {
                     $phones =  $x . ', ' . $phones;
                 }
 
-                my $photos;
-                my $photo_iter = Rplus::Model::Photo::Manager->get_objects_iterator(query => [realty_id => [$realty->id], delete_date => undef],);
-                while (my $photo = $photo_iter->next) {
-                    $photos = $photo->thumbnail_filename . ', ' . $photos;
+                my $photo_str;
+                my $photo = Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $realty->id, delete_date => undef], sort_by => 'id')->[0];
+                if ($photo && $photo->filename) {
+                    $photo_str = $photo->filename;
                 }
 
                 my $row = [
@@ -190,7 +190,7 @@ sub index {
                     $realty->description,
                     $realty->price,
                     $phones,
-                    $photos,
+                    $photo_str,
                 ];
                 for my $col_num (0..(scalar(@$row)-1)) {
                     #if ($col_num == 5) {
@@ -282,10 +282,10 @@ sub index {
                     $phones =  $x . ', ' . $phones;
                 }
 
-                my $photos;
-                my $photo_iter = Rplus::Model::Photo::Manager->get_objects_iterator(query => [realty_id => [$realty->id], delete_date => undef],);
-                while (my $photo = $photo_iter->next) {
-                    $photos = $photo->thumbnail_filename . ', ' . $photos;
+                my $photo_str;
+                my $photo = Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $realty->id, delete_date => undef], sort_by => 'id')->[0];
+                if ($photo && $photo->filename) {
+                    $photo_str = $photo->filename;
                 }
 
                 my $row = [
@@ -316,7 +316,7 @@ sub index {
                     $realty->description,
                     $realty->price,
                     $phones,
-                    $photos,
+                    $photo_str,
                 ];
                 for my $col_num (0..(scalar(@$row)-1)) {
                     #if ($col_num == 5) {
@@ -398,10 +398,10 @@ sub index {
                     $phones =  $x . ', ' . $phones;
                 }
 
-                my $photos;
-                my $photo_iter = Rplus::Model::Photo::Manager->get_objects_iterator(query => [realty_id => [$realty->id], delete_date => undef],);
-                while (my $photo = $photo_iter->next) {
-                    $photos = $photo->thumbnail_filename . ', ' . $photos;
+                my $photo_str;
+                my $photo = Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $realty->id, delete_date => undef], sort_by => 'id')->[0];
+                if ($photo && $photo->filename) {
+                    $photo_str = $photo->filename;
                 }
 
                 my $row = [
@@ -425,7 +425,7 @@ sub index {
                     $realty->description,
                     $realty->price,
                     $phones,
-                    $photos,
+                    $photo_str,
                 ];
                 for my $col_num (0..(scalar(@$row)-1)) {
                     $worksheet->write($row_num, $col_num, $row->[$col_num]);
@@ -499,10 +499,10 @@ sub index {
                     $phones =  $x . ', ' . $phones;
                 }
 
-                my $photos;
-                my $photo_iter = Rplus::Model::Photo::Manager->get_objects_iterator(query => [realty_id => [$realty->id], delete_date => undef],);
-                while (my $photo = $photo_iter->next) {
-                    $photos = $photo->thumbnail_filename . ', ' . $photos;
+                my $photo_str;
+                my $photo = Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $realty->id, delete_date => undef], sort_by => 'id')->[0];
+                if ($photo && $photo->filename) {
+                    $photo_str = $photo->filename;
                 }
 
                 my $row = [
@@ -516,7 +516,7 @@ sub index {
                     $realty->description,
                     $realty->price,
                     $phones,
-                    $photos,
+                    $photo_str,
                 ];
                 for my $col_num (0..(scalar(@$row)-1)) {
                     $worksheet->write($row_num, $col_num, $row->[$col_num]);
@@ -589,10 +589,10 @@ sub index {
                     $phones =  $x . ', ' . $phones;
                 }
 
-                my $photos;
-                my $photo_iter = Rplus::Model::Photo::Manager->get_objects_iterator(query => [realty_id => [$realty->id], delete_date => undef],);
-                while (my $photo = $photo_iter->next) {
-                    $photos = $photo->thumbnail_filename . ', ' . $photos;
+                my $photo_str;
+                my $photo = Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $realty->id, delete_date => undef], sort_by => 'id')->[0];
+                if ($photo && $photo->filename) {
+                    $photo_str = $photo->filename;
                 }
 
                 my $row = [
@@ -605,7 +605,7 @@ sub index {
                     $realty->description,
                     $realty->price,
                     $phones,
-                    $photos,
+                    $photo_str,
                 ];
                 for my $col_num (0..(scalar(@$row)-1)) {
                     $worksheet->write($row_num, $col_num, $row->[$col_num]);
@@ -676,11 +676,12 @@ sub index {
                     $phones =  $x . ', ' . $phones;
                 }
 
-                my $photos;
-                my $photo_iter = Rplus::Model::Photo::Manager->get_objects_iterator(query => [realty_id => [$realty->id], delete_date => undef],);
-                while (my $photo = $photo_iter->next) {
-                    $photos = $photo->thumbnail_filename . ', ' . $photos;
+                my $photo_str;
+                my $photo = Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $realty->id, delete_date => undef], sort_by => 'id')->[0];
+                if ($photo && $photo->filename) {
+                    $photo_str = $photo->filename;
                 }
+
                 my $row = [
                     $realty->offer_type->name,
                     $city,
@@ -689,7 +690,7 @@ sub index {
                     $realty->description,
                     $realty->price,
                     $phones,
-                    $photos,
+                    $photo_str,
                 ];
                 for my $col_num (0..(scalar(@$row)-1)) {
                     $worksheet->write($row_num, $col_num, $row->[$col_num]);
