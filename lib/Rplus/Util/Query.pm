@@ -282,8 +282,8 @@ sub parse {
                     }
                 }
 
-                #@tsv = grep { $_ } split / /, $tsv;
-                #$tsv = join ' ', @tsv;
+                @tsv = grep { $_ } split / /, $tsv;
+                $tsv = join ' ', @tsv;
             }
 
             # Second processing - streets
