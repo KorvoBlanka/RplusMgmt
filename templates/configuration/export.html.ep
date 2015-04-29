@@ -241,7 +241,7 @@
           </div>
         </div>
         <div class="row" style="padding-top: 15px;">
-          <label class="col-lg-2 control-label">ID Партнера</label>
+          <label class="col-lg-2 control-label">ID интернет-партнера</label>
           <div class="col-lg-5">
             <input type="text" class="form-control" name="partner_id" placeholder="000000000">
           </div>
