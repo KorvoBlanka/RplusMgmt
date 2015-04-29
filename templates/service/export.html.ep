@@ -223,8 +223,10 @@
       console.log('!');
       if (this.checked) {
         $('button[data-action="export-irr"]').html('Обновить');
+        $('#export-irr-notes').removeClass('hidden');
       } else {
         $('button[data-action="export-irr"]').html('Экспорт');
+        $('#export-irr-notes').addClass('hidden');
       }
     });
   }();
@@ -385,20 +387,25 @@
       <div class="form-group">
         <div class="checkbox">
           <label>
-            <input type="checkbox" id="irr-partner"> Формат XML
+            <input type="checkbox" id="irr-partner"> Формат XML для интернет-партнеров
           </label>
         </div>
       </div>
       <div class="form-group">
         <!--<span class="hidden" id="irr-file-ref" style="margin-left: 25px;"></span>-->
           <div class="form-group">
-            <button type="submit" class="btn btn-primary btn-save" data-action="export-irr" style="float: left; margin-right: 25px;">Экспорт</button>
+            <button type="submit" class="btn btn-primary btn-save" data-action="export-irr" style="float: left; margin-right: 25px; width: 85px;">Экспорт</button>
             <div class="col-sm-6 col-md-6 col-lg-6">
               <input type="text" class="form-control hidden" name="irr-file-ref" style="">
             </div>
             <label id="irr-last-update-ts" class="control-label hidden" style="padding-top: 5px; font-weight: normal;"></label>
           </div>
-
+      </div>
+      <div class="hidden" id="export-irr-notes">
+        <br><hr>
+        Для начала автоматической загрузки объявлений на IRR необходимо сообщить URL-адрес XML-файла и желаемое время начала загрузки своему менеджеру или в службу технической поддержки Интернет-партнеров (ipsupport@irr.ru). Корректировка времени ежедневной загрузки может быть выполнена в Личном кабинете Интернет-партнера на сайте IRR.RU в разделе <a target="_blank" href="http://irr.ru/psellerAdverts/import-settings/">«Настройки импорта»</a>.
+        <br>
+        <a target="_blank" href="http://irr.ru/help/forCompanyi/interSellers/">Подробнее</a>
       </div>
     </div>
   </div>
