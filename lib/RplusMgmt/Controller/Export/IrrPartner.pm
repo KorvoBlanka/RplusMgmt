@@ -17,14 +17,96 @@ use File::Temp qw(tmpnam);
 use File::Copy qw(move);
 use File::Path qw(make_path);
 use File::Basename;
-use Tie::IxHash;
+use DateTime;
 use JSON;
-use Data::Dumper;
 use URI;
-
+use Digest::MD5;
 
 my $region = 'Хабаровский край';
 my $city = 'Хабаровск';
+
+my $category_hash = {
+    room => {
+        category => "/realestate/apartments-sale/new/",
+        adverttype => 'realty_new',
+    },
+    apartment => {
+        category => "/realestate/apartments-sale/new/",
+        adverttype => 'realty_new',
+    },
+    cottage => {
+        category => "/realestate/apartments-sale/new/",
+        adverttype => 'realty_new',
+    },
+    townhouse => {
+        category => "/realestate/apartments-sale/new/",
+        adverttype => 'realty_new',
+    },
+    house => {
+        category => "/realestate/apartments-sale/new/",
+        adverttype => 'realty_new',
+    },
+    land => {
+        category => "/realestate/apartments-sale/new/",
+        adverttype => 'realty_new',
+    },
+    dacha => {
+        category => "/realestate/apartments-sale/new/",
+        adverttype => 'realty_new',
+    },
+    office => {
+        category => "/realestate/apartments-sale/new/",
+        adverttype => 'realty_new',
+    },
+    apartment_new => {
+        category => "/realestate/apartments-sale/new/",
+        adverttype => 'realty_new',
+    },
+    apartment_small => {
+        category => "/realestate/apartments-sale/new/",
+        adverttype => 'realty_new',
+    },
+    other => {
+        category => "/realestate/apartments-sale/new/",
+        adverttype => 'realty_new',
+    },
+    market_place => {
+        category => "/realestate/apartments-sale/new/",
+        adverttype => 'realty_new',
+    },
+    office_place => {
+        category => "/realestate/apartments-sale/new/",
+        adverttype => 'realty_new',
+    },
+    building => {
+        category => "/realestate/apartments-sale/new/",
+        adverttype => 'realty_new',
+    },
+    service_place => {
+        category => "/realestate/apartments-sale/new/",
+        adverttype => 'realty_new',
+    },
+    warehouse_place => {
+        category => "/realestate/apartments-sale/new/",
+        adverttype => 'realty_new',
+    },
+    autoservice_place => {
+        category => "/realestate/apartments-sale/new/",
+        adverttype => 'realty_new',
+    },
+    gpurpose_place => {
+        category => "/realestate/apartments-sale/new/",
+        adverttype => 'realty_new',
+    },
+    production_place => {
+        category => "/realestate/apartments-sale/new/",
+        adverttype => 'realty_new',
+    },
+    garage => {
+        category => "/realestate/apartments-sale/new/",
+        adverttype => 'realty_new',
+    },
+};
 
 sub buildCustomFields {
     my $self = shift;
@@ -32,6 +114,24 @@ sub buildCustomFields {
 
 }
 
+sub buildTitle {
+    my $self = shift;
+    my $realty = shift;
+
+    my $title_str = '';
+
+    if ($realty->rooms_count) {
+        $title_str .= $realty->rooms_count . ' комн. ';
+    }
+
+    $title_str .= $realty->type->name . ', ';
+
+    if ($realty->address_object_id) {
+        $title_str .= $realty->address_object->short_type . '. ' . $realty->address_object->name;
+    }
+
+    return $title_str;    
+}
 
 sub index {
     my $self = shift;
@@ -55,7 +155,7 @@ sub index {
         rent => \@rent_realty_types,
     };
 
-    my $irr_user_id = $self->param('irr_user_id');
+    
 
     my $meta = from_json($media->metadata);
     my $contact_phones = '';
@@ -63,6 +163,7 @@ sub index {
     my $contact_name = '';
     my $contact_email = '';
     my $site_url = '';
+    my $partner_id = '00000000';
 
     my $options = Rplus::Model::Option->new(account_id => $acc_id)->load();
     if ($options) {
@@ -71,7 +172,8 @@ sub index {
         $agent_phone = 1 if $e_opt->{'irr-agent-phone'};
         $contact_name = '';
         $contact_email = $e_opt->{'irr-email'} ? $e_opt->{'irr-email'} : '';
-        $site_url = $e_opt->{'irr-url'} ? $e_opt->{'irr-url'} : '';        
+        $site_url = $e_opt->{'irr-url'} ? $e_opt->{'irr-url'} : '';
+        $partner_id = $e_opt->{'irr-partner-id'} ? $e_opt->{'irr-partner-id'} : '';;
     }
 
     #unlink($meta->{'prev_file'}) if $meta->{'prev_file'};
@@ -90,14 +192,13 @@ sub index {
     $xml_writer->startTag('user', 'deactivate-untouched' => 'false');
     $xml_writer->startTag('match');
     $xml_writer->startTag('user-id');
-    $xml_writer->characters($irr_user_id);
+    $xml_writer->characters($partner_id);
     $xml_writer->endTag('user-id');
     $xml_writer->endTag('match');
 
     while (my ($offer_type, $value) = each $realty_types) {
         for my $realty_type (@$value) {
 
-            my $realty_category = {};
             my @tc;
             if ($realty_type =~ /apartments/) {
                 push @tc, ('type.category_code' => ['apartment',]);
@@ -138,37 +239,46 @@ sub index {
                 with_objects => ['address_object', 'house_type', 'balcony', 'bathroom', 'condition', 'agent',],
             );
 
+            my $dt = DateTime->now();
+            my $valid_from = $dt->datetime();
+
+            my $valid_till_dt = $dt->add(days => 7);
+            my $valid_till = $valid_till_dt->datetime();
+
+
             while(my $realty = $realty_iter->next) {
                 
+                my $adverttype = $category_hash->{$realty->type_code}->{adverttype};
+
                 $xml_writer->startTag(
                     'store-ad',
                     'power-ad' => '1',
                     'source-id' => $realty->id,
-                    validfrom => '2011-10-11T10:42:19',
-                    validtill => '2011-10-13T10:42:19',
-                    category => "/realestate/apartments-sale/new/",
-                    adverttype => 'realty_new',
+                    validfrom => $valid_from,
+                    validtill => $valid_till,
+                    category => $category_hash->{$realty->type_code}->{category},
+                    adverttype => $category_hash->{$realty->type_code}->{adverttype},
                 );
 
-                $xml_writer->startTag('products');
-                $xml_writer->emptyTag(
-                    'product',
-                    name => 'premium',
-                    type => '7',
-                    validfrom => '2013-12-03',
-                );
-
-                $xml_writer->endTag('products');
+                # премиум объявления
+                #$xml_writer->startTag('products');
+                #$xml_writer->emptyTag(
+                #    'product',
+                #    name => 'premium',
+                #    type => '7',
+                #    validfrom => '2013-12-03',
+                #);
+                #$xml_writer->endTag('products');
 
                 $xml_writer->startTag(
                     'price',
-                    value => '125000',
+                    value => $realty->price,
                     currency => 'RUR',
                 );
                 $xml_writer->endTag('price');
 
                 $xml_writer->startTag('title');
-                $xml_writer->characters('Заголовок');
+                $xml_writer->characters(buildTitle($self, $realty));
                 $xml_writer->endTag('title');
 
                 $xml_writer->startTag('description');
@@ -176,14 +286,24 @@ sub index {
                 $xml_writer->endTag('description');
 
                 $xml_writer->startTag('fotos');
-
-                my $photo_iter = Rplus::Model::Photo::Manager->get_objects_iterator(query => [realty_id => $realty->id, delete_date => undef], sort_by => 'id');
+                my $photo_iter = Rplus::Model::Photo::Manager->get_objects_iterator(query => [realty_id => $realty->id, delete_date => undef], sort_by => 'id', limit => 10);
                 while (my $photo = $photo_iter->next) {
-                    $xml_writer->emptyTag(
-                        'foto-remote',
-                        url => $photo->filename,
-                        #md5 => '',
-                    );
+
+                    my $img_filename = '';
+                    if ($photo->filename =~ /http:\/\/.+\.com(.+)/) {
+                        $img_filename = '/var/data/storage' . $1;
+                    }
+
+                    if (open(my $img_fh, "<", $img_filename)) {
+                        my $ctx = Digest::MD5->new;
+                        $ctx->addfile($img_fh);
+                        $xml_writer->emptyTag(
+                            'foto-remote',
+                            url => $photo->filename,
+                            md5 => $ctx->hexdigest,
+                        );
+                        close $img_fh;
+                    }
                 }
                 $xml_writer->endTag('fotos');
 
@@ -217,12 +337,18 @@ sub index {
 
     close $fh;
 
-    my $new_file = $self->config->{'storage'}->{'path'}.'/files'.$file;
-    my($file_name, $dir, $ext) = fileparse($new_file);
+    my $file_name = 'irr_a'.$acc_id.'.xml';
+    my($file_name_a, $new_path, $ext_a) = fileparse($self->config->{'storage'}->{'path'});
+    my $new_file = $new_path.'files/export/'.$file_name;
+    my($file_name_b, $dir, $ext_b) = fileparse($new_file);
     make_path($dir);
     move($file, $new_file);
 
-    my $path = $self->config->{'storage'}->{'url'}.'/files'.$file;
+    my $mode = 0644;
+    chmod $mode, $new_file;
+
+    my($file_name_c, $url_part, $ext_c) = fileparse($self->config->{'storage'}->{'url'});
+    my $path = $url_part.'files/export/'.$file_name;
 
     return $self->render(json => {path => $path});
 }

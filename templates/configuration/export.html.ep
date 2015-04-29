@@ -49,6 +49,7 @@
           $('#formExportIrr [name="agent-phone"]:input').attr('checked', (data.options['irr-agent-phone'] == 'true' || data.options['irr-agent-phone'] == '1') ? true : false);
           $('#formExportIrr [name="email"]:input').val(data.options['irr-email']);
           $('#formExportIrr [name="url"]:input').val(data.options['irr-url']);
+          $('#formExportIrr [name="partner_id"]:input').val(data.options['irr-partner-id']);
 
         }).fail(function (jqXHR, textStatus, errorThrown) {
           alert('<%= loc q{An error occurred while fetching options} %>');
@@ -134,6 +135,9 @@
         
         t = $('#formExportIrr [name="url"]:input').val();
         opt_hash['irr-url'] = t;
+
+        t = $('#formExportIrr [name="partner_id"]:input').val();
+        opt_hash['irr-partner-id'] = t;
 
         saveOptions(opt_hash);
       });
@@ -234,6 +238,12 @@
           <label class="col-lg-2 control-label">Адрес сайта</label>
           <div class="col-lg-5">
             <input type="text" class="form-control" name="url" placeholder="mysiteurl.com">
+          </div>
+        </div>
+        <div class="row" style="padding-top: 15px;">
+          <label class="col-lg-2 control-label">ID Партнера</label>
+          <div class="col-lg-5">
+            <input type="text" class="form-control" name="partner_id" placeholder="000000000">
           </div>
         </div>
       </form>
