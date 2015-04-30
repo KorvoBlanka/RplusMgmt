@@ -275,58 +275,58 @@ my $required_export = {
     avito => {
         apartment => {
             sale => [
-                'agent_id', 'owner_price', 'address_object_name', 'floor', 'rooms_count', 'square_total',
+                'agent_id', 'owner_price', 'address_object_id', 'floor', 'rooms_count', 'square_total',
             ],
             rent => [
-                'agent_id', 'owner_price', 'address_object_name', 'floor', 'rooms_count', 'square_total',
+                'agent_id', 'owner_price', 'address_object_id', 'floor', 'rooms_count', 'square_total',
             ],
         },
         apartment_new => {
             sale => [
-                'agent_id', 'owner_price', 'address_object_name', 'floor', 'rooms_count', 'square_total',
+                'agent_id', 'owner_price', 'address_object_id', 'floor', 'rooms_count', 'square_total',
             ],
             rent => [
-                'agent_id', 'owner_price', 'address_object_name', 'floor', 'rooms_count', 'square_total',
+                'agent_id', 'owner_price', 'address_object_id', 'floor', 'rooms_count', 'square_total',
             ],
         },
         townhouse => {
             sale => [
-                'agent_id', 'owner_price', 'address_object_name', 'floor', 'rooms_count', 'square_total',
+                'agent_id', 'owner_price', 'address_object_id', 'floor', 'rooms_count', 'square_total',
             ],
             rent => [
-                'agent_id', 'owner_price', 'address_object_name', 'floor', 'rooms_count', 'square_total',
+                'agent_id', 'owner_price', 'address_object_id', 'floor', 'rooms_count', 'square_total',
             ],
         },
         apartment_small => {
             sale => [
-                'agent_id', 'owner_price', 'address_object_name', 'floor', 'rooms_count', 'square_total',
+                'agent_id', 'owner_price', 'address_object_id', 'floor', 'rooms_count', 'square_total',
             ],
             rent => [
-                'agent_id', 'owner_price', 'address_object_name', 'floor', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
+                'agent_id', 'owner_price', 'address_object_id', 'floor', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
             ],
         },
         room => {
             sale => [
-                'agent_id', 'owner_price', 'address_object_name', 'floor', 'rooms_offer_count', 'square_total',
+                'agent_id', 'owner_price', 'address_object_id', 'floor', 'rooms_offer_count', 'square_total',
             ],
             rent => [
-                'agent_id', 'owner_price', 'address_object_name', 'floor', 'rooms_offer_count', 'square_total',
+                'agent_id', 'owner_price', 'address_object_id', 'floor', 'rooms_offer_count', 'square_total',
             ],
         },
         house => {
             sale => [
-                'agent_id', 'owner_price', 'address_object_name', 'square_land', 'square_total',
+                'agent_id', 'owner_price', 'address_object_id', 'square_land', 'square_total',
             ],
             rent => [
-                'agent_id', 'owner_price', 'address_object_name', 'square_land', 'square_total',
+                'agent_id', 'owner_price', 'address_object_id', 'square_land', 'square_total',
             ],
         },
         cottage => {
             sale => [
-                'agent_id', 'owner_price', 'address_object_name', 'square_land',  'square_total',
+                'agent_id', 'owner_price', 'address_object_id', 'square_land',  'square_total',
             ],
             rent => [
-                'agent_id', 'owner_price', 'address_object_name', 'square_land',  'square_total',
+                'agent_id', 'owner_price', 'address_object_id', 'square_land',  'square_total',
             ],
         },
 
@@ -350,10 +350,10 @@ my $required_export = {
         
         office => {
             sale => [
-                'agent_id', 'owner_price', 'address_object_name', 'square_total',
+                'agent_id', 'owner_price', 'address_object_id', 'square_total',
             ],
             rent => [
-                'agent_id', 'owner_price', 'address_object_name', 'square_total',
+                'agent_id', 'owner_price', 'address_object_id', 'square_total',
             ],
         },
         
@@ -377,10 +377,10 @@ my $required_export = {
 
         any => {
             sale => [
-                'agent_id', 'owner_price', 'address_object_name', 'square_total',
+                'agent_id', 'owner_price', 'address_object_id', 'square_total',
             ],
             rent => [
-                'agent_id', 'owner_price', 'address_object_name', 'square_total',
+                'agent_id', 'owner_price', 'address_object_id', 'square_total',
             ],
         }
     },
