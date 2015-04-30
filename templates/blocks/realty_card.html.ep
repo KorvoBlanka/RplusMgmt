@@ -1238,7 +1238,119 @@
                     'agent_id', 'owner_price', 'address_object_name', 'square_total',
                 ],
             }
-        }
+        },
+        avito: {
+            apartment: {
+                sale: [
+                    'agent_id', 'owner_price', 'address_object_name', 'floor', 'rooms_count', 'square_total',
+                ],
+                rent: [
+                    'agent_id', 'owner_price', 'address_object_name', 'floor', 'rooms_count', 'square_total',
+                ],
+            },
+            apartment_new: {
+                sale: [
+                    'agent_id', 'owner_price', 'address_object_name', 'floor', 'rooms_count', 'square_total',
+                ],
+                rent: [
+                    'agent_id', 'owner_price', 'address_object_name', 'floor', 'rooms_count', 'square_total',
+                ],
+            },
+            townhouse: {
+                sale: [
+                    'agent_id', 'owner_price', 'address_object_name', 'floor', 'rooms_count', 'square_total',
+                ],
+                rent: [
+                    'agent_id', 'owner_price', 'address_object_name', 'floor', 'rooms_count', 'square_total',
+                ],
+            },
+            apartment_small: {
+                sale: [
+                    'agent_id', 'owner_price', 'address_object_name', 'floor', 'rooms_count', 'square_total',
+                ],
+                rent: [
+                    'agent_id', 'owner_price', 'address_object_name', 'floor', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
+                ],
+            },
+            room: {
+                sale: [
+                    'agent_id', 'owner_price', 'address_object_name', 'floor', 'rooms_offer_count', 'square_total',
+                ],
+                rent: [
+                    'agent_id', 'owner_price', 'address_object_name', 'floor', 'rooms_offer_count', 'square_total',
+                ],
+            },
+            house: {
+                sale: [
+                    'agent_id', 'owner_price', 'address_object_name', 'square_land', 'square_total',
+                ],
+                rent: [
+                    'agent_id', 'owner_price', 'address_object_name', 'square_land', 'square_total',
+                ],
+            },
+            cottage: {
+                sale: [
+                    'agent_id', 'owner_price', 'address_object_name', 'square_land',  'square_total',
+                ],
+                rent: [
+                    'agent_id', 'owner_price', 'address_object_name', 'square_land',  'square_total',
+                ],
+            },
+
+            dacha: {
+                sale: [
+                    'agent_id', 'owner_price', 'square_land', 'square_land_type',
+                ],
+                rent: [
+                    'agent_id', 'owner_price', 'square_land', 'square_land_type',
+                ],
+            },
+            
+            land: {
+                sale: [
+                    'agent_id', 'owner_price', 'square_land', 'square_land_type',
+                ],
+                rent: [
+                    'agent_id', 'owner_price', 'square_land', 'square_land_type',
+                ],
+            },
+            
+            office: {
+                sale: [
+                    'agent_id', 'owner_price', 'address_object_name', 'square_total',
+                ],
+                rent: [
+                    'agent_id', 'owner_price', 'address_object_name', 'square_total',
+                ],
+            },
+            
+            other: {
+                sale: [
+                    'agent_id', 'owner_price',
+                ],
+                rent: [
+                    'agent_id', 'owner_price',
+                ],
+            },
+
+            garage: {
+                sale: [
+                    'agent_id', 'owner_price',
+                ],
+                rent: [
+                    'agent_id', 'owner_price',
+                ],
+            },
+
+            any: {
+                sale: [
+                    'agent_id', 'owner_price', 'address_object_name', 'square_total',
+                ],
+                rent: [
+                    'agent_id', 'owner_price', 'address_object_name', 'square_total',
+                ],
+            }
+        },
     };
     
     var media_dict = {

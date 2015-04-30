@@ -336,6 +336,306 @@ my %templates_hash = (
                 return 'Free';
             },
     ),
+
+    lands => ordered_hash_ref (
+        'ID' => sub {
+                my $r = shift;
+                return $r->id;
+            },
+        'Category' => sub {
+                return 'Земельные участки';
+            },
+        'ObjectType' => sub {
+                my $r = shift;
+                return $r->type_code ? $r->type->name : '';
+            },
+        'OperationType' => sub {
+                my $r = shift;
+                if ($r->offer_type_code eq 'sale') {
+                    return 'Продам';
+                } else {
+                    return 'Сдам';
+                }
+            },
+        'Region' => sub {
+                return $region;
+            },
+        'City' => sub {
+                return $city;
+            },
+        'Street' => sub {
+                my $r = shift;
+                my $addr = '';
+                if ($r->address_object) {
+                    $addr = $r->address_object ? $r->address_object->name . ($r->address_object->short_type ne 'ул' ? ' ' . $r->address_object->short_type : '') : '';
+                    if ($r->house_num) {
+                        $addr .= ' ' . $r->house_num;
+                    }
+                }
+                return $addr;
+            },
+        'DistanceToCity' => sub {
+                return 0;
+            },            
+        'LandArea' => sub {
+                my $r = shift;
+                return $r->square_land;
+            },
+        'Description' => sub {
+                my $r = shift;
+                return $r->description;
+            },
+        'Price' => sub {
+                my $r = shift;
+                return $r->price * 1000,
+            },
+
+        'CompanyName' => sub {
+                return $company_name;
+            },
+        'ManagerName' => sub {
+                my $r = shift;
+                my $name = '';
+                if ($r->agent_id) {
+                    $name = $r->agent->public_name || '';
+                }
+                return $name;
+            },
+        'ContactPhone' => sub {
+                my $r = shift;
+                my $phones = $contact_phone;
+                if ($agent_phone == 1 && $r->agent) {
+                    my $x = $r->agent->public_phone_num || $r->agent->phone_num;
+                    $phones =  $x;
+                }
+                return $phones;
+            },
+        'EMail' => sub {
+                return $contact_email;
+            },
+        'Images' => sub {
+                my $r = shift;
+                my @photos;
+                my $photo_iter = Rplus::Model::Photo::Manager->get_objects_iterator(query => [realty_id => $r->id, delete_date => undef], sort_by => 'id');
+                while (my $photo = $photo_iter->next) {
+                    push @photos, $photo->filename;
+                }
+                return \@photos;
+            },
+        'AdStatus' => sub {
+                return 'Free';
+            },
+    ),
+
+    garages => ordered_hash_ref (
+        'ID' => sub {
+                my $r = shift;
+                return $r->id;
+            },
+        'Category' => sub {
+                return 'Гаражи и стоянки';
+            },
+        'ObjectType' => sub {
+                my $r = shift;
+                return 'Гараж';
+            },
+        'OperationType' => sub {
+                my $r = shift;
+                if ($r->offer_type_code eq 'sale') {
+                    return 'Продам';
+                } else {
+                    return 'Сдам';
+                }
+            },
+        'Region' => sub {
+                return $region;
+            },
+        'City' => sub {
+                return $city;
+            },
+        'Street' => sub {
+                my $r = shift;
+                my $addr = '';
+                if ($r->address_object) {
+                    $addr = $r->address_object ? $r->address_object->name . ($r->address_object->short_type ne 'ул' ? ' ' . $r->address_object->short_type : '') : '';
+                    if ($r->house_num) {
+                        $addr .= ' ' . $r->house_num;
+                    }
+                }
+                return $addr;
+            },
+        'DistanceToCity' => sub {
+                return 0;
+            },            
+        'Square' => sub {
+                my $r = shift;
+                return $r->square_total;
+            },
+        'Description' => sub {
+                my $r = shift;
+                return $r->description;
+            },
+        'Price' => sub {
+                my $r = shift;
+                return $r->price * 1000,
+            },
+
+        'CompanyName' => sub {
+                return $company_name;
+            },
+        'ManagerName' => sub {
+                my $r = shift;
+                my $name = '';
+                if ($r->agent_id) {
+                    $name = $r->agent->public_name || '';
+                }
+                return $name;
+            },
+        'ContactPhone' => sub {
+                my $r = shift;
+                my $phones = $contact_phone;
+                if ($agent_phone == 1 && $r->agent) {
+                    my $x = $r->agent->public_phone_num || $r->agent->phone_num;
+                    $phones =  $x;
+                }
+                return $phones;
+            },
+        'EMail' => sub {
+                return $contact_email;
+            },
+        'Images' => sub {
+                my $r = shift;
+                my @photos;
+                my $photo_iter = Rplus::Model::Photo::Manager->get_objects_iterator(query => [realty_id => $r->id, delete_date => undef], sort_by => 'id');
+                while (my $photo = $photo_iter->next) {
+                    push @photos, $photo->filename;
+                }
+                return \@photos;
+            },
+        'AdStatus' => sub {
+                return 'Free';
+            },
+    ),
+
+    commercials => ordered_hash_ref (
+        'ID' => sub {
+                my $r = shift;
+                return $r->id;
+            },
+        'Category' => sub {
+                return 'Коммерческая недвижимость';
+            },
+        'ObjectType' => sub {
+                my $r = shift;
+                given ($r->type_code) {
+
+                    when ('market_place') {
+                        return 'Торговое помещение';
+                    }
+                    when ('office_place') {
+                        return 'Офисное помещение'
+                    }
+                    when ('office') {
+                        return 'Офисное помещение'
+                    }
+                    when ('building') {
+                        return 'Помещение свободного назначения'
+                    }
+                    when ('production_place') {
+                        return 'Производственное помещение'
+                    }
+                    when ('gpurpose_place') {
+                        return 'Помещение свободного назначения'
+                    }
+                    when ('autoservice_place') {
+                        return 'Производственное помещение'
+                    }
+                    when ('service_place') {
+                        return 'Помещение свободного назначения'
+                    }
+                    when ('warehouse_place') {
+                        return 'Складское помещение'
+                    }
+                }
+                return 'Помещение свободного назначения'
+            },
+        'OperationType' => sub {
+                my $r = shift;
+                if ($r->offer_type_code eq 'sale') {
+                    return 'Продам';
+                } else {
+                    return 'Сдам';
+                }
+            },
+        'Region' => sub {
+                return $region;
+            },
+        'City' => sub {
+                return $city;
+            },
+        'Street' => sub {
+                my $r = shift;
+                my $addr = '';
+                if ($r->address_object) {
+                    $addr = $r->address_object ? $r->address_object->name . ($r->address_object->short_type ne 'ул' ? ' ' . $r->address_object->short_type : '') : '';
+                    if ($r->house_num) {
+                        $addr .= ' ' . $r->house_num;
+                    }
+                }
+                return $addr;
+            },
+        'DistanceToCity' => sub {
+                return 0;
+            },            
+        'Square' => sub {
+                my $r = shift;
+                return $r->square_total;
+            },
+        'Description' => sub {
+                my $r = shift;
+                return $r->description;
+            },
+        'Price' => sub {
+                my $r = shift;
+                return $r->price * 1000,
+            },
+
+        'CompanyName' => sub {
+                return $company_name;
+            },
+        'ManagerName' => sub {
+                my $r = shift;
+                my $name = '';
+                if ($r->agent_id) {
+                    $name = $r->agent->public_name || '';
+                }
+                return $name;
+            },
+        'ContactPhone' => sub {
+                my $r = shift;
+                my $phones = $contact_phone;
+                if ($agent_phone == 1 && $r->agent) {
+                    my $x = $r->agent->public_phone_num || $r->agent->phone_num;
+                    $phones =  $x;
+                }
+                return $phones;
+            },
+        'EMail' => sub {
+                return $contact_email;
+            },
+        'Images' => sub {
+                my $r = shift;
+                my @photos;
+                my $photo_iter = Rplus::Model::Photo::Manager->get_objects_iterator(query => [realty_id => $r->id, delete_date => undef], sort_by => 'id');
+                while (my $photo = $photo_iter->next) {
+                    push @photos, $photo->filename;
+                }
+                return \@photos;
+            },
+        'AdStatus' => sub {
+                return 'Free';
+            },
+    ),
 );
 
 sub index {
@@ -387,21 +687,27 @@ sub index {
             my $realty_category = {};
             my @tc;
             if ($realty_type =~ /apartments/) {
-                push @tc, (type_code => 'apartment');
-                push @tc, (type_code => 'apartment_small');
-                push @tc, (type_code => 'apartment_new');
-                push @tc, (type_code => 'townhouse');
+                push @tc, 'type.category_code' => ['apartment'];
             };
 
             if ($realty_type =~ /rooms/) {
-                push @tc, (type_code => 'room');
+                push @tc, 'type.category_code' => ['room'];
             }
 
             if ($realty_type =~ /houses/) {
-                push @tc, (type_code => 'house');
-                push @tc, (type_code => 'cottage');
-                push @tc, (type_code => 'dacha');
-                push @tc, (type_code => 'land');
+                push @tc, 'type.category_code' => ['house'];
+            }
+
+            if ($realty_type =~ /lands/) {
+                push @tc, 'type.category_code' => ['land'];
+            }
+
+            if ($realty_type =~ /commercials/) {
+                push @tc, 'type.category_code' => ['commercial', 'commersial'],;
+            }
+
+            if ($realty_type =~ /garages/) {
+                push @tc, type_code => 'garage';
             }
 
             my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
@@ -415,8 +721,8 @@ sub index {
                     account_id => $acc_id,
                 ],
                 sort_by => 'id ASC',
-                require_objects => ['offer_type'],
-                with_objects => ['address_object', 'house_type', 'balcony', 'bathroom', 'condition', 'agent', 'type'],
+                require_objects => ['type', 'offer_type'],
+                with_objects => ['address_object', 'house_type', 'balcony', 'bathroom', 'condition', 'agent',],
             );
 
             while(my $realty = $realty_iter->next) {

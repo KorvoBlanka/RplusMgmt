@@ -275,7 +275,24 @@
             <label>
               <input type="checkbox" checked="checked" id="houses"> Дома, коттеджи
             </label>
-          </div>          
+          </div>
+
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" checked="checked" id="commercials"> Коммерческая недвижимость
+            </label>
+          </div>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" checked="checked" id="commercials"> Участки
+            </label>
+          </div>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" checked="checked" id="commercials"> Гаражи
+            </label>
+          </div>
+
         </div>
         <div class="col-lg-4" id="rent-column">
           <label class="type-column-header">
@@ -296,6 +313,23 @@
               <input type="checkbox" checked="checked" id="houses"> Дома, коттеджи
             </label>
           </div>
+
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" checked="checked" id="commercials"> Коммерческая недвижимость
+            </label>
+          </div>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" checked="checked" id="commercials"> Участки
+            </label>
+          </div>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" checked="checked" id="commercials"> Гаражи
+            </label>
+          </div>
+
         </div>
       </div>
       <hr>
@@ -341,7 +375,7 @@
           </div>
           <div class="checkbox">
             <label>
-              <input type="checkbox" checked="checked" id="garages"> Гаражи
+              <input type="checkbox" checked="checked" id="garages"> Гаражи и стоянки
             </label>
           </div>
         </div>
@@ -376,7 +410,7 @@
           </div>
           <div class="checkbox">
             <label>
-              <input type="checkbox" checked="checked" id="garages"> Гаражи
+              <input type="checkbox" checked="checked" id="garages"> Гаражи и стоянки
             </label>
           </div>
         </div>

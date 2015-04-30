@@ -157,9 +157,15 @@ sub index {
                 }
 
                 my $photo_str;
-                my $photo = Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $realty->id, delete_date => undef], sort_by => 'id')->[0];
-                if ($photo && $photo->filename) {
-                    $photo_str = $photo->filename;
+                my $photo_iter = Rplus::Model::Photo::Manager->get_objects_iterator(query => [realty_id => $realty->id, delete_date => undef], sort_by => 'id');
+                while(my $photo = $photo_iter->next) {
+                    if ($photo->filename && ((length $photo_str) + (length $photo->filename) < 254)) {
+                        unless ($photo_str) {
+                            $photo_str = $photo->filename;
+                        } else {
+                            $photo_str .= ',' . $photo->filename;
+                        }
+                    }
                 }
 
                 my $row = [
@@ -283,9 +289,15 @@ sub index {
                 }
 
                 my $photo_str;
-                my $photo = Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $realty->id, delete_date => undef], sort_by => 'id')->[0];
-                if ($photo && $photo->filename) {
-                    $photo_str = $photo->filename;
+                my $photo_iter = Rplus::Model::Photo::Manager->get_objects_iterator(query => [realty_id => $realty->id, delete_date => undef], sort_by => 'id');
+                while(my $photo = $photo_iter->next) {
+                    if ($photo->filename && ((length $photo_str) + (length $photo->filename) < 254)) {
+                        unless ($photo_str) {
+                            $photo_str = $photo->filename;
+                        } else {
+                            $photo_str .= ',' . $photo->filename;
+                        }
+                    }
                 }
 
                 my $row = [
@@ -399,9 +411,15 @@ sub index {
                 }
 
                 my $photo_str;
-                my $photo = Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $realty->id, delete_date => undef], sort_by => 'id')->[0];
-                if ($photo && $photo->filename) {
-                    $photo_str = $photo->filename;
+                my $photo_iter = Rplus::Model::Photo::Manager->get_objects_iterator(query => [realty_id => $realty->id, delete_date => undef], sort_by => 'id');
+                while(my $photo = $photo_iter->next) {
+                    if ($photo->filename && ((length $photo_str) + (length $photo->filename) < 254)) {
+                        unless ($photo_str) {
+                            $photo_str = $photo->filename;
+                        } else {
+                            $photo_str .= ',' . $photo->filename;
+                        }
+                    }
                 }
 
                 my $row = [
@@ -500,9 +518,15 @@ sub index {
                 }
 
                 my $photo_str;
-                my $photo = Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $realty->id, delete_date => undef], sort_by => 'id')->[0];
-                if ($photo && $photo->filename) {
-                    $photo_str = $photo->filename;
+                my $photo_iter = Rplus::Model::Photo::Manager->get_objects_iterator(query => [realty_id => $realty->id, delete_date => undef], sort_by => 'id');
+                while(my $photo = $photo_iter->next) {
+                    if ($photo->filename && ((length $photo_str) + (length $photo->filename) < 254)) {
+                        unless ($photo_str) {
+                            $photo_str = $photo->filename;
+                        } else {
+                            $photo_str .= ',' . $photo->filename;
+                        }
+                    }
                 }
 
                 my $row = [
@@ -590,9 +614,15 @@ sub index {
                 }
 
                 my $photo_str;
-                my $photo = Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $realty->id, delete_date => undef], sort_by => 'id')->[0];
-                if ($photo && $photo->filename) {
-                    $photo_str = $photo->filename;
+                my $photo_iter = Rplus::Model::Photo::Manager->get_objects_iterator(query => [realty_id => $realty->id, delete_date => undef], sort_by => 'id');
+                while(my $photo = $photo_iter->next) {
+                    if ($photo->filename && ((length $photo_str) + (length $photo->filename) < 254)) {
+                        unless ($photo_str) {
+                            $photo_str = $photo->filename;
+                        } else {
+                            $photo_str .= ',' . $photo->filename;
+                        }
+                    }
                 }
 
                 my $row = [
@@ -677,9 +707,15 @@ sub index {
                 }
 
                 my $photo_str;
-                my $photo = Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $realty->id, delete_date => undef], sort_by => 'id')->[0];
-                if ($photo && $photo->filename) {
-                    $photo_str = $photo->filename;
+                my $photo_iter = Rplus::Model::Photo::Manager->get_objects_iterator(query => [realty_id => $realty->id, delete_date => undef], sort_by => 'id');
+                while(my $photo = $photo_iter->next) {
+                    if ($photo->filename && ((length $photo_str) + (length $photo->filename) < 254)) {
+                        unless ($photo_str) {
+                            $photo_str = $photo->filename;
+                        } else {
+                            $photo_str .= ',' . $photo->filename;
+                        }
+                    }
                 }
 
                 my $row = [
