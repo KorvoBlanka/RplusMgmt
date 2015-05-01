@@ -284,12 +284,12 @@
           </div>
           <div class="checkbox">
             <label>
-              <input type="checkbox" checked="checked" id="commercials"> Участки
+              <input type="checkbox" checked="checked" id="lands"> Участки
             </label>
           </div>
           <div class="checkbox">
             <label>
-              <input type="checkbox" checked="checked" id="commercials"> Гаражи
+              <input type="checkbox" checked="checked" id="garages"> Гаражи
             </label>
           </div>
 
@@ -321,12 +321,12 @@
           </div>
           <div class="checkbox">
             <label>
-              <input type="checkbox" checked="checked" id="commercials"> Участки
+              <input type="checkbox" checked="checked" id="lands"> Участки
             </label>
           </div>
           <div class="checkbox">
             <label>
-              <input type="checkbox" checked="checked" id="commercials"> Гаражи
+              <input type="checkbox" checked="checked" id="garages"> Гаражи
             </label>
           </div>
 
@@ -535,6 +535,23 @@
           <input type="checkbox" id="houses" checked="checked"> Дома и коттеджи
         </label>
       </div>
+
+      <div class="checkbox">
+        <label>
+          <input type="checkbox" id="lands" checked="checked"> Участки
+        </label>
+      </div>
+      <div class="checkbox">
+        <label>
+          <input type="checkbox" id="commercials" checked="checked"> Коммерческая недвижимость
+        </label>
+      </div>
+      <div class="checkbox">
+        <label>
+          <input type="checkbox" id="garages" checked="checked"> Коммерческая недвижимость
+        </label>
+      </div>
+
       <hr>
       <div class="form-group">
         <button type="" class="btn btn-primary btn-save" data-action="export-present" style="margin-top: 15px">Экспорт</button>

@@ -160,6 +160,118 @@ my $required_export = {
             ],
         }
     },
+    present => {
+        apartment => {
+            sale => [
+                'agent_id', 'owner_price', 'address_object_id', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
+            ],
+            rent => [
+                'agent_id', 'owner_price', 'address_object_id', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
+            ],
+        },
+        apartment_new => {
+            sale => [
+                'agent_id', 'owner_price', 'address_object_id', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
+            ],
+            rent => [
+                'agent_id', 'owner_price', 'address_object_id', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
+            ],
+        },
+        townhouse => {
+            sale => [
+                'agent_id', 'owner_price', 'address_object_id', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
+            ],
+            rent => [
+                'agent_id', 'owner_price', 'address_object_id', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
+            ],
+        },
+        apartment_small => {
+            sale => [
+                'agent_id', 'owner_price', 'address_object_id', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
+            ],
+            rent => [
+                'agent_id', 'owner_price', 'address_object_id', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
+            ],
+        },
+        room => {
+            sale => [
+                'agent_id', 'owner_price', 'address_object_id', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_offer_count', 'square_total', 'square_living', 'square_kitchen',
+            ],
+            rent => [
+                'agent_id', 'owner_price', 'address_object_id', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_offer_count', 'square_total', 'square_living', 'square_kitchen',
+            ],
+        },
+        house => {
+            sale => [
+                'agent_id', 'owner_price', 'address_object_id', 'house_type_id', 'floors_count', 'square_land', 'square_total',
+            ],
+            rent => [
+                'agent_id', 'owner_price', 'address_object_id', 'house_type_id', 'floors_count', 'square_land', 'square_total',
+            ],
+        },
+        cottage => {
+            sale => [
+                'agent_id', 'owner_price', 'address_object_id', 'house_type_id', 'floors_count', 'square_land', 'square_total',
+            ],
+            rent => [
+                'agent_id', 'owner_price', 'address_object_id', 'house_type_id', 'floors_count', 'square_land', 'square_total',
+            ],
+        },
+
+        dacha => {
+            sale => [
+                'agent_id', 'owner_price', 'square_land', 'square_land_type',
+            ],
+            rent => [
+                'agent_id', 'owner_price', 'square_land', 'square_land_type',
+            ],
+        },
+        
+        land => {
+            sale => [
+                'agent_id', 'owner_price', 'square_land', 'square_land_type',
+            ],
+            rent => [
+                'agent_id', 'owner_price', 'square_land', 'square_land_type',
+            ],
+        },
+        
+        office => {
+            sale => [
+                'agent_id', 'owner_price', 'address_object_id', 'square_total',
+            ],
+            rent => [
+                'agent_id', 'owner_price', 'address_object_id', 'square_total',
+            ],
+        },
+        
+        other => {
+            sale => [
+                'agent_id', 'owner_price',
+            ],
+            rent => [
+                'agent_id', 'owner_price',
+            ],
+        },
+
+        garage => {
+            sale => [
+                'agent_id', 'owner_price',
+            ],
+            rent => [
+                'agent_id', 'owner_price',
+            ],
+        },
+
+        any => {
+            sale => [
+                'agent_id', 'owner_price', 'address_object_id', 'square_total',
+            ],
+            rent => [
+                'agent_id', 'owner_price', 'address_object_id', 'square_total',
+            ],
+        }
+    },
     vnh => {
         apartment => {
             sale => [
