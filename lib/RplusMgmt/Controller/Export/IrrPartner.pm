@@ -282,7 +282,6 @@ sub buildCustomFields {
         $custom_fields{'security'} = '';
 
     } elsif ($realty->type_code eq 'garage') {
-
         $custom_fields{'garage_type'} = '';
         $custom_fields{'heating1'} = '';
 
@@ -375,8 +374,13 @@ sub index {
     $xml_writer->endTag('user-id');
     $xml_writer->endTag('match');
 
-    while (my ($offer_type, $value) = each $realty_types) {
-        for my $realty_type (@$value) {
+    #while (my ($offer_type, $value) = each ) {
+
+    foreach my $offer_type (keys %{$realty_types}) {
+        my $v = $realty_types->{$offer_type};
+        for my $realty_type (@$v) {
+
+            say $offer_type . ' - ' . $realty_type;
 
             my @tc;
             if ($realty_type =~ /apartments/) {
@@ -400,7 +404,7 @@ sub index {
             }
 
             if ($realty_type =~ /garages/) {
-                
+                push @tc, (type_code => 'garage');   
             }
 
             my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
@@ -408,8 +412,8 @@ sub index {
                     state_code => 'work',
                     offer_type_code => $offer_type,
                     or => [
-                            @tc,
-                        ],
+                        @tc,
+                    ],
                     export_media => {'&&' => $media->id},
                     account_id => $acc_id,
                 ],
@@ -449,7 +453,7 @@ sub index {
 
                 $xml_writer->startTag(
                     'price',
-                    value => $realty->price,
+                    value => $realty->price * 1000,
                     currency => 'RUR',
                 );
                 $xml_writer->endTag('price');
