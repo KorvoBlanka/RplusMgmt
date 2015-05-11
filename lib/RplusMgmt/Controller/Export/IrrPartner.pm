@@ -185,7 +185,7 @@ sub buildCustomFields {
         $custom_fields{'state'} = $realty->condition ? $realty->condition->name : '';
         $custom_fields{'walltype'} = $realty->house_type ? $realty->house_type->name : '';
         $custom_fields{'toilet'} = $realty->bathroom ? $realty->bathroom->name : '';
-        $custom_fields{'balcony'} = $realty->balcony ? $realty->balcony->name : '';
+        $custom_fields{'balcony'} = $realty->balcony eq 'без балкона' ? 'false' : 'true';
 
         $custom_fields{'telephone'} = '';
         $custom_fields{'internet'} = '';
