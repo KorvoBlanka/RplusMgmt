@@ -1497,6 +1497,8 @@
 
         $('[data-action="chat-switch-search"]').click(function () {
             switch_to_search();
+            var q = $('#chatSearchInput').val();
+            findContacts(q);
         });
 
         $('#chatContactList').on('click', '.chat-contact', function() {

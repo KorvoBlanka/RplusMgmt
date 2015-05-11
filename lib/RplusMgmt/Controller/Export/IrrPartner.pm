@@ -26,92 +26,271 @@ my $region = 'Хабаровский край';
 my $city = 'Хабаровск';
 
 my $category_hash = {
-    room => {
-        category => "/realestate/apartments-sale/new/",
-        adverttype => 'realty_new',
+    sale => {
+        room => {
+            category => "/real-estate/rooms-sale",
+        },
+        apartment => {
+            category => "/real-estate/apartments-sale/secondary",
+        },
+        apartment_new => {
+            category => "/real-estate/apartments-sale/secondary",
+        },
+        apartment_small => {
+            category => "/real-estate/apartments-sale/secondary",
+        },
+        cottage => {
+            category => "/real-estate/out-of-town/houses",
+        },
+        townhouse => {
+            category => "/real-estate/out-of-town/houses",
+        },
+        house => {
+            category => "/real-estate/out-of-town/houses",
+        },
+        land => {
+            category => "/real-estate/out-of-town/lands",
+        },
+        dacha => {
+            category => "/real-estate/out-of-town/lands",
+        },
+
+        other => {
+            category => "/real-estate/commercial-sale/misc",
+        },
+        garage => {
+            category => "/real-estate/garage/stall",
+        },
+
+        office => {
+            category => "/real-estate/commercial-sale/offices",
+        },
+        office_place => {
+            category => "/real-estate/commercial-sale/offices",
+        },
+        market_place => {
+            category => "/real-estate/commercial-sale/offices",
+        },
+        building => {
+            category => "/real-estate/commercial-sale/retail",
+        },
+        service_place => {
+            category => "/real-estate/commercial-sale/retail",
+        },
+        warehouse_place => {
+            category => "/real-estate/commercial-sale/production-warehouses",
+        },
+        autoservice_place => {
+            category => "/real-estate/commercial-sale/production-warehouses",
+        },
+        gpurpose_place => {
+            category => "/real-estate/commercial-sale/misc",
+        },
+        production_place => {
+            category => "/real-estate/commercial-sale/production-warehouses",
+        },
     },
-    apartment => {
-        category => "/realestate/apartments-sale/new/",
-        adverttype => 'realty_new',
-    },
-    cottage => {
-        category => "/realestate/apartments-sale/new/",
-        adverttype => 'realty_new',
-    },
-    townhouse => {
-        category => "/realestate/apartments-sale/new/",
-        adverttype => 'realty_new',
-    },
-    house => {
-        category => "/realestate/apartments-sale/new/",
-        adverttype => 'realty_new',
-    },
-    land => {
-        category => "/realestate/apartments-sale/new/",
-        adverttype => 'realty_new',
-    },
-    dacha => {
-        category => "/realestate/apartments-sale/new/",
-        adverttype => 'realty_new',
-    },
-    office => {
-        category => "/realestate/apartments-sale/new/",
-        adverttype => 'realty_new',
-    },
-    apartment_new => {
-        category => "/realestate/apartments-sale/new/",
-        adverttype => 'realty_new',
-    },
-    apartment_small => {
-        category => "/realestate/apartments-sale/new/",
-        adverttype => 'realty_new',
-    },
-    other => {
-        category => "/realestate/apartments-sale/new/",
-        adverttype => 'realty_new',
-    },
-    market_place => {
-        category => "/realestate/apartments-sale/new/",
-        adverttype => 'realty_new',
-    },
-    office_place => {
-        category => "/realestate/apartments-sale/new/",
-        adverttype => 'realty_new',
-    },
-    building => {
-        category => "/realestate/apartments-sale/new/",
-        adverttype => 'realty_new',
-    },
-    service_place => {
-        category => "/realestate/apartments-sale/new/",
-        adverttype => 'realty_new',
-    },
-    warehouse_place => {
-        category => "/realestate/apartments-sale/new/",
-        adverttype => 'realty_new',
-    },
-    autoservice_place => {
-        category => "/realestate/apartments-sale/new/",
-        adverttype => 'realty_new',
-    },
-    gpurpose_place => {
-        category => "/realestate/apartments-sale/new/",
-        adverttype => 'realty_new',
-    },
-    production_place => {
-        category => "/realestate/apartments-sale/new/",
-        adverttype => 'realty_new',
-    },
-    garage => {
-        category => "/realestate/apartments-sale/new/",
-        adverttype => 'realty_new',
-    },
+    rent => {
+        room => {
+            category => "/real-estate/rooms-rent",
+        },
+        apartment => {
+            category => "/real-estate/rent",
+        },
+        apartment_new => {
+            category => "/real-estate/rent",
+        },
+        apartment_small => {
+            category => "/real-estate/rent",
+        },
+
+        cottage => {
+            category => "/real-estate/out-of-town-rent",
+        },
+        townhouse => {
+            category => "/real-estate/out-of-town-rent",
+        },
+        house => {
+            category => "/real-estate/out-of-town-rent",
+        },
+
+        land => {
+            category => "/real-estate/out-of-town-rent",
+        },
+        dacha => {
+            category => "/real-estate/out-of-town-rent",
+        },
+
+
+        other => {
+            category => "/real-estate/commercial/misc",
+        },
+        garage => {
+            category => "/real-estate/garage-rent/stall",
+        },
+
+        office => {
+            category => "/real-estate/commercial/offices",
+        },
+        office_place => {
+            category => "/real-estate/commercial/offices",
+        },
+        market_place => {
+            category => "/real-estate/commercial/offices",
+        },
+        building => {
+            category => "/real-estate/commercial/retail",
+        },
+        service_place => {
+            category => "/real-estate/commercial/retail",
+        },
+        warehouse_place => {
+            category => "/real-estate/commercial/production-warehouses",
+        },
+        autoservice_place => {
+            category => "/real-estate/commercial/production-warehouses",
+        },
+        gpurpose_place => {
+            category => "/real-estate/commercial/misc",
+        },
+        production_place => {
+            category => "/real-estate/commercial/production-warehouses",
+        },
+    }
 };
 
 sub buildCustomFields {
     my $self = shift;
     my $realty = shift;
 
+    my %custom_fields = ();
+
+    $custom_fields{'region'} = 'Хабаровский';
+    $custom_fields{'address_city'} = 'Хабаровск';
+    if ($realty->address_object_id) {
+        $custom_fields{'address_street'} = $realty->address_object->name . ' ' . $realty->address_object->short_type;
+        $custom_fields{'address_house'} = $realty->house_num;
+    }
+
+    if ($realty->type->category_code eq 'apartment') {
+        $custom_fields{'rooms'} = $realty->rooms_count;
+
+        $custom_fields{'meters-total'} = $realty->square_total;
+        $custom_fields{'meters-living'} = $realty->square_living;
+        $custom_fields{'kitchen'} = $realty->square_kitchen;
+
+        $custom_fields{'etage'} = $realty->floor;
+        $custom_fields{'etage-all'} = $realty->floors_count;
+
+        $custom_fields{'state'} = $realty->condition ? $realty->condition->name : '';
+        $custom_fields{'walltype'} = $realty->house_type ? $realty->house_type->name : '';
+        $custom_fields{'toilet'} = $realty->bathroom ? $realty->bathroom->name : '';
+        $custom_fields{'balcony'} = $realty->balcony ? $realty->balcony->name : '';
+
+        $custom_fields{'telephone'} = '';
+        $custom_fields{'internet'} = '';
+        $custom_fields{'private'} = '';
+
+        $custom_fields{'house-year'} = '';
+        $custom_fields{'house-series'} = '';
+        $custom_fields{'house-ceiling-height'} = '';
+        $custom_fields{'house-lift'} = '';
+        $custom_fields{'house-garbage-disposer'} = '';
+
+        $custom_fields{'water'} = '';
+        $custom_fields{'heating'} = '';
+        $custom_fields{'gas'} = '';
+        
+        $custom_fields{'security'} = '';
+        $custom_fields{'distance_mkad'} = '';
+
+        if ($realty->offer_type_code eq 'rent') {
+            if ($realty->rent_type eq 'long') {
+                $custom_fields{'rentLong'} = 'true';
+            } else {
+                $custom_fields{'rentLong'} = 'false';
+            }
+        }
+    } elsif ($realty->type->category_code eq 'room') {
+
+        $custom_fields{'rooms'} = '';
+        $custom_fields{'meters-total'} = '';
+        $custom_fields{'etage'} = '';
+        $custom_fields{'meters-living'} = '';
+        $custom_fields{'state'} = '';
+        $custom_fields{'part'} = '';
+        $custom_fields{'rooms-for-sale'} = '';
+        $custom_fields{'balcony'} = '';
+        $custom_fields{'house-year'} = '';
+        $custom_fields{'house-series'} = '';
+        $custom_fields{'walltype'} = '';
+        $custom_fields{'house-ceiling-height'} = '';
+
+        $custom_fields{'water'} = '';
+        $custom_fields{'heating'} = '';
+        $custom_fields{'gas'} = '';
+        $custom_fields{'house-lift'} = '';
+        $custom_fields{'house-garbage-disposer'} = '';
+        $custom_fields{'security'} = '';
+
+        $custom_fields{'refuse'} = '';
+        $custom_fields{'etage-all'} = '';
+
+        if ($realty->offer_type_code eq 'rent') {
+            if ($realty->rent_type eq 'long') {
+                $custom_fields{'rentLong'} = 'true';
+            } else {
+                $custom_fields{'rentLong'} = 'false';
+            }
+        }
+
+    } elsif ($realty->type->category_code eq 'house') {
+
+        $custom_fields{'object'} = '';
+        $custom_fields{'meters-total'} = '';
+        $custom_fields{'land'} = '';
+        $custom_fields{'rooms'} = '';
+        $custom_fields{'watersupply'} = '';
+        $custom_fields{'state'} = '';
+        $custom_fields{'sewage'} = '';
+        $custom_fields{'electricpower'} = '';
+        $custom_fields{'garage'} = '';
+        $custom_fields{'house-demolition'} = '';
+        $custom_fields{'house-year'} = '';
+
+        $custom_fields{'heating1'} = '';
+        $custom_fields{'walltype'} = '';
+        $custom_fields{'land_purpose'} = '';
+        $custom_fields{'gas'} = '';
+        $custom_fields{'security'} = '';
+
+        $custom_fields{'distance_mkad'} = '';
+        $custom_fields{'land_usage'} = '';
+
+
+    } elsif ($realty->type->category_code eq 'land') {
+
+        $custom_fields{'land'} = '';
+        $custom_fields{'land_purpose'} = '';
+        $custom_fields{'land_usage'} = '';
+        $custom_fields{'land_law'} = '';
+        $custom_fields{'watersupply'} = '';
+        $custom_fields{'square_meter'} = '';
+        $custom_fields{'electricpower'} = '';
+        $custom_fields{'gas'} = '';
+        $custom_fields{'buildings'} = '';
+        $custom_fields{'security'} = '';
+
+    } elsif ($realty->type_code eq 'garage') {
+
+        $custom_fields{'garage_type'} = '';
+        $custom_fields{'heating1'} = '';
+
+    } elsif ($realty->type->category_code eq 'commercial') {
+
+    }
+
+    return \%custom_fields;
 }
 
 sub buildTitle {
@@ -248,16 +427,14 @@ sub index {
 
             while(my $realty = $realty_iter->next) {
                 
-                my $adverttype = $category_hash->{$realty->type_code}->{adverttype};
-
                 $xml_writer->startTag(
                     'store-ad',
                     'power-ad' => '1',
                     'source-id' => $realty->id,
                     validfrom => $valid_from,
                     validtill => $valid_till,
-                    category => $category_hash->{$realty->type_code}->{category},
-                    adverttype => $category_hash->{$realty->type_code}->{adverttype},
+                    category => $category_hash->{$realty->offer_type_code}->{$realty->type_code}->{category},
+                    #adverttype => $category_hash->{$realty->type_code}->{adverttype},
                 );
 
                 # премиум объявления
@@ -308,6 +485,16 @@ sub index {
                 $xml_writer->endTag('fotos');
 
                 $xml_writer->startTag('custom-fields');
+
+                my $custom_fields = buildCustomFields($self, $realty);
+                foreach my $k (keys %{$custom_fields}) {
+                    my $v = $custom_fields->{$k};
+                    if ($v) {
+                        $xml_writer->startTag('field', name => $k);
+                        $xml_writer->characters($v);
+                        $xml_writer->endTag('field');
+                    }
+                }
                 #foreach (keys %$template) {
                 #    my $val = $template->{$_}->($realty);
                 #    next unless $val;
