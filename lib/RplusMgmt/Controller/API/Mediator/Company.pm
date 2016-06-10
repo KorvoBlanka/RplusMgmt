@@ -13,7 +13,7 @@ use Mojo::Util qw(trim);
 
 sub list {
     my $self = shift;
-    my $acc_id = $self->session('user')->{account_id};
+    my $acc_id = $self->session('account')->{id};
 
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(mediators => 'read');
 
@@ -43,22 +43,23 @@ sub list {
         phone_filter => $phone_filter,
     };
 
+    my $condition = "AND (M.account_id IS NULL OR M.account_id = ".$acc_id.") AND (NOT M.hidden_for_aid && '{".$acc_id."}')";
     my @filter;
     if ($name_filter && $phone_filter) {
         push @filter, or => [
             [\'lower(name) LIKE ?' => lc($name_filter).'%'],
-            [\'t1.id IN (SELECT M.company_id FROM mediators M WHERE M.delete_date IS NULL AND M.phone_num LIKE ?)' => '%'.$phone_filter.'%'],
+            [\('t1.id IN (SELECT M.company_id FROM mediators M WHERE M.delete_date IS NULL '.$condition.' AND M.phone_num LIKE ?)') => '%'.$phone_filter.'%'],
         ];
     } elsif ($name_filter) {
         push @filter, [\'lower(name) LIKE ?' => lc($name_filter).'%'];
     } elsif ($phone_filter) {
-        push @filter, [\'t1.id IN (SELECT M.company_id FROM mediators M WHERE M.delete_date IS NULL AND M.phone_num LIKE ?)' => '%'.$phone_filter.'%'];
+        push @filter, [\('t1.id IN (SELECT M.company_id FROM mediators M WHERE M.delete_date IS NULL '.$condition.' AND M.phone_num LIKE ?)') => '%'.$phone_filter.'%'];
     }
 
     my $company_iter = Rplus::Model::MediatorCompany::Manager->get_objects_iterator(
         query => [
-            or => [account_id => undef, account_id => $acc_id],
-            \("NOT t1.hidden_for_aid && '{".$acc_id."}'"),
+            #or => [account_id => undef, account_id => $acc_id],
+            #\("NOT t1.hidden_for_aid && '{".$acc_id."}'"),
             delete_date => undef,
             @filter
         ],
@@ -155,27 +156,40 @@ sub save {
 sub delete {
     my $self = shift;
 
-    my $acc_id = $self->session('user')->{account_id};
-    
+    my $acc_id = $self->session('account')->{id};
+
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(mediators => 'write');
 
     my $id = $self->param('id');
 
     my $company = Rplus::Model::MediatorCompany::Manager->get_objects (query => [id => $id])->[0];
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $company;
-    
+
     my $hidden_for = Mojo::Collection->new(@{$company->hidden_for_aid});
     push @$hidden_for, ($acc_id);
     $company->hidden_for_aid($hidden_for->compact->uniq);
     $company->save(changes_only => 1);
-    
-    Rplus::Model::MediatorRealty::Manager->delete_objects(
-        where => [
-            company_id => $company->id,
-            account_id => $acc_id,
-        ]
+
+
+    my $mediator_iter = Rplus::Model::Mediator::Manager->get_objects_iterator(
+        query => [
+            company_id => $id,
+            delete_date => undef,
+        ],
     );
-    
+    while (my $mediator = $mediator_iter->next) {
+        my $hidden_for = Mojo::Collection->new(@{$mediator->hidden_for_aid});
+        push @$hidden_for, ($acc_id);
+        $mediator->hidden_for_aid($hidden_for->compact->uniq);
+        $mediator->save(changes_only => 1);
+    }
+    #Rplus::Model::MediatorRealty::Manager->delete_objects(
+    #    where => [
+    #        company_id => $company->id,
+    #        account_id => $acc_id,
+    #    ]
+    #);
+
     # Delete company
     #my $num_rows_updated = Rplus::Model::MediatorCompany::Manager->update_objects(
     #    set => {delete_date => \'now()'},

@@ -24,7 +24,7 @@
 
 %= css_once "/css/context.css";
 <style type="text/css">
-  
+
   .export-check-hidden {
     visibility: hidden;
   }
@@ -36,13 +36,13 @@
   .export-check-grayed {
     color: #888888;
   }
-  
+
   .tag-button {
     height: 10px;
     width: 10px;
     border-radius: 5px;
     margin-top: 5px;
-    
+
     /*margin-left: 10px;*/
     margin-right: 4px;
   }
@@ -62,7 +62,7 @@
     height: 22px;
     display: block;
   }
-  
+
   % for my $x (@{Rplus::Model::DictColorTag::Manager->get_objects(query => [delete_date => undef], sort_by => 'id')}) {
   .color-tag-<%= $x->id %> {
     background: #<%= $x->color %>;
@@ -80,13 +80,13 @@
 
   #clientTreeWrapper {
     overflow: auto;
-    overflow-y: scroll; 
+    overflow-y: scroll;
     -webkit-overflow-scrolling: touch;  /* iOS Native style momentum scrolling */
   }
-  
+
   #realtyTableWrapper {
     overflow: auto;
-    overflow-y: scroll; 
+    overflow-y: scroll;
     -webkit-overflow-scrolling: touch;  /* iOS native style momentum scrolling */
   }
 
@@ -100,14 +100,14 @@
     border-right-width: 2px;
     border-right-style: solid;
     border-right-color: #e5e5e5;
-    
+
     border-left-width: 1px;
     border-left-style: solid;
     border-left-color: #e5e5e5;
-    
+
     border-bottom-width: 2px ! important;
     border-bottom-style: solid;
-    border-bottom-color: #e5e5e5;    
+    border-bottom-color: #e5e5e5;
   }
 
   .tree > tbody > tr.cselected > td {
@@ -123,7 +123,7 @@
   .tree > tbody > tr.cselected > td > a > span {
     color: #fff;
   }
-  
+
   .tree > tbody > tr.subselected > td {
     background-color: #6B7F98 !important;
     color: #fff;
@@ -133,7 +133,7 @@
     background-color: #657992 !important;
     color: #fff;
   }
-  
+
   .tree > tbody > tr.inactive {
     color: #ccc;
   }
@@ -155,7 +155,7 @@
   #realtyTable > tbody > tr.selected > td > span {
     color: #fff;
   }
-  
+
   #realtyTable > tbody > tr.shown > td {
     background-color: #dbe2f0;
   }
@@ -170,8 +170,8 @@
 
   #realtyTable > tbody > tr.modified:nth-child(even) > td {
     background-color: #d3ecc9;
-  }  
-  
+  }
+
   #realtyTable > tbody > tr.modified:hover > td {
     background-color: #d0e9c6;
   }
@@ -228,7 +228,7 @@
     border-radius: 3px;
     color: #c0c0c0;
   }
-  
+
   .tree {
     width:100%;
     border-collapse:collapse;
@@ -237,13 +237,13 @@
     -webkit-user-select: none;
             user-select: none;
   }
-  
+
   .tree > tbody {
     border-right: 1px double #E5E5E5;
     border-left:1px solid #E5E5E5;
     border-top:1px solid #E5E5E5;
   }
-  
+
   .tree > tbody > tr > th, .tree > tbody > tr > td {
     text-align:left;
     padding:5px 10px;
@@ -253,7 +253,7 @@
   .client-node {
     background-color: #FAFAFA;
   }
-  
+
   .subscription-node {
     background-color: #F0F0F0;
   }
@@ -264,14 +264,14 @@
 
   #searchQuery::-webkit-input-placeholder {
     font-style:italic;
-  }  
-  
+  }
+
   .right-inner-addon {
     position: relative;
   }
 
   .right-inner-addon input {
-    padding-right: 30px;    
+    padding-right: 30px;
   }
 
   .right-inner-addon i {
@@ -285,7 +285,7 @@
     position: absolute;
     z-index: 10;
     top: 4px;
-    right: 18px;    
+    right: 18px;
     background: none;
     border: none;
   }
@@ -373,7 +373,7 @@
     }
 
     function initSpeech() {
-      $('#searchQuery').webSpeech({ 
+      $('#searchQuery').webSpeech({
         button      : 'speech-button',    //id of the initiating button
         lang        : 'ru-RU',
         format      : 'input',            //input, textarea, html
@@ -394,13 +394,13 @@
     var subscription_id;
     var offer_type = 'sale';
     var scroll_type = 0;  // 0 - scroll requested realty, 1 - scroll subscription realty
-    
+
     function hasTouch() {
       return Modernizr.touch;
     }
 
     var media_export = {};
-    
+
     function createContextMenu() {
       var context_cb = function(e){
 
@@ -474,7 +474,7 @@
                 $("#el_delete").addClass('disabled');
               }
             }
-          } 
+          }
           if($this.hasClass('opened')) {
             $menu_export.addClass('disabled');
             $menu_states.addClass('disabled');
@@ -494,7 +494,7 @@
         {text: '<span class="glyphicon glyphicon-trash"></span>&nbsp&nbsp<%= ucfloc 'delete' %>', element_id: 'el_delete', data_action: 'realty-set-state', data_val: "deleted",},
         {divider: true},
         {text: '<span class="glyphicon glyphicon-th-large"></span> <%= ucfloc 'state' %>', element_id: 'el_states', subMenu: [
-          % my $iter = Rplus::Model::RealtyState::Manager->get_objects_iterator(sort_by => 'id');
+          % my $iter = Rplus::Model::RealtyState::Manager->get_objects_iterator(sort_by => 'sort_idx');
           % while (my $x = $iter->next) {
           % my $metadata = from_json($x->metadata);
             {text: '<span class="glyphicon <%= $metadata->{'icon-class'} %>"></span>&nbsp<%= $x->name %>', data_action: 'realty-set-state', data_val: '<%= $x->code %>', },
@@ -507,11 +507,11 @@
             {text: '<strong> <%= $self->stash('user')->{name} %></strong>', data_action: 'realty-set-agent', data_val: '<%= $self->stash('user')->{id} %>', },
         % if ($self->stash('user')->{role} eq 'top') {
         %   my @owned = ();
-        %   for my $m (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('user')->{account_id}, role => ['manager'], delete_date => undef], sort_by => 'name')}) {
+        %   for my $m (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('account')->{id}, role => ['manager'], delete_date => undef], sort_by => 'name')}) {
         %     if (scalar (@{$m->subordinate})) {
               {text: '<%= $m->name %>', data_action: 'realty-set-agent', data_val: '<%= $m->id %>', subMenu: [
         %       push @owned, @{$m->subordinate};
-        %       for my $a (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('user')->{account_id}, id => [$m->subordinate], delete_date => undef], sort_by => 'name')}) {
+        %       for my $a (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('account')->{id}, id => [$m->subordinate], delete_date => undef], sort_by => 'name')}) {
                 {text: '<%= $a->name %>', data_action: 'realty-set-agent', data_val: '<%= $a->id %>'},
         %       }
               ]},
@@ -521,8 +521,8 @@
         %   }
         % } elsif ($self->stash('user')->{role} eq 'manager') {
           % if (scalar (@{$self->stash('user')->{subordinate}})) {
-            % for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [account_id => $self->session('user')->{account_id}, id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
-              % if ($x->id != 10000) {  
+            % for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [account_id => $self->session('account')->{id}, id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
+              % if ($x->id != 10000) {
                 {text: '<%= $x->name %>', data_action: 'realty-set-agent', data_val: '<%= $x->id %>', },
               % }
             % }
@@ -541,9 +541,7 @@
           % }
         ]},
         {text: '<span class="glyphicon glyphicon-export"></span>  <%= ucfloc q{advertisement} %>', element_id: 'el_export', subMenu: [
-          % my $loc_id = $self->session('user')->{location_id};      # костыль!
           % for my $x (@{Rplus::Model::Media::Manager->get_objects(query => [type => 'export', delete_date => undef])}) {
-          % next if $loc_id == 2 && ($x->id == 2 || $x->id == 3);
             {text: '<span class="export-check export-check<%= $x->id %> glyphicon glyphicon-ok"></span>&nbsp&nbsp<%= $x->name %>', data_action: 'realty-set-export', data_val: '<%= $x->id %>', },
           % }
         ]},
@@ -552,7 +550,7 @@
         {header:  // '+' to concat strings, '' - to match last +
           '<span class="cmenu-tag-group">' +
           % for my $x (@{Rplus::Model::DictColorTag::Manager->get_objects(query => [delete_date => undef], sort_by => 'id')}) {
-            '<span class="round-button color-tag-<%= $x->id %>" data-action="realty-set-color_tag_id" data-val="<%= $x->id %>"></span>' + 
+            '<span class="round-button color-tag-<%= $x->id %>" data-action="realty-set-color_tag_id" data-val="<%= $x->id %>"></span>' +
           % }
           '</span>'},
         {divider: true},
@@ -570,11 +568,11 @@
             {text: '<strong> <%= $self->stash('user')->{name} %></strong>', data_action: 'client-set-agent', data_val: '<%= $self->stash('user')->{id} %>', },
         % if ($self->stash('user')->{role} eq 'top') {
         %   my @owned = ();
-        %   for my $m (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('user')->{account_id}, role => ['manager'], delete_date => undef], sort_by => 'name')}) {
+        %   for my $m (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('account')->{id}, role => ['manager'], delete_date => undef], sort_by => 'name')}) {
         %     if (scalar (@{$m->subordinate})) {
               {text: '<%= $m->name %>', data_action: 'client-set-agent', data_val: '<%= $m->id %>', subMenu: [
         %       push @owned, @{$m->subordinate};
-        %       for my $a (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('user')->{account_id}, id => [$m->subordinate], delete_date => undef], sort_by => 'name')}) {
+        %       for my $a (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('account')->{id}, id => [$m->subordinate], delete_date => undef], sort_by => 'name')}) {
                 {text: '<%= $a->name %>', data_action: 'client-set-agent', data_val: '<%= $a->id %>'},
         %       }
               ]},
@@ -584,8 +582,8 @@
         %   }
         % } elsif ($self->stash('user')->{role} eq 'manager') {
           % if (scalar (@{$self->stash('user')->{subordinate}})) {
-            % for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [account_id => $self->session('user')->{account_id}, id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
-              % if ($x->id != 10000) {  
+            % for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [account_id => $self->session('account')->{id}, id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
+              % if ($x->id != 10000) {
                 {text: '<%= $x->name %>', data_action: 'realty-set-agent', data_val: '<%= $x->id %>', },
               % }
             % }
@@ -604,7 +602,7 @@
         {header:  // '+' to concat strings, '' - to match last +
           '<span class="cmenu-tag-group">' +
           % for my $x (@{Rplus::Model::DictColorTag::Manager->get_objects(query => [delete_date => undef], sort_by => 'id')}) {
-            '<span class="round-button color-tag-<%= $x->id %>" data-action="client-set-color-tag" data-val="<%= $x->id %>"></span>' + 
+            '<span class="round-button color-tag-<%= $x->id %>" data-action="client-set-color-tag" data-val="<%= $x->id %>"></span>' +
           % }
           '</span>'},
         {divider: true},
@@ -629,7 +627,7 @@
           state_code: state_code,
           color_tag_id: color_tag_id,
           agent_id: agent_id,
-          page: page, 
+          page: page,
           per_page: 34,
           update_realty: 1,
         },
@@ -672,7 +670,7 @@
       var agentId = $('[data-filter-realty="agent_id"]').data('val');
       var colorTagId = $('[data-filter-realty="color_tag_id"]').data('val');
       _listRealty_started = true;
- 
+
       $.ajax({
         type: "POST",
         url: "/api/realty/list",
@@ -687,10 +685,10 @@
             $('#objectsCount').text(data.count);
           }
 
-          for (var i = 0; i < data.list.length; i++) {                
+          for (var i = 0; i < data.list.length; i++) {
             $('#realtyTable > tbody').append(buildHtmlForRealty(data.list[i], data.page));
-          }        
-        
+          }
+
           for (var i = 0; i < data.list.length; i++) {
             var r = data.list[i];
             $('#realtyTable > tbody > tr[data-id="' + r.id + '"]').data('obj', r);
@@ -772,10 +770,15 @@
             }
         }
 
+        var area_search_mark = '';
+        if (subscription.search_area) {
+          area_search_mark = '<span class="glyphicon glyphicon-globe"></span>'
+        }
+
         xhtml += '<tr data-page=' + 1 + ' data-offer_type=' + subscription.offer_type_code +
           ' data-subscription=' + subscription.id + ' class="subscription-node ' + s_class + ' treegrid-' + node_id + ' treegrid-parent-' + parent + '">';
         xhtml += '<td></td>';
-        xhtml += '<td class="query">' + subscription.queries + '</td>';
+        xhtml += '<td class="query">' + area_search_mark + '  ' + subscription.queries + '</td>';
         xhtml += '<td style="padding-top: 0px;padding-bottom: 10px;"><span style="font-size: 10px;">' + end_date_str + '</span><br>&nbsp;</td>';
         xhtml += '<td style="padding-left: 0px;"></td>';
         xhtml += '</tr>';
@@ -812,14 +815,14 @@
 
       $selected.after(buildHtmlForClient(client, 'cselected tree-tmp'));
       $selected.remove();
-      
+
       $('.tree-tmp').treegrid('initNode', settings);
       if (expand) {
         $('.tree-tmp').treegrid('expand');
       }
       $('.tree-tmp').removeClass('tree-tmp');
     }
-    
+
     var node_id = 0;
     var tree_options = {
       initialState: "collapsed",
@@ -886,10 +889,10 @@
         card.close();
         Rplus.Functions.getActiveSubCount();
       },
-      
+
     }).open(client_id);
     }
-    
+
     function updateRealtyRow(prev_id, realty) {
       var r = realty;
       var $tr = $('#realtyTable > tbody > tr[data-id="' + prev_id + '"]');
@@ -910,10 +913,10 @@
         loaded: function (r) {
           // Mark opened realty object in the table
           $('tr[data-id="' + r.id + '"]', '#realtyTable').addClass('shown');
-          
+
           var realty_id = r.id;
           var subscription_id = $('.subselected').data('subscription');
-          
+
           $.ajax({
             type: 'POST',
             url: '/api/subscription/realty_set_state',
@@ -1014,13 +1017,13 @@
 
       $('#offer-type-filter > ul a').click(function (e) {
         var $display = $(this).closest('[data-filter]').data('val', $(this).data('val')).find('> a [role="display"]');
-        if ($(this).data('type') == 'text') { 
-          $display.text($(this).text()) } else { $display.html($(this).html()) 
+        if ($(this).data('type') == 'text') {
+          $display.text($(this).text()) } else { $display.html($(this).html())
         };
             $.ajax({
               type: "POST",
               url: "/api/user/set_offer_mode",
-              data: {id: <%= $self->session('user')->{id} %>, offer_mode: $('#offer-type-filter').data('val')},
+              data: {id: <%= $self->stash('user')->{id} %>, offer_mode: $('#offer-type-filter').data('val')},
             })
               .done(function (data, textStatus, jqXHR) {
                 Rplus.Variables['User'].offer_mode = $('#offer-type-filter').data('val');
@@ -1132,14 +1135,14 @@
               $this.removeClass('cselected');
           });
           $this.treegrid('getParentNode').addClass("cselected");
-          
+
           subscription_id = $this.data('subscription');
           offer_type = $this.data('offer_type');
-          
+
           $('#searchQuery').val($('.query', $this).text());
           listSubscriptionRealty(subscription_id, 1);
         });
-        
+
         $('.tree').on('click', 'tr.client-node', function (e) {
           //if (hasTouch()) return;
           var $this = $(this);
@@ -1165,7 +1168,7 @@
             }
           }
         });
-        
+
         $('.tree').on('mouseup', 'tr.client-node', function (e) {
           if (hasTouch()) return;
           var $this = $(this);
@@ -1202,7 +1205,7 @@
 
         $('.tree').on('mousedown', 'tr.client-node', function (e) {
           if (hasTouch()) return;
-          var $this = $(this);          
+          var $this = $(this);
           switch (event.which) {
             case 1:
             break;
@@ -1226,7 +1229,7 @@
               });
               clearRealty();
               $this.addClass('cselected');
-              
+
               var $selected = $('.tree > tbody > tr.subselected');
               $selected.each(function () {
                 var $this = $(this);
@@ -1368,7 +1371,7 @@
 
         // mouse drag selection
         $('#realtyTable > tbody').on('mouseenter', 'tr', function (e) {
-          if (hasTouch()) return;  // 
+          if (hasTouch()) return;  //
           var $this = $(this);
           var id = $this.data('id');
           if(e.which == 1) {  // lmb pressed
@@ -1436,10 +1439,10 @@
 
       $('.tree').on('click', '[data-action="client-delete-query"]', function (e) {
         var $tr = $(this).closest('tr');
-        var subscription_id = $tr.data('subscription');        
+        var subscription_id = $tr.data('subscription');
         var client_id = $tr.treegrid('getParentNode').data('id');
         var client = clients[client_id];
-        
+
         for(var si in client.subscriptions) {
           var subscription = client.subscriptions[si];
           if (subscription.id == subscription_id) {
@@ -1456,7 +1459,7 @@
           success: function (data2, textStatus2, jqXHR2) {},
           error: function (jqXHR2, textStatus2, errorThrown2) {},
         });
-        
+
         clearRealty();
         updateTreeEntry(client, true);
         return false;
@@ -1467,7 +1470,7 @@
           offerTypeCode = getOfferType(),
           rentTypeCode = getRentType(),
           realtyIds = [];
-          
+
         if (q.length == 0) return;
 
         var $tr = $(this).closest('tr');
@@ -1659,7 +1662,7 @@
       // Open realty object card
       $('[data-action="realty-open"]').click(function (e) {
         var $selected = $('#realtyTable > tbody > tr.selected');
-        
+
         $selected.each(function () {
           openRealtyCard($(this).data('id'), $selected.length > 1);
         });
@@ -1795,7 +1798,7 @@
         var new_tag_id = $(this).data('val');
         var $selected = $('#realtyTable > tbody > tr.selected');
         $selected.each(function () {
-            
+
           var $this = $(this);
           var id = $this.data('id');
           $.ajax({
@@ -1855,7 +1858,7 @@
           saved: function (start_date) {
             var end_date = start_date.clone().add(30, 'minutes');
             // если выбрано несколько клиентов, игнорируем выбранную недвижимость
-            // 
+            //
             var $cselected = $('.tree > tbody > tr.cselected');
             var $selected = $('#realtyTable > tbody > tr.selected');
 
@@ -1872,8 +1875,8 @@
                   type: "POST",
                   url: "/api/task/save",
                   data: {
-                    task_type_id: task_type_id, 
-                    assigned_user_id: agent_id, 
+                    task_type_id: task_type_id,
+                    assigned_user_id: agent_id,
                     start_date: start_date.format(),
                     end_date: end_date.format(),
                     client_id: client.id,
@@ -1913,8 +1916,8 @@
                   type: "POST",
                   url: "/api/task/save",
                   data: {
-                    task_type_id: task_type_id, 
-                    assigned_user_id: agent_id, 
+                    task_type_id: task_type_id,
+                    assigned_user_id: agent_id,
                     start_date: start_date.format(),
                     end_date: end_date.format(),
                     client_id: client.id,
@@ -1938,8 +1941,8 @@
                     type: "POST",
                     url: "/api/task/save",
                     data: {
-                      task_type_id: task_type_id, 
-                      assigned_user_id: client_agent_id, 
+                      task_type_id: task_type_id,
+                      assigned_user_id: client_agent_id,
                       dead_line: dead_line,
                       summary: summary,
                       description: description,
@@ -1952,7 +1955,7 @@
 
                       }
                     }).fail(function (jqXHR, textStatus, errorThrown) {
-                       
+
                     });
                 }
               });
@@ -2042,7 +2045,7 @@
                 $('#objectsCount').text(t - 1);
               })
             ;
-            
+
           });
         });
 
@@ -2081,7 +2084,7 @@
             .done(function (data, textStatus, jqXHR) {
               guid = Rplus.Util.guid();
               $('#photosModal .modal-body').html(template.replace(/{guid}/g, guid));
-              
+
               var img_num = 0;
               for (var i = 0; i < data.list.length; i++) {
                 var x = data.list[i];
@@ -2091,7 +2094,7 @@
                 $('#photosCarousel-' + guid + ' > .carousel-indicators').append('<li data-target="#photosCarousel-' + guid + '" data-slide-to="' + i + '" class="' + (i == 0 ? 'active' : '') + '"></li>');
                 $('#photosCarousel-' + guid + ' > .carousel-inner').append('<div class="item' + (i == 0 ? ' active' : '') + '"><img src="' + x.photo_url + '"></div>');
               }
-              
+
               $('#photosCarousel-' + guid).carousel(img_num);
               if (data.list.length) { $('#photosModal').modal('show'); };
             })
@@ -2171,11 +2174,11 @@
                 <tr>
                   <td>
                     <span id="timepicker-hour" class="timepicker-hour">8</span>
-                  </td> 
+                  </td>
                   <td class="separator">:</td>
                   <td>
                     <span id="timepicker-minute" class="timepicker-minute">42</span>
-                  </td> 
+                  </td>
                 </tr>
                 <tr>
                   <td>
@@ -2244,7 +2247,7 @@
           <input type="text" class="form-control input-sm" id="searchQuery" name="q" placeholder="введите запрос, например: 1 комнатная квартира 1 микрорайон улучшенная планировка от 3 этаж." autocomplete="off" x-webkit-speech>
         </div>
       </form>
-      <button id="speech-button" style="z-index: 100;"></button>        
+      <button id="speech-button" style="z-index: 100;"></button>
     </div>
   </div>
 
@@ -2294,19 +2297,19 @@
             % }
             % if (has_permission(realty => 'read')->{nobody}) {
             <li><a href="#" data-val="nobody" data-type="text"><strong>Не назначенные</strong></a></li>
-            % }              
+            % }
             % if (has_permission(realty => 'read')->{others}) {
             <li><a href="#" data-val="<%= $self->stash('user')->{id} %>" data-type="text"><strong> Мои покупатели</strong></a></li>
             % }
             % if ($self->stash('user')->{role} eq 'top') {
             %   my @owned = ();
-            %   for my $m (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('user')->{account_id}, role => ['manager'], delete_date => undef], sort_by => 'name')}) {
+            %   for my $m (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('account')->{id}, role => ['manager'], delete_date => undef], sort_by => 'name')}) {
                   <li class="dropdown-submenu"><a href="#" data-val="<%= $m->id %>" data-type="text"><%= $m->name %></a>
                     <ul class="dropdown-menu dropdown-context dropdown-context-sub compressed-context" style="bottom: auto;">
                       <li><a href="#" data-val="a<%= $m->id %>" data-type="text"> Все агенты</a></li>
             %     if (scalar(@{$m->subordinate})) {
             %       push @owned, @{$m->subordinate};
-            %       for my $a (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('user')->{account_id}, id => [$m->subordinate], delete_date => undef], sort_by => 'name')}) {
+            %       for my $a (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('account')->{id}, id => [$m->subordinate], delete_date => undef], sort_by => 'name')}) {
                       <li><a href="#" data-val="<%= $a->id %>" data-type="text"><%= $a->name %></a></li>
             %       }
             %     }
@@ -2315,7 +2318,7 @@
             %   }
                   <li class="dropdown-submenu"><a href="#" data-val="" data-type="text"> Свободные агенты</a>
                     <ul class="dropdown-menu dropdown-context dropdown-context-sub compressed-context" style="bottom: auto;">
-            %   for my $a (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('user')->{account_id}, role => ['agent', 'agent_ext'], delete_date => undef], sort_by => 'name')}) {
+            %   for my $a (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('account')->{id}, role => ['agent'], delete_date => undef], sort_by => 'name')}) {
             %    unless ($a->id ~~ @owned || $a->id == 10000) {
                       <li><a href="#" data-val="<%= $a->id %>" data-type="text"><%= $a->name %></a></li>
             %     }
@@ -2325,7 +2328,7 @@
             % } elsif ($self->stash('user')->{role} eq 'manager') {
               <li><a href="#" data-val="a<%= $self->stash('user')->{id} %>" data-type="text"> Мои агенты</a></li>
             %   if (scalar(@{$self->stash('user')->{subordinate}})) {
-            %     for my $a (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('user')->{account_id}, id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
+            %     for my $a (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('account')->{id}, id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
                     <li><a href="#" data-val="<%= $a->id %>" data-type="text"><%= $a->name %></a></li>
             %     }
             %   }
@@ -2353,20 +2356,17 @@
         <ul class="nav navbar-nav" style="width: 100%;">
 
           <!-- Offer type filter -->
-          % my $m = $self->session->{'user'}->{offer_mode};
           <li class="dropdown" id="offer-type-filter" data-filter="offer_type_code" data-val="" style="float: left;">
             <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span role="display"></span><b class="caret"></b></a>
             <ul class="dropdown-menu">
-              %# for my $x (@{Rplus::Model::RealtyOfferType::Manager->get_objects(sort_by => 'id')}) {
               <li><a href="#" data-val="sale"> Продажа</a></li>
               <li class="dropdown-submenu">
                 <a href="#" data-val="rent"> Аренда</a>
                 <ul class="dropdown-menu dropdown-context dropdown-context-sub compressed-context" style="bottom: auto;">
-                    <li><a href="#" data-val="rent-short" data-type="text"> Краткосрочная</a></li>
-                    <li><a href="#" data-val="rent-long" data-type="text"> Долгосрочная</a></li>
+                  <li><a href="#" data-val="rent-short" data-type="text"> Краткосрочная</a></li>
+                  <li><a href="#" data-val="rent-long" data-type="text"> Долгосрочная</a></li>
                 </ul>
               </li>
-              %# }
             </ul>
           </li>
 
@@ -2382,7 +2382,7 @@
             <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span role="display"><span class="glyphicon glyphicon-th-large"></span> <%= ucfloc 'any' %></span> <b class="caret"></b></a>
             <ul class="dropdown-menu">
               <li><a href="#" data-val=""><span class="glyphicon glyphicon-th-large"></span> <%= ucfloc 'any' %></a></li>
-              % for my $x (@{Rplus::Model::RealtyState::Manager->get_objects(sort_by => 'id')}) {
+              % for my $x (@{Rplus::Model::RealtyState::Manager->get_objects(sort_by => 'sort_idx')}) {
                 % my $metadata = from_json($x->metadata);
                 <li><a href="#" data-val="<%= $x->code %>"><span class="glyphicon <%= $metadata->{'icon-class'} %>"></span> <%= $x->name %></a></li>
               % }
@@ -2404,12 +2404,12 @@
               % }
               % if ($self->stash('user')->{role} eq 'top') {
               %   my @owned = ();
-              %   for my $m (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('user')->{account_id}, role => ['manager'], delete_date => undef], sort_by => 'name')}) {
+              %   for my $m (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('account')->{id}, role => ['manager'], delete_date => undef], sort_by => 'name')}) {
                     <li class="dropdown-submenu"><a href="#" data-val="<%= $m->id %>" data-type="text"><%= $m->name %></a><ul class="dropdown-menu dropdown-context dropdown-context-sub compressed-context" style="bottom: auto;">
                       <li><a href="#" data-val="a<%= $m->id %>" data-type="text"> Все агенты</a></li>
               %     if (scalar(@{$m->subordinate})) {
               %       push @owned, @{$m->subordinate};
-              %       for my $a (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('user')->{account_id}, id => [$m->subordinate], delete_date => undef], sort_by => 'name')}) {
+              %       for my $a (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('account')->{id}, id => [$m->subordinate], delete_date => undef], sort_by => 'name')}) {
                         <li><a href="#" data-val="<%= $a->id %>" data-type="text"><%= $a->name %></a></li>
               %       }
               %     }
@@ -2418,7 +2418,7 @@
               % } elsif ($self->stash('user')->{role} eq 'manager') {
                 <li><a href="#" data-val="a<%= $self->stash('user')->{id} %>" data-type="text"><strong> Мои агенты</strong></a></li>
               %   if (scalar (@{$self->stash('user')->{subordinate}})) {
-              %     for my $a (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('user')->{account_id}, id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
+              %     for my $a (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('account')->{id}, id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
                 <li><a href="#" data-val="<%= $a->id %>" data-type="text"><%= $a->name %></a></li>
               %     }
               %   }

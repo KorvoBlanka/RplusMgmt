@@ -22,7 +22,8 @@ use JSON;
 use URI;
 use Digest::MD5;
 
-my $region = 'Хабаровский край';
+
+my $region = 'Хабаровский';
 my $city = 'Хабаровск';
 
 my $category_hash = {
@@ -165,10 +166,10 @@ sub buildCustomFields {
 
     my %custom_fields = ();
 
-    $custom_fields{'region'} = 'Хабаровский';
-    $custom_fields{'address_city'} = 'Хабаровск';
-    if ($realty->address_object_id) {
-        $custom_fields{'address_street'} = $realty->address_object->name . ' ' . $realty->address_object->short_type;
+    $custom_fields{'region'} = $region;
+    $custom_fields{'address_city'} = $city;
+    if ($realty->address) {
+        $custom_fields{'address_street'} = $realty->address;
         $custom_fields{'address_house'} = $realty->house_num;
     }
 
@@ -200,7 +201,7 @@ sub buildCustomFields {
         $custom_fields{'water'} = '';
         $custom_fields{'heating'} = '';
         $custom_fields{'gas'} = '';
-        
+
         $custom_fields{'security'} = '';
         $custom_fields{'distance_mkad'} = '';
 
@@ -304,17 +305,17 @@ sub buildTitle {
 
     $title_str .= $realty->type->name . ', ';
 
-    if ($realty->address_object_id) {
-        $title_str .= $realty->address_object->short_type . '. ' . $realty->address_object->name;
+    if ($realty->address) {
+        $title_str .= $realty->address;
     }
 
-    return $title_str;    
+    return $title_str;
 }
 
 sub index {
     my $self = shift;
 
-    my $acc_id = $self->session('user')->{account_id};
+    my $acc_id = $self->session('account')->{id};
 
     return $self->render_not_found unless $self->req->method eq 'POST';
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => 'export');
@@ -326,14 +327,14 @@ sub index {
 
     my @sale_realty_types = split ',', $self->param('sale_realty_types');
     my @rent_realty_types = split ',', $self->param('rent_realty_types');
-    
+
 
     my $realty_types = {
         sale => \@sale_realty_types,
         rent => \@rent_realty_types,
     };
 
-    
+
 
     my $meta = from_json($media->metadata);
     my $contact_phones = '';
@@ -380,8 +381,6 @@ sub index {
         my $v = $realty_types->{$offer_type};
         for my $realty_type (@$v) {
 
-            say $offer_type . ' - ' . $realty_type;
-
             my @tc;
             if ($realty_type =~ /apartments/) {
                 push @tc, ('type.category_code' => ['apartment',]);
@@ -404,12 +403,11 @@ sub index {
             }
 
             if ($realty_type =~ /garages/) {
-                push @tc, (type_code => 'garage');   
+                push @tc, (type_code => 'garage');
             }
 
             my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
                 query => [
-                    state_code => 'work',
                     offer_type_code => $offer_type,
                     or => [
                         @tc,
@@ -419,7 +417,7 @@ sub index {
                 ],
                 sort_by => 'id ASC',
                 require_objects => ['type', 'offer_type'],
-                with_objects => ['address_object', 'house_type', 'balcony', 'bathroom', 'condition', 'agent',],
+                with_objects => ['house_type', 'balcony', 'bathroom', 'condition', 'agent',],
             );
 
             my $dt = DateTime->now();
@@ -430,7 +428,7 @@ sub index {
 
 
             while(my $realty = $realty_iter->next) {
-                
+
                 $xml_writer->startTag(
                     'store-ad',
                     'power-ad' => '1',
@@ -506,11 +504,10 @@ sub index {
                 #    if($_ ne 'Images') {
                 #        $xml_writer->characters($val);
                 #    } else {
-                #        print Dumper $val;
                 #        for my $photo (@$val) {
                 #            $xml_writer->startTag('Image', url => $photo);
                 #            $xml_writer->endTag();
-                #        }                        
+                #        }
                 #    }
                 #    $xml_writer->endTag();
                 #}

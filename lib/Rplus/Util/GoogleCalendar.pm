@@ -10,7 +10,6 @@ use Date::Parse;
 use Mojo::UserAgent;
 use JSON;
 
-use Data::Dumper;
 
 my $CLIENT_ID = '18830375155-q1bh1fhapui07fp7drs6fcgp4vca4hn4.apps.googleusercontent.com';
 my $CLIENT_SECRET = 'VZKzvmy9uqJRIx2ziuOFo2xF';
@@ -29,7 +28,7 @@ sub getAssetAsJSON {
     return decode_json $t_str;
 }
 
-# помогайки для работы с json 
+# помогайки для работы с json
 sub getGoogleData {
     my ($user_id) = @_;
 
@@ -85,24 +84,24 @@ sub setRefreshToken {
 
 # если есть access_token и он истек срое его действия - вернем его, иначе используя refresh_token для user_id, запросим новый
 sub getAuthorizationStr {
-    my ($user_id) = @_;  
+    my ($user_id) = @_;
 
     my $data = getGoogleData($user_id);
 
     if ($data->{access_token} && $data->{token_type} && $data->{access_token_ts} && $data->{expires_in}) {
         if ($data->{access_token_ts} + $data->{expires_in} > time) {
-            say 'reuse token!';
+            #say 'reuse token!';
             return $data->{token_type} . ' ' . $data->{access_token};
         }
-    } 
+    }
 
     my $ua = Mojo::UserAgent->new;
     my $tx = $ua->post('https://accounts.google.com/o/oauth2/token', {
             'Content-Type' => 'application/x-www-form-urlencoded',
-        }, 
+        },
         form => {
             client_id => $CLIENT_ID,
-            client_secret => $CLIENT_SECRET,      
+            client_secret => $CLIENT_SECRET,
             grant_type => 'refresh_token',
             refresh_token => $data->{refresh_token},
         }
@@ -126,10 +125,11 @@ sub getAuthorizationStr {
 
     updateGoogleData($user_id, $new_data);
 
+
     return $new_data->{token_type} . ' ' . $new_data->{access_token};
 }
 
-# 
+#
 sub sync {
     my ($user_id) = @_;
     my $items = [];
@@ -146,7 +146,7 @@ sub sync {
 
     my $ua = Mojo::UserAgent->new;
     my $next_page_token = undef;
-    my $q_sync_token = $data->{next_sync_token} ? ("&syncToken=" . $data->{next_sync_token}) : '';    
+    my $q_sync_token = $data->{next_sync_token} ? ("&syncToken=" . $data->{next_sync_token}) : '';
     do {
         my $q_next_page_token = $next_page_token ? "&pageToken=$next_page_token" : '';
         my $tx = $ua->get('https://www.googleapis.com/calendar/v3/calendars/primary/events?singleEvents=true' . $q_sync_token . $q_next_page_token, {
@@ -186,7 +186,7 @@ sub sync {
             }
             $summary = $item->{summary};
             $description = $item->{description};
-            
+
             # если такого google_id нет - создадим новое событие
             my $task = Rplus::Model::Task::Manager->get_objects(query => [google_id => $item->{id}, delete_date => undef])->[0];
             unless ($task) {
@@ -200,11 +200,9 @@ sub sync {
             eval {
                 $task->start_date($item->{start}->{dateTime});
                 $task->end_date($item->{end}->{dateTime});
-                $task->save;                 
+                $task->save;
             };
-            if ($@) {
-                say Dumper $@;
-            }
+            if ($@) {}
 
         }
     }
@@ -225,7 +223,7 @@ sub syncAll {
 
 # добавить задачу для user_id
 sub insert {
-    my ($user_id, $event_data) = @_;  
+    my ($user_id, $event_data) = @_;
 
     my $data = getGoogleData($user_id);
     return undef unless $data->{permission_granted};
@@ -278,11 +276,11 @@ sub insert {
 
 # изменить задачу для user_id
 sub patch {
-    my ($user_id, $google_id, $event_data) = @_;  
+    my ($user_id, $google_id, $event_data) = @_;
 
     my $data = getGoogleData($user_id);
     return undef unless $data->{permission_granted};
-    my $authorization_str = getAuthorizationStr($user_id);    
+    my $authorization_str = getAuthorizationStr($user_id);
 
     my $ua = Mojo::UserAgent->new;
     my $tx = $ua->patch('https://www.googleapis.com/calendar/v3/calendars/primary/events/' . $google_id, {
@@ -298,7 +296,7 @@ sub patch {
             }
         }
     );
-    
+
     my $asset;
     if (my $res = $tx->success) {
         $asset = decode_json $res->content->asset->{content};
@@ -308,11 +306,11 @@ sub patch {
 }
 
 sub setStatus {
-    my ($user_id, $google_id, $status) = @_;  
+    my ($user_id, $google_id, $status) = @_;
 
     my $data = getGoogleData($user_id);
     return undef unless $data->{permission_granted};
-    my $authorization_str = getAuthorizationStr($user_id);    
+    my $authorization_str = getAuthorizationStr($user_id);
 
     my $ua = Mojo::UserAgent->new;
     my $tx = $ua->patch('https://www.googleapis.com/calendar/v3/calendars/primary/events/' . $google_id, {
@@ -321,21 +319,21 @@ sub setStatus {
             status => $status,
         }
     );
-    
+
     my $asset;
     if (my $res = $tx->success) {
         $asset = decode_json $res->content->asset->{content};
     }
 
-    return $asset;  
+    return $asset;
 }
 
 sub setStartEndDate {
-    my ($user_id, $google_id, $start_date, $end_date) = @_;  
+    my ($user_id, $google_id, $start_date, $end_date) = @_;
 
     my $data = getGoogleData($user_id);
     return undef unless $data->{permission_granted};
-    my $authorization_str = getAuthorizationStr($user_id);    
+    my $authorization_str = getAuthorizationStr($user_id);
 
     my $ua = Mojo::UserAgent->new;
     my $tx = $ua->patch('https://www.googleapis.com/calendar/v3/calendars/primary/events/' . $google_id, {
@@ -349,13 +347,13 @@ sub setStartEndDate {
             }
         }
     );
-    
+
     my $asset;
     if (my $res = $tx->success) {
         $asset = decode_json $res->content->asset->{content};
     }
 
-    return $asset;  
+    return $asset;
 }
 
 1;

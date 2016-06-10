@@ -35,12 +35,12 @@ sub post {
     my $text = $self->param('text');
     my $attachment = $self->param('attachment');
     my $from = $self->stash('user')->{id};
-        
+
     if ($to && $to != $tech_support_id && $from != $tech_support_id) {
         _add_to_contact_list($to, $from);
         _add_to_contact_list($from, $to);
     }
-    
+
     if ($to == $tech_support_id) {
         _add_to_contact_list($tech_support_id, $from);
     }
@@ -48,7 +48,7 @@ sub post {
     if ($from == $tech_support_id) {
         _add_to_contact_list($tech_support_id, $to);
     }
-    
+
     my $message = Rplus::Model::ChatMessage->new (
         to => $to,
         from => $from,
@@ -67,9 +67,9 @@ sub post {
         from => $message->from,
         ts => $message->add_date,
     };
-    
+
     $self->new_message($message->id, $from, $to);
-    
+
     return $self->render(json => {status => 'success', data => $res});
 }
 
@@ -84,7 +84,7 @@ sub list {
     my $res = {
         list => [],
     };
-    
+
      my @query;
     {
         if ($from) {
@@ -93,14 +93,14 @@ sub list {
             push @query, to => undef;
         }
     }
-    
+
     if($from) {
         my $num_rows_updated = Rplus::Model::ChatMessage::Manager->update_objects(
             set => {read => 1},
             where => [from => $from, to => $user_id],
         );
     }
-    
+
     my $message_iter = Rplus::Model::ChatMessage::Manager->get_objects_iterator(
         query => [
             @query,
@@ -111,7 +111,7 @@ sub list {
         with_objects => ['user'],
         sort_by => 'id DESC'
     );
-    
+
     while (my $message = $message_iter->next) {
         my $x = {
             id => $message->id,
@@ -124,7 +124,7 @@ sub list {
         };
         push @{$res->{list}}, $x;
     }
-    
+
     return $self->render(json => {status => 'success', data => $res});
 }
 
@@ -134,11 +134,11 @@ sub list_contacts {
     my $res = {
         list => [],
     };
-    
+
     my $user_id = $self->stash('user')->{id};
     my $this_user = Rplus::Model::User::Manager->get_objects(query => [id => $user_id])->[0];
     my $cl = Mojo::Collection->new($this_user->contact_list);
-    
+
     my $x = {
         id => undef,
         name => 'Общий чат',
@@ -152,9 +152,9 @@ sub list_contacts {
         online => 1,
         can_remove => 0,
         sort_value => 9001,
-    };    
+    };
     push @{$res->{list}}, $x;
-    
+
     my $tech_user = Rplus::Model::User::Manager->get_objects(query => [id => $tech_support_id])->[0];
     my $unread_count = Rplus::Model::ChatMessage::Manager->get_objects_count(
         query => [
@@ -176,11 +176,11 @@ sub list_contacts {
         online => $self->is_logged_in($tech_user->id),,
         can_remove => 0,
         sort_value => 9000,
-    };    
+    };
     push @{$res->{list}}, $x;
-    
+
     return $self->render(json => {status => 'success', data => $res}) unless $cl->size;
-    
+
     my $user_iter = Rplus::Model::User::Manager->get_objects_iterator(
         query => [
             id => [$this_user->contact_list],
@@ -189,9 +189,9 @@ sub list_contacts {
         with_objects => ['account'],
         sort_by => 'account.id ASC'
     );
-    
+
     while (my $user = $user_iter->next) {
-    
+
         my $unread_count = Rplus::Model::ChatMessage::Manager->get_objects_count(
             query => [
                 from => $user->id,
@@ -199,7 +199,7 @@ sub list_contacts {
                 read => 0,
             ],
         );
-    
+
         my $x = {
             id => $user->id,
             name => $user->name,
@@ -215,7 +215,7 @@ sub list_contacts {
         };
         push @{$res->{list}}, $x;
     }
-    
+
     return $self->render(json => {status => 'success', data => $res});
 }
 
@@ -227,7 +227,7 @@ sub find_contacts {
     my $res = {
         list => [],
     };
-        
+
     #my $q_phone;
     #if ($q =~ /^\s*[0-9-]{6,}\s*$/) {
     #   $q_phone = $self->parse_phone_num($q);
@@ -241,10 +241,10 @@ sub find_contacts {
             }
         }
     }
-    
+
     my $this_user = Rplus::Model::User::Manager->get_objects(query => [id => $self->stash('user')->{id}])->[0];
     my $cl = Mojo::Collection->new($this_user->contact_list);
-    
+
     my $user_iter = Rplus::Model::User::Manager->get_objects_iterator(
         query => [
             '!id' => [10000, $tech_support_id],
@@ -254,23 +254,23 @@ sub find_contacts {
         with_objects => ['account'],
         sort_by => 'account.id ASC'
     );
-    
+
     while (my $user = $user_iter->next) {
-    
+
         my $add_to_result = 0;
-        
+
         for my $q_phone (@q_phones) {
             if ($q_phone eq $user->phone_num || $q_phone eq $self->parse_phone_num($user->public_phone_num)) {
                 $add_to_result = 1;
             }
-        } 
-        
+        }
+
         my @r1 = aindex($q, ($user->name,));
         my @r2 = aindex($q, ($user->public_name,));
         if ($r1[0] >= 0 || $r2[0] >= 0) {
             $add_to_result = 1;
         }
-        
+
         if ($add_to_result) {
             my $x = {
                 id => $user->id,
@@ -287,7 +287,7 @@ sub find_contacts {
             push @{$res->{list}}, $x;
         }
     }
-    
+
     return $self->render(json => {status => 'success', data => $res});
 }
 
@@ -297,20 +297,20 @@ sub add_to_contact_list {
     my $contact_id = $self->param('contact_id');
     my $user_id = $self->stash('user')->{id};
     return $self->render(json => {errors => ['contact_id == user_id', ]}, status => 400) if ($contact_id == $user_id);
-    
+
     my $c = Rplus::Model::User::Manager->get_objects(query => [id => $contact_id], with_objects => ['account'],)->[0];
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $c;
 
     my $user = Rplus::Model::User::Manager->get_objects(query => [id => $user_id])->[0];
-    
+
     my @cl = $user->contact_list;
-    
+
     push @cl, $contact_id;
-    
+
     $user->contact_list(Mojo::Collection->new(@cl)->compact->uniq);
     $user->save;
-    
-    
+
+
     my $data = {
         id => $c->id,
         name => $c->name,
@@ -324,7 +324,7 @@ sub add_to_contact_list {
         can_remove => 1,
         sort_value => 0,
     };
-    
+
     return $self->render(json => {status => 'success', contact => $data});
 }
 
@@ -333,22 +333,22 @@ sub remove_from_contact_list {
 
     my $contact_id = $self->param('contact_id');
     my $user_id = $self->stash('user')->{id};
-    
+
     my $user = Rplus::Model::User::Manager->get_objects(query => [id => $user_id])->[0];
-    
+
     my $cl = Mojo::Collection->new($user->contact_list);
-    
+
     my $ncl = $cl->grep(sub {$_ != $contact_id});
-    
+
     $user->contact_list($ncl);
     $user->save;
-    
+
     return $self->render(json => {status => 'success'});
 }
 
 sub get_unread_message_count {
     my $self = shift;
-    
+
     my $user_id = $self->stash('user')->{id};
     my $message_count = Rplus::Model::ChatMessage::Manager->get_objects_count(
         query => [
@@ -356,7 +356,7 @@ sub get_unread_message_count {
             read => 0,
         ],
     );
-    
+
     return $self->render(json => {status => 'success', data => {count => $message_count}});
 }
 
@@ -365,11 +365,9 @@ sub upload_file {
 
     my $file_url = '';
     my $cat = '/users/files/';
-    
+
     if (my $file = $self->param('file')) {
-    
-        say Dumper $file;
-    
+
         my $path = $self->config->{'storage'}->{'path'} . $cat;
         my $name = (Time::HiRes::time =~ s/\.//r) . '_' . $file->filename; # Unique name
 

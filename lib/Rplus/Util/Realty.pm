@@ -71,9 +71,9 @@ sub find_similar {
 
                 type_code => $data{'type_code'},
                 offer_type_code => $data{'offer_type_code'},
-                address_object_id => $data{'address_object_id'}, house_num => $data{'house_num'},                
+                locality => $data{'locality'}, address => $data{'address'}, house_num => $data{'house_num'},                
                 #state_code => $data{'state_code'},
-                
+
                 ($data{'id'} ? ('!id' => $data{'id'}) : ()),
 
                 ($data{'ap_num'} ? (OR => [ap_num => $data{'ap_num'}, ap_num => undef]) : ()),

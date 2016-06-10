@@ -35,6 +35,7 @@ sub complete {
             short_type => $addrobj->short_type,
             expanded_name => $addrobj->expanded_name,
             addr_parts => $metadata->{'addr_parts'},
+            suggestion => $addrobj->name . ' ' . $addrobj->short_type,
         };
     }
 

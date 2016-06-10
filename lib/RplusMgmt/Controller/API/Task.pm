@@ -12,14 +12,13 @@ use Rplus::Util::GoogleCalendar;
 use Mojo::Collection;
 
 use JSON;
-use Data::Dumper;
 
 no warnings 'experimental::smartmatch';
 
 sub list {
     my $self = shift;
 
-    my $acc_id = $self->session('user')->{account_id};
+    my $acc_id = $self->session('account')->{id};
 
     my $start_date = $self->param('start_date') || 'any';
     my $end_date = $self->param('end_date') || 'any';
@@ -71,8 +70,8 @@ sub list {
             my @user_ids;
             my $user_iter = Rplus::Model::User::Manager->get_objects_iterator(query => [account_id => $acc_id, delete_date => undef]);
             while (my $user = $user_iter->next) {
-                if ($self->session('user')->{role} eq 'top') {
-                    if ($user->role ne 'top' || $user->id == $self->session('user')->{id}) {
+                if ($self->stash('user')->{role} eq 'top') {
+                    if ($user->role ne 'top' || $user->id == $self->stash('user')->{id}) {
                         push @user_ids, $user->id;
                     }
                 } else {
@@ -94,7 +93,7 @@ sub list {
         query => [
             @query,
             delete_date => undef,
-        ], 
+        ],
         sort_by => 'start_date DESC'
     );
 
@@ -119,7 +118,8 @@ sub list {
             category => $task->task_type->category,
             color => $task->task_type->color,
             realty_id => $task->realty_id,
-            client_id => $task->client_id,            
+            client_id => $task->client_id,
+            completion_date => $task->completion_date,
         };
 
         push @{$res->{list}}, $x;
@@ -161,7 +161,7 @@ sub get_task_count {
         query => [
             @query,
             delete_date => undef,
-        ], 
+        ],
     );
 
     return $self->render(json => {status => 'success', count => $task_count});
@@ -190,9 +190,10 @@ sub get {
         color => $task->task_type->color,
         realty_id => $task->realty_id,
         client_id => $task->client_id,
+        completion_date => $task->completion_date,
     };
 
-    return $self->render(json => {status => 'success', task => $x},);    
+    return $self->render(json => {status => 'success', task => $x},);
 }
 
 sub update {
@@ -201,7 +202,7 @@ sub update {
     my $id = $self->param('id');
 
     my $task = Rplus::Model::Task::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
-    return $self->render(json => {error => 'Not Found'}, status => 404) unless $task;    
+    return $self->render(json => {error => 'Not Found'}, status => 404) unless $task;
 
     my $result;
 
@@ -216,13 +217,23 @@ sub update {
             my $g_status = '';
             if ($self->param('status') eq 'new') {
                 $g_status = 'confirmed';
+                $task->completion_date(undef);
             } elsif ($self->param('status') eq 'done') {
                 $g_status = 'cancelled';
+
             }
 
             $result = Rplus::Util::GoogleCalendar::setStatus($task->assigned_user_id, $task->google_id, $g_status);
-        }        
+        }
     }
+
+    if ($self->param('status') eq 'new') {
+      $task->completion_date(undef);
+    } else {
+      $task->completion_date('now()');
+    }
+
+
     if ($start_date && $end_date) {
         $task->start_date($start_date);
         $task->end_date($end_date);
@@ -231,7 +242,6 @@ sub update {
             $result = Rplus::Util::GoogleCalendar::setStartEndDate($task->assigned_user_id, $task->google_id, $start_date, $end_date);
         }
     }
-    say $start_date;
     $task->change_date('now()');
     $task->save(changes_only => 1);
     return $self->render(json => {status => 'success', id => $task->id},);
@@ -240,12 +250,12 @@ sub update {
 sub save {
     my $self = shift;
 
-    my $acc_id = $self->session('user')->{account_id};
-    
+    my $acc_id = $self->session('account')->{id};
+
     #return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(subscriptions => 'write');
     my $task_type_id = $self->param('task_type_id');
     my $assigned_user_id = $self->param('assigned_user_id');
-    my $start_date = $self->param('start_date');    
+    my $start_date = $self->param('start_date');
     my $end_date = $self->param('end_date');
     my $summary = $self->param('summary');
     my $description = $self->param('description');
@@ -267,7 +277,7 @@ sub save {
     unless ($assigned_user) {
         $assigned_user_id = $self->stash('user')->{id};
     }
-    
+
     $task->summary($summary);
     $task->description($description);
     $task->start_date($start_date);
@@ -306,7 +316,7 @@ sub save {
         }
         if ($result->{id}) {
             $task->google_id($result->{id});
-        }        
+        }
     }
 
     $task->task_type_id($task_type_id);
@@ -330,7 +340,7 @@ sub get_piramid_data {  # вынести всю аналитику в отдел
             '!realty_id' => undef,
             task_type_id => [1, 2, 3, 4, 5],
             delete_date => undef,
-        ], 
+        ],
     );
 
     my %groups = ();
@@ -352,7 +362,7 @@ sub get_piramid_data {  # вынести всю аналитику в отдел
             when (3) {$res[0] ++; $res[1] ++; $res[2] ++;}
             when (4) {$res[0] ++; $res[1] ++; $res[2] ++; $res[3] ++;}
             when (5) {$res[0] ++; $res[1] ++; $res[2] ++; $res[3] ++; $res[4] ++;}
-        } 
+        }
     }
 
     return $self->render(json => {status => 'success', data => \@res});

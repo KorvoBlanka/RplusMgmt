@@ -19,21 +19,21 @@ use Rplus::Model::Photo;
 use Rplus::Model::Photo::Manager;
 
 use JSON;
-use Data::Dumper;
+
 
 sub delete_account {
     my $self = shift;
-    
+
     my $email = $self->param('email');
-    
+
     my $account = Rplus::Model::Account::Manager->get_objects(
         query => [email => $email, del_date => undef],
     )->[0];
     return $self->render(json => {status => 'failed', reason => 'account_not_found'}) unless $account;
-    
+
     $account->del_date('now');
     $account->save;
-    
+
     return $self->render(json => {status => 'success'})
 }
 
@@ -50,30 +50,31 @@ sub create_account {
     $options_str .= '"export":{"farpost-agent-phone":false,"avito-phone":"","irr-email":"","vnh-agent-phone":false,"present-phones":"","vnh-phones":"","vnh-company":"","irr-agent-phone":false,"avito-email":"","irr-url":"","avito-company":"","present-descr":"5","irr-phones":"","farpost-phones":"","present-agent-phone":false,"avito-agent-phone":false},';
     $options_str .= '"import":{"rent-office":"true","rent-apartment_new":"true","sale-townhouse":"true","sale-apartment_new":true,"sale-land":"true","sale-room":true,"sale-house":"true","rent-room":"true","rent-other":"true","sale-cottage":"true","rent-apartment":"true","rent-cottage":"true","rent-dacha":"true","sale-office":"true","rent-house":"true","sale-apartment":true,"rent-apartment_small":"true","rent-townhouse":"true","sale-apartment_small":true,"sale-other":"true","sale-dacha":"true","rent-land":"true"}';
     $options_str .= '}';
-    
-    
+
+
     my $telephony_str = '{"sip_login":"user","sip_password":"000","sip_host":"host"}';
-    
+
     my $account;
-    
+
     # Begin transaction
     my $db = $self->db;
     $db->begin_work;
-    
+
     eval {
         $account = Rplus::Model::Account->new (
             email => $email,
             name => $name,
             location_id => $location_id,
+            company_name => $name,
         );
         $account->save;
 
-        
+
         my $options = Rplus::Model::Option->new (
             options => $options_str,
             account_id => $account->id,
         );
-        $options->save;   
+        $options->save;
 
         my $user = Rplus::Model::User->new (
             login => 'manager',
@@ -91,18 +92,18 @@ sub create_account {
         $db->rollback;
         return $self->render(json => {status => 'fail'});
     };
-    
+
     $db->commit;
     return $self->render(json => {status => 'success', account_id => $account->id});
 }
 
 sub list_users {
     my $self = shift;
-    
+
     $self->res->headers->header('Access-Control-Allow-Origin' => 'http://billing.rplusmgmt.com');
-    
+
     my $account_name = $self->param('account_name');
-    
+
     my $account = Rplus::Model::Account::Manager->get_objects(
         query => [name => $account_name, del_date => undef],
     )->[0];
@@ -139,16 +140,16 @@ sub list_users {
 
 sub reset_usr_pwd {
     my $self = shift;
-    
+
     $self->res->headers->header('Access-Control-Allow-Origin' => 'http://billing.rplusmgmt.com');
-    
+
     my $id = $self->param('id');
     my $user = Rplus::Model::User::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
     return $self->render(json => {status => 'fail'}) unless $user;
-    
+
     $user->password('12345');
     $user->save;
-    
+
     return $self->render(json => {status => 'success'});
 }
 
@@ -339,12 +340,12 @@ sub add_realty {
     # Fields to save
     my @fields = (
         'type_code', 'offer_type_code', 'state_code',
-        'address_object_id', 'house_num', 'house_type_id', 'ap_num', 'ap_scheme_id',
+        'address', 'house_num', 'house_type_id', 'ap_num', 'ap_scheme_id',
         'rooms_count', 'rooms_offer_count', 'room_scheme_id',
         'floor', 'floors_count', 'levels_count', 'condition_id', 'balcony_id', 'bathroom_id',
         'square_total', 'square_living', 'square_kitchen', 'square_land', 'square_land_type',
         'description', 'owner_info', 'owner_price', 'work_info', 'agent_id', 'agency_price',
-        'latitude', 'longitude', 'sublandmark_id', 'add_date', 'last_seen_date', 'change_date',
+        'latitude', 'longitude', 'add_date', 'last_seen_date', 'change_date',
     );
 
     my %data;
@@ -375,7 +376,7 @@ sub add_realty {
         $photo->realty_id($realty->id);
         $photo->filename($photos[$i]);
         $photo->thumbnail_filename($photos[$i + 1]);
-        $photo->save;       
+        $photo->save;
     }
 
     return $self->render(json => {status => 'success', realty_id => $realty->id});

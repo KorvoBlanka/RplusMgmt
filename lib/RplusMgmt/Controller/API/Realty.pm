@@ -6,8 +6,6 @@ use Rplus::Model::Account;
 use Rplus::Model::Account::Manager;
 use Rplus::Model::Realty;
 use Rplus::Model::Realty::Manager;
-use Rplus::Model::Landmark;
-use Rplus::Model::Landmark::Manager;
 use Rplus::Model::MediatorCompany;
 use Rplus::Model::MediatorCompany::Manager;
 use Rplus::Model::Mediator;
@@ -35,9 +33,10 @@ use JSON;
 use Mojo::Collection;
 use Time::Piece;
 
-use Data::Dumper;
 
 no warnings 'experimental::smartmatch';
+
+my $ua = Mojo::UserAgent->new;
 
 my $export_media = {
     13 => 'avito',
@@ -51,70 +50,70 @@ my $required_export = {
     irr => {
         apartment => {
             sale => [
-                'agent_id', 'owner_price', 'address_object_id', 'house_num', 'floor', 'rooms_count', 'square_total',
+                'agent_id', 'owner_price', 'address', 'house_num', 'floor', 'rooms_count', 'square_total',
             ],
             rent => [
-                'agent_id', 'owner_price', 'address_object_id', 'house_num', 'floor', 'rooms_count', 'square_total',
+                'agent_id', 'owner_price', 'address', 'house_num', 'floor', 'rooms_count', 'square_total',
             ],
         },
         apartment_new => {
             sale => [
-                'agent_id', 'owner_price', 'address_object_id', 'house_num', 'floor', 'rooms_count', 'square_total',
+                'agent_id', 'owner_price', 'address', 'house_num', 'floor', 'rooms_count', 'square_total',
             ],
             rent => [
-                'agent_id', 'owner_price', 'address_object_id', 'house_num', 'floor', 'rooms_count', 'square_total',
+                'agent_id', 'owner_price', 'address', 'house_num', 'floor', 'rooms_count', 'square_total',
             ],
         },
         townhouse => {
             sale => [
-                'agent_id', 'owner_price', 'address_object_id', 'house_num', 'floor', 'rooms_count', 'square_total',
+                'agent_id', 'owner_price', 'address', 'house_num', 'floor', 'rooms_count', 'square_total',
             ],
             rent => [
-                'agent_id', 'owner_price', 'address_object_id', 'house_num', 'floor', 'rooms_count', 'square_total',
+                'agent_id', 'owner_price', 'address', 'house_num', 'floor', 'rooms_count', 'square_total',
             ],
         },
         apartment_small => {
             sale => [
-                'agent_id', 'owner_price', 'address_object_id', 'house_num', 'floor', 'rooms_count', 'square_total',
+                'agent_id', 'owner_price', 'address', 'house_num', 'floor', 'rooms_count', 'square_total',
             ],
             rent => [
-                'agent_id', 'owner_price', 'address_object_id', 'house_num', 'floor', 'rooms_count', 'square_total',
+                'agent_id', 'owner_price', 'address', 'house_num', 'floor', 'rooms_count', 'square_total',
             ],
         },
         room => {
             sale => [
-                'agent_id', 'owner_price', 'address_object_id', 'house_num', 'rooms_count', 'floor',
+                'agent_id', 'owner_price', 'address', 'house_num', 'rooms_count', 'floor',
             ],
             rent => [
-                'agent_id', 'owner_price', 'address_object_id', 'house_num', 'rooms_count', 'rooms_offer_count',,
+                'agent_id', 'owner_price', 'address', 'house_num', 'rooms_count', 'rooms_offer_count',,
             ],
         },
         house => {
             sale => [
-                'agent_id', 'owner_price', 'address_object_id', 'house_num', 'square_total',
+                'agent_id', 'owner_price', 'address', 'house_num', 'square_total',
             ],
             rent => [
-                'agent_id', 'owner_price', 'address_object_id', 'house_num', 'square_total',
+                'agent_id', 'owner_price', 'address', 'house_num', 'square_total',
             ],
         },
         cottage => {
             sale => [
-                'agent_id', 'owner_price', 'address_object_id', 'house_num', 'square_total',
+                'agent_id', 'owner_price', 'address', 'house_num', 'square_total',
             ],
             rent => [
-                'agent_id', 'owner_price', 'address_object_id', 'house_num', 'square_total',
+                'agent_id', 'owner_price', 'address', 'house_num', 'square_total',
             ],
         },
 
         dacha => {
             sale => [
-                'agent_id', 'owner_price', 'address_object_id', 'house_num', 'square_total',
+                'agent_id', 'owner_price', 'address', 'house_num', 'square_total',
             ],
             rent => [
-                'agent_id', 'owner_price', 'address_object_id', 'house_num', 'square_total',
+                'agent_id', 'owner_price', 'address', 'house_num', 'square_total',
             ],
         },
-        
+
         land => {
             sale => [
                 'agent_id', 'owner_price', 'square_land', 'square_land_type',
@@ -123,16 +122,16 @@ my $required_export = {
                 'agent_id', 'owner_price', 'square_land', 'square_land_type',
             ],
         },
-        
+
         office => {
             sale => [
-                'agent_id', 'owner_price', 'address_object_id', 'square_total',
+                'agent_id', 'owner_price', 'address', 'square_total',
             ],
             rent => [
-                'agent_id', 'owner_price', 'address_object_id', 'square_total',
+                'agent_id', 'owner_price', 'address', 'square_total',
             ],
         },
-        
+
         other => {
             sale => [
                 'agent_id', 'owner_price',
@@ -153,68 +152,68 @@ my $required_export = {
 
         any => {
             sale => [
-                'agent_id', 'owner_price', 'address_object_id', 'square_total',
+                'agent_id', 'owner_price', 'address', 'square_total',
             ],
             rent => [
-                'agent_id', 'owner_price', 'address_object_id', 'square_total',
+                'agent_id', 'owner_price', 'address', 'square_total',
             ],
         }
     },
     present => {
         apartment => {
             sale => [
-                'agent_id', 'owner_price', 'address_object_id', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
+                'agent_id', 'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
             ],
             rent => [
-                'agent_id', 'owner_price', 'address_object_id', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
+                'agent_id', 'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
             ],
         },
         apartment_new => {
             sale => [
-                'agent_id', 'owner_price', 'address_object_id', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
+                'agent_id', 'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
             ],
             rent => [
-                'agent_id', 'owner_price', 'address_object_id', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
+                'agent_id', 'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
             ],
         },
         townhouse => {
             sale => [
-                'agent_id', 'owner_price', 'address_object_id', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
+                'agent_id', 'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
             ],
             rent => [
-                'agent_id', 'owner_price', 'address_object_id', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
+                'agent_id', 'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
             ],
         },
         apartment_small => {
             sale => [
-                'agent_id', 'owner_price', 'address_object_id', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
+                'agent_id', 'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
             ],
             rent => [
-                'agent_id', 'owner_price', 'address_object_id', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
+                'agent_id', 'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
             ],
         },
         room => {
             sale => [
-                'agent_id', 'owner_price', 'address_object_id', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_offer_count', 'square_total', 'square_living', 'square_kitchen',
+                'agent_id', 'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_offer_count', 'square_total', 'square_living', 'square_kitchen',
             ],
             rent => [
-                'agent_id', 'owner_price', 'address_object_id', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_offer_count', 'square_total', 'square_living', 'square_kitchen',
+                'agent_id', 'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_offer_count', 'square_total', 'square_living', 'square_kitchen',
             ],
         },
         house => {
             sale => [
-                'agent_id', 'owner_price', 'address_object_id', 'house_type_id', 'floors_count', 'square_land', 'square_total',
+                'agent_id', 'owner_price', 'address', 'house_type_id', 'floors_count', 'square_land', 'square_total',
             ],
             rent => [
-                'agent_id', 'owner_price', 'address_object_id', 'house_type_id', 'floors_count', 'square_land', 'square_total',
+                'agent_id', 'owner_price', 'address', 'house_type_id', 'floors_count', 'square_land', 'square_total',
             ],
         },
         cottage => {
             sale => [
-                'agent_id', 'owner_price', 'address_object_id', 'house_type_id', 'floors_count', 'square_land', 'square_total',
+                'agent_id', 'owner_price', 'address', 'house_type_id', 'floors_count', 'square_land', 'square_total',
             ],
             rent => [
-                'agent_id', 'owner_price', 'address_object_id', 'house_type_id', 'floors_count', 'square_land', 'square_total',
+                'agent_id', 'owner_price', 'address', 'house_type_id', 'floors_count', 'square_land', 'square_total',
             ],
         },
 
@@ -226,7 +225,7 @@ my $required_export = {
                 'agent_id', 'owner_price', 'square_land', 'square_land_type',
             ],
         },
-        
+
         land => {
             sale => [
                 'agent_id', 'owner_price', 'square_land', 'square_land_type',
@@ -235,16 +234,16 @@ my $required_export = {
                 'agent_id', 'owner_price', 'square_land', 'square_land_type',
             ],
         },
-        
+
         office => {
             sale => [
-                'agent_id', 'owner_price', 'address_object_id', 'square_total',
+                'agent_id', 'owner_price', 'address', 'square_total',
             ],
             rent => [
-                'agent_id', 'owner_price', 'address_object_id', 'square_total',
+                'agent_id', 'owner_price', 'address', 'square_total',
             ],
         },
-        
+
         other => {
             sale => [
                 'agent_id', 'owner_price',
@@ -265,68 +264,68 @@ my $required_export = {
 
         any => {
             sale => [
-                'agent_id', 'owner_price', 'address_object_id', 'square_total',
+                'agent_id', 'owner_price', 'address', 'square_total',
             ],
             rent => [
-                'agent_id', 'owner_price', 'address_object_id', 'square_total',
+                'agent_id', 'owner_price', 'address', 'square_total',
             ],
         }
     },
     vnh => {
         apartment => {
             sale => [
-                'agent_id', 'owner_price', 'address_object_id', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
+                'agent_id', 'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
             ],
             rent => [
-                'agent_id', 'owner_price', 'address_object_id', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
+                'agent_id', 'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
             ],
         },
         apartment_new => {
             sale => [
-                'agent_id', 'owner_price', 'address_object_id', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
+                'agent_id', 'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
             ],
             rent => [
-                'agent_id', 'owner_price', 'address_object_id', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
+                'agent_id', 'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
             ],
         },
         townhouse => {
             sale => [
-                'agent_id', 'owner_price', 'address_object_id', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
+                'agent_id', 'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
             ],
             rent => [
-                'agent_id', 'owner_price', 'address_object_id', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
+                'agent_id', 'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
             ],
         },
         apartment_small => {
             sale => [
-                'agent_id', 'owner_price', 'address_object_id', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
+                'agent_id', 'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
             ],
             rent => [
-                'agent_id', 'owner_price', 'address_object_id', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
+                'agent_id', 'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
             ],
         },
         room => {
             sale => [
-                'agent_id', 'owner_price', 'address_object_id', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_offer_count', 'square_total', 'square_living', 'square_kitchen',
+                'agent_id', 'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_offer_count', 'square_total', 'square_living', 'square_kitchen',
             ],
             rent => [
-                'agent_id', 'owner_price', 'address_object_id', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_offer_count', 'square_total', 'square_living', 'square_kitchen',
+                'agent_id', 'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_offer_count', 'square_total', 'square_living', 'square_kitchen',
             ],
         },
         house => {
             sale => [
-                'agent_id', 'owner_price', 'address_object_id', 'house_type_id', 'floors_count', 'square_land', 'square_total',
+                'agent_id', 'owner_price', 'address', 'house_type_id', 'floors_count', 'square_land', 'square_total',
             ],
             rent => [
-                'agent_id', 'owner_price', 'address_object_id', 'house_type_id', 'floors_count', 'square_land', 'square_total',
+                'agent_id', 'owner_price', 'address', 'house_type_id', 'floors_count', 'square_land', 'square_total',
             ],
         },
         cottage => {
             sale => [
-                'agent_id', 'owner_price', 'address_object_id', 'house_type_id', 'floors_count', 'square_land', 'square_total',
+                'agent_id', 'owner_price', 'address', 'house_type_id', 'floors_count', 'square_land', 'square_total',
             ],
             rent => [
-                'agent_id', 'owner_price', 'address_object_id', 'house_type_id', 'floors_count', 'square_land', 'square_total',
+                'agent_id', 'owner_price', 'address', 'house_type_id', 'floors_count', 'square_land', 'square_total',
             ],
         },
 
@@ -338,7 +337,7 @@ my $required_export = {
                 'agent_id', 'owner_price', 'square_land', 'square_land_type',
             ],
         },
-        
+
         land => {
             sale => [
                 'agent_id', 'owner_price', 'square_land', 'square_land_type',
@@ -347,16 +346,16 @@ my $required_export = {
                 'agent_id', 'owner_price', 'square_land', 'square_land_type',
             ],
         },
-        
+
         office => {
             sale => [
-                'agent_id', 'owner_price', 'address_object_id', 'square_total',
+                'agent_id', 'owner_price', 'address', 'square_total',
             ],
             rent => [
-                'agent_id', 'owner_price', 'address_object_id', 'square_total',
+                'agent_id', 'owner_price', 'address', 'square_total',
             ],
         },
-        
+
         other => {
             sale => [
                 'agent_id', 'owner_price',
@@ -377,68 +376,68 @@ my $required_export = {
 
         any => {
             sale => [
-                'agent_id', 'owner_price', 'address_object_id', 'square_total',
+                'agent_id', 'owner_price', 'address', 'square_total',
             ],
             rent => [
-                'agent_id', 'owner_price', 'address_object_id', 'square_total',
+                'agent_id', 'owner_price', 'address', 'square_total',
             ],
         }
     },
     avito => {
         apartment => {
             sale => [
-                'agent_id', 'owner_price', 'address_object_id', 'floor', 'rooms_count', 'square_total',
+                'agent_id', 'owner_price', 'address', 'floor', 'rooms_count', 'square_total',
             ],
             rent => [
-                'agent_id', 'owner_price', 'address_object_id', 'floor', 'rooms_count', 'square_total',
+                'agent_id', 'owner_price', 'address', 'floor', 'rooms_count', 'square_total',
             ],
         },
         apartment_new => {
             sale => [
-                'agent_id', 'owner_price', 'address_object_id', 'floor', 'rooms_count', 'square_total',
+                'agent_id', 'owner_price', 'address', 'floor', 'rooms_count', 'square_total',
             ],
             rent => [
-                'agent_id', 'owner_price', 'address_object_id', 'floor', 'rooms_count', 'square_total',
+                'agent_id', 'owner_price', 'address', 'floor', 'rooms_count', 'square_total',
             ],
         },
         townhouse => {
             sale => [
-                'agent_id', 'owner_price', 'address_object_id', 'floor', 'rooms_count', 'square_total',
+                'agent_id', 'owner_price', 'address', 'floor', 'rooms_count', 'square_total',
             ],
             rent => [
-                'agent_id', 'owner_price', 'address_object_id', 'floor', 'rooms_count', 'square_total',
+                'agent_id', 'owner_price', 'address', 'floor', 'rooms_count', 'square_total',
             ],
         },
         apartment_small => {
             sale => [
-                'agent_id', 'owner_price', 'address_object_id', 'floor', 'rooms_count', 'square_total',
+                'agent_id', 'owner_price', 'address', 'floor', 'rooms_count', 'square_total',
             ],
             rent => [
-                'agent_id', 'owner_price', 'address_object_id', 'floor', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
+                'agent_id', 'owner_price', 'address', 'floor', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
             ],
         },
         room => {
             sale => [
-                'agent_id', 'owner_price', 'address_object_id', 'floor', 'rooms_offer_count', 'square_total',
+                'agent_id', 'owner_price', 'address', 'floor', 'rooms_offer_count', 'square_total',
             ],
             rent => [
-                'agent_id', 'owner_price', 'address_object_id', 'floor', 'rooms_offer_count', 'square_total',
+                'agent_id', 'owner_price', 'address', 'floor', 'rooms_offer_count', 'square_total',
             ],
         },
         house => {
             sale => [
-                'agent_id', 'owner_price', 'address_object_id', 'square_land', 'square_total',
+                'agent_id', 'owner_price', 'address', 'square_land', 'square_total',
             ],
             rent => [
-                'agent_id', 'owner_price', 'address_object_id', 'square_land', 'square_total',
+                'agent_id', 'owner_price', 'address', 'square_land', 'square_total',
             ],
         },
         cottage => {
             sale => [
-                'agent_id', 'owner_price', 'address_object_id', 'square_land',  'square_total',
+                'agent_id', 'owner_price', 'address', 'square_land',  'square_total',
             ],
             rent => [
-                'agent_id', 'owner_price', 'address_object_id', 'square_land',  'square_total',
+                'agent_id', 'owner_price', 'address', 'square_land',  'square_total',
             ],
         },
 
@@ -450,7 +449,7 @@ my $required_export = {
                 'agent_id', 'owner_price', 'square_land', 'square_land_type',
             ],
         },
-        
+
         land => {
             sale => [
                 'agent_id', 'owner_price', 'square_land', 'square_land_type',
@@ -459,16 +458,16 @@ my $required_export = {
                 'agent_id', 'owner_price', 'square_land', 'square_land_type',
             ],
         },
-        
+
         office => {
             sale => [
-                'agent_id', 'owner_price', 'address_object_id', 'square_total',
+                'agent_id', 'owner_price', 'address', 'square_total',
             ],
             rent => [
-                'agent_id', 'owner_price', 'address_object_id', 'square_total',
+                'agent_id', 'owner_price', 'address', 'square_total',
             ],
         },
-        
+
         other => {
             sale => [
                 'agent_id', 'owner_price',
@@ -489,10 +488,10 @@ my $required_export = {
 
         any => {
             sale => [
-                'agent_id', 'owner_price', 'address_object_id', 'square_total',
+                'agent_id', 'owner_price', 'address', 'square_total',
             ],
             rent => [
-                'agent_id', 'owner_price', 'address_object_id', 'square_total',
+                'agent_id', 'owner_price', 'address', 'square_total',
             ],
         }
     },
@@ -506,11 +505,36 @@ while (my $x = $accounts_iter->next) {
     $accounts_hash{$x->id} = $x->company_name ? $x->company_name : $x->name;
 }
 
+sub _get_near_filter {
+    my $near_q = shift;
+    my @points;
+
+    my $data = $ua->get(
+        'https://maps.googleapis.com/maps/api/place/textsearch/json?' => form => {
+            #language => 'ru',
+            location => '48.48,135.05',
+            radius => 50000,
+            query => $near_q,
+            key => 'AIzaSyAhbti6ytHoMhjDBP6E1XlVjYf1MYmfw_4',
+        }
+    )->res->json;
+
+    foreach (@{$data->{results}}) {
+
+        push @points, {
+            lat => $_->{geometry}->{location}->{lat},
+            lon => $_->{geometry}->{location}->{lng}
+        };
+    }
+
+    return \@points;
+}
+
 my $_make_copy = sub {
     my $self = shift;
     my $realty = shift;
 
-    my $acc_id = $self->session('user')->{account_id};
+    my $acc_id = $self->session('account')->{id};
 
     my $new_record;
     # Begin transaction
@@ -522,7 +546,7 @@ my $_make_copy = sub {
             (map { $_ => scalar($realty->$_) } $realty->meta->column_names),
         };
         delete $x->{geocoords};
-        $new_record = Rplus::Model::Realty->new(%{$x}, db => $db);    
+        $new_record = Rplus::Model::Realty->new(%{$x}, db => $db);
 
         $new_record->id(undef);
         $new_record->account_id($acc_id);
@@ -535,15 +559,15 @@ my $_make_copy = sub {
             $new_photo->realty_id($new_record->id);
             $new_photo->filename($photo->filename);
             $new_photo->thumbnail_filename($photo->thumbnail_filename);
-            $new_photo->save;          
+            $new_photo->save;
         }
-        
+
         Rplus::Model::SubscriptionRealty::Manager->update_objects(
             set => {realty_id => $new_record->id},
             where => [realty_id => $realty->id],
             db => $db
-        );    
-        
+        );
+
         my $color_tag = Rplus::Model::RealtyColorTag::Manager->get_objects(query => [realty_id => $realty->id])->[0];
         if ($color_tag) {
             Rplus::Model::RealtyColorTag->new (
@@ -579,7 +603,7 @@ my $_serialize = sub {
     my @realty_objs = (ref($_[0]) eq 'ARRAY' ? @{shift()} : shift);
     my %params = @_;
 
-    my $acc_id = $self->session('user')->{account_id};
+    my $acc_id = $self->session('account')->{id};
 
     my @exclude_fields = qw(ap_num source_media_id source_media_text owner_phones work_info reference source_url);
 
@@ -608,46 +632,15 @@ my $_serialize = sub {
                 }
             }
         }
-        #elsif ($realty->mediator_realty) {
-        #    my %mr_hash;
-        #    foreach($realty->mediator_realty) {
-        #        if ($_->account_id) {
-        #            $mr_hash{$_->account_id} = $_->mediator_company->name;
-        #        } else {
-        #            $company = $_->mediator_company->name;
-        #        }
-        #    }
-        #    if ($mr_hash{$acc_id}) {
-        #        $company = $mr_hash{$acc_id};
-        #    }
-        #}
 
         my $x = {
-            (map { $_ => ($_ =~ /_date$/ ? $self->format_datetime($realty->$_) : scalar($realty->$_)) } grep { !($_ ~~ [qw(delete_date geocoords landmarks metadata fts)]) } $realty->meta->column_names),
+            (map { $_ => ($_ =~ /_date$/ ? $self->format_datetime($realty->$_) : scalar($realty->$_)) } grep { !($_ ~~ [qw(delete_date geocoords landmarks sublandmark_id address_object_id metadata fts fts_vector)]) } $realty->meta->column_names),
 
-            address_object => $realty->address_object_id ? {
-                id => $realty->address_object->id,
-                name => $realty->address_object->name,
-                short_type => $realty->address_object->short_type,
-                expanded_name => $realty->address_object->expanded_name,
-                addr_parts => from_json($realty->address_object->metadata)->{'addr_parts'},
-            } : undef,
-
-            sublandmark => $realty->sublandmark ? {id => $realty->sublandmark->id, name => $realty->sublandmark->name} : undef,
             main_photo_thumbnail => undef,
-            color_tag_id => undef,            
+            color_tag_id => undef,
             mediator_company => $company,
             source_url => $realty->source_url,
         };
-
-        #if ($realty->color_tags) {
-        #    foreach($realty->color_tags) {
-        #        if ($_->{user_id} == $self->stash('user')->{id}) {
-        #            $x->{color_tag_id} = $_->{color_tag_id};
-        #            last;
-        #        }
-        #    }
-        #}
 
         if ($realty->realty_color_tag) {
             for (my $i = 0; $i <= 7; $i ++) {
@@ -658,9 +651,9 @@ my $_serialize = sub {
                 }
             }
         }
-        
+
         # Exclude fields for read permission "2"
-        if ($anothers_obj || ($realty->agent_id != 10000 && $self->has_permission(realty => read => $realty->agent_id) == 2 && !($realty->agent_id ~~ @{$self->stash('user')->{subordinate}}))) {
+        if ($anothers_obj || ($self->has_permission(realty => read => $realty->agent_id) == 2 && !($realty->agent_id ~~ @{$self->stash('user')->{subordinate}}))) {
             $x->{$_} = undef for @exclude_fields;
             $x->{export_media} = [];
             if ($realty->agent_id) {
@@ -673,23 +666,6 @@ my $_serialize = sub {
         if ($self->account_type() eq 'demo') {
             $x->{reference} = '';
             $x->{owner_phones} = ['ДЕМО ВЕРСИЯ'];
-        }
-
-        if ($params{with_sublandmarks}) {
-            if (@{$realty->landmarks} || $realty->sublandmark_id) {
-                my $sublandmarks = Rplus::Model::Landmark::Manager->get_objects(
-                    select => 'id, name',
-                    query => [
-                        id => [@{$realty->landmarks}, $realty->sublandmark_id || ()],
-                        type => 'sublandmark',
-                        delete_date => undef,
-                    ],
-                    sort_by => 'name',
-                );
-                $x->{sublandmarks} = [map { {id => $_->id, name => $_->name} } @$sublandmarks];
-            } else {
-                $x->{sublandmarks} = [];
-            }
         }
 
         push @serialized, $x;
@@ -708,71 +684,9 @@ my $_serialize = sub {
     return @realty_objs == 1 ? $serialized[0] : @serialized;
 };
 
-sub list_for_plot {
-    my $self = shift;
-    
-    my $q = $self->param_n('q');
-    my $offer_type = $self->param_n('offer_type');
-    my $from_date = $self->param('from_date');
-    my $to_date = $self->param('to_date');
-    my $object_count = $self->param('object_count');
-    
-    # "where" query
-    my @query;
-    # Recognize phone numbers from query
-    my @owner_phones;
-    if ($q) {
-        for my $x (split /[ .,]/, $q) {
-            if ($x =~ /^\s*[0-9-]{6,}\s*$/) {
-                if (my $phone_num = $self->parse_phone_num($x)) {
-                    push @owner_phones, $phone_num;
-                    $q =~ s/$x//;
-                }
-            }
-        }
-        push @query, \("t1.owner_phones && '{".join(',', map { '"'.$_.'"' } @owner_phones)."}'") if @owner_phones;
-    }
-
-    # Parse query
-    push @query, Rplus::Util::Query->parse($q, $self);
-
-    my @date_range;
-    unless ($from_date eq '') {
-        push @date_range, add_date => {gt => $from_date};
-    }
-
-    unless ($to_date eq '') {
-        push @date_range, add_date => {lt => $to_date};
-    }
-    
-    my $res = {
-        count => Rplus::Model::Realty::Manager->get_objects_count(query => [@query, @date_range, offer_type_code => $offer_type, '!price' => undef, delete_date => undef]),
-        list => [],
-    };
-    
-    # Fetch realty objects
-    my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
-        select => ['realty.add_date', 'realty.price'],
-        query => [@query, @date_range, offer_type_code => $offer_type, '!price' => undef, '!price' => 0, delete_date => undef],
-        sort_by => ['realty.add_date desc'],
-        page => 1,
-        per_page => $object_count,
-    );
-    
-    while (my $realty = $realty_iter->next) {
-        my $x = {
-            add_date => $realty->add_date,
-            cost => $realty->price,
-        };
-        push @{$res->{list}}, $x;
-    }
-    
-    return $self->render(json => $res);
-}
-
 sub list {
     my $self = shift;
-    
+
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => 'read');
 
     # Input validation
@@ -790,51 +704,61 @@ sub list {
 
     # Input params
     my $q = $self->param_n('q');
+    my $search_area = $self->param('search_area');
+
     my $state_code = $self->param('state_code') || 'any';
     my $offer_type_code = $self->param('offer_type_code') || 'any';
     my $rent_type = $self->param('rent_type') || 'any';
-    
+
     my $agent_id = $self->param('agent_id') || 'any';
     my $sort_by = $self->param('sort_by');
     my $page = $self->param("page") || 1;
     my $per_page = $self->param("per_page") || 30;
+
+    my $depth = $self->param("depth") || 'full';
+
     my $color_tag_id = $self->param("color_tag_id") || 'any';
 
     my $rq_id = $self->param("rq_id") || 42;
-    my $acc_id = $self->session('user')->{account_id};
+    my $acc_id = $self->session('account')->{id};
 
     my $multy = 0;
     if ($state_code eq 'multy') {
         $multy = 1;
-        $state_code = 'work';
+        $state_code = 'any';
     }
 
     # "where" query
     my @query;
+    my $near;
     {
+        if ($q =~ s/(рядом )(.+)/ /i) {
+            $near = $2;
+        }
+
         my @types;
         if (1 != 2) {
             my $options = Rplus::Model::Option->new(account_id => $acc_id)->load();
             my $opt = from_json($options->{options});
             my $import = $opt->{import};
-            
-            my $mode = $self->session->{'user'}->{'mode'};
-            
+
+            my $mode = $self->session('account')->{mode};
+
             eval {
                 while (my ($key, $value) = each %{$import}) {
-                
+
                     if ($mode eq 'rent') {
                         next if $key !~ /rent/;
                     } elsif ($mode eq 'sale') {
                         next if $key !~ /sale/;
                     } else {
-                
+
                     }
-                
+
                     if ($key =~ /$offer_type_code-(\w+)/ && ($value eq 'true' || $value eq '1')) {
                         push @types, $1;
                     }
-                }                
+                }
                 if (scalar @types) {
                     push @query, 'type_code' => \@types ;
                 } else {
@@ -842,13 +766,16 @@ sub list {
                 }
             } or do {}
         }
-    
-        if ($color_tag_id ne 'any') {
-            push @query, and => [
-                'realty_color_tags.tag' . $color_tag_id  => $self->stash('user')->{id},
-            ];
+
+        if ($depth ne 'full') {
+            push @query, \("t1.last_seen_date > now() - interval '$depth days'");
         }
-        
+
+        if ($color_tag_id ne 'any') {
+            my $uid = $self->stash('user')->{id};
+            push @query, \("t2.tag$color_tag_id && '{$uid}'");
+        }
+
         if ($state_code ne 'any') { push @query, state_code => $state_code } else { push @query, '!state_code' => 'deleted' };
         if ($offer_type_code ne 'any') {
             push @query, offer_type_code => $offer_type_code;
@@ -892,11 +819,15 @@ sub list {
                     agent_id => $self->stash('user')->{id},
                     agent_id => undef,
                 ];
-            } elsif ($self->has_permission(realty => 'read')->{others}) {              
+            } elsif ($self->has_permission(realty => 'read')->{others}) {
                 push @query, '!agent_id' => undef;
             } else {
                 push @query, agent_id => $self->stash('user')->{id};
             }
+        }
+
+        if ($search_area) {
+          push @query, \("postgis.st_covers(postgis.ST_GeomFromEWKT('SRID=4326;" . $search_area . "')::postgis.geography, t1.geocoords)");
         }
     }
 
@@ -925,15 +856,32 @@ sub list {
         push @query, \("t1.owner_phones && '{".join(',', map { '"'.$_.'"' } @owner_phones)."}'") if @owner_phones;
     }
 
-    # Parse query
-    push @query, Rplus::Util::Query->parse($q, $self);
-
     if ($multy) {
         push @query, multylisting => 1;
     } else {
         push @query, or => [account_id => undef, account_id => $acc_id];
         push @query, \("NOT hidden_for && '{".$acc_id."}'");
     }
+
+    # Parse query
+    push @query, Rplus::Util::Query->parse($q, $self);
+
+    if ($near) {
+        my $points = _get_near_filter($near);
+
+        my $max_points = 100;
+        if (scalar @{$points}) {
+            my @near_query = ();
+            foreach (@{$points}) {
+                if ((scalar @near_query) == $max_points) {last};
+                push @near_query, \("postgis.st_distance(t1.geocoords, postgis.ST_GeographyFromText('SRID=4326;POINT(" . $_->{lon} . " " . $_->{lat} . ")'), true) < 500");
+            }
+
+            push @query, or => \@near_query;
+        }
+    }
+
+    #say Dumper @query;
 
     my $res = {
         count => Rplus::Model::Realty::Manager->get_objects_count(
@@ -947,18 +895,6 @@ sub list {
         page => $page,
         rq_id => $rq_id,
     };
-
-    # Delete FTS data if no objects found
-    if (!$res->{count}) {
-        @query = map { ref($_) eq 'SCALAR' && $$_ =~ /^t1\.fts/ ? () : $_ } @query;
-        $res->{count} = Rplus::Model::Realty::Manager->get_objects_count(
-            query => [
-                @query,
-                delete_date => undef,
-            ],
-            with_objects => ['realty_color_tag', @with_objects]
-        );
-    }
 
     # Additionaly check found phones for mediators
     if (@owner_phones) {
@@ -978,7 +914,7 @@ sub list {
 
     # Fetch realty objects
     my $realty_objs = Rplus::Model::Realty::Manager->get_objects(
-        select => ['realty.*', (map { 'address_object.'.$_ } qw(id name short_type expanded_name metadata))],
+        select => ['realty.*'],
         query => [
             @query,
             delete_date => undef,
@@ -986,10 +922,9 @@ sub list {
         sort_by => [@sort_by, 'realty.last_seen_date desc'],
         page => $page,
         per_page => $per_page,
-        with_objects => ['address_object', 'sublandmark', 'realty_color_tag', @with_objects],
-        #with_objects => ['address_object', 'sublandmark', 'color_tags', 'mediator_company', 'mediator_realty', @with_objects],
+        with_objects => ['realty_color_tag', @with_objects],
     );
-    
+
     $res->{list} = [$_serialize->($self, $realty_objs)];
 
     return $self->render(json => $res);
@@ -998,18 +933,18 @@ sub list {
 sub get {
     my $self = shift;
 
-    my $acc_id = $self->session('user')->{account_id};
+    my $acc_id = $self->session('account')->{id};
 
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => 'read');
     my $id = $self->param('id');
 
-    my $realty = Rplus::Model::Realty::Manager->get_objects(query => [id => $id, \("NOT hidden_for && '{".$acc_id."}'"), delete_date => undef], with_objects => ['address_object'])->[0];
+    my $realty = Rplus::Model::Realty::Manager->get_objects(query => [id => $id, \("NOT hidden_for && '{".$acc_id."}'"), delete_date => undef])->[0];
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $realty;
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => read => $realty->agent_id);
-    
+
     unless ($realty->latitude) {
-        if ($realty->address_object && $realty->house_num) {
-            my %coords = Rplus::Util::Geo::get_coords_by_addr($realty->address_object, $realty->house_num);
+        if ($realty->address && $realty->house_num) {
+            my %coords = Rplus::Util::Geo::get_coords_by_addr($realty->locality, $realty->address, $realty->house_num);
             if (%coords) {
                 $realty->latitude($coords{latitude});
                 $realty->longitude($coords{longitude});
@@ -1017,7 +952,7 @@ sub get {
             }
         }
     }
-    my $res = $_serialize->($self, $realty, with_sublandmarks => 1);
+    my $res = $_serialize->($self, $realty);
 
     return $self->render(json => $res);
 }
@@ -1026,16 +961,15 @@ sub save {
     my $self = shift;
 
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => 'write');
-    
+
     my $create_event = 0;
 
-    my $acc_id = $self->session('user')->{account_id};
+    my $acc_id = $self->session('account')->{id};
 
     # Input validation
     $self->validation->required('type_code'); # TODO: check value
     $self->validation->required('offer_type_code')->in(qw(sale rent));
     $self->validation->required('state_code'); # TODO: check value
-    $self->validation->optional('address_object_id')->like(qr/^\d+$/);
     $self->validation->optional('house_type_id')->like(qr/^\d+$/);
     $self->validation->optional('ap_num')->like(qr/^\d+$/);
     $self->validation->optional('ap_scheme_id')->like(qr/^\d+$/);
@@ -1058,25 +992,20 @@ sub save {
     $self->validation->optional('agency_price')->like(qr/^\d+(?:(?:\.|,)\d+)?$/);
     $self->validation->optional('latitude')->like(qr/^\d+\.\d+$/);
     $self->validation->optional('longitude')->like(qr/^\d+\.\d+$/);
-    $self->validation->optional('sublandmark_id')->like(qr/^\d+$/);
-
-    if ($self->param('state_code') eq 'work' && !$self->param('agent_id')) {
-        return $self->render(json => {error => 'Forbidden'}, status => 403);
-    }
 
     # Fields to save
     my @fields = (
         'type_code', 'offer_type_code', 'state_code',
-        'address_object_id', 'house_num', 'house_type_id', 'ap_num', 'ap_scheme_id',
+        'house_type_id', 'ap_num', 'ap_scheme_id',
         'rooms_count', 'rooms_offer_count', 'room_scheme_id',
         'floor', 'floors_count', 'levels_count', 'condition_id', 'balcony_id', 'bathroom_id',
         'square_total', 'square_living', 'square_kitchen', 'square_land', 'square_land_type',
         'description', 'owner_info', 'owner_price', 'work_info', 'agent_id', 'agency_price',
-        'latitude', 'longitude', 'sublandmark_id', 'multylisting', 'mls_price', 'mls_price_type',
-        'rent_type',
+        'latitude', 'longitude', 'multylisting', 'mls_price', 'mls_price_type',
+        'rent_type', 'lease_deposite_id', 'locality', 'address', 'house_num', 'district', 'poi'
     );
 
-    my @fields_array = ('owner_phones', 'tags', 'export_media');
+    my @fields_array = ('owner_phones', 'export_media', 'pois');
 
     my @errors;
     if ($self->validation->has_error) {
@@ -1096,7 +1025,7 @@ sub save {
 
     # attachments
     $data{attachments} = Mojo::Collection->new($self->param('attachments[]'))->compact->uniq;
-    
+
     # Owner phones
     $data{owner_phones} = Mojo::Collection->new($self->param('owner_phones[]'))->map(sub { $self->parse_phone_num($_) })->compact->uniq;
     push @errors, {owner_phones => 'Empty phones'} unless @{$data{owner_phones}};
@@ -1133,9 +1062,7 @@ sub save {
         }
     }
 
-    # Tags
-    #my $tags_ok = Rplus::DB->new_or_cached->dbh->selectall_hashref(q{SELECT T.id, T.name FROM tags T WHERE T.delete_date IS NULL}, 'id');
-    #$data{tags} = Mojo::Collection->new($self->param('tags[]'))->grep(sub { exists $tags_ok->{$_} })->uniq;
+    $data{pois} = Mojo::Collection->new($self->param('pois[]'))->uniq;
 
     # Export media
     my $export_media_ok = Rplus::DB->new_or_cached->dbh->selectall_hashref(q{SELECT M.id, M.name FROM media M WHERE M.type = 'export' AND M.delete_date IS NULL}, 'id');
@@ -1144,10 +1071,6 @@ sub save {
     if (!$realty->agent_id) {
         $realty->export_media(Mojo::Collection->new());
     }
-
-    # Find similar realty
-    #my $similar_realty_id = Rplus::Util::Realty->find_similar(%data, state_code => ['raw', 'work', 'suspended']);
-    #my $similar_realty = Rplus::Model::Realty->new(id => $similar_realty_id)->load(with => ['address_object']) if $similar_realty_id;
 
     if ($data{agent_id}) {
         if ($realty->id) {
@@ -1173,63 +1096,55 @@ sub save {
         $realty->change_date('now()');
     }
 
-    if ($realty->state_code eq 'work' && !$realty->agent_id) {
-        $realty->state_code('raw');
-    }
-
-    if (!$realty->agent_id) {
-        $realty->export_media(Mojo::Collection->new());
-    }
-    
-    # 
+    #
     my @mls_fields_apartment = (
-        'address_object_id', 'house_num', 'house_type_id', 'ap_scheme_id',
+        'address', 'house_num', 'house_type_id', 'ap_scheme_id',
         'rooms_count', 'room_scheme_id',
         'floor', 'floors_count', 'condition_id', 'balcony_id', 'bathroom_id',
         'square_total',
-        'description', 'owner_price', 'agent_id', 'mls_price',
+        'description', 'owner_price', 'mls_price',
     );
 
-    # 
+    #
     my @mls_fields_rooms = (
-        'address_object_id', 'house_num', 'house_type_id', 'ap_scheme_id',
+        'address', 'house_num', 'house_type_id', 'ap_scheme_id',
         'rooms_count', 'rooms_offer_count', 'room_scheme_id',
         'floor', 'floors_count', 'condition_id', 'balcony_id', 'bathroom_id',
         'square_total',
-        'description', 'owner_price', 'agent_id', 'mls_price',
+        'description', 'owner_price', 'mls_price',
     );
-    
+
     my @mls_fields_house = (
-        'address_object_id', 'house_num', 'house_type_id',
+        'address', 'house_num', 'house_type_id',
         'rooms_count', 'rooms_offer_count',
         'condition_id', 'bathroom_id',
         'square_total',
-        'description', 'owner_price', 'agent_id', 'mls_price',
+        'description', 'owner_price', 'mls_price',
     );
-    
-    # 
+
+    #
     my @mls_fields_land = (
         'square_land', 'square_land_type',
-        'description', 'owner_price', 'agent_id',
+        'description', 'owner_price',
         'mls_price',
     );
 
-    # 
+    #
     my @mls_fields_office = (
-        'address_object_id', 'house_num',
+        'address', 'house_num',
         'square_total',
-        'description', 'owner_price', 'agent_id',
+        'description', 'owner_price',
         'mls_price',
     );
-    
-    # 
+
+    #
     my @mls_fields_other = (
-        'description', 'owner_price', 'agent_id',
+        'description', 'owner_price',
         'mls_price',
     );
-    
+
     my @mls_fields;
-    
+
     if ($realty->type_code eq 'room') {
         @mls_fields = @mls_fields_rooms;
     } elsif ($realty->type_code eq 'apartment' || $realty->type_code eq 'apartment_small' || $realty->type_code eq 'apartment_new' || $realty->type_code eq 'townhouse') {
@@ -1248,11 +1163,7 @@ sub save {
         unless ($realty->$_) {
             $realty->multylisting(0);
             last;
-        }        
-    }
-    
-    if ($realty->state_code ne 'work') {
-        $realty->multylisting(0);
+        }
     }
 
     eval {
@@ -1291,7 +1202,7 @@ sub save {
             {
                 push @parts, $realty->type->name;
                 push @parts, $realty->rooms_count.'к' if $realty->rooms_count;
-                push @parts, $realty->address_object->name.' '.$realty->address_object->short_type.($realty->house_num ? ', '.$realty->house_num : '') if $realty->address_object;
+                push @parts, $realty->address.($realty->house_num ? ', '.$realty->house_num : '') if $realty->address;
                 push @parts, $realty->price.' тыс. руб.' if $realty->price;
             }
             my $summary = join(', ', @parts);
@@ -1304,17 +1215,17 @@ sub save {
                     summary => $summary,
                     client_id => undef,
                     realty_id => $realty->id,
-                });        
-        }        
+                });
+        }
     };
     if ($@) {
-        
+
     }
 
     my $res = {
         status => 'success',
         id => $realty->id,
-        realty => $_serialize->($self, $realty, with_sublandmarks => 1),
+        realty => $_serialize->($self, $realty),
         #similar_realty_id => $similar_realty_id,
         #($similar_realty ? (similar_realty => $_serialize->($self, $similar_realty)) : ()),
     };
@@ -1325,7 +1236,7 @@ sub save {
 sub set_color_tag {
     my $self = shift;
 
-    my $acc_id = $self->session('user')->{account_id};
+    my $acc_id = $self->session('account')->{id};
     my $user_id = $self->stash('user')->{id};
     my $id = $self->param('id');
     my $color_tag_id = $self->param('color_tag_id');
@@ -1369,7 +1280,7 @@ sub set_color_tag {
 sub set_color_tag_multiple {
     my $self = shift;
 
-    my $acc_id = $self->session('user')->{account_id};
+    my $acc_id = $self->session('account')->{id};
     my $user_id = $self->stash('user')->{id};
 
     my $color_tag_id = $self->param('color_tag_id');
@@ -1426,7 +1337,7 @@ sub update {
 
     #return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => 'write');
 
-    my $acc_id = $self->session('user')->{account_id};
+    my $acc_id = $self->session('account')->{id};
     my $user_id = $self->stash('user')->{id};
 
     my $id = $self->param('id');
@@ -1489,18 +1400,6 @@ sub update {
         }
     }
 
-    if ($realty->state_code eq 'work' && !$realty->agent_id) {
-        $realty->state_code('raw');
-    }
-
-    if (!$realty->agent_id) {
-        $realty->export_media(Mojo::Collection->new());
-    }
-
-    if ($realty->state_code ne 'work') {
-        $realty->multylisting(0);
-    }
-
     # Save data
     eval {
         $realty->save(changes_only => 1);
@@ -1523,7 +1422,7 @@ sub update {
             {
                 push @parts, $realty->type->name;
                 push @parts, $realty->rooms_count.'к' if $realty->rooms_count;
-                push @parts, $realty->address_object->name.' '.$realty->address_object->short_type.($realty->house_num ? ', '.$realty->house_num : '') if $realty->address_object;
+                push @parts, $realty->address.($realty->house_num ? ', '.$realty->house_num : '') if $realty->address;
                 push @parts, $realty->price.' тыс. руб.' if $realty->price;
             }
             my $summary = join(', ', @parts);
@@ -1536,13 +1435,13 @@ sub update {
                     summary => $summary,
                     client_id => undef,
                     realty_id => $realty->id,
-                });        
-        }    
+                });
+        }
     };
     if ($@) {
-        
+
     }
-    
+
     my $res = {
         status => 'success',
         id => $realty->id,
@@ -1559,7 +1458,7 @@ sub update_multiple {
     Mojo::IOLoop->stream($self->tx->connection)->timeout(1200);
     #return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => 'write');
 
-    my $acc_id = $self->session('user')->{account_id};
+    my $acc_id = $self->session('account')->{id};
     my $user_id = $self->stash('user')->{id};
 
     my $ids = Mojo::Collection->new($self->param('id[]'));
@@ -1590,7 +1489,7 @@ sub update_multiple {
                     }
                 }
             } elsif ($_ eq 'color_tag_id') {
-                
+
             } elsif ($_ eq 'export_media') {
                 my $export_media_id = $self->param_n('export_media');
                 my $export_media_ok = Rplus::DB->new_or_cached->dbh->selectall_hashref(q{SELECT M.id, M.name FROM media M WHERE M.type = 'export' AND M.delete_date IS NULL}, 'id');
@@ -1606,7 +1505,7 @@ sub update_multiple {
                     $req_fields = $required_export->{$exp_media_code}->{$realty->type_code}->{$realty->offer_type_code};
                     unless ($req_fields) {
                         $req_fields = $required_export->{$exp_media_code}->{'any'}->{$realty->offer_type_code};
-                    } 
+                    }
                 }
                 if ($req_fields) {
                     foreach (@$req_fields) {
@@ -1622,7 +1521,7 @@ sub update_multiple {
                     push @errors, $id;
                     return;
                 }
-            } 
+            }
         }
 
         unless ($realty->account_id) {
@@ -1674,24 +1573,6 @@ sub update_multiple {
             }
         }
 
-        if ($realty->state_code eq 'work' && !$realty->agent_id) {
-            $realty->state_code('raw');
-            #push @errors, $id;
-            #return;
-        }
-
-        if (!$realty->agent_id && @{$realty->export_media}) {
-            $realty->export_media(Mojo::Collection->new());
-            #push @errors, $id;
-            #return;
-        }
-
-        if ($realty->state_code ne 'work' && $realty->multylisting) {
-            $realty->multylisting(0);
-            #push @errors, $id;
-            #return;
-        }
-
         # Save data
         eval {
             $realty->save(changes_only => 1);
@@ -1718,7 +1599,7 @@ sub update_multiple {
                 {
                     push @parts, $realty->type->name;
                     push @parts, $realty->rooms_count.'к' if $realty->rooms_count;
-                    push @parts, $realty->address_object->name.' '.$realty->address_object->short_type.($realty->house_num ? ', '.$realty->house_num : '') if $realty->address_object;
+                    push @parts, $realty->address.($realty->house_num ? ', '.$realty->house_num : '') if $realty->address;
                     push @parts, $realty->price.' тыс. руб.' if $realty->price;
                 }
                 my $summary = join(', ', @parts);
@@ -1731,11 +1612,11 @@ sub update_multiple {
                         summary => $summary,
                         client_id => undef,
                         realty_id => $realty->id,
-                    });        
-            }    
+                    });
+            }
         };
         if ($@) {
-            
+
         }
 
     });
@@ -1749,29 +1630,69 @@ sub update_multiple {
     return $self->render(json => $res);
 }
 
-sub check_coords {
+sub get_location {
+    my $self = shift;
+
+    my $locality = $self->param('locality');
+    my $address = $self->param('address');
+    my $house_num = $self->param('house_num');
+
+    my $acc_id = $self->session('account')->{id};
+    my $user_id = $self->stash('user')->{id};
+
+    my %coords;
+    my $district = '';
+    my $pois = [];
+
+    if ($address) {
+        %coords = Rplus::Util::Geo::get_coords_by_addr($locality, $address, $house_num);
+    }
+
+    if ($coords{latitude}) {
+      my $location_meta = Rplus::Util::Geo::get_location_metadata($coords{latitude}, $coords{longitude});
+
+      $district = join ', ', @{$location_meta->{district}};
+      $pois = $location_meta->{pois};
+    }
+
+    return $self->render(json => {status => 'success', latitude => $coords{latitude}, longitude => $coords{longitude}, district => $district, pois => $pois});
+}
+
+sub update_location {
     my $self = shift;
 
     my $id = $self->param('id');
-    my $acc_id = $self->session('user')->{account_id};
+    my $acc_id = $self->session('account')->{id};
     my $user_id = $self->stash('user')->{id};
 
     my $realty = Rplus::Model::Realty::Manager->get_objects(query => [id => $id, or => [account_id => undef, account_id => $acc_id], \("NOT hidden_for && '{".$acc_id."}'"), delete_date => undef])->[0];
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $realty;
-    
-    unless ($realty->latitude) {
-        if ($realty->address_object && $realty->house_num) {
-            my %coords = Rplus::Util::Geo::get_coords_by_addr($realty->address_object, $realty->house_num);
-            if (%coords) {
-                $realty->latitude($coords{latitude});
-                $realty->longitude($coords{longitude});
-                $realty->save(changes_only => 1);
-            }
+
+    if ($realty->address) {
+        my %coords = Rplus::Util::Geo::get_coords_by_addr($realty->locality, $realty->address, $realty->house_num);
+
+        if (%coords) {
+            $realty->latitude($coords{latitude});
+            $realty->longitude($coords{longitude});
+            $realty->save(changes_only => 1);
         }
     }
-    
+
     if ($realty->latitude) {
-        return $self->render(json => {status => 'success', lat => $realty->latitude, lng => $realty->longitude});
+      my $res = Rplus::Util::Geo::get_location_metadata($realty->latitude, $realty->longitude);
+
+      $realty->district(join ', ', @{$res->{district}});
+      $realty->pois(Mojo::Collection->new($res->{pois})->uniq);
+    }
+
+    if ($realty->latitude) {
+        return $self->render(json => {
+          status => 'success',
+          lat => $realty->latitude,
+          lng => $realty->longitude,
+          district => $realty->district,
+          pois => $realty->pois
+        });
     } else {
         return $self->render(json => {status => 'not_found'});
     }
@@ -1782,7 +1703,7 @@ sub upload_file {
 
     my $file_url = '';
     my $cat = '/users/files/';
-    
+
     if (my $file = $self->param('file')) {
         my $ts = (Time::HiRes::time =~ s/\.//r);
         $cat .= $ts . '/';

@@ -30,7 +30,6 @@ use Date::Parse;
 use Rplus::Util::Query;
 use Rplus::Util::Realty;
 
-use Data::Dumper;
 
 no warnings 'experimental::smartmatch';
 
@@ -43,8 +42,8 @@ my $_serialize = sub {
 
     my @exclude_fields = qw(ap_num source_media_id source_media_text owner_phones work_info reference);
 
-    my $acc_id = $self->session('user')->{account_id};
-    
+    my $acc_id = $self->session('account')->{id};
+
     my (@serialized, %realty_h);
     for my $realty (@realty_objs) {
 
@@ -71,16 +70,8 @@ my $_serialize = sub {
         }
 
         my $x = {
-            (map { $_ => ($_ =~ /_date$/ ? $self->format_datetime($realty->$_) : scalar($realty->$_)) } grep { !($_ ~~ [qw(delete_date geocoords landmarks metadata fts)]) } $realty->meta->column_names),
-            address_object => $realty->address_object_id ? {
-                id => $realty->address_object->id,
-                name => $realty->address_object->name,
-                short_type => $realty->address_object->short_type,
-                expanded_name => $realty->address_object->expanded_name,
-                addr_parts => from_json($realty->address_object->metadata)->{'addr_parts'},
-            } : undef,
+            (map { $_ => ($_ =~ /_date$/ ? $self->format_datetime($realty->$_) : scalar($realty->$_)) } grep { !($_ ~~ [qw(landmarks sublandmark_id address_object_id delete_date geocoords landmarks metadata fts)]) } $realty->meta->column_names),
             color_tag_id => undef,
-            sublandmark => $realty->sublandmark ? {id => $realty->sublandmark->id, name => $realty->sublandmark->name} : undef,
             main_photo_thumbnail => undef,
             mediator_company => $company,
             reference => '',
@@ -99,7 +90,7 @@ my $_serialize = sub {
         }
 
         # Exclude fields for read permission "2"
-        if ($self->has_permission(realty => read => $realty->agent_id) == 2 && $realty->agent_id != 10000 && !($realty->agent_id ~~ @{$self->stash('user')->{subordinate}})) {
+        if ($self->has_permission(realty => read => $realty->agent_id) == 2 && !($realty->agent_id ~~ @{$self->stash('user')->{subordinate}})) {
             $x->{$_} = undef for @exclude_fields;
             if ($realty->agent_id) {
                 my $user = Rplus::Model::User::Manager->get_objects(query => [id => $realty->agent_id, delete_date => undef])->[0];
@@ -113,29 +104,12 @@ my $_serialize = sub {
             $x->{owner_phones} = ['ДЕМО ВЕРСИЯ'];
         }
 
-        if ($params{with_sublandmarks}) {
-            if (@{$realty->landmarks} || $realty->sublandmark_id) {
-                my $sublandmarks = Rplus::Model::Landmark::Manager->get_objects(
-                    select => 'id, name',
-                    query => [
-                        id => [@{$realty->landmarks}, $realty->sublandmark_id || ()],
-                        type => 'sublandmark',
-                        delete_date => undef,
-                    ],
-                    sort_by => 'name',
-                );
-                $x->{sublandmarks} = [map { {id => $_->id, name => $_->name} } @$sublandmarks];
-            } else {
-                $x->{sublandmarks} = [];
-            }
-        }
-        
         if ($ff eq 'not_med') {
             $x->{mediator_company} = '';
         } elsif ($ff eq 'med' && !$x->{mediator_company}) {
             $x->{mediator_company} = 'ПОСРЕДНИК В НЕДВИЖИМОСТИ';
         }
-        
+
         push @serialized, $x;
         $realty_h{$realty->id} = $x;
     }
@@ -234,6 +208,7 @@ sub list {
                 phone_num => $subscription->client->phone_num,
             },
             queries => scalar $subscription->queries,
+            search_area => $subscription->search_area,
             add_date => $self->format_datetime($subscription->add_date),
             end_date => $self->format_datetime($subscription->end_date),
             realty_count => scalar @{$subscription->subscription_realty},
@@ -287,7 +262,7 @@ sub realty_set_state {
 sub realty_clear_list {
     my $self = shift;
     my $subscription_id = $self->param('subscription_id');
-    
+
     my $subscription = Rplus::Model::Subscription::Manager->get_objects(query => [id => $subscription_id, delete_date => undef])->[0];
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $subscription;
 
@@ -313,16 +288,16 @@ sub realty_list {
     my $sr_state_code = $self->param("sr_state_code") || 'any';
     my $sr_offered = $self->param("sr_offered") || 'any';
 
-    my $acc_id = $self->session('user')->{account_id};
-    
+    my $acc_id = $self->session('account')->{id};
+
     my $ff = '';
-    
+
     my $subscription = Rplus::Model::Subscription::Manager->get_objects(query => [id => $subscription_id, delete_date => undef])->[0];
     if ($page eq '1') {
         realty_update($self, $subscription->id);
     }
 
-    my @query; 
+    my @query;
     {
         push @query, 'subscription_id' => $subscription->id;
         if ($sr_state_code ne 'any') {
@@ -334,7 +309,7 @@ sub realty_list {
             } else {
                 push @query, 'offered' => 0;
             }
-        }        
+        }
         if ($agent_id ne 'any') {
             if ($agent_id eq 'all' && $self->has_permission(realty => 'read')->{others}) {
                 push @query, and => ['!realty.agent_id' => undef, '!realty.agent_id' => 10000];
@@ -344,13 +319,13 @@ sub realty_list {
                 push @query, 'realty.mediator_company_id' => undef;
                 #push @query,
                     #[\"NOT EXISTS (SELECT 1 FROM mediators WHERE mediators.phone_num = ANY (t3.owner_phones) AND mediators.delete_date IS NULL AND ((mediators.account_id IS NULL AND NOT mediators.hidden_for_aid && '{4}') OR mediators.account_id = 4) LIMIT 1)"];
-                
+
             } elsif ($agent_id eq 'med') {
                 $ff = 'med';
                 push @query, '!realty.mediator_company_id' => undef;
                 #push @query,
                     #[\"EXISTS (SELECT 1 FROM mediators WHERE mediators.phone_num = ANY (t3.owner_phones) AND mediators.delete_date IS NULL AND ((mediators.account_id IS NULL AND NOT mediators.hidden_for_aid && '{4}') OR mediators.account_id = 4) LIMIT 1)"];
-                
+
             } elsif ($agent_id =~ /^a(\d+)$/) {
                 my $manager = Rplus::Model::User::Manager->get_objects(query => [id => $1, delete_date => undef])->[0];
                 if (scalar (@{$manager->subordinate})) {
@@ -391,7 +366,7 @@ sub realty_list {
             '!state_code' => 'del',
         ],
         require_objects => ['realty'],
-        with_objects => ['realty_color_tag'],        
+        with_objects => ['realty_color_tag'],
     );
 
     my $realty_iter = Rplus::Model::SubscriptionRealty::Manager->get_objects_iterator(
@@ -426,11 +401,15 @@ sub realty_update {
     my ($self, $subscription_id) = @_;
     my $subscription = Rplus::Model::Subscription::Manager->get_objects(query => [id => $subscription_id, delete_date => undef])->[0];
 
-    my $acc_id = $self->session('user')->{account_id};
+    my $acc_id = $self->session('account')->{id};
 
     for my $q (@{$subscription->queries}) {
         # Skip FTS data
-        my @query = map { ref($_) eq 'SCALAR' && $$_ =~ /^t1\.fts/ ? () : $_ } (Rplus::Util::Query->parse($q, $self));
+        my @query = Rplus::Util::Query->parse($q, $self);
+
+        if ($subscription->search_area) {
+          push @query, \("postgis.st_covers(postgis.ST_GeomFromEWKT('SRID=4326;" . $subscription->search_area . "')::postgis.geography, t1.geocoords)");
+        }
 
         my @types;
         if (1 != 2) {
@@ -438,7 +417,7 @@ sub realty_update {
             my $options = Rplus::Model::Option->new(account_id => $acc_id)->load();
             my $opt = from_json($options->{options});
             my $import = $opt->{import};
-            
+
             while (my ($key, $value) = each %{$import}) {
                 if ($key =~ /$offer_type_code-(\w+)/ && ($value eq 'true' || $value eq '1')) {
                     push @types, $1;
@@ -449,8 +428,8 @@ sub realty_update {
             } else {
                 push @query, 'type_code' => 'none';
             }
-        }        
-        
+        }
+
         if ($subscription->rent_type) {
             push @query, rent_type => $subscription->rent_type;
         }
@@ -471,7 +450,7 @@ sub realty_update {
         my $sid = $subscription->id;
         while (my $realty = $realty_iter->next) {
             #Rplus::Model::SubscriptionRealty->new(subscription_id => $subscription->id, realty_id => $realty->id)->save;
-            my $realty_id = $realty->id; 
+            my $realty_id = $realty->id;
             $values_str .= "($sid, $realty_id),";
         }
         if (length $values_str > 0) {
@@ -484,7 +463,7 @@ sub realty_update {
 sub update {
     my $self = shift;
 
-    #return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(subscriptions => 'write');    
+    #return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(subscriptions => 'write');
 
     my $id = $self->param('id');
     my $subscription = Rplus::Model::Subscription::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
@@ -497,7 +476,7 @@ sub update {
     if (str2time($subscription->end_date) <= time()) {
         $subscription->end_date(undef);
     }
-    
+
     $subscription->save(changes_only => 1);
 
     my $num_del = Rplus::Model::SubscriptionRealty::Manager->delete_objects(
@@ -519,7 +498,7 @@ sub save {
     if (my $id = $self->param('id')) {
         $subscription = Rplus::Model::Subscription::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
     } else {
-        $subscription = Rplus::Model::Subscription->new(user_id => $self->session->{user}->{id});
+        $subscription = Rplus::Model::Subscription->new(user_id => $self->stash('user')->{id});
     }
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $subscription;
 
@@ -573,7 +552,7 @@ sub save {
     } or do {
         return $self->render(json => {error => $@}, status => 500);
     };
-    
+
     # Find/create client by phone number
     my $client = Rplus::Model::Client::Manager->get_objects(query => [id => $client_id, delete_date => undef])->[0];
     if (!$client) {
@@ -595,7 +574,7 @@ sub save {
         }
     }
 
-    my $acc_id = $self->session('user')->{account_id};
+    my $acc_id = $self->session('account')->{id};
     my $options = Rplus::Model::Option->new(account_id => $acc_id)->load();
     my $contact_info = '';
     if ($options) {
@@ -607,7 +586,7 @@ sub save {
     for my $realty_id (@$realty_ids) {
         my $realty = Rplus::Model::Realty::Manager->get_objects(
             query => [id => $realty_id, state_code => ['work'], offer_type_code => $offer_type_code],
-            with_objects => ['address_object', 'agent', 'type', 'sublandmark'],
+            with_objects => ['agent', 'type'],
         )->[0];
         if ($realty) {
             Rplus::Model::SubscriptionRealty->new(subscription_id => $subscription->id, realty_id => $realty->id, offered => 'true')->save;
@@ -619,7 +598,8 @@ sub save {
                 {
                     push @parts, $realty->type->name;
                     push @parts, $realty->rooms_count.'к' if $realty->rooms_count;
-                    push @parts, $realty->address_object->name.' '.$realty->address_object->short_type.($realty->address_object->name !~ /[()]/ && $realty->sublandmark ? ' ('.$realty->sublandmark->name.')' : '') if $realty->address_object;
+                    push @parts, $realty->locality.', '.$realty->address if $realty->address && $realty->locality;
+                    push @parts, $realty->district if $realty->district;
                     push @parts, ($realty->floor || '?').'/'.($realty->floors_count || '?').' эт.' if $realty->floor || $realty->floors_count;
                     push @parts, $realty->price.' тыс. руб.' if $realty->price;
                     push @parts, $realty->agent->public_name || $realty->agent->name if $realty->agent;
@@ -637,7 +617,7 @@ sub save {
                 {
                     push @parts, $realty->type->name;
                     push @parts, $realty->rooms_count.'к' if $realty->rooms_count;
-                    push @parts, $realty->address_object->name.' '.$realty->address_object->short_type.($realty->house_num ? ', '.$realty->house_num : '') if $realty->address_object;
+                    push @parts, $realty->locality.', '.$realty->address.' '.$realty->house_num if $realty->address && $realty->locality;
                     push @parts, $realty->price.' тыс. руб.' if $realty->price;
                     push @parts, 'Клиент: '.$self->format_phone_num($client->phone_num);
                 }
@@ -669,7 +649,7 @@ sub delete {
 sub get_active_count {
     my $self = shift;
 
-    my $acc_id = $self->session('user')->{account_id};
+    my $acc_id = $self->session('account')->{id};
 
     my $offer_type_code = $self->param('offer_type_code') || 'none';
 

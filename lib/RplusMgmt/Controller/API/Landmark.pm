@@ -5,6 +5,8 @@ use Mojo::Base 'Mojolicious::Controller';
 use Rplus::Model::Landmark;
 use Rplus::Model::Landmark::Manager;
 
+use Mojo::UserAgent;
+
 use JSON;
 
 sub list {
@@ -30,7 +32,6 @@ sub list {
     my $lat = $self->param('lat');
     my $lng = $self->param('lng');
 
-    say $self->dumper($lat);
 
     my $res = {
         total => 0,
@@ -169,14 +170,14 @@ sub save {
         where => [id => $landmark->id],
     );
 
-    $self->db->dbh->do(q{SELECT _query_keywords_refresh()});
-    $self->db->dbh->do(q{
-        UPDATE realty R
-        SET landmarks = COALESCE((
-            SELECT array_agg(L.id) FROM landmarks L WHERE L.delete_date IS NULL AND ST_Covers(L.geodata::geography, R.geocoords)
-        ), '{}')
-        WHERE R.geocoords IS NOT NULL AND R.delete_date IS NULL AND NOT(R.state_code = 'delete')
-    }) if 1;
+    #$self->db->dbh->do(q{SELECT _query_keywords_refresh()});
+    #$self->db->dbh->do(q{
+    #    UPDATE realty R
+    #    SET landmarks = COALESCE((
+    #        SELECT array_agg(L.id) FROM landmarks L WHERE L.delete_date IS NULL AND ST_Covers(L.geodata::geography, R.geocoords)
+    #    ), '{}')
+    #    WHERE R.geocoords IS NOT NULL AND R.delete_date IS NULL AND NOT(R.state_code = 'delete')
+    #}) if 1;
 
     return $self->render(json => {status => 'success', id => $landmark->id});
 }

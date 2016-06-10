@@ -33,7 +33,7 @@
   .export-check-grayed {
     color: #888888;
   }
-  
+
   .tag-button {
     height: 10px;
     width: 10px;
@@ -56,7 +56,7 @@
     height: 22px;
     display: block;
   }
-  
+
   % for my $x (@{Rplus::Model::DictColorTag::Manager->get_objects(query => [delete_date => undef], sort_by => 'id')}) {
   .color-tag-<%= $x->id %> {
     background: #<%= $x->color %>;
@@ -74,7 +74,7 @@
 
   #realtyTableWrapper {
     overflow: auto;
-    overflow-y: scroll; 
+    overflow-y: scroll;
     -webkit-overflow-scrolling: touch;  /* iOS native style momentum scrolling */
   }
 
@@ -194,7 +194,7 @@
   }
 
   .right-inner-addon input {
-    padding-right: 30px;    
+    padding-right: 30px;
   }
 
   .right-inner-addon i {
@@ -208,7 +208,7 @@
     position: absolute;
     z-index: 10;
     top: 4px;
-    right: 18px;    
+    right: 18px;
     background: none;
     border: none;
   }
@@ -226,7 +226,7 @@
   .disabled {
     pointer-events: none;
   }
-  
+
   .glyphicon.mls {
       color: #ace44b;
   }
@@ -236,6 +236,7 @@
 % content_for after_bootstrap => begin
 %= js_once "$assets_url/leaflet/$leafletjs_ver/leaflet.js";
 %= js_once "$assets_url/leaflet.fullscreen/$leafletjs_fullscreen_ver/Control.FullScreen.js";
+
 %= js_once "$assets_url/typeahead.js/$typeaheadjs_ver/js/typeahead.js";
 %= js_once "$assets_url/jquery.webSpeech/jquery.webSpeech-1.0.1.js";
 %= js_once "$assets_url/modernizr/modernizr.js";
@@ -251,7 +252,7 @@
   "use strict";
 
   registerGlobalAjaxEvents();
-  
+
   $('#searchQuery').val(localStorage.getItem('REALTY_Q'));
 
   (function () {
@@ -266,17 +267,21 @@
     } else {
       $('#offer-type-filter > a > span').text('Долгосрочная');
     }
-    
 
     var realtyTableConf = {
       fields: [
-        {id: "state", name: "", menuName: "<%= ucfloc 'state' %>", sortName: "state.name", visible: true, val: function (r) {
+        {id: "state", name: "", menuName: "<%= ucfloc 'state' %>", sortName: "state.name", visible: false, val: function (r) {
           var classes = [Rplus.Table['realty_states'][r.state_code].metadata['icon-class']];
           if (r.multylisting) {
               classes.push('mls');
           }
           return '<span class="glyphicon ' + classes.join(' ') + '"></span>';
         }},
+
+        {id: "state_ex", name: "Стадия", menuName: "Стадия", sortName: "state.name", visible: true, val: function (r) {
+          return Rplus.Table['realty_states'][r.state_code].name;
+        }},
+
         {id: "type", name: "<%= ucfloc 'type' %>", sortName: "type.name", visible: true, val: function (r) {
           var text1 = '', text2 = '';
           if (r.source_media_text) {
@@ -288,24 +293,28 @@
         {id: "photo", name: "<%= ucfloc 'photo' %>", visible: false, val: function (r) {
           return r.main_photo_thumbnail ? '<a href="#" data-action="photos-show"><span class="glyphicon glyphicon-camera"></span></a>' : '';
         }},
-        {id: "city", name: "<%= ucfloc 'city' %>", sortName: "address_object.parent_guid", visible: false, val: function (r) {
+        {id: "city", name: " Нас. пункт", sortName: "locality", visible: false, val: function (r) {
           var city = '';
-          if (r.address_object) {
-            if (r.address_object.addr_parts[1]) city += r.address_object.addr_parts[1].name + ' ' + r.address_object.addr_parts[1].short_type;
+          if (r.locality) {
+            city = r.locality;
           }
           return city;
         }},
-        {id: "address", name: "<%= ucfloc 'address' %>", sortName: "address_object.expanded_name", visible: true, val: function (r) {
+        {id: "district", name: "Район", sortName: "district", visible: true, val: function (r) {
+          return (r.district || '');
+        }},
+        {id: "address", name: "<%= ucfloc 'address' %>", sortName: "address", visible: true, val: function (r) {
           var addr = '';
-          if (r.address_object) {
-            if (r.address_object.addr_parts[0]) addr += r.address_object.addr_parts[0].name + ' ' + r.address_object.addr_parts[0].short_type;
-            if (r.house_num) addr += (addr ? ', ' : '-') + r.house_num;
+          if (r.address) {
+            addr = r.address;
+            if (r.house_num) addr += ', ' + r.house_num;
           }
           if (r.color_tag_id != null) {
             addr += '<span class="tag-button color-tag-' + r.color_tag_id + ' pull-right"></span>';
           }
           return addr;
         }},
+
         {id: "rooms", name: "<%= ucfloc 'rooms' %>", sortName: "rooms_count", visible: true, val: function (r) {
           return (r.rooms_offer_count && r.rooms_count ? r.rooms_offer_count + ' из ' + r.rooms_count : (r.rooms_count || ''));
         }},
@@ -330,18 +339,18 @@
         {id: "export", name: "<%= ucfloc q{advertisement} %>", visible: false, val: function (r) {
           return r.export_media ? r.export_media.map(function (x) { return Rplus.Table['media'][x] ? Rplus.Table['media'][x].name : x; }).join('<br>') : '';
         }},
-        
+
         {id: "mediator", name: "Предложение", visible: true, style: "width: 120px; font-size: 12px; white-space: normal;", val: function (r) {
           return r.mediator_company ? r.mediator_company : 'Собственник';
         }},
-        
+
         {id: "owner", name: "Контакты", visible: true, style: "white-space: nowrap;", val: function (r) {
           return r.owner_phones ? r.owner_phones.map(function (x) { return Rplus.Util.formatPhoneNum(x) }).join('<br>') : '';
         }},
         {id: "price", name: "<%= ucfloc 'price' %>", sortName: "price", visible: false, val: function (r) {
           return r.price || '';
         }},
-        
+
         {id: "mls_price", name: "MLS", sortName: "mls_price", visible: false, val: function (r) {
           var p_type = 'т. руб.';
           if (r.mls_price_type == 'perc') {
@@ -352,7 +361,7 @@
           }
           return '';
         }},
-        
+
         {id: "price_per_meter", name: "Цена кв.м", sortName: "CASE WHEN price IS NULL THEN 1 ELSE price END / CASE WHEN square_total IS NULL THEN 10000000 ELSE square_total END", visible: true, val: function (r) {
           if (r.square_total && r.price) {
             return (r.price / r.square_total).toFixed(3);
@@ -370,7 +379,7 @@
             }
           }
           return '';
-        }},        
+        }},
         {id: "agent", name: "<%= ucfloc 'agent' %>", sortName: "agent.name", visible: true, val: function (r) {
           if (r.agent_id && Rplus.Table['users'][r.agent_id]) {
             return Rplus.Table['users'][r.agent_id].name;
@@ -383,7 +392,7 @@
         }},
         {id: "assigned", name: "Назначено", sortName: "assign_date", visible: false, val: function (r) {
           return r.assign_date ? moment(r.assign_date).format("DD.MM.YYYY HH:mm") : '';
-        }},        
+        }},
         {id: "changed", name: "<%= ucfloc 'changed' %>", sortName: "change_date", visible: false, val: function (r) {
           return moment(r.change_date).format("DD.MM.YYYY HH:mm");
         }},
@@ -408,7 +417,7 @@
     }
 
     function initSpeech() {
-      $('#searchQuery').webSpeech({ 
+      $('#searchQuery').webSpeech({
         button      : 'speech-button', //id of the initiating button
         lang        : 'ru-RU',
         format      : 'input',            //input, textarea, html
@@ -434,14 +443,14 @@
     function hasTouch() {
       return Modernizr.touch;
     }
-    
+
     var history = {
       timestamp: "",
     };
 
     var media_export = {};
     var card_opened = false;
-    
+
     function loadHistory() {
       var h_string = localStorage["history"];
       var t;
@@ -465,6 +474,10 @@
       }
       history[id][htype] = val;
       localStorage["history"] = JSON.stringify(history);
+
+      if (htype == 'selected') {
+        $('#selectedCount').text($('#realtyTable > tbody > tr.selected').length);
+      }
     }
 
     function clearHistorySelected() {
@@ -473,20 +486,21 @@
           history[rid][htype] = 0;
       }
       localStorage["history"] = JSON.stringify(history);
+      $('#selectedCount').text(0);
     }
-    
+
     // TODO: переделать этот трэшак
     function createContextMenu() {
-        
+
         var $assign_e = $("#el_assign");
-        
+
         var $delete_e = $("#el_delete");
 
         var $control_els = $(".control_els");     // state, agent, media_export
-        var $menu_els = $(".menu_els");     // state, agent, media_export
-        
+        var $menu_els = $(".menu_els");           // state, agent, media_export
+
         var context_cb = function(e){
-        
+
             var role = "<%= $self->stash('user')->{role} %>";
             var can_control = false;
             var can_delete = false;
@@ -500,8 +514,8 @@
             $("#el_open").removeClass('disabled');
             $("#el_agents").removeClass('disabled');
             $menu_states.removeClass('disabled');
-            $menu_export.removeClass('disabled');            
-            
+            $menu_export.removeClass('disabled');
+
             // set export checkmarks
             var $menu_el = $(".export-check");
             $menu_el.each(function () {
@@ -535,7 +549,7 @@
                     }
                 }
                 //
-          
+
                 if (role == 'top' || role == 'manager' && (!obj.agent_id || s_id == "<%= $self->stash('user')->{id} %>")) {
 
                 } else {
@@ -554,7 +568,7 @@
                             $("#el_delete").addClass('disabled');
                         }
                     }
-                } 
+                }
             });
 
             var state_code = $('[data-filter="state_code"]').data('val');
@@ -565,7 +579,7 @@
                 $("#el_agents").addClass('disabled');
             }
         };
-      
+
       context.init({preventDoubleContext: true, compress: true, above: 'auto',}, context_cb);
       context.attach('#realtyTable', [
         {text: '<span class="glyphicon glyphicon-ok"></span>&nbsp&nbspПроверить', element_id: 'el_check', data_action: 'realty-check',},
@@ -576,7 +590,7 @@
         {text: '<span class="glyphicon glyphicon-trash"></span>&nbsp&nbsp<%= ucfloc 'delete' %>', element_id: 'el_delete', data_action: 'realty-set-state', data_val: "deleted",},
         {divider: true},
         {text: '<span class="glyphicon glyphicon-th-large"></span> <%= ucfloc 'state' %>', element_id: 'el_states', subMenu: [
-          % my $iter = Rplus::Model::RealtyState::Manager->get_objects_iterator(sort_by => 'id');
+          % my $iter = Rplus::Model::RealtyState::Manager->get_objects_iterator(sort_by => 'sort_idx');
           % while (my $x = $iter->next) {
           % my $metadata = from_json($x->metadata);
             {text: '<span class="glyphicon <%= $metadata->{'icon-class'} %>"></span>&nbsp<%= $x->name %>', data_action: 'realty-set-state', data_val: '<%= $x->code %>', },
@@ -589,11 +603,11 @@
             {text: '<strong> <%= $self->stash('user')->{name} %></strong>', data_action: 'realty-set-agent', data_val: '<%= $self->stash('user')->{id} %>', },
         % if ($self->stash('user')->{role} eq 'top') {
         %   my @owned = ();
-        %   for my $m (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('user')->{account_id}, role => ['manager'], delete_date => undef], sort_by => 'name')}) {
+        %   for my $m (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('account')->{id}, role => ['manager'], delete_date => undef], sort_by => 'name')}) {
         %     if (scalar (@{$m->subordinate})) {
               {text: '<%= $m->name %>', data_action: 'realty-set-agent', data_val: '<%= $m->id %>', subMenu: [
         %       push @owned, @{$m->subordinate};
-        %       for my $a (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('user')->{account_id}, id => [$m->subordinate], delete_date => undef], sort_by => 'name')}) {
+        %       for my $a (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('account')->{id}, id => [$m->subordinate], delete_date => undef], sort_by => 'name')}) {
                 {text: '<%= $a->name %>', data_action: 'realty-set-agent', data_val: '<%= $a->id %>'},
         %       }
               ]},
@@ -603,7 +617,7 @@
         %   }
         % } elsif ($self->stash('user')->{role} eq 'manager') {
           % if (scalar (@{$self->stash('user')->{subordinate}})) {
-            % for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [account_id => $self->session('user')->{account_id}, id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
+            % for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [account_id => $self->session('account')->{id}, id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
               % if ($x->id != 10000) {
                 {text: '<%= $x->name %>', data_action: 'realty-set-agent', data_val: '<%= $x->id %>', },
               % }
@@ -613,15 +627,13 @@
         ]},
         % }
         {text: '<span class="glyphicon glyphicon-cog"></span> Задача', element_id: 'el_task', subMenu: [
-        % my $iter = Rplus::Model::DictTaskType::Manager->get_objects_iterator(query => [or => [category => 'seller', category => 'both'], delete_date => undef,], sort_by => 'id');
-        % while (my $x = $iter->next) {
+        % my $t_iter = Rplus::Model::DictTaskType::Manager->get_objects_iterator(query => [or => [category => 'seller', category => 'both'], delete_date => undef,], sort_by => 'id');
+        % while (my $x = $t_iter->next) {
               {text: '&nbsp<%= $x->name %>', data_action: 'task-create', data_val: '<%= $x->id %>', },
         % }
         ]},
         {text: '<span class="glyphicon glyphicon-export"></span>  <%= ucfloc q{advertisement} %>', element_id: 'el_export', subMenu: [
-        % my $loc_id = $self->session('user')->{location_id};
         % for my $x (@{Rplus::Model::Media::Manager->get_objects(query => [type => 'export', delete_date => undef])}) {
-        % next if $loc_id == 2 && ($x->id == 2 || $x->id == 3) || $loc_id == 3 && ($x->id == 2 || $x->id == 3);
           {text: '<span class="export-check export-check<%= $x->id %> glyphicon glyphicon-ok"></span>&nbsp&nbsp<%= $x->name %>', data_action: 'realty-set-export', data_val: '<%= $x->id %>', },
         % }
         ]},
@@ -630,7 +642,7 @@
         {header:  // '+' to concat strings, '' - to match last +
         '<span class="cmenu-tag-group">' +
         % for my $x (@{Rplus::Model::DictColorTag::Manager->get_objects(query => [delete_date => undef], sort_by => 'id')}) {
-          '<span class="round-button color-tag-<%= $x->id %>" data-action="realty-set-color_tag_id" data-val="<%= $x->id %>"></span>' + 
+          '<span class="round-button color-tag-<%= $x->id %>" data-action="realty-set-color_tag_id" data-val="<%= $x->id %>"></span>' +
         % }
         '</span>'},
         {divider: true},
@@ -646,7 +658,6 @@
     }
     function getRentType() {
       var offer_filter = $('[data-filter="offer_type_code"]').data('val')
-      console.log(offer_filter);
       if (offer_filter.match(/short/)) return 'short';
       if (offer_filter.match(/long/)) return 'long';
       return '';
@@ -664,17 +675,19 @@
 
 
       var agentId = $('[data-filter="agent_id"]').data('val');
+      var depth = $('[data-filter="depth"]').data('val');
+
       var sortBy = $('#realtyTable').data('sort');
       var colorTagId = $('[data-filter="color_tag_id"]').data('val');
       _listRealty_started = true;
- 
+
       clearTimeout(_tid);
-      _tid = setTimeout(function(){updateRealty()}, 15000);
+      _tid = setTimeout(function(){updateRealty()}, 180000);
       rq_id ++;
       $.ajax({
         type: "POST",
         url: "/api/realty/list",
-        data: {q: q, state_code: stateCode, offer_type_code: offerTypeCode, rent_type: rentType, agent_id: agentId, color_tag_id: colorTagId, sort_by: sortBy, rq_id: rq_id, page: page, per_page: 34},
+        data: {q: q, depth: depth, state_code: stateCode, offer_type_code: offerTypeCode, rent_type: rentType, agent_id: agentId, color_tag_id: colorTagId, sort_by: sortBy, rq_id: rq_id, page: page, per_page: 34},
         complete: function () { _listRealty_started = false; }
       })
         .done(function (data, textStatus, jqXHR) {
@@ -687,7 +700,11 @@
           var xhtml = '';
           for (var i = 0; i < data.list.length; i++) {
             var r = data.list[i];
-            
+
+            /*if ($('#realtyTable > tbody > tr[data-id="' + r.id + '"]').length > 0) {
+              console.log('d: ' + r.id);
+            }*/
+
             media_export[r.id] = r.export_media;
             xhtml += '<tr data-page="' + data.page + '" data-id="' + r.id + '" data-lat="' + r.latitude + '" data-lng="' + r.longitude +  '"';
             xhtml += ' class="';
@@ -728,12 +745,14 @@
             $('#realtyTable > tbody > tr[data-id="' + r.id + '"]').data('obj', r);
           }
 
+          $('#selectedCount').text($('#realtyTable > tbody > tr.selected').length);
+
           // Mark opened items
-          $('#navTab > li > a[data-id]').each(function () {
-            var id = $(this).data('id');
-            $('#realtyTable > tbody > tr[data-id="' + id + '"]:not(.opened)').removeClass('selected').addClass('opened').removeClass('error');;
-            putToHistory(id, "selected", 0);
-          });
+          //$('#navTab > li > a[data-id]').each(function () {
+          //  var id = $(this).data('id');
+          //  $('#realtyTable > tbody > tr[data-id="' + id + '"]:not(.opened)').removeClass('selected').addClass('opened').removeClass('error');;
+          //  putToHistory(id, "selected", 0);
+          //});
 
           // Notify about mediators in search query
           if (data.mediators) {
@@ -771,14 +790,14 @@
         type: "POST",
         url: "/api/realty/list",
         data: {q: q, state_code: stateCode, offer_type_code: offerTypeCode, rent_type: rentType, agent_id: agentId, color_tag_id: colorTagId, sort_by: sortBy, rq_id: rq_id, page: 1, per_page: 34},
-        complete: function () { 
+        complete: function () {
           _listRealty_started = false;
           supressAjaxIndicator(0);
         }
       })
         .done(function (data, textStatus, jqXHR) {
 
-          _tid = setTimeout(function(){updateRealty()}, 15000);
+          _tid = setTimeout(function(){updateRealty()}, 180000);
 
           if (data.rq_id != rq_id) {
             return 0;
@@ -804,7 +823,7 @@
       				}
       			}
             xhtml += '">';
-            
+
             for (var j = 0; j < realtyTableConf.fields.length; j++) {
               var f = realtyTableConf.fields[j];
               xhtml += '<td class="' + (!f.visible ? 'hidden' : '') + '"' + (f.style ? ' style="' + f.style + '"' : '') + '>' + f.val(r) + '</td>';
@@ -815,6 +834,7 @@
             $tr.data('obj', r);
           }
           _listRealty_finished = false;
+          $('#selectedCount').text($('#realtyTable > tbody > tr.selected').length);
         });
     }
 
@@ -926,7 +946,7 @@
           $.ajax({
             type: "POST",
             url: "/api/user/set_offer_mode",
-            data: {id: <%= $self->session('user')->{id} %>, offer_mode: $('#offer-type-filter').data('val')},
+            data: {id: <%= $self->stash('user')->{id} %>, offer_mode: $('#offer-type-filter').data('val')},
           })
             .done(function (data, textStatus, jqXHR) {
               Rplus.Variables['User'].offer_mode = $('#offer-type-filter').data('val');
@@ -1127,7 +1147,7 @@
 
         // mouse drag selection
         $('#realtyTable > tbody').on('mouseenter', 'tr', function (e) {
-          if (hasTouch()) return;  // 
+          if (hasTouch()) return;  //
           var $this = $(this);
           var id = $this.data('id');
           if(e.which == 1) {  // lmb pressed
@@ -1140,7 +1160,7 @@
               $this.removeClass('selected');
               putToHistory(id, "selected", 0);
             });
-            
+
             var $rows;
             if(last_sel_idx < sel_idx) {
               $rows = $('#realtyTable > tbody > tr').slice(last_sel_idx, sel_idx + 1);
@@ -1195,7 +1215,7 @@
           clearTimeout(select_timer);
           clearTimeout(open_timer);
         });
-        
+
         $('#realtyTable > tbody').on('touchmove', 'tr', function (e) {
           cancel_click = true;
           clearTimeout(select_timer);
@@ -1205,7 +1225,7 @@
 
       // Open ClientCard
       $('[data-action="client-open"]').click(function (e) {
-        
+
         var q = $('#searchQuery').val().trim(),
             offerTypeCode = getOfferType(),
             realtyIds = [],
@@ -1221,7 +1241,7 @@
           },
         }).createWithSubscription(q, offerTypeCode, realtyIds);
       });
-      
+
       // Create realty object card
       $('[data-action="realty-create"]').click(function (e) {
         openRealtyCard(null);
@@ -1242,7 +1262,7 @@
             Rplus.Functions.startChatByPhones(obj.owner_phones);
         }
       });
-      
+
       // Open realty object card
       $('[data-action="realty-check"]').click(function (e) {
         var $selected = $('#realtyTable > tbody > tr.selected');
@@ -1274,7 +1294,9 @@
         var ids = [];
         $selected.each(function () {
           var $this = $(this);
-          ids.push($this.data('id'));
+          if (ids.indexOf($this.data('id')) < 0) {
+            ids.push($this.data('id'));
+          }
         });
 
         $.ajax({
@@ -1319,7 +1341,9 @@
         var ids = [];
         $selected.each(function () {
           var $this = $(this);
-          ids.push($this.data('id'));
+          if (ids.indexOf($this.data('id')) < 0) {
+            ids.push($this.data('id'));
+          }
         });
         var $this = $(this);
         var id = $this.data('id');
@@ -1379,7 +1403,9 @@
         var ids = [];
         $selected.each(function () {
           var $this = $(this);
-          ids.push($this.data('id'));
+          if (ids.indexOf($this.data('id')) < 0) {
+            ids.push($this.data('id'));
+          }
         });
 
         $.ajax({
@@ -1412,7 +1438,7 @@
               var errors = data.errors;
               for (var i = 0; i < errors.length; i++) {
                 $('#realtyTable > tbody > tr[data-id="' + errors[i] + '"]').addClass('error').removeClass('selected');
-                
+
               }
               if (errors.length == 1) {
                 alert('объект не назначен в импорт, проверьте заполнение необходимых полей');
@@ -1432,7 +1458,9 @@
         var ids = [];
         $selected.each(function () {
           var $this = $(this);
-          ids.push($this.data('id'));
+          if (ids.indexOf($this.data('id')) < 0) {
+            ids.push($this.data('id'));
+          }
         });
 
         $.ajax({
@@ -1468,26 +1496,31 @@
 
       $('[data-action="task-create"]').click(function (e) {
         var task_type_id = $(this).data('val');
+        var task_title = $(this)[0].textContent;
         var card = TaskCard({
-          saved: function (start_date) {
+          title: 'Задача: ' + task_title,
+          task_type_id: task_type_id,
+          saved: function (data) {
 
+            var start_date = data.start_date;
             var end_date = start_date.clone().add(30, 'minutes');
+            var agent_id = data.agent_id;
+            var summary_postfix = data.summary;
+            var task_type_id = data.task_type_id;
 
             var $selected = $('#realtyTable > tbody > tr.selected');
             $selected.each(function () {
               var $this = $(this);
-              var id = $this.data('id');
               var r = $this.data('obj');
-              var agent_id = r.agent_id && r.agent_id != 10000 ? r.agent_id : <%= $self->stash('user')->{id} %>;
-              var summary = Rplus.Realty.getDigestForTask(r);
+              var summary = Rplus.Realty.getDigestForTask(r) + ' ' + summary_postfix;
               var description = '';
 
               $.ajax({
                 type: "POST",
                 url: "/api/task/save",
                 data: {
-                  task_type_id: task_type_id, 
-                  assigned_user_id: agent_id, 
+                  task_type_id: task_type_id,
+                  assigned_user_id: agent_id,
                   start_date: start_date.format(),
                   end_date: end_date.format(),
                   realty_id: r.id,
@@ -1502,7 +1535,7 @@
 
                   }
                 }).fail(function (jqXHR, textStatus, errorThrown) {});
-            });              
+            });
             card.close();
           },
         }).open();
@@ -1518,8 +1551,8 @@
           })
           .on('shown.bs.modal', function () {
             if (!geoMap) {
-              var c_lat = <%= $self->session('user')->{map_lat} %>;
-              var c_lng = <%= $self->session('user')->{map_lng} %>;
+              var c_lat = <%= $self->config->{location}->{lat} %>;
+              var c_lng = <%= $self->config->{location}->{lng} %>;
               geoMap = L.map('realtyGeoMap', {
                 center: [c_lat, c_lng],
                 zoom: 15,
@@ -1539,7 +1572,7 @@
               if (!lat || !lng) {
                   $.ajax({
                     type: "POST",
-                    url: "/api/realty/check_coords",
+                    url: "/api/realty/update_location",
                     data: {
                       id: r.id,
                     },
@@ -1552,7 +1585,7 @@
                         var marker = L.marker([data.lat, data.lng]).addTo(markerLG);
                         bounds.push([data.lat, data.lng]);
                         marker.bindPopup(Rplus.Realty.getDigest(r));
-                        
+
                           setTimeout(function () {
                             geoMap.fitBounds(bounds);
                           }, 1000);
@@ -1620,7 +1653,7 @@
           ;
           return false;
         });
-        
+
         // Load photos
         $(document).bind('showPhoto', function (e, id, photo_id) {
           var realtyId = id;
@@ -1632,7 +1665,7 @@
             .done(function (data, textStatus, jqXHR) {
               guid = Rplus.Util.guid();
               $('#photosModal .modal-body').html(template.replace(/{guid}/g, guid));
-              
+
               var img_num = 0;
               for (var i = 0; i < data.list.length; i++) {
                 var x = data.list[i];
@@ -1642,14 +1675,14 @@
                 $('#photosCarousel-' + guid + ' > .carousel-indicators').append('<li data-target="#photosCarousel-' + guid + '" data-slide-to="' + i + '" class="' + (i == 0 ? 'active' : '') + '"></li>');
                 $('#photosCarousel-' + guid + ' > .carousel-inner').append('<div class="item' + (i == 0 ? ' active' : '') + '"><img src="' + x.photo_url + '"></div>');
               }
-              
+
               $('#photosCarousel-' + guid).carousel(img_num);
               if (data.list.length) { $('#photosModal').modal('show'); };
             })
           ;
           return false;
         });
-            
+
         // Load photos
         $('#realtyTable > tbody').on('click', 'td:has([data-action="photos-show"])', function (e) {
           var realtyId = $(this).closest('tr').data('id');
@@ -1680,6 +1713,7 @@
       $.pnotify.defaults.styling = 'bootstrap3';
 
       listRealty(1);
+
     });
   })();
 </script>
@@ -1734,7 +1768,7 @@
         <form role="search">
           <input type="text" class="form-control input-sm" id="searchQuery" name="q" placeholder="введите запрос, например: 2 комнатная квартира центр новая планировка до 5000 тыс. руб. 60 кв. м." autocomplete="off">
         </form>
-        <button id="speech-button" style="z-index: 100;"></button>        
+        <button id="speech-button" style="z-index: 100;"></button>
       </div>
     </div>
 
@@ -1786,12 +1820,12 @@
                 % }
                 % if ($self->stash('user')->{role} eq 'top') {
                 %   my @owned = ();
-                %   for my $m (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('user')->{account_id}, role => ['manager'], delete_date => undef], sort_by => 'name')}) {
+                %   for my $m (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('account')->{id}, role => ['manager'], delete_date => undef], sort_by => 'name')}) {
                       <li class="dropdown-submenu"><a href="#" data-val="<%= $m->id %>" data-type="text"><%= $m->name %></a><ul class="dropdown-menu dropdown-context dropdown-context-sub compressed-context" style="bottom: auto;">
                         <li><a href="#" data-val="a<%= $m->id %>" data-type="text"> Все агенты</a></li>
                 %     if (scalar (@{$m->subordinate})) {
                 %       push @owned, @{$m->subordinate};
-                %       for my $a (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('user')->{account_id}, id => [$m->subordinate], delete_date => undef], sort_by => 'name')}) {
+                %       for my $a (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('account')->{id}, id => [$m->subordinate], delete_date => undef], sort_by => 'name')}) {
                           <li><a href="#" data-val="<%= $a->id %>" data-type="text"><%= $a->name %></a></li>
                 %       }
                 %     }
@@ -1800,29 +1834,26 @@
                 % } elsif ($self->stash('user')->{role} eq 'manager') {
                 <li><a href="#" data-val="a<%= $self->stash('user')->{id} %>" data-type="text"><strong> Мои агенты</strong></a></li>
                 %   if (scalar (@{$self->stash('user')->{subordinate}})) {
-                %     for my $a (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('user')->{account_id}, id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
+                %     for my $a (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('account')->{id}, id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
                         <li><a href="#" data-val="<%= $a->id %>" data-type="text"><%= $a->name %></a></li>
                 %     }
                 %   }
                 % }
               </ul>
             </li>
-            
+
             <!-- Offer type filter -->
-            % my $m = $self->session->{'user'}->{offer_mode};
             <li class="dropdown" id="offer-type-filter" data-filter="offer_type_code" data-val="">
               <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span role="display"></span> <b class="caret"></b></a>
               <ul class="dropdown-menu">
-                %# for my $x (@{Rplus::Model::RealtyOfferType::Manager->get_objects(sort_by => 'id')}) {
                 <li><a href="#" data-val="sale"> Продажа</a></li>
                 <li class="dropdown-submenu">
                   <a href="#" data-val="rent"> Аренда</a>
                   <ul class="dropdown-menu dropdown-context dropdown-context-sub compressed-context" style="bottom: auto;">
-                      <li><a href="#" data-val="rent-short" data-type="text"> Краткосрочная</a></li>
-                      <li><a href="#" data-val="rent-long" data-type="text"> Долгосрочная</a></li>
+                    <li><a href="#" data-val="rent-short" data-type="text"> Краткосрочная</a></li>
+                    <li><a href="#" data-val="rent-long" data-type="text"> Долгосрочная</a></li>
                   </ul>
                 </li>
-                %# }
               </ul>
             </li>
 
@@ -1830,12 +1861,14 @@
             <li class="dropdown" data-filter="state_code" data-val="">
               <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span role="display"><span class="glyphicon glyphicon-th-large"></span> <%= ucfloc 'any' %></span> <b class="caret"></b></a>
               <ul class="dropdown-menu">
-                  <li><a href="#" data-val=""><span class="glyphicon glyphicon-th-large"></span> Любой</a></li>
-                  <li><a href="#" data-val="raw"><span class="glyphicon glyphicon-unchecked"></span> Не обработано</a></li>
-                  <li><a href="#" data-val="work"><span class="glyphicon glyphicon-ok"></span> В работе</a></li>
-                  <li><a href="#" data-val="multy"><span class="glyphicon glyphicon-file"></span> Мультилистинг</a></li>                  
-                  <li><a href="#" data-val="suspended"><span class="glyphicon glyphicon-time"></span> Приостановлено</a></li>
-                  <li><a href="#" data-val="deleted"><span class="glyphicon glyphicon-trash"></span> Удалено</a></li>
+                <li><a href="#" data-val=""><span class="glyphicon glyphicon-th-large"></span> Любой</a></li>
+                <li><a href="#" data-val="multy"><span class="glyphicon glyphicon-file"></span> Мультилистинг</a></li>
+
+                % for my $x (@{Rplus::Model::RealtyState::Manager->get_objects(sort_by => 'sort_idx')}) {
+                % my $metadata = from_json($x->metadata);
+                  <li><a href="#" data-val="<%= $x->code %>"><span class="glyphicon <%= $metadata->{'icon-class'} %>"></span>&nbsp<%= $x->name %></a></li>
+                % }
+
               </ul>
             </li>
 
@@ -1844,10 +1877,28 @@
               <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-th-list"></span> <b class="caret"></b></a>
               <ul class="dropdown-menu" id="realtyTableMenu"></ul>
             </li>
+
+            <!-- depth selector -->
+            <li class="dropdown" data-filter="depth" data-val="90">
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span role="display"><span class="glyphicon glyphicon-calendar"></span> 3 Месяца</span> <b class="caret"></b></a>
+              <ul class="dropdown-menu">
+                  <li><a href="#" data-val="1"> 1 день</a></li>
+                  <li><a href="#" data-val="2"> 2 дня</a></li>
+                  <li><a href="#" data-val="3"> 3 дня</a></li>
+                  <li><a href="#" data-val="7"> Неделя</a></li>
+                  <li><a href="#" data-val="14"> 2 недели</a></li>
+                  <li><a href="#" data-val="30"> Месяц</a></li>
+                  <li><a href="#" data-val="90"> 3 Месяца</a></li>
+                  <li><a href="#" data-val="full"> Вся</a></li>
+              </ul>
+            </li>
           </ul>
 
-          <p class="navbar-text">
+          <p class="navbar-text" style="margin-right: 1px;">
             <span class="text-primary hide-if-small"><%= ucfloc 'found' %></span> <span class="text-primary" id="objectsCount">0</span>
+          </p>
+          <p class="navbar-text" style="margin-right: 1px; margin-left: 1px;">
+            <span class="text-primary hide-if-small"> / <span class="text-primary" id="selectedCount">0</span></span>
           </p>
         </div>
       </div>

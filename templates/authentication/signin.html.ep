@@ -112,6 +112,9 @@
                 $('.form-group').addClass('has-error');
                 $('.alert-danger').removeClass('hidden');
               } else {
+                if (data.message) {
+                  alert(data.message);
+                }
                 location.reload();
               }
             })

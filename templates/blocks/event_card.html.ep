@@ -12,7 +12,7 @@
   }
 
   .datepicker table tr td span.month, .datepicker table tr td span.year {
-   border-radius: 0px; 
+   border-radius: 0px;
   }
 
   .datepicker table thead tr > th:nth-child(6), .datepicker table thead tr > th:nth-child(7) {
@@ -57,7 +57,7 @@
 
   .datepicker table thead .datepicker-switch {
     font-weight: 200;
-    font-size: 16px;  
+    font-size: 16px;
   }
 
   .datepicker table thead tr:nth-child(2) > th {
@@ -86,7 +86,7 @@
 
   .range-quantity {
     background-color: #013669 !important;
-  }  
+  }
 </style>
 % end
 
@@ -105,6 +105,7 @@
     var time_slider = document.querySelector('#timeSlider');
     var $modal = $('#taskModal').modal({show: false, backdrop: false});
     var events = {};
+    var opts = {};
 
     $('#taskDatePicker').datepicker({
       todayHighlight: true,
@@ -155,17 +156,26 @@
       start_date.hours(t[0]);
       start_date.minutes(t[1]);
 
+      var data = {};
+      data.start_date = start_date;
+      data.task_type_id = $('#taskTypeInput').val();
+      data.agent_id = $('#assignedUserIdInput').val();
+      data.summary = $('#taskSummaryInput').val();
+      //var description = $('#taskDescriptionInput').html();
+
+      console.log(data);
+
       if ($.isFunction(events.saved)) {
-        events.saved(start_date);
+        events.saved(data);
       }
     });
 
     return function (options) {
       if (!options) options = {};
-
+      opts = options;
       // Set events
       events = {
-        saved: options.saved,
+        saved: opts.saved,
       };
 
       var $this = {
@@ -173,6 +183,10 @@
         open: function (id) {
           $('#taskDatePicker').datepicker('setDate', moment().format('YYYY-MM-DD'));
           timeSliderSetTime(moment().hours(), moment().minutes());
+          $('#cardTitle').text(opts.title);
+          $('#taskTypeInput').val(opts.task_type_id);
+          $('#taskTypeInput').change();
+
           $modal.modal('toggle');
           return $this;
         },
@@ -184,7 +198,7 @@
       };
 
       return $this;
-    }    
+    }
   })();
 </script>
 % end
@@ -201,6 +215,11 @@
       <div class="modal-body">
 
         <div class="row">
+          <div class="col-sm-12 col-md-12 col-lg-12">
+            <h3 id="cardTitle"></h3>
+        </div>
+        </div>
+        <div class="row">
           <div class="col-sm-6 col-md-6">
             <div id="taskDatePicker">
             </div>
@@ -216,14 +235,37 @@
           <div class="" style="margin: 10px 20px 0px 20px;">
             <span style="float: left;">00:00</span>
             <span style="float: right;">23:55</span>
-          </div>        
+          </div>
           <div class="" style="margin: 30px 20px 0px 20px;">
             <input id="timeSlider" type="text"/>
           </div>
         </div>
-        <div class="row">
-          <span>&nbsp;</span>
+
+        <div class="row" style="border-top: 1px solid #aaa; margin-top: 25px;">
+          <div class="col-lg-12 col-md-12" style="padding-top: 15px;">
+            <select class="form-control input-sm selectpicker" data-size="7" name="assignedUserId" id="assignedUserIdInput">
+            % for my $x (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('account')->{id}, '!id' => 10000, delete_date => undef,], sort_by => 'id')}) {
+              <option value="<%= $x->id %>"><%= $x->name %></option>
+            % }
+            </select>
+          </div>
         </div>
+        <div class="row">
+          <div class="col-lg-12 col-md-12" style="padding-top: 15px;">
+            <select class="form-control input-sm selectpicker" data-size="5" name="taskType" id="taskTypeInput">
+            % for my $x (@{Rplus::Model::DictTaskType::Manager->get_objects(query => [delete_date => undef,], sort_by => 'id')}) {
+              <option value="<%= $x->id %>"><%= $x->name %></option>
+            % }
+            </select>
+          </div>
+        </div>
+        <div class="row" id="taskSummaryDiv" style="border-top: 1px solid #eee; margin-top: 15px;">
+          <div class="col-lg-12 col-md-12" style="padding-top: 15px;">
+            <textarea name="taskSummary" id="taskSummaryInput" placeholder="Описание задачи" autofocus style="outline: none; height: 125px; width: 100%; background-color: rgba(0,0,0,0); border: 0"></textarea>
+          </div>
+        </div>
+
+
       </div>
     </div><!-- /.modal-content -->
   </div><!-- /.modal-dialog -->

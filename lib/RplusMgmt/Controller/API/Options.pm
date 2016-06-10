@@ -14,7 +14,7 @@ sub list {
     my $self = shift;
 
     my $category = $self->param('category');
-    my $acc_id = $self->session('user')->{account_id};
+    my $acc_id = $self->session('account')->{id};
     my $options = Rplus::Model::Option->new(account_id => $acc_id)->load();
     my $opt = {};
     if ($options) {
@@ -25,7 +25,7 @@ sub list {
         options => $opt->{$category},
     };
 
-    return $self->render(json => $res);    
+    return $self->render(json => $res);
 }
 
 sub set_multiple {
@@ -35,7 +35,7 @@ sub set_multiple {
     my $opt_string = $self->param('opt_string');
     my $opt_hash = from_json($opt_string);
 
-    my $acc_id = $self->session('user')->{account_id};
+    my $acc_id = $self->session('account')->{id};
     my $options = Rplus::Model::Option->new(account_id => $acc_id)->load();
 
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $options;
@@ -49,12 +49,12 @@ sub set_multiple {
             $opt->{$category} = {
                 $key => $value,
             };
-        }        
+        }
     }
 
     $options->options(encode_json($opt));
     $options->save;
-    
+
     return $self->render(json => {status => 'success', options => $opt->{$category}});
 }
 
@@ -65,9 +65,9 @@ sub set {
     my $name = $self->param('name');
     my $val = $self->param('value');
 
-    my $acc_id = $self->session('user')->{account_id};
+    my $acc_id = $self->session('account')->{id};
     my $options = Rplus::Model::Option->new(account_id => $acc_id)->load();
-    
+
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $options;
 
     my $opt = from_json($options->{options});
@@ -80,29 +80,29 @@ sub set {
     }
     $options->options(encode_json($opt));
     $options->save;
-    
+
     return $self->render(json => {status => 'success'});
 }
 
 sub get_company_name {
     my $self = shift;
-    
-    my $acc_id = $self->session('user')->{account_id};
+
+    my $acc_id = $self->session('account')->{id};
     my $account = Rplus::Model::Account::Manager->get_objects(query => [id => $acc_id,])->[0];
-    
+
     return $self->render(json => {status => 'success', name => $account->company_name});
 }
 
 sub set_company_name {
     my $self = shift;
     my $name = $self->param('name');
-    
-    my $acc_id = $self->session('user')->{account_id};
+
+    my $acc_id = $self->session('account')->{id};
     my $account = Rplus::Model::Account::Manager->get_objects(query => [id => $acc_id,])->[0];
-    
+
     $account->company_name($name);
     $account->save(changes_only => 1);
-    
+
     return $self->render(json => {status => 'success', name => $account->company_name});
 }
 

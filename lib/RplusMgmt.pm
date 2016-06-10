@@ -4,11 +4,18 @@ use Mojo::Base 'Mojolicious';
 
 our $VERSION = '1.0';
 
+use Rplus::Model::Account;
+use Rplus::Model::Account::Manager;
 use Rplus::Model::User;
 use Rplus::Model::User::Manager;
 use Rplus::Model::Realty;
 use Rplus::Model::Realty::Manager;
 use Rplus::DB;
+
+use RplusMgmt::Task::SMS;
+use RplusMgmt::Task::Subscriptions;
+use RplusMgmt::Task::CalendarSync;
+use RplusMgmt::Task::BillingSync;
 
 use RplusMgmt::L10N;
 
@@ -22,7 +29,6 @@ use DateTime::Format::Strptime qw();
 use Time::HiRes qw( time usleep );
 use Cache::FastMmap;
 use POSIX;
-use Data::Dumper;
 
 my $fmap = Cache::FastMmap->new();
 my $ua = Mojo::UserAgent->new;
@@ -30,10 +36,10 @@ my $ua = Mojo::UserAgent->new;
 sub startup {
     my $self = shift;
 
+    $fmap->set('task_process', {});
+    $fmap->set('users_online', {});
     $fmap->set('users_logged_in', {});
-    $fmap->set('chat_last_id', {});
-    $fmap->set('logins', {});
-    $fmap->set('acc_cache', {});
+    $fmap->set('chat_msg', {});
 
     # Plugins
     my $config = $self->plugin('Config' => {file => 'app.conf'});
@@ -47,7 +53,7 @@ sub startup {
         bootstrap_ver => '3.0.2',
         momentjs_ver => '2.8.2',
         holderjs_ver => '2.2.0',
-        leafletjs_ver => '0.7',
+        leafletjs_ver => '0.7.7',
         leafletjs_draw_ver => '0.2.3-dev',
         leafletjs_fullscreen_ver => '2013.10.14',
         typeaheadjs_ver => '0.9.4-dev',
@@ -56,140 +62,111 @@ sub startup {
 
      $self->helper(new_message => sub {
         my ($self, $id, $from, $to) = @_;
-        
-        $fmap->set('chat_last_id', {
+
+        $fmap->set('chat_msg', {
             id => $id,
             from => $from,
             to => $to,
         });
-        
+
         return;
     });
-    
-    $self->helper(is_logged_in => sub {
+
+    $self->helper(is_user_online => sub {
         my ($self, $user_id) = @_;
-        
-        my $users_logged_in = $fmap->get('users_logged_in');
-        
-        return $users_logged_in->{$user_id};
+
+        my $users_online = $fmap->get('users_online');
+
+        return $users_online->{$user_id};
     });
 
-    $self->helper(get_acc_data => sub {
+    $self->helper(is_logged_in => sub {
+        my ($self, $account_id, $user_id) = @_;
+
+        my $login_struct = $fmap->get('users_logged_in');
+
+        return 1 if $login_struct->{$account_id} && $login_struct->{$account_id}->{$user_id};
+        return 0;
+    });
+
+    $self->helper(uc_check => sub {
+        my ($self, $account_id, $user_id, $user_count) = @_;
+
+        my $account = $self->get_account();
+        return 0 unless $account;
+        my $max_users = $account->user_count * 1;
+        my $login_struct = $fmap->get('users_logged_in');
+
+        if ($login_struct->{$account_id} && (scalar keys $login_struct->{$account_id}) > $user_count) {
+            $login_struct->{$account_id} = {};
+            $fmap->set('users_logged_in', $login_struct);
+        }
+        return 1 if $login_struct->{$account_id} && $login_struct->{$account_id}->{$user_id};
+        if ($login_struct->{$account_id}) {
+            return 0 if scalar keys $login_struct->{$account_id} >= $user_count;
+        }
+
+        return 1;
+    });
+
+    $self->helper(get_account => sub {
         my ($self) = @_;
-        
-        my $acc_name = $self->session->{'account_name'};
-        my $acc_data;
-        
-        my $acc_cache = $fmap->get('acc_cache');
-        my $r = $acc_cache->{$acc_name};
-        if ($r->{data} && (time - $r->{'ts'} < 120)) {
-            $acc_data = $r->{data};
-        } else {      
-            my $tx = $ua->get('http://rplusmgmt.com/api/account/get_by_name?name=' . $acc_name);
-            if (my $res = $tx->success) {
-                if ($res->json->{'status'} eq 'ok') {
-                    $acc_data = $res->json->{'data'};
-        
-                    my $account = Rplus::Model::Account::Manager->get_objects(query => [name => $acc_name, del_date => undef])->[0];
 
-                    $acc_data = {
-                        id => $account->id,
-                        name => $account->name,
-                        balance => $acc_data->{balance},
-                        user_count => $acc_data->{user_count},
-                        mode => $acc_data->{mode},
-                        location_id => $acc_data->{location_id},
-                        phone_prefix => '4212',
-                        city_guid => 'a4859da8-9977-4b62-8436-4e1b98c5d13f',
-                    };
+        my $acc_name = $self->session('account_name');
+        my $account = Rplus::Model::Account::Manager->get_objects(query => [name => $acc_name, del_date => undef])->[0];
 
-                    my $r ={
-                        'ts' => time,
-                        'data' => $acc_data,
-                    };
-
-                    $acc_cache->{$acc_name} = $r;
-                    $fmap->set('acc_cache', $acc_cache);
-                }
-            }
-        }
-
-        if ($acc_data) {
-            return $acc_data;
-        } else {
-            return {
-                balance => -1,
-                user_count => 1,
-                location_id => 1,
-                phone_prefix => '4212',
-                city_guid => 'a4859da8-9977-4b62-8436-4e1b98c5d13f',
-            };
-        }
+        return $account;
     });
 
     $self->helper(session_check => sub {
-        my ($self, $login) = @_;
+        my ($self, $account_id, $user_id) = @_;
 
         #return 1 if $self->config->{account_type} eq 'demo' || $self->config->{account_type} eq 'dev';
 
-        my $acc_data = $self->get_acc_data();
-        return 0 unless $acc_data;
+        my $account = $self->get_account();
+        return 0 unless $account;
 
-        my $max_users = $acc_data->{user_count} * 1;
+        my $max_users = $account->user_count * 1;
+        my $login_struct = $fmap->get('users_logged_in');
 
-        my $login_struct = $fmap->get('logins');
+        return 0 if $account->balance < 0;
+        return 0 unless exists $login_struct->{$account_id};
+        return 0 unless exists $login_struct->{$account_id}->{$user_id};
+        return 0 if $self->session->{sid} != $login_struct->{$account_id}->{$user_id};
 
-        return 0 if $acc_data->{balance} < 0;
-        #return 0 unless exists $login_struct->{$login};
-        #return 0 if scalar keys $login_struct > $max_users;
-        #return 0 if $self->session->{sid} != $login_struct->{$login};
+        return 0 if scalar keys $login_struct->{$account_id} > $max_users;
 
         return 1;
     });
 
     $self->helper(log_in => sub {
-        my ($self, $login) = @_;
+        my ($self, $account_id, $user_id) = @_;
 
-        my $login_struct = $fmap->get('logins');
-        $login_struct->{$login} = $self->session->{sid};
-        $fmap->set('logins', $login_struct);
+        my $login_struct = $fmap->get('users_logged_in');
+
+        $login_struct->{$account_id} = {} unless $login_struct->{$account_id};
+        $login_struct->{$account_id}->{$user_id} = $self->session->{sid};
+
+        $fmap->set('users_logged_in', $login_struct);
 
         return;
     });
 
     $self->helper(log_out => sub {
-        my ($self, $login) = @_;
+        my ($self, $account_id, $user_id) = @_;
 
-        my $login_struct = $fmap->get('logins');
-        delete $login_struct->{$login};
-        $fmap->set('logins', $login_struct);
-
+        my $login_struct = $fmap->get('users_logged_in');
+        if ($login_struct->{$account_id} && $login_struct->{$account_id}->{$user_id}) {
+            delete $login_struct->{$account_id}->{$user_id};
+        }
+        $fmap->set('users_logged_in', $login_struct);
 
         return;
     });
 
-    $self->helper(log_in_check => sub {
-        my ($self, $max_users, $asp_login) = @_;
-
-        my $login_struct = $fmap->get('logins');
-
-        if (scalar keys $login_struct > $max_users) {
-            $login_struct = {};
-            $fmap->set('logins', $login_struct);
-        }
-
-        return 1;       # временно
-
-        return 1 if exists $login_struct->{$asp_login};
-
-        return 0 if scalar keys $login_struct == $max_users;
-
-        return 1;
-    });
-
     # DB helper
     $self->helper(db => sub { Rplus::DB->new_or_cached });
-    
+
     # JS Once helper
     $self->helper(js_once => sub {
         my ($self, $js_url) = @_;
@@ -242,8 +219,7 @@ sub startup {
         my ($self, $phone_num, $phone_prefix) = @_;
         return undef unless $phone_num;
 
-        my $acc_data = $self->get_acc_data();
-        my $c_phone_prefix = $acc_data->{phone_prefix};
+        my $c_phone_prefix = $self->config->{default_phone_prefix};
         $phone_prefix //= $c_phone_prefix;
 
         return $phone_num =~ s/^(\Q$phone_prefix\E)(\d+)$/($1)$2/r if $phone_prefix && $phone_num =~ /^\Q$phone_prefix\E/;
@@ -255,8 +231,7 @@ sub startup {
         my ($self, $phone_num, $phone_prefix) = @_;
         return undef unless $phone_num;
 
-        my $acc_data = $self->get_acc_data();
-        my $c_phone_prefix = $acc_data->{phone_prefix};
+        my $c_phone_prefix = $self->config->{default_phone_prefix};
         $phone_prefix = $c_phone_prefix;
 
         if ($phone_num !~ /^\d{10}$/) {
@@ -353,7 +328,7 @@ sub startup {
         ucfirst $self->loc(@_);
     });
 
-    # 
+    #
     $self->hook(before_routes => sub {
         my $c = shift;
 
@@ -361,12 +336,11 @@ sub startup {
         my @parts = split(/\./, $host);
         my $account_name = $parts[0];
 
-        $c->session->{'account_name'} = $account_name;
+        $c->session(account_name => $account_name);  # используется в get_account
 
-        if (my $user_id = $c->session->{user}->{id}) {
+        if (my $user_id = $c->session->{user_id}) {
             if (my $user = Rplus::Model::User::Manager->get_objects(query => [id => $user_id, delete_date => undef])->[0]) {
                 $c->stash(user => {
-
                     id => $user->id,
                     login => $user->login,
                     name => $user->name,
@@ -380,16 +354,43 @@ sub startup {
         }
     });
 
+    my $task_timer_id = Mojo::IOLoop->recurring(180 => sub {
+
+      my $tp = $fmap->get('task_process');
+
+      if (waitpid($tp->{pid}, WNOHANG) != 0) { # вернет 0 если еще не завершился, -1 если такого нет, pid если завершился
+        if (my $task_pid = fork) {
+          say 'task process forked';
+          $fmap->set('task_process', {pid => $task_pid,});
+        } else {
+
+          say 'child: doing chords';
+          RplusMgmt::Task::BillingSync::run();
+          RplusMgmt::Task::CalendarSync::run();
+
+          RplusMgmt::Task::Subscriptions::run($self);
+          #RplusMgmt::Task::SMS::run();
+          say 'child: done';
+
+          exit(0);
+        }
+      } else {
+        say 'child is running'
+      }
+
+    });
+
     # Router
     my $r = $self->routes;
 
     # API namespace
+
+    $r->route('/api/user/set_google_token')->to(namespace => 'RplusMgmt::Controller::API', controller => 'user', action => 'set_google_token');
+
     $r->route('/api/:controller')->bridge->to(cb => sub {
         my $self = shift;
 
-        return 1; # убрать проверку авторизации для api/user/set_google_token
-
-        return 1 if $self->stash('user') && $self->session_check($self->session->{'user'}->{id});
+        return 1 if $self->session('account') && $self->stash('user') && $self->session_check($self->session('account')->{id}, $self->stash('user')->{id});
         $self->render(json => {error => 'Unauthorized'}, status => 401);
         return undef;
     })->route('/:action')->to(namespace => 'RplusMgmt::Controller::API');
@@ -409,16 +410,17 @@ sub startup {
             Mojo::IOLoop->stream($self->tx->connection)->timeout(0);
 
             my $user_id = $self->stash('user')->{id};
-            
-            my $users_logged_in = $fmap->get('users_logged_in');
-            $users_logged_in->{$user_id} = 1;
-            $fmap->set('users_logged_in', $users_logged_in);
-            
+
+            my $users_online = $fmap->get('users_online');
+            $users_online->{$user_id} = 1;
+            $fmap->set('users_online', $users_online);
+
             # Change content type
             $self->res->headers->content_type('text/event-stream');
             my $last_msg_id = 0;
+
             my $timer_id_1 = Mojo::IOLoop->recurring(1 => sub {
-                my $msg = $fmap->get('chat_last_id');
+                my $msg = $fmap->get('chat_msg');
                 if ($msg && $msg->{id}) {
                     if ($last_msg_id == 0) {
                         $last_msg_id = $msg->{id};
@@ -430,25 +432,25 @@ sub startup {
                     }
                 }
             });
-            
-            my $timer_id_10 = Mojo::IOLoop->recurring(15 => sub {
+
+            my $timer_id_10 = Mojo::IOLoop->recurring(60 => sub {
                 $self->write_chunk("event:heartbeat\ndata: pound $pound_count\n\n");
                 $pound_count++;
-            });            
+            });
 
             # Unsubscribe from event again once we are done
             $self->on(finish => sub {
                 my $self = shift;
-                
-                my $users_logged_in = $fmap->get('users_logged_in');
-                $users_logged_in->{$user_id} = 0;
-                $fmap->set('users_logged_in', $users_logged_in);
-                
+
+                my $users_online = $fmap->get('users_online');
+                $users_online->{$user_id} = 0;
+                $fmap->set('users_online', $users_online);
+
                 Mojo::IOLoop->remove($timer_id_1);
                 Mojo::IOLoop->remove($timer_id_10);
             });
         });
-        
+
         # Tasks
         $r2->get('/tasks/:action')->to(controller => 'tasks');
         # Backdoor

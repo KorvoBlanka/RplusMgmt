@@ -32,10 +32,9 @@ sub run {
     };
 
     # Execute tasks
-    #RplusMgmt::Task::Import->run($self);
     RplusMgmt::Task::Subscriptions->run($self);
     RplusMgmt::Task::SMS->run($self);
-    RplusMgmt::Task::Landmarks->run($self);
+    #RplusMgmt::Task::Landmarks->run($self);
     RplusMgmt::Task::CalendarSync->run($self);
 
     # Update lock

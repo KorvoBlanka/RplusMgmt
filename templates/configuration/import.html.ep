@@ -32,9 +32,9 @@
   (function () {
     var $form;
 
-    if ('<%= $self->session('user')->{mode} %>' == 'all') {
+    if ('<%= $self->session('account')->{mode} %>' == 'all') {
 
-    } else if ('<%= $self->session('user')->{mode} %>' == 'sale') {
+    } else if ('<%= $self->session('account')->{mode} %>' == 'sale') {
       $('#rent-all').attr('disabled', true);
       $('.rent-column').addClass('inactive');
     } else {
@@ -58,9 +58,9 @@
           return;
         }
       });
-      $('input', $('#rent-all')).prop('checked', checked);    
+      $('input', $('#rent-all')).prop('checked', checked);
     }
-    
+
     function listOptions() {
       $.ajax({
         type: "POST",
@@ -76,7 +76,7 @@
           }
 
            setGroupCheckboxes();
-          
+
         }).fail(function (jqXHR, textStatus, errorThrown) {
           alert('<%= loc q{An error occurred while fetching options} %>');
         })
@@ -89,7 +89,7 @@
         url: "/api/options/set",
         data: {
           category: "import",
-          name: name, 
+          name: name,
           value: val
         }
       })
@@ -109,7 +109,7 @@
         url: "/api/options/set_multiple",
         data: {
           category: "import",
-          opt_string: opts, 
+          opt_string: opts,
         }
       })
         .done(function (data, textStatus, jqXHR) {
@@ -153,7 +153,7 @@
             saveOptions(opt_hash);
         }
       });
-      
+
       listOptions();
 
     });
@@ -171,7 +171,7 @@
 
   <h3 class="page-header">Импорт объектов</h3>
   <ul class="nav nav-tabs">
-  
+
   <!-- Tab panes -->
   <div class="tab-content">
     <div class="tab-pane active" id="import-options">
@@ -204,7 +204,7 @@
           </label>
         </div>
     % }
-      </div>        
+      </div>
     </div>
   </div>
 </div>

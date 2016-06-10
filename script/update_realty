@@ -1,0 +1,57 @@
+#!/usr/bin/env perl
+
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+
+use Rplus::Modern;
+
+use Rplus::Model::Realty::Manager;
+use Rplus::Model::DictApScheme::Manager;
+
+use JSON;
+
+use Data::Dumper;
+
+
+say 'updating realty';
+say check_realty() . ' objects updated';
+
+sub check_realty {
+  my $upd_count = 0;
+
+
+  # l 7 - улица
+  # l 6 - село
+  # l 4 - город
+  # l 3 - район
+  # l 1 - регион
+
+  my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(query => ['!address_object_id' => undef, 'address' => undef, '!state_code' => 'deleted'], with_objects => ['address_object']);
+  while (my $r = $realty_iter->next) {
+    my $addr_parts = from_json($r->address_object->metadata)->{'addr_parts'};
+
+    my @locality = '';
+    my $address = '';
+
+    foreach (@{$addr_parts}) {
+      # name
+      # full_type
+      if ($_->{level} == 7) {
+        $address = $_->{full_type} . ' ' . $_->{name};
+      } elsif ($_->{level} < 7) {
+        if ($_->{level} == 1 || $_->{level} == 3) {
+          push @locality, $_->{name} . ' ' . $_->{full_type};
+        } else {
+          push @locality, $_->{full_type} . ' ' . $_->{name};
+        }
+      }
+    }
+
+    $r->address($address);
+    $r->geocoords(undef);
+    $r->locality(join ', ', reverse @locality);
+    $r->save;
+  }
+
+  return $upd_count;
+}

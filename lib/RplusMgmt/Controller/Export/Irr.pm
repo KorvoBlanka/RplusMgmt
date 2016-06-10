@@ -159,13 +159,8 @@ my %templates_hash = (
                 },
             "Улица" => sub {
                     my $d = shift;
-                    my $location = '';
-                    if ($d->address_object) {
-                        my $addr_obj = $d->address_object;
-                        $location = $addr_obj->name . ($addr_obj->short_type ne 'ул' ? ' ' . $addr_obj->short_type : '');
-                    }
-                    
-                    return $d->address_object ? $d->address_object->name : '';
+
+                    return $d->address ? $d->address : '';
                 },
             "Дом" => sub {
                     my $d = shift;
@@ -304,13 +299,7 @@ my %templates_hash = (
                 },
             "Улица" => sub {
                     my $d = shift;
-                    my $location = '';
-                    if ($d->address_object) {
-                        my $addr_obj = $d->address_object;
-                        $location = $addr_obj->name . ($addr_obj->short_type ne 'ул' ? ' ' . $addr_obj->short_type : '');
-                    }
-                    
-                    return $d->address_object ? $d->address_object->name : '';
+                    return $d->address ? $d->address : '';
                 },
             "Дом" => sub {
                     my $d = shift;
@@ -400,7 +389,7 @@ my %templates_hash = (
                 },
             "Площадь строения" => sub {
                     my $d = shift;
-                    return $d->square_total;                    
+                    return $d->square_total;
                 },
             "Категория земли" => sub {
                     return '';
@@ -450,13 +439,7 @@ my %templates_hash = (
                 },
             "Улица" => sub {
                     my $d = shift;
-                    my $location = '';
-                    if ($d->address_object) {
-                        my $addr_obj = $d->address_object;
-                        $location = $addr_obj->name . ($addr_obj->short_type ne 'ул' ? ' ' . $addr_obj->short_type : '');
-                    }
-                    
-                    return $d->address_object ? $d->address_object->name : '';
+                    return $d->address ? $d->address : '';
                 },
             "Дом" => sub {
                     my $d = shift;
@@ -478,7 +461,7 @@ my %templates_hash = (
                 },
             "www-адрес" => sub {
                     return $site_url;
-                },                
+                },
             "Контактное лицо" => sub {
                     my $d = shift;
                     my $name = '';
@@ -526,13 +509,7 @@ my %templates_hash = (
                 },
             "Улица" => sub {
                     my $d = shift;
-                    my $location = '';
-                    if ($d->address_object) {
-                        my $addr_obj = $d->address_object;
-                        $location = $addr_obj->name . ($addr_obj->short_type ne 'ул' ? ' ' . $addr_obj->short_type : '');
-                    }
-                    
-                    return $d->address_object ? $d->address_object->name : '';
+                    return $d->address ? $d->address : '';
                 },
             "Дом" => sub {
                     my $d = shift;
@@ -614,7 +591,7 @@ my %templates_hash = (
                 },
             "www-адрес" => sub {
                     return $site_url;
-                },               
+                },
             "Контактное лицо" => sub {
                     my $d = shift;
                     my $name = '';
@@ -754,13 +731,7 @@ my %templates_hash = (
                 },
             "Улица" => sub {
                     my $d = shift;
-                    my $location = '';
-                    if ($d->address_object) {
-                        my $addr_obj = $d->address_object;
-                        $location = $addr_obj->name . ($addr_obj->short_type ne 'ул' ? ' ' . $addr_obj->short_type : '');
-                    }
-                    
-                    return $d->address_object ? $d->address_object->name : '';
+                    return $d->address ? $d->address : '';
                 },
             "Дом" => sub {
                     my $d = shift;
@@ -808,14 +779,14 @@ my %templates_hash = (
                     return 'без комиссии';
                 },
 
-        ), 
+        ),
         rooms => ordered_hash_ref (
             "ID" => sub {
                     my $d = shift;
-                    return $d->id;                    
+                    return $d->id;
                 },
             "Город" => sub {
-                    return 'Хабароск';                    
+                    return 'Хабароск';
                 },
             "Метро" => sub {
                     return '';
@@ -891,7 +862,7 @@ my %templates_hash = (
                 },
             "Площадь арендуемой комнаты" => sub {
                     my $d = shift;
-                    return $d->square_total;                    
+                    return $d->square_total;
                 },
             "Ремонт" => sub {
                     my $d = shift;
@@ -905,13 +876,7 @@ my %templates_hash = (
                 },
             "Улица" => sub {
                     my $d = shift;
-                    my $location = '';
-                    if ($d->address_object) {
-                        my $addr_obj = $d->address_object;
-                        $location = $addr_obj->name . ($addr_obj->short_type ne 'ул' ? ' ' . $addr_obj->short_type : '');
-                    }
-                    
-                    return $d->address_object ? $d->address_object->name : '';
+                    return $d->address ? $d->address : '';
                 },
             "Дом" => sub {
                     my $d = shift;
@@ -919,7 +884,7 @@ my %templates_hash = (
                 },
             "Текст объявления" => sub {
                     my $d = shift;
-                    return $d->description;                    
+                    return $d->description;
                 },
             "Фото" => sub {
                     my $d = shift;
@@ -965,10 +930,10 @@ my %templates_hash = (
         houses => ordered_hash_ref (
             "ID" => sub {
                     my $d = shift;
-                    return $d->id;                    
+                    return $d->id;
                 },
             "Город" => sub {
-                    return 'Хабароск';                    
+                    return 'Хабароск';
                 },
             "Метро" => sub {
                     return '';
@@ -1065,13 +1030,7 @@ my %templates_hash = (
                 },
             "Улица" => sub {
                     my $d = shift;
-                    my $location = '';
-                    if ($d->address_object) {
-                        my $addr_obj = $d->address_object;
-                        $location = $addr_obj->name . ($addr_obj->short_type ne 'ул' ? ' ' . $addr_obj->short_type : '');
-                    }
-                    
-                    return $d->address_object ? $d->address_object->name : '';
+                    return $d->address ? $d->address : '';
                 },
             "Дом" => sub {
                     my $d = shift;
@@ -1115,7 +1074,7 @@ my %templates_hash = (
                 },
             "" => sub {
                     return '';
-                },                
+                },
             "Комиссия" => sub {
                     return 'без комиссии';
                 },
@@ -1149,13 +1108,7 @@ my %templates_hash = (
                 },
             "Улица" => sub {
                     my $d = shift;
-                    my $location = '';
-                    if ($d->address_object) {
-                        my $addr_obj = $d->address_object;
-                        $location = $addr_obj->name . ($addr_obj->short_type ne 'ул' ? ' ' . $addr_obj->short_type : '');
-                    }
-                    
-                    return $d->address_object ? $d->address_object->name : '';
+                    return $d->address ? $d->address : '';
                 },
             "Дом" => sub {
                     my $d = shift;
@@ -1237,7 +1190,7 @@ my %templates_hash = (
                 },
             "www-адрес" => sub {
                     return $site_url;
-                },               
+                },
             "Контактное лицо" => sub {
                     my $d = shift;
                     my $name = '';
@@ -1297,7 +1250,7 @@ sub index {
         $agent_phone = 1 if $e_opt->{'irr-agent-phone'};
         $contact_name = '';
         $contact_email = $e_opt->{'irr-email'} ? $e_opt->{'irr-email'} : '';
-        $site_url = $e_opt->{'irr-url'} ? $e_opt->{'irr-url'} : '';        
+        $site_url = $e_opt->{'irr-url'} ? $e_opt->{'irr-url'} : '';
     }
 
     #unlink($meta->{'prev_file'}) if $meta->{'prev_file'};
@@ -1340,12 +1293,11 @@ sub index {
     }
 
     if ($realty_type =~ /garages/) {
-        
+
     }
 
     my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
         query => [
-            state_code => 'work',
             offer_type_code => $offer_type_code,
             or => [
                     @tc,
@@ -1355,7 +1307,7 @@ sub index {
         ],
         sort_by => 'id ASC',
         require_objects => ['type', 'offer_type'],
-        with_objects => ['address_object', 'house_type', 'balcony', 'bathroom', 'condition', 'agent'],
+        with_objects => ['house_type', 'balcony', 'bathroom', 'condition', 'agent'],
     );
 
     if ($pictures && $pictures == 1) {
@@ -1385,14 +1337,14 @@ sub index {
             }
             # Save the Zip file
             unless ( $zip->writeToFileNamed($file) == AZ_OK ) {
-                
+
             }
             $self->res->headers->content_disposition("attachment; filename=pictures.zip;");
             $self->res->headers->set_cookie('download=start; path=/');
             $self->res->content->asset(Mojo::Asset::File->new(path => $file));
         }
     } else {
-    
+
         while(my $realty = $realty_iter->next) {
             my @val_array;
             foreach (keys %$template) {

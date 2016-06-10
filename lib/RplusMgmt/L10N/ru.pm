@@ -5,12 +5,11 @@ use Rplus::Modern;
 use base qw(RplusMgmt::L10N);
 
 our %Lexicon = (
-    # A    
+    # A
     q{analytics} => 'аналитика',
     q{add} => 'добавить',
     q{advertisement} => 'реклама объектов',
     q{agent} => 'агент',
-    q{agent_ext} => 'агент+',
     q{additional} => 'дополнительно',
     q{added} => 'добавлено',
     q{add date} => 'дата добавления',
@@ -154,7 +153,7 @@ our %Lexicon = (
     q{photos} => 'фото',
     q{price} => 'цена',
     q{plots} => 'графики',
-    
+
     q{phone num cannot be empty} => 'номер телефона не указан',
 
     # Q

@@ -17,20 +17,20 @@
 %= css_once "$assets_url/leaflet.fullscreen/$leafletjs_fullscreen_ver/Control.FullScreen.css";
 %= css_once "$assets_url/jquery-file-upload/8.8.5/css/jquery.fileupload-ui.css";
 <style type="text/css">
-  
+
   .control-label {
     padding-top: 5px;
   }
-  
+
   #realtyCard_modal .modal-dialog {
     width: 560px !important;
   }
-  
+
   #realty-card-body {
     height: 600px !important;
     padding: 0px;
   }
-  
+
   .realty-form .well > .row:last-of-type .form-group {
     margin-bottom: 0;
   }
@@ -43,62 +43,62 @@
     display: block;
     margin: 0 auto;
   }
-  
+
   .slide-prev, .slide-next {
     display: block;
     position: absolute;
-    
+
     top: 0px;
     padding: 15px 5px 13px 5px;
-    
+
     outline: 0;
     cursor: pointer;
     text-decoration: none;
-    
-    
+
+
     width: 50px;
     height: 100px;
-    
+
     background: #000;
     opacity: 0.0;
-    
+
     text-align: center;
-    
+
     -webkit-transition: opacity 500ms linear;
     -moz-transition: opacity 500ms linear;
     -o-transition: opacity 500ms linear;
     transition: opacity 500ms linear;
   }
-  
+
   .slider_block:hover > .slide-prev, .slider_block:hover > .slide-next {
     opacity: 0.4;
   }
-  
+
   .slide-prev > span, .slide-next > span {
     padding-top: 27px;
   }
-  
+
   .slide-next {
     right: 0px;
   }
-  
+
   .flipbox {
     border-radius: 0px;
   }
-  
+
   #progress {
     height: 16px;
   }
-  
+
   .bar {
     height: 4px;
     background: green;
   }
-  
+
   .carousel-img {
     -webkit-transition: all .2s ease-in-out;
   }
-  
+
   .carousel-img:hover {
     -webkit-transform: scale(1.1);
   }
@@ -106,11 +106,11 @@
   .img-overlay > .photo_del_wrap {
     opacity: 0.0;
   }
-  
+
   .img-overlay:hover > .photo_del_wrap {
     opacity: 1.0;
   }
-  
+
   .photo_del_wrap {
     position: absolute;
     z-index: 10;
@@ -129,14 +129,14 @@
     -o-transition: opacity 100ms linear;
     transition: opacity 100ms linear;
   }
-  
+
   % for my $x (@{Rplus::Model::DictColorTag::Manager->get_objects(query => [delete_date => undef], sort_by => 'id')}) {
   .card-color-tag-<%= $x->id %> {
     background: #<%= $x->color %>;
     border: 1px solid #<%= $x->border_color %>;
   }
   % }
-  
+
   .rcard-input-group-addon {
     padding: 6px 12px;
     font-size: 14px;
@@ -149,14 +149,14 @@
     box-shadow: none;
     background-color: rgba(255, 255, 255, 0);
   }
-  
+
   #view-group {
     min-height: 340px;
   }
-  
+
   .view-group {
     margin-bottom: 0px;
-    
+
     display: box;
     display: -moz-box;
     display: -webkit-box;
@@ -165,12 +165,12 @@
   .edit-group {
 
     margin-bottom: 10px;
-    
+
     display: box;
     display: -moz-box;
     display: -webkit-box;
   }
-  
+
   .view-label {
     color: #aeaeae;
   }
@@ -178,14 +178,14 @@
   .slash {
     display: inline-block;
   }
-  
+
   .required {
     border-color: #E96666;
     outline: 0;
     -webkit-box-shadow: inset 0 1px 1px rgba(0,0,0,0.075),0 0 8px rgba(233, 102, 102, 0.6);
-    box-shadow: inset 0 1px 1px rgba(0,0,0,0.075),0 0 8px rgba(233, 102, 102, 0.6);  
+    box-shadow: inset 0 1px 1px rgba(0,0,0,0.075),0 0 8px rgba(233, 102, 102, 0.6);
   }
-  
+
   .attachment-row {
     white-space: nowrap;
     overflow: hidden;
@@ -195,10 +195,10 @@
   .attachment-row:hover .attachment-remove {
       opacity: 1;
   }
-  
+
   .attachment-remove {
       opacity: 0;
-      
+
       position: absolute;
       right: 10px;
   }
@@ -231,7 +231,7 @@
 
 % end
 
-% content_for javascript => begin   
+% content_for javascript => begin
 <script type="application/javascript">
   "use strict";
 
@@ -241,13 +241,13 @@
     close: null,
     addr_changed: null,
   };
-      
+
   var RealtyCard = (function () {
     // Global variables
     var $realty_modal, realty;
     var cmode = 0;
     var selected_tag_id = 0;
-    
+
     function buildHtmlForAttachment(a) {
         var xhtml = '';
         xhtml += '<p class="attachment-row">';
@@ -255,10 +255,10 @@
         xhtml += '<a href="#" class="attachment-remove" data-action="file-remove"><span class="glyphicon glyphicon-minus"></span></a>';
         xhtml += '<input type="text" name="attachments" class="hidden" value="' + a + '">'
         xhtml += '</p>';
-        
+
         return xhtml;
     }
-    
+
     function setMode(mode) {
       cmode = mode;
       if(mode == 0) {
@@ -275,11 +275,11 @@
         $('.smode-btn').addClass("hidden");
       }
     }
-    
+
     function cancel() {
       setRealtyEditView(realty);
     }
-    
+
     function save() {
 
       if ($('.required', $realty_modal).length > 0) {
@@ -294,6 +294,8 @@
         export_media: [],
         owner_phones: [],
         attachments: [],
+        district: realty.district,
+        pois: realty.pois,
         latitude: realty.latitude,
         longitude: realty.longitude,
         color_tag_id: selected_tag_id,
@@ -316,7 +318,7 @@
       for (x in formData) {
         if ((typeof formData[x] == 'object') && (formData[x] instanceof Array) && !formData[x].length) formData[x] = null;
       }
-      
+
       $.ajax({
         type: "POST",
         url: "/api/realty/save",
@@ -342,7 +344,7 @@
         })
       ;
     }
-    
+
     function close() {
       // Emit event
       if ($.isFunction(events.close)) {
@@ -350,24 +352,30 @@
       }
       $realty_modal.hide();
     }
-    
+
     function setRealtyView(realty) {
+      console.log(realty);
       var digest_dict = Rplus.Realty.getDigestDict(realty);
       for (var f in digest_dict) {
         var v = digest_dict[f];
         var el = $('span[data-name="' + f + '"]', $realty_modal);
         el.html(v);
       }
+      if (realty.poi) {
+        $('span[data-name="dg_p1_poi"]', $realty_modal).html(realty.poi);
+      } else {
+        $('span[data-name="dg_p1_poi"]', $realty_modal).html('');
+      }
 
       $('#realty-color-tag-1').removeClass(function (index, css) {
         return (css.match (/card-color-tag-\d/g) || []).join(' ');
       });
-      
+
       $('#realty-color-tag-1').addClass('card-color-tag-' + realty.color_tag_id);
-      
+
       //if (realty.agent_id != null && realty.agent_id != '<%= $self->stash('user')->{id} %>' && realty.title != 'Новый' && '<%= $self->stash('user')->{role} %>' != 'manager' && '<%= $self->stash('user')->{role} %>' != 'agent_plus') {
-      var account_id = <%= $self->session->{'user'}->{account_id} %>;
-	  var my_id = <%= $self->stash('user')->{id} %>;
+      var account_id = <%= $self->session('account')->{id} %>;
+	    var my_id = <%= $self->stash('user')->{id} %>;
       var my_role = '<%= $self->stash('user')->{role} %>';
 
       if (my_role == 'top' || my_role == 'manager' && !realty.agent_id || realty.agent_id == my_id || (realty.agent_id && Rplus.Table['users'][realty.agent_id].superior == my_id) || realty.title == 'Новый') {
@@ -379,18 +387,18 @@
 	  if (realty.account_id != null && account_id != realty.account_id) {
 		$('#unlock-btn').addClass('hidden');
 	  }
-	  
+
       if (realty.owner_phones && realty.owner_phones.length > 0) {
         $('#dg_p_contacts_label', $realty_modal).removeClass('hidden');
         $('#dg_p_contacts', $realty_modal).removeClass('hidden');
         $('#dg_p_contacts_label', $realty_modal).html('Телефон');
         $('#dg_p_contacts', $realty_modal).html(Rplus.Util.formatPhoneNum(realty.owner_phones.join(', ')));
       } else {
-        $('#dg_p_contacts_label', $realty_modal).addClass('hidden');        
+        $('#dg_p_contacts_label', $realty_modal).addClass('hidden');
         $('#dg_p_contacts', $realty_modal).addClass('hidden');
         $('#dg_p_contacts', $realty_modal).html('');
       }
-      
+
       if (realty.mediator_company) {   // посредник
         $('#dg_p9_label', $realty_modal).html('Предложение');
         $('span[data-name="dg_p9"]', $realty_modal).html(realty.mediator_company);
@@ -405,7 +413,7 @@
 
           $('#dg_p_contacts', $realty_modal).html((agent.public_phone_num || Rplus.Util.formatPhoneNum(agent.phone_num)));
           $('#dg_p_contacts_label', $realty_modal).html('Телефон');
-          
+
         } else {
           $('#dg_p9_label', $realty_modal).html('Предложение');
           $('span[data-name="dg_p9"]', $realty_modal).html('Собственник');
@@ -428,8 +436,37 @@
     });
     % }
 
+    $('[name="address"]', $realty_modal)
+      .typeahead({
+        name: 'address',
+        valueKey: "suggestion",
+        limit: 10,
+        remote: "/api/address/complete?term=%QUERY&limit=10",
+      })
+      .bind('typeahead:selected', function (e, obj) {
+        updateGeo();
+      })
+      .blur(function (e) {
+        if ($(this).val() == '') {
+          updateGeo();
+        }
+      })
+    ;
+
+    var updateGeoTimeout = null;
+
+    $('[name="address"]:input', $realty_modal).bind('input', function (e) {
+      if (updateGeoTimeout) { clearTimeout(updateGeoTimeout); updateGeoTimeout = null; }
+      updateGeoTimeout = setTimeout(function () { updateGeo(); }, 1000);
+    });
+
+    $('[name="house_num"]:input', $realty_modal).bind('input', function (e) {
+      if (updateGeoTimeout) { clearTimeout(updateGeoTimeout); updateGeoTimeout = null; }
+      updateGeoTimeout = setTimeout(function () { updateGeo(); }, 1000);
+    });
+
     function setRealtyEditView(realty) {
-      
+
       var formArray = $('#realty-form').serializeArray();
       for (var i = 0; i < formArray.length; i++) {
         var x = formArray[i];
@@ -437,48 +474,25 @@
           var el = $('[name="' + x.name + '"]:input', $realty_modal);
           el.val('');
         }
-        
+
       }
 
       $('#attachmentsContainer', $realty_modal).html('');
-      
+
       $('[data-name="source_media_text"]', $realty_modal).html('');
       $('[data-name="source_media_name"]', $realty_modal).html('?');
-      
+
       $('a[data-name="reference"]', $realty_modal).attr('href', '');
       $('a[data-name="reference"]', $realty_modal).text('');
 
-      $('[name="address_object_name"]', $realty_modal)
-        .typeahead({
-          name: 'address_object',
-          valueKey: "expanded_name",
-          limit: 10,
-          remote: "/api/address/complete?term=%QUERY&limit=10",
-        })
-        .bind('typeahead:selected', function (e, obj) {
-          $('[name="address_object_id"]:input', $realty_modal).val(obj.id).data('addrobj', obj);
-          updateGeo();
-        })
-        .blur(function (e) {
-          if ($(this).val() == '') {
-            $('[name="address_object_id"]:input', $realty_modal).val(null).data('addrobj', null);
-            updateGeo();
-          }
-        })
-      ;
 
-      var updateGeoTimeout = null;
-      $('[name="house_num"]:input', $realty_modal).bind('input', function (e) {
-        if (updateGeoTimeout) { clearTimeout(updateGeoTimeout); updateGeoTimeout = null; }
-        updateGeoTimeout = setTimeout(function () { updateGeo(); }, 700);
-      });
 
       // Sublandmark field
-      $('[name="sublandmark_id"]:input', $realty_modal).html('<option class="text-muted" value>-</option>');
-      if (realty.sublandmarks) {
-        for (var i = 0; i < realty.sublandmarks.length; i++) {
-          var x = realty.sublandmarks[i];
-          $('[name="sublandmark_id"]:input', $realty_modal).append('<option value="' + x.id + '">' + Rplus.Util.escape(x.name) + '</option>');
+      $('[name="poi"]:input', $realty_modal).html('<option class="text-muted" value>-</option>');
+      if (realty.pois) {
+        for (var i = 0; i < realty.pois.length; i++) {
+          var x = realty.pois[i];
+          $('[name="poi"]:input', $realty_modal).append('<option value="' + x + '">' + Rplus.Util.escape(x) + '</option>');
         }
       }
 
@@ -486,9 +500,8 @@
         var v = realty[f];
         var el = $('[name="' + f + '"]:input', $realty_modal);
 
-        if (f == 'address_object' && v) {
-          $('[name="address_object_id"]:input').data('addrobj', v);
-          $('[name="address_object_name"]:input', $realty_modal).typeahead('setQuery', v.expanded_name);
+        if (f == 'address' && v) {
+          $('[name="address"]:input', $realty_modal).typeahead('setQuery', v);
         } else if (f == 'owner_phones' && v) {
           $('[name="owner_phones"]:input', $realty_modal).each(function (i) {
             $(this).val(Rplus.Util.formatPhoneNum(v[i]));
@@ -526,7 +539,7 @@
       selected_tag_id = realty.color_tag_id || 0;
 
       $('#typeInput').change();
-      
+
       pushPhotos(realty.id);
 
       $('#fileupload', $realty_modal).fileupload({
@@ -559,7 +572,7 @@
           xhtml += '</div>';
           xhtml += '</div>';
           xhtml += '</div>';
-            
+
           $('#carousel', $realty_modal).trigger('insertItem', [xhtml]);
           $('#carousel', $realty_modal).trigger('slideTo', -2);
           $('.carousel-img').bind('click', function (e) {
@@ -571,7 +584,7 @@
         }
       });
     }
-    
+
     function pushPhotos(realty_id) {
       var xhtml = '';
       $('#carousel', $realty_modal).html(xhtml);
@@ -596,7 +609,7 @@
           $('#carousel', $realty_modal).html(xhtml);
           $('#carousel', $realty_modal).carouFredSel({
               items: 4,
-              //infinite: true,         // Determines whether the carousel should be infinite. Note: It is possible to create a non-circular, infinite carousel, but it is not possible to create a circular, non-infinite carousel. 
+              //infinite: true,         // Determines whether the carousel should be infinite. Note: It is possible to create a non-circular, infinite carousel, but it is not possible to create a circular, non-infinite carousel.
               direction: "left",
               responsive: true,
               width: 498,            // The width of the carousel. Can be null (width will be calculated), a number, "variable" (automatically resize the carousel when scrolling items with variable widths), "auto" (measure the widest item) or a percentage like "100%" (only applies on horizontal carousels)
@@ -616,7 +629,7 @@
           });
           //$('#carousel', $realty_modal).trigger('slideTo', -2);
           //$('#carousel', $realty_modal).trigger('slideTo', 0);
-          
+
           // Load photos
           $('.carousel-img').bind('click', function (e) {
             var realtyId = $(this).data('id');
@@ -624,78 +637,63 @@
             $(document).trigger('showPhoto', [realtyId, photoId]);
             return false;
           });
-          
+
         });
     }
 
-    function updateGeo() {
-      function clearGeo() {
-        $('[name="sublandmark_id"]:input', $realty_modal).html('<option value="">-</option>');
-        realty.latitude = null;
-        realty.longitude = null;
-        
-        if ($.isFunction(events.addr_changed)) {
-          events.addr_changed(realty);
-        }
-      }
+    function clearGeo() {
+      $('[name="poi"]:input', $realty_modal).html('<option value="">-</option>');
+      realty.latitude = null;
+      realty.longitude = null;
 
-      var city, street,
-          houseNum = $('[name="house_num"]:input', $realty_modal).val(),
-          addrobj = $('[name="address_object_id"]:input', $realty_modal).data('addrobj')
-      ;
-      if (addrobj && addrobj.addr_parts && addrobj.addr_parts[0].level == 7) {
-        street = addrobj.addr_parts[0].name;
-        city = addrobj.addr_parts[1].name;
+      if ($.isFunction(events.addr_changed)) {
+        events.addr_changed(realty);
       }
-      if (city && street && houseNum) {
+    }
+
+    function updateGeo() {
+
+      var house_num = $('[name="house_num"]:input', $realty_modal).val(),
+          addr = $('[name="address"]:input', $realty_modal).val(),
+          locality = $('[name="locality"]:input', $realty_modal).val();
+
         $.ajax({
-          url: 'http://catalog.api.2gis.ru/geo/search',
+          type: "POST",
+          url: "/api/realty/get_location",
           data: {
-            q: city + ', ' + street + ', ' + houseNum,
-            key: 'rujrdp3400',
-            version: 1.3,
-            output: 'jsonp',
-            types: 'house'
+            locality: locality,
+            address: addr,
+            house_num: house_num
           },
-          dataType: 'jsonp',
         })
-          .done(function (data) {
-            if (data.result) {
-              var re = /^POINT\((\d+\.\d+) (\d+\.\d+)\)$/;
-              var ra = re.exec(data.result[0].selection);
-              realty.latitude = ra[2];
-              realty.longitude = ra[1];
+          .done(function (data, textStatus, jqXHR) {
+            if (data.status == 'success') {
+              realty.latitude = data.latitude;
+              realty.longitude = data.longitude;
+              realty.district = data.district;
+              realty.pois = data.pois;
 
               if ($.isFunction(events.addr_changed)) {
                 events.addr_changed(realty);
               }
-              
-              //if (realty.latitude && realty.longitude) {
-                $.ajax({
-                  url: '/api/landmark/list',
-                  data: {type: 'sublandmark', lat: realty.latitude, lng: realty.longitude},
-                })
-                  .done(function (data) {
-                    var xhtml = '<option value="">-</option>';
-                    for (var i = 0; i < data.list.length; i++) {
-                      var x = data.list[i];
-                      xhtml += '<option value="' + x.id + '">' + x.name + '</option>';
-                    }
-                    $('[name="sublandmark_id"]:input', $realty_modal).html(xhtml);
-                    if (data.list.length == 1) $('[name="sublandmark_id"]:input', $realty_modal).val(data.list[0].id);
-                  })
-                ;
-              //}
-            } else {
-              clearGeo();
+
+              $('[name="district"]:input', $realty_modal).val(realty.district);
+
+              var xhtml = '<option value="">-</option>';
+              if (realty.pois) {
+                for (var i = 0; i < realty.pois.length; i++) {
+                  var x = realty.pois[i];
+                  xhtml += '<option value="' + x + '">' + x + '</option>';
+                }
+              }
+              $('[name="poi"]:input', $realty_modal).html(xhtml);
+              if (realty.pois) {
+                if (realty.pois.length > 0) $('[name="poi"]:input', $realty_modal).val(realty.pois[0]);
+              }
             }
-          })
-        ;
-      } else {
-        clearGeo();
-      }
+          });
     }
-    
+
     $(function () {
       $realty_modal = $('#realtyCard_modal').modal({show: false, backdrop: false});
 
@@ -704,7 +702,7 @@
         $('#attachmentFileInput').val('');
         $('#attachmentFileInput').change(function(){
             var file = this.files[0];
-                       
+
             if (file.size > maxFileSize) {
                 alert('размер файла превышает максимально допустимый');
                 return;
@@ -736,27 +734,27 @@
                     $('#attachmentsContainer').prepend(buildHtmlForAttachment(data.file_url));
                 })
                 .fail(function () {
-                    
+
                 });
-            
+
         });
         $('#attachmentFileInput').click();
       });
-      
+
       $realty_modal.on('click', '[data-action="file-remove"]', function (e) {
           var $this = $(this);
           $this.closest('.attachment-row').remove();
       });
-      
+
       $realty_modal.on('click', '[data-action="realty-unlock"]', function (e) {
         setMode(1);
       });
-      
+
       $realty_modal.on('click', '[data-action="realty-cancel"]', function (e) {
         cancel();
         setMode(0);
       });
-      
+
       $realty_modal.on('click', '[data-action="realty-save"]', function (e) {
         save();
       });
@@ -764,7 +762,7 @@
       $realty_modal.on('click', '[data-action="realty-close"]', function (e) {
         close();
       });
-      
+
       $realty_modal.on('click', '[data-action="photo-delete"]', function (e) {
         var p_id = $(this).data('photo-id');
         var $el = $(this).closest('.img-wrap');
@@ -797,7 +795,7 @@
     });
 
     return function (options) {
-      
+
       events = {
         loaded: options.loaded,
         saved: options.saved,
@@ -812,11 +810,11 @@
 
           setRealtyEditView(realty);
           setRealtyView(realty);
-          
+
           if ($.isFunction(events.loaded)) {
             events.loaded(realty);
           }
-          
+
           setMode(1);
           $realty_modal.show();
 
@@ -852,21 +850,27 @@
 
       return $this;
     };
-    
+
   })();
 </script>
 
 <script type="text/javascript">
-    
+
     var fields = [
-        'type_code', 'offer_type_code', 'state_code',
-        'address_object_name', 'house_num', 'house_type_id', 'ap_num', 'ap_scheme_id',
+        'type_code', 'offer_type_code', 'rent_type', 'state_code',
+        'address', 'house_num', 'house_type_id', 'ap_num', 'ap_scheme_id',
         'rooms_count', 'rooms_offer_count', 'room_scheme_id',
         'floor', 'floors_count', 'levels_count', 'condition_id', 'balcony_id', 'bathroom_id',
         'square_total', 'square_living', 'square_kitchen', 'square_land', 'square_land_type',
         'description', 'owner_info', 'owner_price', 'work_info', 'agent_id', 'agency_price',
-        'sublandmark_id', 'multylisting', 'mls_price', 'mls_price_type', 'owner_phones',
+        'multylisting', 'mls_price', 'mls_price_type', 'owner_phones', 'lease_deposite_id'
     ];
+
+    var exclude_by_offer_type = {
+        sale: ['rent_type', 'lease_deposite_id'],
+        rent: []
+    }
+
     var exclude = {
         apartment: [
             'square_land',
@@ -899,584 +903,623 @@
             'ap_scheme_id',
             'ap_num',
         ],
-        
+
         room: [
             'square_land',
-            'square_land_type'            
+            'square_land_type'
         ],
-        
+
         dacha: [
             'room_scheme_id',
             'ap_scheme_id',
-            'ap_num', 
+            'ap_num',
         ],
-        
+
         land: [
             'house_type_id', 'ap_num', 'ap_scheme_id',
             'rooms_count', 'rooms_offer_count', 'room_scheme_id',
             'floor', 'floors_count', 'levels_count', 'condition_id', 'balcony_id', 'bathroom_id',
-            'square_total', 'square_living', 'square_kitchen',
-            'sublandmark_id', 
+            'square_total', 'square_living', 'square_kitchen'
         ],
-        
+
         office: [
             'house_type_id', 'ap_num', 'ap_scheme_id',
             'rooms_count', 'rooms_offer_count', 'room_scheme_id',
             'floor', 'floors_count', 'levels_count', 'balcony_id', 'bathroom_id',
             'square_land', 'square_land_type', 'square_living', 'square_kitchen',
         ],
-        
+
         other: [
             'house_type_id', 'ap_num', 'ap_scheme_id',
             'rooms_count', 'rooms_offer_count', 'room_scheme_id',
             'floor', 'floors_count', 'levels_count', 'balcony_id', 'bathroom_id',
             'square_land', 'square_land_type', 'square_living', 'square_kitchen',
-            'condition_id', 
+            'condition_id',
         ],
     };
 
     var required = {
         apartment: [
-            'address_object_name', 'house_num', 'house_type_id', 'ap_scheme_id',
+            'address', 'house_num', 'house_type_id', 'ap_scheme_id',
             'rooms_count', 'room_scheme_id',
             'floor', 'floors_count', 'condition_id', 'balcony_id', 'bathroom_id',
             'square_total',
-            'description', 'owner_price', 'agent_id', 'mls_price', 'owner_phones',
+            'description', 'owner_price', 'mls_price', 'owner_phones',
         ],
         apartment_new: [
-            'address_object_name', 'house_num', 'house_type_id', 'ap_scheme_id',
+            'address', 'house_num', 'house_type_id', 'ap_scheme_id',
             'rooms_count', 'room_scheme_id',
             'floor', 'floors_count', 'condition_id', 'balcony_id', 'bathroom_id',
             'square_total',
-            'description', 'owner_price', 'agent_id', 'mls_price', 'owner_phones',
+            'description', 'owner_price', 'mls_price', 'owner_phones',
         ],
         townhouse: [
-            'address_object_name', 'house_num', 'house_type_id', 'ap_scheme_id',
+            'address', 'house_num', 'house_type_id', 'ap_scheme_id',
             'rooms_count', 'room_scheme_id',
             'floor', 'floors_count', 'condition_id', 'balcony_id', 'bathroom_id',
             'square_total',
-            'description', 'owner_price', 'agent_id', 'mls_price', 'owner_phones',
+            'description', 'owner_price', 'mls_price', 'owner_phones',
         ],
         apartment_small: [
-            'address_object_name', 'house_num', 'house_type_id', 'ap_scheme_id',
+            'address', 'house_num', 'house_type_id', 'ap_scheme_id',
             'rooms_count', 'room_scheme_id',
             'floor', 'floors_count', 'condition_id', 'balcony_id', 'bathroom_id',
             'square_total',
-            'description', 'owner_price', 'agent_id', 'mls_price', 'owner_phones',
+            'description', 'owner_price', 'mls_price', 'owner_phones',
         ],
         room: [
-            'address_object_name', 'house_num', 'house_type_id', 'ap_scheme_id',
+            'address', 'house_num', 'house_type_id', 'ap_scheme_id',
             'rooms_count', 'rooms_offer_count', 'room_scheme_id',
             'floor', 'floors_count', 'condition_id', 'balcony_id', 'bathroom_id',
             'square_total',
-            'description', 'owner_price', 'agent_id', 'mls_price', 'owner_phones',
+            'description', 'owner_price', 'mls_price', 'owner_phones',
         ],
 
         house: [
-            'address_object_name', 'house_num', 'house_type_id',
+            'address', 'house_num', 'house_type_id',
             'rooms_count', 'rooms_offer_count',
             'condition_id', 'bathroom_id',
             'square_total',
-            'description', 'owner_price', 'agent_id', 'mls_price', 'owner_phones',
+            'description', 'owner_price', 'mls_price', 'owner_phones',
         ],
         cottage: [
-            'address_object_name', 'house_num', 'house_type_id',
+            'address', 'house_num', 'house_type_id',
             'rooms_count', 'rooms_offer_count',
             'condition_id', 'bathroom_id',
             'square_total',
-            'description', 'owner_price', 'agent_id', 'mls_price', 'owner_phones',
+            'description', 'owner_price', 'mls_price', 'owner_phones',
         ],
 
         dacha: [
-            'address_object_name', 'house_num', 'house_type_id',
+            'address', 'house_num', 'house_type_id',
             'rooms_count', 'rooms_offer_count',
             'condition_id', 'bathroom_id',
             'square_total',
-            'description', 'owner_price', 'agent_id', 'mls_price', 'owner_phones',
+            'description', 'owner_price', 'mls_price', 'owner_phones',
         ],
-        
+
         land: [
             'square_land', 'square_land_type',
-            'description', 'owner_price', 'agent_id',
+            'description', 'owner_price',
             'mls_price', 'owner_phones',
         ],
-        
+
         office: [
-            'address_object_name', 'house_num',
+            'address', 'house_num',
             'square_total',
-            'description', 'owner_price', 'agent_id',
+            'description', 'owner_price',
             'mls_price', 'owner_phones',
         ],
-        
+
         other: [
-            'description', 'owner_price', 'agent_id',
+            'description', 'owner_price',
             'mls_price', 'owner_phones',
         ],
     };
-    
+
     var required_export = {
         irr: {
             apartment: {
                 sale: [
-                    'agent_id', 'owner_price', 'address_object_name', 'house_num', 'floor', 'rooms_count', 'square_total',
+                    'owner_price', 'address', 'house_num', 'floor', 'rooms_count', 'square_total',
                 ],
                 rent: [
-                    'agent_id', 'owner_price', 'address_object_name', 'house_num', 'floor', 'rooms_count', 'square_total',
+                    'owner_price', 'address', 'house_num', 'floor', 'rooms_count', 'square_total',
                 ],
             },
             apartment_new: {
                 sale: [
-                    'agent_id', 'owner_price', 'address_object_name', 'house_num', 'floor', 'rooms_count', 'square_total',
+                    'owner_price', 'address', 'house_num', 'floor', 'rooms_count', 'square_total',
                 ],
                 rent: [
-                    'agent_id', 'owner_price', 'address_object_name', 'house_num', 'floor', 'rooms_count', 'square_total',
+                    'owner_price', 'address', 'house_num', 'floor', 'rooms_count', 'square_total',
                 ],
             },
             townhouse: {
                 sale: [
-                    'agent_id', 'owner_price', 'address_object_name', 'house_num', 'floor', 'rooms_count', 'square_total',
+                    'owner_price', 'address', 'house_num', 'floor', 'rooms_count', 'square_total',
                 ],
                 rent: [
-                    'agent_id', 'owner_price', 'address_object_name', 'house_num', 'floor', 'rooms_count', 'square_total',
+                    'owner_price', 'address', 'house_num', 'floor', 'rooms_count', 'square_total',
                 ],
             },
             apartment_small: {
                 sale: [
-                    'agent_id', 'owner_price', 'address_object_name', 'house_num', 'floor', 'rooms_count', 'square_total',
+                    'owner_price', 'address', 'house_num', 'floor', 'rooms_count', 'square_total',
                 ],
                 rent: [
-                    'agent_id', 'owner_price', 'address_object_name', 'house_num', 'floor', 'rooms_count', 'square_total',
+                    'owner_price', 'address', 'house_num', 'floor', 'rooms_count', 'square_total',
                 ],
             },
             room: {
                 sale: [
-                    'agent_id', 'owner_price', 'address_object_name', 'house_num', 'rooms_count', 'floor',
+                    'owner_price', 'address', 'house_num', 'rooms_count', 'floor',
                 ],
                 rent: [
-                    'agent_id', 'owner_price', 'address_object_name', 'house_num', 'rooms_count', 'rooms_offer_count',,
+                    'owner_price', 'address', 'house_num', 'rooms_count', 'rooms_offer_count',,
                 ],
             },
             house: {
                 sale: [
-                    'agent_id', 'owner_price', 'address_object_name', 'house_num', 'square_total',
+                    'owner_price', 'address', 'house_num', 'square_total',
                 ],
                 rent: [
-                    'agent_id', 'owner_price', 'address_object_name', 'house_num', 'square_total',
+                    'owner_price', 'address', 'house_num', 'square_total',
                 ],
             },
             cottage: {
                 sale: [
-                    'agent_id', 'owner_price', 'address_object_name', 'house_num', 'square_total',
+                    'owner_price', 'address', 'house_num', 'square_total',
                 ],
                 rent: [
-                    'agent_id', 'owner_price', 'address_object_name', 'house_num', 'square_total',
+                    'owner_price', 'address', 'house_num', 'square_total',
                 ],
             },
 
             dacha: {
                 sale: [
-                    'agent_id', 'owner_price', 'address_object_name', 'house_num', 'square_total',
+                    'owner_price', 'address', 'house_num', 'square_total',
                 ],
                 rent: [
-                    'agent_id', 'owner_price', 'address_object_name', 'house_num', 'square_total',
+                    'owner_price', 'address', 'house_num', 'square_total',
                 ],
             },
-            
+
             land: {
                 sale: [
-                    'agent_id', 'owner_price', 'square_land', 'square_land_type',
+                    'owner_price', 'square_land', 'square_land_type',
                 ],
                 rent: [
-                    'agent_id', 'owner_price', 'square_land', 'square_land_type',
+                    'owner_price', 'square_land', 'square_land_type',
                 ],
             },
-            
+
             office: {
                 sale: [
-                    'agent_id', 'owner_price', 'address_object_name', 'square_total',
+                    'owner_price', 'address', 'square_total',
                 ],
                 rent: [
-                    'agent_id', 'owner_price', 'address_object_name', 'square_total',
+                    'owner_price', 'address', 'square_total',
                 ],
             },
-            
+
             other: {
                 sale: [
-                    'agent_id', 'owner_price',
+                    'owner_price',
                 ],
                 rent: [
-                    'agent_id', 'owner_price',
+                    'owner_price',
                 ],
             },
 
             garage: {
                 sale: [
-                    'agent_id', 'owner_price',
+                    'owner_price',
                 ],
                 rent: [
-                    'agent_id', 'owner_price',
+                    'owner_price',
                 ],
             },
 
             any: {
                 sale: [
-                    'agent_id', 'owner_price', 'address_object_name', 'square_total',
+                    'owner_price', 'address', 'square_total',
                 ],
                 rent: [
-                    'agent_id', 'owner_price', 'address_object_name', 'square_total',
+                    'owner_price', 'address', 'square_total',
                 ],
             }
         },
         present: {
             apartment: {
                 sale: [
-                    'agent_id', 'owner_price', 'address_object_name', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
+                    'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
                 ],
                 rent: [
-                    'agent_id', 'owner_price', 'address_object_name', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
+                    'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
                 ],
             },
             apartment_new: {
                 sale: [
-                    'agent_id', 'owner_price', 'address_object_name', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
+                    'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
                 ],
                 rent: [
-                    'agent_id', 'owner_price', 'address_object_name', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
+                    'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
                 ],
             },
             townhouse: {
                 sale: [
-                    'agent_id', 'owner_price', 'address_object_name', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
+                    'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
                 ],
                 rent: [
-                    'agent_id', 'owner_price', 'address_object_name', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
+                    'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
                 ],
             },
             apartment_small: {
                 sale: [
-                    'agent_id', 'owner_price', 'address_object_name', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
+                    'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
                 ],
                 rent: [
-                    'agent_id', 'owner_price', 'address_object_name', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
+                    'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
                 ],
             },
             room: {
                 sale: [
-                    'agent_id', 'owner_price', 'address_object_name', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_offer_count', 'square_total', 'square_living', 'square_kitchen',
+                    'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_offer_count', 'square_total', 'square_living', 'square_kitchen',
                 ],
                 rent: [
-                    'agent_id', 'owner_price', 'address_object_name', 'ap_scheme_id','house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_offer_count', 'square_total', 'square_living', 'square_kitchen',
+                    'owner_price', 'address', 'ap_scheme_id','house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_offer_count', 'square_total', 'square_living', 'square_kitchen',
                 ],
             },
             house: {
                 sale: [
-                    'agent_id', 'owner_price', 'address_object_name', 'house_type_id', 'floors_count', 'square_land', 'square_total',
+                    'owner_price', 'address', 'house_type_id', 'floors_count', 'square_land', 'square_total',
                 ],
                 rent: [
-                    'agent_id', 'owner_price', 'address_object_name', 'house_type_id', 'floors_count', 'square_land', 'square_total',
+                    'owner_price', 'address', 'house_type_id', 'floors_count', 'square_land', 'square_total',
                 ],
             },
             cottage: {
                 sale: [
-                    'agent_id', 'owner_price', 'address_object_name', 'house_type_id', 'floors_count', 'square_land',  'square_total',
+                    'owner_price', 'address', 'house_type_id', 'floors_count', 'square_land',  'square_total',
                 ],
                 rent: [
-                    'agent_id', 'owner_price', 'address_object_name', 'house_type_id', 'floors_count', 'square_land',  'square_total',
+                    'owner_price', 'address', 'house_type_id', 'floors_count', 'square_land',  'square_total',
                 ],
             },
 
             dacha: {
                 sale: [
-                    'agent_id', 'owner_price', 'square_land', 'square_land_type',
+                    'owner_price', 'square_land', 'square_land_type',
                 ],
                 rent: [
-                    'agent_id', 'owner_price', 'square_land', 'square_land_type',
+                    'owner_price', 'square_land', 'square_land_type',
                 ],
             },
-            
+
             land: {
                 sale: [
-                    'agent_id', 'owner_price', 'square_land', 'square_land_type',
+                    'owner_price', 'square_land', 'square_land_type',
                 ],
                 rent: [
-                    'agent_id', 'owner_price', 'square_land', 'square_land_type',
+                    'owner_price', 'square_land', 'square_land_type',
                 ],
             },
-            
+
             office: {
                 sale: [
-                    'agent_id', 'owner_price', 'address_object_name', 'square_total',
+                    'owner_price', 'address', 'square_total',
                 ],
                 rent: [
-                    'agent_id', 'owner_price', 'address_object_name', 'square_total',
+                    'owner_price', 'address', 'square_total',
                 ],
             },
-            
+
             other: {
                 sale: [
-                    'agent_id', 'owner_price',
+                    'owner_price',
                 ],
                 rent: [
-                    'agent_id', 'owner_price',
+                    'owner_price',
                 ],
             },
 
             garage: {
                 sale: [
-                    'agent_id', 'owner_price',
+                    'owner_price',
                 ],
                 rent: [
-                    'agent_id', 'owner_price',
+                    'owner_price',
                 ],
             },
 
             any: {
                 sale: [
-                    'agent_id', 'owner_price', 'address_object_name', 'square_total',
+                    'owner_price', 'address', 'square_total',
                 ],
                 rent: [
-                    'agent_id', 'owner_price', 'address_object_name', 'square_total',
+                    'owner_price', 'address', 'square_total',
                 ],
             }
         },
         vnh: {
             apartment: {
                 sale: [
-                    'agent_id', 'owner_price', 'address_object_name', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
+                    'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
                 ],
                 rent: [
-                    'agent_id', 'owner_price', 'address_object_name', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
+                    'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
                 ],
             },
             apartment_new: {
                 sale: [
-                    'agent_id', 'owner_price', 'address_object_name', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
+                    'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
                 ],
                 rent: [
-                    'agent_id', 'owner_price', 'address_object_name', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
+                    'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
                 ],
             },
             townhouse: {
                 sale: [
-                    'agent_id', 'owner_price', 'address_object_name', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
+                    'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
                 ],
                 rent: [
-                    'agent_id', 'owner_price', 'address_object_name', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
+                    'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
                 ],
             },
             apartment_small: {
                 sale: [
-                    'agent_id', 'owner_price', 'address_object_name', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
+                    'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
                 ],
                 rent: [
-                    'agent_id', 'owner_price', 'address_object_name', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
+                    'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
                 ],
             },
             room: {
                 sale: [
-                    'agent_id', 'owner_price', 'address_object_name', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_offer_count', 'square_total', 'square_living', 'square_kitchen',
+                    'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_offer_count', 'square_total', 'square_living', 'square_kitchen',
                 ],
                 rent: [
-                    'agent_id', 'owner_price', 'address_object_name', 'ap_scheme_id','house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_offer_count', 'square_total', 'square_living', 'square_kitchen',
+                    'owner_price', 'address', 'ap_scheme_id','house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_offer_count', 'square_total', 'square_living', 'square_kitchen',
                 ],
             },
             house: {
                 sale: [
-                    'agent_id', 'owner_price', 'address_object_name', 'house_type_id', 'floors_count', 'square_land', 'square_total',
+                    'owner_price', 'address', 'house_type_id', 'floors_count', 'square_land', 'square_total',
                 ],
                 rent: [
-                    'agent_id', 'owner_price', 'address_object_name', 'house_type_id', 'floors_count', 'square_land', 'square_total',
+                    'owner_price', 'address', 'house_type_id', 'floors_count', 'square_land', 'square_total',
                 ],
             },
             cottage: {
                 sale: [
-                    'agent_id', 'owner_price', 'address_object_name', 'house_type_id', 'floors_count', 'square_land',  'square_total',
+                    'owner_price', 'address', 'house_type_id', 'floors_count', 'square_land',  'square_total',
                 ],
                 rent: [
-                    'agent_id', 'owner_price', 'address_object_name', 'house_type_id', 'floors_count', 'square_land',  'square_total',
+                    'owner_price', 'address', 'house_type_id', 'floors_count', 'square_land',  'square_total',
                 ],
             },
 
             dacha: {
                 sale: [
-                    'agent_id', 'owner_price', 'square_land', 'square_land_type',
+                    'owner_price', 'square_land', 'square_land_type',
                 ],
                 rent: [
-                    'agent_id', 'owner_price', 'square_land', 'square_land_type',
+                    'owner_price', 'square_land', 'square_land_type',
                 ],
             },
-            
+
             land: {
                 sale: [
-                    'agent_id', 'owner_price', 'square_land', 'square_land_type',
+                    'owner_price', 'square_land', 'square_land_type',
                 ],
                 rent: [
-                    'agent_id', 'owner_price', 'square_land', 'square_land_type',
+                    'owner_price', 'square_land', 'square_land_type',
                 ],
             },
-            
+
             office: {
                 sale: [
-                    'agent_id', 'owner_price', 'address_object_name', 'square_total',
+                    'owner_price', 'address', 'square_total',
                 ],
                 rent: [
-                    'agent_id', 'owner_price', 'address_object_name', 'square_total',
+                    'owner_price', 'address', 'square_total',
                 ],
             },
-            
+
             other: {
                 sale: [
-                    'agent_id', 'owner_price',
+                    'owner_price',
                 ],
                 rent: [
-                    'agent_id', 'owner_price',
+                    'owner_price',
                 ],
             },
 
             garage: {
                 sale: [
-                    'agent_id', 'owner_price',
+                    'owner_price',
                 ],
                 rent: [
-                    'agent_id', 'owner_price',
+                    'owner_price',
                 ],
             },
 
             any: {
                 sale: [
-                    'agent_id', 'owner_price', 'address_object_name', 'square_total',
+                    'owner_price', 'address', 'square_total',
                 ],
                 rent: [
-                    'agent_id', 'owner_price', 'address_object_name', 'square_total',
+                    'owner_price', 'address', 'square_total',
                 ],
             }
         },
         avito: {
             apartment: {
                 sale: [
-                    'agent_id', 'owner_price', 'address_object_name', 'floor', 'rooms_count', 'square_total',
+                    'owner_price', 'address', 'house_num', 'floor',
+                    'floors_count', 'rooms_count', 'square_total', 'house_type_id',
+                    'description', 'agency_price',
                 ],
                 rent: [
-                    'agent_id', 'owner_price', 'address_object_name', 'floor', 'rooms_count', 'square_total',
+                    'owner_price', 'address', 'house_num', 'floor',
+                    'floors_count', 'rooms_count', 'square_total', 'house_type_id',
+                    'description', 'agency_price',
                 ],
             },
             apartment_new: {
                 sale: [
-                    'agent_id', 'owner_price', 'address_object_name', 'floor', 'rooms_count', 'square_total',
+                    'owner_price', 'address', 'house_num', 'floor',
+                    'floors_count', 'rooms_count', 'square_total', 'house_type_id',
+                    'description', 'agency_price',
                 ],
                 rent: [
-                    'agent_id', 'owner_price', 'address_object_name', 'floor', 'rooms_count', 'square_total',
+                    'owner_price', 'address', 'house_num', 'floor',
+                    'floors_count', 'rooms_count', 'square_total', 'house_type_id',
+                    'description', 'agency_price',
                 ],
             },
             townhouse: {
                 sale: [
-                    'agent_id', 'owner_price', 'address_object_name', 'floor', 'rooms_count', 'square_total',
+                    'owner_price', 'address', 'house_num', 'floor',
+                    'floors_count', 'rooms_count', 'square_total', 'house_type_id',
+                    'description', 'agency_price',
                 ],
                 rent: [
-                    'agent_id', 'owner_price', 'address_object_name', 'floor', 'rooms_count', 'square_total',
+                    'owner_price', 'address', 'house_num', 'floor',
+                    'floors_count', 'rooms_count', 'square_total', 'house_type_id',
+                    'description', 'agency_price',
                 ],
             },
             apartment_small: {
                 sale: [
-                    'agent_id', 'owner_price', 'address_object_name', 'floor', 'rooms_count', 'square_total',
+                    'owner_price', 'address', 'house_num', 'floor',
+                    'floors_count', 'rooms_count', 'square_total', 'house_type_id',
+                    'description', 'agency_price',
                 ],
                 rent: [
-                    'agent_id', 'owner_price', 'address_object_name', 'floor', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
+                    'owner_price', 'address', 'house_num', 'floor',
+                    'floors_count', 'rooms_count', 'square_total', 'house_type_id',
+                    'description', 'agency_price',
                 ],
             },
             room: {
                 sale: [
-                    'agent_id', 'owner_price', 'address_object_name', 'floor', 'rooms_offer_count', 'square_total',
+                    'owner_price', 'address', 'house_num', 'floor',
+                    'floors_count', 'square_total', 'house_type_id',
+                    'description', 'agency_price',
                 ],
                 rent: [
-                    'agent_id', 'owner_price', 'address_object_name', 'floor', 'rooms_offer_count', 'square_total',
+                    'owner_price', 'address', 'house_num', 'floor',
+                    'floors_count', 'square_total', 'house_type_id',
+                    'description', 'agency_price',
                 ],
             },
             house: {
                 sale: [
-                    'agent_id', 'owner_price', 'address_object_name', 'square_land', 'square_total',
+                    'owner_price', 'address', 'square_land', 'square_land_type',
+                    'square_total', 'floors_count', 'house_type_id', 'description', 'agency_price',
                 ],
                 rent: [
-                    'agent_id', 'owner_price', 'address_object_name', 'square_land', 'square_total',
+                    'owner_price', 'address', 'square_land', 'square_total',
+                    'square_total', 'floors_count', 'house_type_id', 'description', 'agency_price',
                 ],
             },
             cottage: {
                 sale: [
-                    'agent_id', 'owner_price', 'address_object_name', 'square_land',  'square_total',
+                    'owner_price', 'address', 'square_land', 'square_total',
+                    'square_total', 'floors_count', 'house_type_id', 'description', 'agency_price',
                 ],
                 rent: [
-                    'agent_id', 'owner_price', 'address_object_name', 'square_land',  'square_total',
+                    'owner_price', 'address', 'square_land', 'square_total',
+                    'square_total', 'floors_count', 'house_type_id', 'description', 'agency_price',
                 ],
             },
 
             dacha: {
                 sale: [
-                    'agent_id', 'owner_price', 'square_land', 'square_land_type',
+                    'owner_price', 'address', 'square_land', 'square_total',
+                    'square_total', 'floors_count', 'house_type_id', 'description', 'agency_price',
                 ],
                 rent: [
-                    'agent_id', 'owner_price', 'square_land', 'square_land_type',
+                    'owner_price', 'address', 'square_land', 'square_total',
+                    'square_total', 'floors_count', 'house_type_id', 'description', 'agency_price',
                 ],
             },
-            
+
             land: {
                 sale: [
-                    'agent_id', 'owner_price', 'square_land', 'square_land_type',
+                    'owner_price', 'square_land', 'square_land_type',
+                    'description', 'agency_price',
                 ],
                 rent: [
-                    'agent_id', 'owner_price', 'square_land', 'square_land_type',
+                    'owner_price', 'square_land', 'square_land_type',
+                    'description', 'agency_price',
                 ],
             },
-            
+
             office: {
                 sale: [
-                    'agent_id', 'owner_price', 'address_object_name', 'square_total',
+                    'owner_price', 'address', 'square_total',
+                    'description', 'agency_price',
                 ],
                 rent: [
-                    'agent_id', 'owner_price', 'address_object_name', 'square_total',
+                    'owner_price', 'address', 'square_total',
+                    'description', 'agency_price',
                 ],
             },
-            
+
             other: {
                 sale: [
-                    'agent_id', 'owner_price',
+                    'owner_price',
+                    'description', 'agency_price',
                 ],
                 rent: [
-                    'agent_id', 'owner_price',
+                    'owner_price',
+                    'description', 'agency_price',
                 ],
             },
 
             garage: {
                 sale: [
-                    'agent_id', 'owner_price',
+                    'owner_price',
+                    'description', 'agency_price',
                 ],
                 rent: [
-                    'agent_id', 'owner_price',
+                    'owner_price',
+                    'description', 'agency_price',
                 ],
             },
 
             any: {
                 sale: [
-                    'agent_id', 'owner_price', 'address_object_name', 'square_total',
+                    'owner_price', 'address', 'square_total',
+                    'description', 'agency_price',
                 ],
                 rent: [
-                    'agent_id', 'owner_price', 'address_object_name', 'square_total',
+                    'owner_price', 'address', 'square_total',
+                    'description', 'agency_price',
                 ],
             }
         },
     };
-    
+
     var media_dict = {
     % for my $x (@{Rplus::Model::Media::Manager->get_objects(query => [type => 'export', delete_date => undef],)}) {
         <%= $x->id %>: '<%= $x->code %>',
     % }
     };
-    
+
     function setView() {
         var realty_type = $('#typeInput', $('#realtyCard_modal')).val();
         var offer_type = $('#offerTypeInput', $('#realtyCard_modal')).val();
         var multylisting_checked = $('[name="multylisting"]:input', $('#realtyCard_modal')).is(':checked');
-        
-        var exclude_fields = exclude[realty_type];
+
+        var exclude_fields = [];
+        if (exclude[realty_type]) {
+          exclude_fields = exclude[realty_type];
+        }
+        exclude_fields = exclude_fields.concat(exclude_by_offer_type[offer_type]);
         var rq_fields = required[realty_type];
 
         for (var idx = 0; idx < fields.length; ++idx) {
@@ -1490,13 +1533,6 @@
             }
         }
 
-        var rt_el = $('[name="rent_type"]:input', $('#realtyCard_modal'));
-        if (offer_type != 'rent') {
-            rt_el.closest('.edit-group').addClass('hidden');
-        } else {
-            rt_el.closest('.edit-group').removeClass('hidden');
-        }
-        
         if (exclude_fields) {
             for (var idx = 0; idx < exclude_fields.length; ++idx) {
                 var field = exclude_fields[idx];
@@ -1515,12 +1551,12 @@
             var el;
             el = $('[name="' + field + '"]:input', $('#realtyCard_modal'));
             el.removeClass('required');
-            if (field == 'address_object_name') {
-                el = $('[name="address_object_id"]:input', $('#realtyCard_modal')).siblings('.input-group').find('.input-group-addon');
+            if (field == 'address') {
+                el = $('[name="address"]:input', $('#realtyCard_modal')).siblings('.input-group').find('.input-group-addon');
                 el.removeClass('required');
             }
         }
-        
+
        if (multylisting_checked) {
             if (rq_fields) {
                 for (idx = 0; idx < rq_fields.length; ++idx) {
@@ -1540,8 +1576,8 @@
                     } else {
                         if (!el.val()) {
                             el.addClass('required');
-                            if (field == 'address_object_name') {
-                                el = $('[name="address_object_id"]:input', $('#realtyCard_modal')).siblings('.input-group').find('.input-group-addon');
+                            if (field == 'address') {
+                                el = $('[name="address"]:input', $('#realtyCard_modal')).siblings('.input-group').find('.input-group-addon');
                                 el.addClass('required');
                             }
                         }
@@ -1549,10 +1585,10 @@
                 }
             }
         }
-        
+
         var export_media = [];
         var formArray = $('#realty-form').serializeArray();
-      
+
         for (var i = 0; i < formArray.length; i++) {
             var x = formArray[i];
             if (x.name == 'export_media') {
@@ -1589,8 +1625,8 @@
                     } else {
                         if (!el.val()) {
                             el.addClass('required');
-                            if (field == 'address_object_name') {
-                                el = $('[name="address_object_id"]:input', $('#realtyCard_modal')).siblings('.input-group').find('.input-group-addon');
+                            if (field == 'address') {
+                                el = $('[name="address"]:input', $('#realtyCard_modal')).siblings('.input-group').find('.input-group-addon');
                                 el.addClass('required');
                             }
                         }
@@ -1599,7 +1635,7 @@
             }
         }
     }
-    
+
     $('#typeInput').change( function () {
         var $this = $(this);
         setView();
@@ -1609,21 +1645,21 @@
         var $this = $(this);
         setView();
     });
-    
+
     $('input', $('#realtyCard_modal')).change( function () {
         var $this = $(this);
         setView();
     });
-    
+
     $('select', $('#realtyCard_modal')).change( function () {
         var $this = $(this);
         setView();
     });
-    
+
     $('textarea', $('#realtyCard_modal')).change( function () {
         var $this = $(this);
         setView();
-    });    
+    });
 </script>
 % end
 
@@ -1638,13 +1674,20 @@
         <a href="#" id="unlock-btn" class="ctrl-button pull-right smode-btn" data-action="realty-unlock">Изменить</a>
         <a href="#" class="ctrl-button pull-right emode-btn hidden" data-action="realty-save">Готово</a>
       </div>
-      <div class="modal-body" id="realty-card-body">       
+      <div class="modal-body" id="realty-card-body">
         <div id="realty-main" class="main col-md-12 smode-btn" style="padding: 0px;">
           <div id="view-group" class="" style="margin-top: 10px;">
             <div class="form-group view-group">
               <label class="col-sm-4 col-md-4 col-lg-4 control-label view-label">Улица/Район</label>
               <div class="col-sm-8 col-md-8 col-lg-8" style="padding-top: 5px;">
                 <p class="form-control-static text-left"><span class="" data-name="dg_p1"></span></p>
+              </div>
+            </div>
+
+            <div class="form-group view-group">
+              <label class="col-sm-4 col-md-4 col-lg-4 control-label view-label">Ориентир</label>
+              <div class="col-sm-8 col-md-8 col-lg-8" style="padding-top: 5px;">
+                <p class="form-control-static text-left"><span class="" data-name="dg_p1_poi"></span></p>
               </div>
             </div>
 
@@ -1668,7 +1711,7 @@
                 <p class="form-control-static text-left"><span class="" data-name="dg_p4"></span></p>
               </div>
             </div>
-    
+
             <div class="form-group view-group">
               <label class="col-sm-4 col-md-4 col-lg-4 control-label view-label">Балконы/Ванные</label>
               <div class="col-sm-8 col-md-8 col-lg-8" style="padding-top: 5px;">
@@ -1688,7 +1731,7 @@
               <div class="col-sm-8 col-md-8 col-lg-8" style="padding-top: 5px;">
                 <p class="form-control-static text-left"><span class="" data-name="dg_p7"></span></p>
               </div>
-            </div>          
+            </div>
 
             <div class="form-group view-group">
               <label class="col-sm-4 col-md-4 col-lg-4 control-label view-label">Цена</label>
@@ -1696,7 +1739,7 @@
                 <p class="form-control-static text-left"><span class="" data-name="dg_p8"></span></p>
               </div>
             </div>
-            
+
             <div class="form-group view-group">
               <label class="col-sm-4 col-md-4 col-lg-4 control-label view-label" id="dg_p9_label">Агент</label>
               <div class="col-sm-8 col-md-8 col-lg-8" style="padding-top: 5px;">
@@ -1729,7 +1772,7 @@
             <a class="col-sm-6 col-md-6 col-lg-6" href="#" data-action="realty-geo" style="text-decoration: none !important;">
               Показать на карте&nbsp;&nbsp;&nbsp;<span class="glyphicon glyphicon-globe"></span>
             </a>
-          </div>          
+          </div>
         </div>
 
         <div id="edit-group" class="emode-btn hidden">
@@ -1751,14 +1794,14 @@
               </div>
             </div>
           </div>
-        
+
           <div class="form-group edit-group">
             <label class="col-sm-3 col-md-3 col-lg-3 control-label">Дата</label>
             <div class="col-sm-9 col-md-9 col-lg-9" style="padding-top: 5px;">
               <p class="form-control-static text-left"><small><span class="text-primary" data-name="add_date"></span>&nbsp;/&nbsp;<span class="text-success" data-name="change_date"></span></small></p>
             </div>
           </div>
-        
+
           <div class="form-group edit-group" style="margin-top: 15px;">
             <label class="col-sm-3 col-md-3 col-lg-3 control-label" for="typeInput"><%= ucfloc 'type' %></label>
             <div class="col-sm-9 col-md-9 col-lg-9">
@@ -1780,16 +1823,16 @@
           </div>
 
           <div class="form-group edit-group">
-            <label class="col-sm-3 col-md-3 col-lg-3 control-label" for="stateInput"><%= ucfloc 'state' %></label>
+            <label class="col-sm-3 col-md-3 col-lg-3 control-label" for="stateInput"> Стадия</label>
             <div class="col-sm-9 col-md-9 col-lg-9">
               <select class="form-control input-sm" name="state_code" id="stateInput">
-              % for my $x (@{Rplus::Model::RealtyState::Manager->get_objects(sort_by => 'id')}) {
+              % for my $x (@{Rplus::Model::RealtyState::Manager->get_objects(sort_by => 'sort_idx')}) {
                 <option value="<%= $x->code %>"><%= $x->name %></option>
               % }
               </select>
             </div>
           </div>
-        
+
           <div class="form-group edit-group">
             <label class="col-sm-3 col-md-3 col-lg-3 control-label" for="offerTypeInput"><%= ucfloc 'offer', 2 %></label>
             <div class="col-sm-9 col-md-9 col-lg-9">
@@ -1810,7 +1853,7 @@
               </select>
             </div>
           </div>
-          
+
           <div class="form-group edit-group">
             <label class="col-sm-3 col-md-3 col-lg-3 control-label" for="agentInput"><%= ucfloc 'agent' %></label>
             <div class="col-sm-9 col-md-9 col-lg-9">
@@ -1818,17 +1861,17 @@
                 % if ($self->stash('user')->{role} eq 'top') {
                 <option class="text-muted" value="">-</option>
                 <option class="" value="<%= $self->stash('user')->{id} %>"><%= $self->stash('user')->{name} %></option>
-                % for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [account_id => $self->session('user')->{account_id}, role => ['agent', 'agent_ext', 'manager'], delete_date => undef], sort_by => 'name')}) {                  
+                % for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [account_id => $self->session('account')->{id}, role => ['agent', 'manager'], delete_date => undef], sort_by => 'name')}) {
                 <option value="<%= $x->id %>"><%= $x->name %></option>
                 % }
                 % } elsif ($self->stash('user')->{role} eq 'manager') {
                 <option value="<%= $self->stash('user')->{id} %>"><%= $self->stash('user')->{name} %></option>
                 %   if (scalar (@{$self->stash('user')->{subordinate}})) {
-                %     for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [account_id => $self->session('user')->{account_id}, id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
+                %     for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [account_id => $self->session('account')->{id}, id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
                         <option value="<%= $x->id %>"><%= $x->name %></option>
                 %     }
                 %   }
-                % } elsif ($self->stash('user')->{role} eq 'agent_ext' || $self->stash('user')->{role} eq 'agent') {
+                % } elsif ($self->stash('user')->{role} eq 'agent') {
                 <option value="<%= $self->stash('user')->{id} %>"><%= $self->stash('user')->{name} %></option>
                 % } else {
 
@@ -1838,12 +1881,18 @@
           </div>
 
           <div class="form-group edit-group">
-            <label class="col-sm-3 col-md-3 col-lg-3 control-label" for="addrObjInput"><%= ucfloc 'addr' %>&nbsp&nbsp</label>
+            <label class="col-sm-3 col-md-3 col-lg-3 control-label" for="localityInput">Нас. пункт</label>
             <div class="col-sm-9 col-md-9 col-lg-9">
-              <input type="hidden" name="address_object_id">
+              <input type="text" class="form-control input-sm" name="locality" id="localityInput" placeholder="Населенный пункт">
+            </div>
+          </div>
+
+          <div class="form-group edit-group">
+            <label class="col-sm-3 col-md-3 col-lg-3 control-label" for="addrInput"><%= ucfloc 'addr' %>&nbsp&nbsp</label>
+            <div class="col-sm-9 col-md-9 col-lg-9">
               <div class="input-group">
                 <a class="input-group-addon" href="#" data-action="realty-geo"><span class="glyphicon glyphicon-globe"></span></a>
-                <input type="text" class="form-control input-sm" name="address_object_name" id="addrObjInput" placeholder="<%= ucfloc 'street' %>, <%= ucfloc 'city' %>">
+                <input type="text" class="form-control input-sm" name="address" id="addrInput" placeholder="<%= ucfloc 'street' %>">
               </div>
             </div>
           </div>
@@ -1851,16 +1900,23 @@
           <div class="form-group edit-group">
             <label class="col-sm-3 col-md-3 col-lg-3 control-label" for="houseNumInput"><%= ucfloc 'num' %></label>
             <div class="col-sm-9 col-md-9 col-lg-9">
-              <input type="text" class="form-control input-sm" name="house_num" id="houseNumInput" placeholder="<%= ucfloc 'house' %>" style="width: 45%; display: inline-block;">
+              <input type="text" class="form-control input-sm" name="house_num" id="houseNumInput" placeholder="<%= ucfloc 'house' %> / Корпус" style="width: 45%; display: inline-block;">
               <div class="slash">&nbsp;/&nbsp;</div>
               <input type="text" class="form-control input-sm" name="ap_num" placeholder="<%= ucfloc 'ap' %>" style="width: 45%; display: inline-block;">
             </div>
           </div>
-          
+
           <div class="form-group edit-group">
-            <label class="col-sm-3 col-md-3 col-lg-3 control-label" for="sublandmarkInput"><%= ucfloc 'landmark' %></label>
+            <label class="col-sm-3 col-md-3 col-lg-3 control-label" for="districtInput"> Район</label>
             <div class="col-sm-9 col-md-9 col-lg-9">
-              <select class="form-control input-sm" name="sublandmark_id" id="sublandmarkInput">
+              <input readonly type="text" class="form-control input-sm" name="district" id="districtInput" placeholder="">
+            </div>
+          </div>
+
+          <div class="form-group edit-group">
+            <label class="col-sm-3 col-md-3 col-lg-3 control-label" for="poiInput"><%= ucfloc 'landmark' %></label>
+            <div class="col-sm-9 col-md-9 col-lg-9">
+              <select class="form-control input-sm" name="poi" id="poiInput">
                 <option class="text-muted" value="">-</option>
               </select>
             </div>
@@ -1989,7 +2045,24 @@
               <input type="text" class="form-control input-sm" name="agency_price" id="agencyPriceInput" placeholder="<%= ucfloc 'agency' %>" style="width: 45%; display: inline-block;">
             </div>
           </div>
-          
+
+          <div class="form-group edit-group">
+            <label class="col-sm-3 col-md-3 col-lg-3 control-label" for="leaseDepositeId"> Залог</label>
+            <div class="col-sm-9 col-md-9 col-lg-9">
+
+              <select class="form-control input-sm" name="lease_deposite_id" id="leaseDepositeIdInput">
+                <option class="text-muted" value> Без залога</option>
+                <option value="1"> 0,5 месяца</option>
+                <option value="2"> 1 месяц</option>
+                <option value="3"> 1,5 месяца</option>
+                <option value="4"> 2 месяца</option>
+                <option value="5"> 2,5 месяца</option>
+                <option value="6"> 3 месяца</option>
+              </select>
+
+            </div>
+          </div>
+
           <div class="form-group edit-group">
             <label class="col-sm-3 col-md-3 col-lg-3 control-label" for="ownerPhoneInput"><%= ucfloc 'phones' %>&nbsp;<span style="top: 0px; font-size: 10px; color: rgb(221, 41, 41);" class="glyphicon glyphicon-asterisk"></span></label>
             <div class="col-sm-9 col-md-9 col-lg-9">
@@ -2012,7 +2085,7 @@
               <p> Служебная информация</p>
             </div>
           </div>
-          
+
           <div class="form-group edit-group">
             <div class="col-sm-12 col-md-12 col-lg-12">
               <textarea class="form-control input-sm" name="work_info" id="workInfoInput" rows="3" placeholder="<%= ucfloc 'work info' %>"></textarea>
@@ -2029,18 +2102,18 @@
               </div>
             </div>
           </div>
-          
+
           <div class="cardheader mainheader" style="margin-bottom: 10px;">
             <div class="input-group ccard-input-group">
               <span class="rcard-input-group-addon glyphicon glyphicon-file"></span>
               <p> Мультилистинг</p>
             </div>
           </div>
-          
+
           <div class="checkbox" style="margin-left: 15px;">
             <input type="checkbox" name="multylisting" value="1" form="realty-form"> <small>Показывать в списке мультилистинга</small>
           </div>
-          
+
           <div class="form-group edit-group">
             <label class="col-sm-3 col-md-3 col-lg-3 control-label" for="mlsPriceInput">Условия MLS</label>
             <div class="col-sm-9 col-md-9 col-lg-9">
@@ -2051,13 +2124,13 @@
               </select>
             </div>
           </div>
-          
+
         </form>
 
         <form class="hidden" enctype="multipart/form-data" id="attachmentFileForm">
            <input class="" type="file" name="file" id="attachmentFileInput">
         </form>
-        
+
           <div class="cardheader mainheader">
             <div class="input-group ccard-input-group">
               <span class="rcard-input-group-addon glyphicon glyphicon-export"></span>
@@ -2067,9 +2140,7 @@
 
           <div class="form-group edit-group">
             <div class="col-sm-4 col-md-4 col-lg-4">
-            % my $loc_id = $self->session('user')->{location_id};      # костыль!
             % for my $x (@{Rplus::Model::Media::Manager->get_objects(query => [type => 'export', delete_date => undef], page => 1, per_page => 3)}) {
-            % next if ($loc_id == 2 || $loc_id == 3) && ($x->id == 2 || $x->id == 3);
               <div class="checkbox">
                 <input type="checkbox" name="export_media" value="<%= $x->id %>" form="realty-form"> <small><%= $x->name %></small>
               </div>
@@ -2077,14 +2148,13 @@
             </div>
             <div class="col-md-4 col-lg-4">
             % for my $x (@{Rplus::Model::Media::Manager->get_objects(query => [type => 'export', delete_date => undef], page => 2, per_page => 3)}) {
-            % next if ($loc_id == 2 || $loc_id == 3) && ($x->id == 2 || $x->id == 3);
               <div class="checkbox">
                 <input type="checkbox" name="export_media" value="<%= $x->id %>" form="realty-form"> <small><%= $x->name %></small>
               </div>
             % }
             </div>
             <div class="col-sm-4 col-md-4 col-lg-4">
-            </div>            
+            </div>
           </div>
 
           <div class="cardheader mainheader">
@@ -2093,15 +2163,15 @@
               <p>Тэги</p>
             </div>
           </div>
-  
+
           <div id="tag-select" class="tag-group input-group ccard-input-group">
             % for my $x (@{Rplus::Model::DictColorTag::Manager->get_objects(query => [delete_date => undef], sort_by => 'id')}) {
               <span class="realty-color-tag round-button card-color-tag-<%= $x->id %>" data-action="realty-card-set-color_tag_id" data-val="<%= $x->id %>"></span>
             % }
           </div>
-          
+
           </div> <!-- edit group -->
-          
+
           <div class="cardheader mainheader">
             <div class="input-group ccard-input-group">
               <span class="rcard-input-group-addon glyphicon glyphicon-camera"></span>
@@ -2117,14 +2187,14 @@
           <div id="progress">
             <div class="bar" style="width: 0%;"></div>
           </div>
-          
+
           <div class="slider_block" style="position: relative; margin-bottom: 15px">
             <div id="carousel">
             </div>
             <a class="slide-prev" style="color: white;" href="#"><span class="glyphicon glyphicon-chevron-left"></span></a>
             <a class="slide-next" style="color: white;" href="#"><span class="glyphicon glyphicon-chevron-right"></span></a>
           </div>
-          
+
         </div>
       </div>
     </div>

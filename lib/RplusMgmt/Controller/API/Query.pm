@@ -54,7 +54,7 @@ sub complete {
             $vals{$x->{fval}} = 1;
         }
 
-        my $city_guid = $self->session('user')->{city_guid};
+        my $city_guid = $self->config->{default_city_guid};
         my $addrobj_iter = Rplus::Model::AddressObject::Manager->get_objects_iterator(
             query => [
                 [\'lower(name) LIKE ?' => lc($term =~ s/([%_])/\\$1/gr).'%'],
@@ -70,10 +70,10 @@ sub complete {
             $vals{lc($addrobj->name.' '.$addrobj->full_type)} = 1;
         }
     }
-    
+
     for (sort { length($a) <=> length($b) } keys %vals) {
         my $prefix = $q =~ s/$term$//r;
-        push @res, {value => $prefix.$_}; 
+        push @res, {value => $prefix.$_};
         last if @res == $limit;
     }
 

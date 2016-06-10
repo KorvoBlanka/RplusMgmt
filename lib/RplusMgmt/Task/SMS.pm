@@ -10,15 +10,13 @@ use Rplus::Model::Option::Manager;
 use Mojo::UserAgent;
 use JSON;
 
-use Data::Dumper;
 
 sub run {
-    my $class = shift;
     my $c = shift;
 
 
     my $stop = 0;
-    my $account_iter = Rplus::Model::Account::Manager->get_objects_iterator(query => [balance => {gt => 0}, del_date => undef]);
+    my $account_iter = Rplus::Model::Account::Manager->get_objects_iterator(query => [del_date => undef]);
     while (my $account = $account_iter->next) {
 
         my $acc_id = $account->id;

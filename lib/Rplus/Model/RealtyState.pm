@@ -13,6 +13,7 @@ __PACKAGE__->meta->setup(
         code     => { type => 'varchar', length => 16, not_null => 1, remarks => 'Код' },
         keywords => { type => 'varchar', length => 128, remarks => 'Ключевые слова' },
         metadata => { type => 'scalar', default => '{}', not_null => 1, remarks => 'Метаданные' },
+        sort_idx => { type => 'integer' },
     ],
 
     primary_key_columns => [ 'id' ],

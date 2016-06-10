@@ -44,10 +44,51 @@
           }
         });
 
-        $('<form action="/export/avito" method="POST">' + 
+      if ($('#avito-partner').is(':checked')) {
+
+        $.ajax({
+          type: "POST",
+          url: "/export/avito_partner",
+          data: {
+            rent_realty_types: sale_realty_types.join(),
+            sale_realty_types: rent_realty_types.join(),
+          },
+        })
+          .done(function (data) {
+            $('input[name="avito-file-ref"]').removeClass('hidden');
+            $('input[name="avito-file-ref"]').val(data.path);
+
+            var ts = moment().format('HH:mm DD.MM.YY');
+
+            $('#avito-last-update-ts').removeClass('hidden');
+            $('#avito-last-update-ts').text('Дата последнего обновления: ' + ts);
+
+            $.ajax({
+              type: "POST",
+              url: "/api/options/set_multiple",
+              data: {
+                category: "export",
+                opt_string: JSON.stringify({
+                  'avito-file-ref': data.path,
+                  'avito-file-last-ts': ts,
+                }),
+              }
+            })
+              .done(function (data, textStatus, jqXHR) {
+                if (data.status == 'success') {
+                  $('button[data-action="export-avito"]').html('Обновить');
+                }
+              });
+
+          });
+
+      } else {
+
+        $('<form action="/export/avito" method="POST">' +
           '<input name="sale_realty_types" value="' + sale_realty_types.join() + '">' +
           '<input name="rent_realty_types" value="' + rent_realty_types.join() + '">' +
           '</form>').submit();
+      }
     });
 
     $('[data-action="export-vnh"]').on('click', function (e) {
@@ -63,7 +104,7 @@
             rent_realty_types.push(this.id);
           }
         });
-        $('<form action="/export/vnh" method="POST">' + 
+        $('<form action="/export/vnh" method="POST">' +
           '<input name="sale_realty_types" value="' + sale_realty_types.join() + '">' +
           '<input name="rent_realty_types" value="' + rent_realty_types.join() + '">' +
           '</form>').submit();
@@ -83,7 +124,7 @@
           }
         });
 
-        $('<form action="/export/farpost" method="POST">' + 
+        $('<form action="/export/farpost" method="POST">' +
           '<input name="sale_realty_types" value="' + sale_realty_types.join() + '">' +
           '<input name="rent_realty_types" value="' + rent_realty_types.join() + '">' +
           '</form>').submit();
@@ -97,7 +138,7 @@
             realty_types.push(this.id);
           }
         });
-        $('<form action="/export/present" method="POST">' + 
+        $('<form action="/export/present" method="POST">' +
           '<input name="offer_type_code" value="' + offer_type + '">' +
           '<input name="realty_types" value="' + realty_types.join() + '">' +
           '</form>').submit();
@@ -167,12 +208,12 @@
 
         $(".indicator-download").removeClass('invisible');
         var k = 0;
-          
-        Object.keys(realty_types).forEach(function (offer_type) { 
+
+        Object.keys(realty_types).forEach(function (offer_type) {
             var realty_types_arr = realty_types[offer_type];
             for (var i = 0; i < realty_types_arr.length; i++) {
               setTimeout( function (realty_type) {
-                $('<form action="/export/irr" method="POST">' + 
+                $('<form action="/export/irr" method="POST">' +
                     '<input name="offer_type_code" value="' + offer_type + '">' +
                     '<input name="realty_type" value="' + realty_type + '">' +
                     '</form>').submit();
@@ -184,7 +225,7 @@
         return;
 
         setTimeout(function(realty_types_str) {
-        $('<form action="/export/irr" method="POST">' + 
+        $('<form action="/export/irr" method="POST">' +
             '<input name="realty_type" value="' + realty_types_str + '">' +
             '<input name="pictures" value="1">' +
             '</form>').submit();
@@ -199,7 +240,7 @@
         }, 500);
       }
     });
-  
+
     $.ajax({
       type: "POST",
       url: "/api/options/list",
@@ -217,16 +258,34 @@
 
           //$('button[data-action="export-irr"]').html('Обновить');
         }
+
+        if (data.options['avito-file-ref']) {
+          $('input[name="avito-file-ref"]').removeClass('hidden');
+          $('input[name="avito-file-ref"]').val(data.options['avito-file-ref']);
+
+          $('#avito-last-update-ts').removeClass('hidden');
+          $('#avito-last-update-ts').text('Дата последнего обновления: ' + data.options['avito-file-last-ts']);
+
+          //$('button[data-action="export-irr"]').html('Обновить');
+        }
       });
 
     $('#irr-partner').change(function () {
-      console.log('!');
       if (this.checked) {
         $('button[data-action="export-irr"]').html('Обновить');
       } else {
         $('button[data-action="export-irr"]').html('Экспорт');
       }
     });
+
+    $('#avito-partner').change(function () {
+      if (this.checked) {
+        $('button[data-action="export-avito"]').html('Обновить');
+      } else {
+        $('button[data-action="export-avito"]').html('Экспорт');
+      }
+    });
+
   }();
 </script>
 % end
@@ -236,19 +295,19 @@
   <ul class="nav nav-tabs">
     % my $loc_id = $self->config->{location_id};
     % if ($loc_id == 1) {
-    <li class="active"><a href="#export-avito" data-toggle="tab">Avito</a></li>      
+    <li class="active"><a href="#export-avito" data-toggle="tab">Avito</a></li>
     <li><a href="#export-irr" data-toggle="tab">Из рук в руки</a></li>
     <li><a href="#export-farpost" data-toggle="tab">Farpost</a></li>
     <li><a href="#export-vnh" data-toggle="tab">ВНХ</a></li>
     <li><a href="#export-present" data-toggle="tab">Презент</a></li>
     % } else {
-    <li class="active"><a href="#export-avito" data-toggle="tab">Avito</a></li>      
+    <li class="active"><a href="#export-avito" data-toggle="tab">Avito</a></li>
     <li><a href="#export-irr" data-toggle="tab">Из рук в руки</a></li>
     <li><a href="#export-farpost" data-toggle="tab">Farpost</a></li>
     <li class="hidden"><a href="#export-vnh" data-toggle="tab">ВНХ</a></li>
     <li class="hidden"><a href="#export-present" data-toggle="tab">Презент</a></li>
     % }
-  </ul>  
+  </ul>
 </div>
 
 <!-- Tab panes -->
@@ -297,7 +356,7 @@
         <div class="col-lg-4" id="rent-column">
           <label class="type-column-header">
             <span>Аренда</span>
-          </label>      
+          </label>
           <div class="checkbox">
             <label>
               <input type="checkbox" checked="checked" id="rooms"> Комнаты
@@ -333,10 +392,33 @@
         </div>
       </div>
       <hr>
+
+
       <div class="form-group">
-        <button type="" class="btn btn-primary btn-save" data-action="export-avito" style="margin-top: 15px">Экспорт</button>
-        <span class="glyphicon glyphicon-refresh animation-rotate indicator-download invisible" style="top: 10px; left: 10px;"></span>
+        <div class="checkbox">
+          <label>
+            <input type="checkbox" id="avito-partner"> Получить ссылку для автозагрузки
+          </label>
+        </div>
       </div>
+      <div class="form-group">
+        <!--<span class="hidden" id="irr-file-ref" style="margin-left: 25px;"></span>-->
+          <div class="form-group">
+            <button type="" class="btn btn-primary btn-save" data-action="export-avito" style="float: left; margin-right: 25px; width: 85px;">Экспорт</button>
+            <div class="col-sm-6 col-md-6 col-lg-6">
+              <input type="text" class="form-control hidden" name="avito-file-ref" style="">
+            </div>
+            <label id="avito-last-update-ts" class="control-label hidden" style="padding-top: 5px; font-weight: normal;"></label>
+          </div>
+      </div>
+      <div class="" id="export-avito-notes">
+        <br><hr>
+        Для автоматической загрузки объявлений укажите полученную ссылку в кабинете Avito.
+        <br>
+        <a target="_blank" href="http://avito.ru">Подробнее</a>
+      </div>
+
+
     </div>
   </div>
 
@@ -382,7 +464,7 @@
         <div class="col-lg-4" id="rent-column">
           <label class="type-column-header">
             <span>Аренда</span>
-          </label>      
+          </label>
           <div class="checkbox">
             <label>
               <input type="checkbox" checked="checked" id="apartments"> Квартиры
@@ -445,7 +527,7 @@
   <div class="tab-pane" id="export-farpost">
     <div class="" role="form" id="formExportFarpost">
       <div class="row" style="">
-      
+
         <div class="col-lg-4" id="farpost-sale-column">
           <label class="type-column-header">
             <span>Продажа</span>
@@ -474,7 +556,7 @@
         <div class="col-lg-4" id="farpost-rent-column">
           <label class="type-column-header">
             <span>Аренда</span>
-          </label>      
+          </label>
             <div class="checkbox">
               <label>
                 <input type="checkbox" id="room" checked="checked"> Комнаты
@@ -555,7 +637,7 @@
       <hr>
       <div class="form-group">
         <button type="" class="btn btn-primary btn-save" data-action="export-present" style="margin-top: 15px">Экспорт</button>
-      </div>          
+      </div>
     </div>
   </div>
 
@@ -602,7 +684,7 @@
         <div class="col-lg-4" id="rent-column">
           <label class="type-column-header">
             <span>Аренда</span>
-          </label>      
+          </label>
           <div class="checkbox">
             <label>
               <input type="checkbox" checked="checked" id="apartments"> Квартиры

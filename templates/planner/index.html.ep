@@ -8,7 +8,6 @@
 
 % content_for header => begin
 %= css_once "$assets_url/bootstrap-datepicker/css/datepicker3.css";
-%= css_once "$assets_url/bootstrap-select/dist/css/bootstrap-select.min.css";
 %= css_once "$assets_url/powerange/dist/powerange.min.css";
 %= css_once "/css/context.css";
 
@@ -56,12 +55,12 @@
 
 .simple-calendar > .body {
   position: relative;
-  width: 100%; 
-  height: 600px; 
-  overflow: auto; 
-  -webkit-overflow-scrolling: touch;  
+  width: 100%;
+  height: 600px;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
   -webkit-user-select: none;
-  user-select: none; 
+  user-select: none;
 }
 
 .simple-calendar > .body > .timeline > table > tbody > tr > th {
@@ -145,14 +144,14 @@
 .simple-calendar .events-container > .event {
   cursor: pointer;
   z-index: 2;
-  position: absolute; 
+  position: absolute;
   overflow: hidden;
   border: 1px solid #eee;
   border-radius: 6px;
   min-height: 25px;
 
   -webkit-user-select: none;  /* Chrome all / Safari all */
-  user-select: none;   
+  user-select: none;
 }
 
 .simple-calendar .time-marker {
@@ -187,7 +186,7 @@
 }
 
 .cell-week-end {
-  background-color: #F8F8F8;  
+  background-color: #F8F8F8;
 }
 
 .simple-calendar .event-body {
@@ -208,9 +207,9 @@
 }
 
 .event .status-button-wrapper {
-  width: 30px; 
+  width: 30px;
   height: 100%;
-  float: left; 
+  float: left;
 }
 
 .event .description {
@@ -269,7 +268,7 @@
 }
 
 .datepicker table tr td span.month, .datepicker table tr td span.year {
- border-radius: 0px; 
+ border-radius: 0px;
 }
 
 .datepicker table thead tr > th:nth-child(6), .datepicker table thead tr > th:nth-child(7) {
@@ -314,7 +313,7 @@
 
 .datepicker table thead .datepicker-switch {
   font-weight: 200;
-  font-size: 16px;  
+  font-size: 16px;
 }
 
 .datepicker table thead tr:nth-child(2) > th {
@@ -383,7 +382,6 @@ a:focus {
 %= js_once "$assets_url/bootstrap-datepicker/js/locales/bootstrap-datepicker.ru.js";
 %= js_once "$assets_url/jquery-pep-js/src/jquery.pep.js";
 %= js_once "$assets_url/modernizr/modernizr.js";
-%= js_once "$assets_url/bootstrap-select/dist/js/bootstrap-select.min.js";
 %= js_once "$assets_url/powerange/dist/powerange.min.js";
 %= js_once "/js/contextmenu/context.js";
 % end
@@ -413,7 +411,7 @@ a:focus {
   };
 
   var redirect_uri = 'http://rplusmgmt.com/api/googleauth/callback';
-  var client_id = '18830375155-q1bh1fhapui07fp7drs6fcgp4vca4hn4.apps.googleusercontent.com';  
+  var client_id = '18830375155-q1bh1fhapui07fp7drs6fcgp4vca4hn4.apps.googleusercontent.com';
   var scopes = 'https://www.googleapis.com/auth/calendar';
   var state = <%= $self->stash('user')->{id} %> + '@' + document.domain
   var google_auth_uri = 'https://accounts.google.com/o/oauth2/auth?response_type=code&approval_prompt=force&redirect_uri=' + redirect_uri + '&client_id=' + client_id + '&access_type=offline&scope=' + scopes + '&state=' + state;
@@ -434,7 +432,7 @@ a:focus {
   registerGlobalAjaxEvents();
 
   (function () {
-    % my $u = Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('user')->{account_id}, id => $self->stash('user')->{id}, delete_date => undef])->[0];
+    % my $u = Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('account')->{id}, id => $self->stash('user')->{id}, delete_date => undef])->[0];
     % my $x = Rplus::Util::GoogleCalendar::getGoogleData($self->stash('user')->{id});
     % if ($u->{sync_google} eq 'ask') {
       $('#enableGoogleSync').removeClass('hidden');
@@ -450,7 +448,7 @@ a:focus {
     if (t) {
       calendar_start_date = moment(t);
     }
-    
+
     t = localStorage.getItem('nav-items');
     if (t) {
       var nav_items = JSON.parse(t);
@@ -500,7 +498,7 @@ a:focus {
 
       if (calendar_days_count == 1) {
         var xhtml = start_date.date() + ' ' + moment._months[start_date.month()];
-        
+
       } else {
         if (calendar_days_count != 30) {
           var xhtml = start_date.date() + ' - ' + end_date.date() + ' ' + moment._months[start_date.month()];
@@ -539,7 +537,7 @@ a:focus {
           calendar_days_count = 1;
           calendarSetMode();
           var new_start_date_str = $(this).data('date');
-          calendar_start_date = moment(new_start_date_str);        
+          calendar_start_date = moment(new_start_date_str);
           $('#date-picker').datepicker('setDate', calendar_start_date.format('YYYY-MM-DD'));
         });
       }
@@ -551,7 +549,7 @@ a:focus {
       body_height -= $('.navbar-fixed-top').outerHeight();
       body_height -= $('.navbar-fixed-bottom').outerHeight();
       body_height -= $('.simple-calendar > .caption').outerHeight();
-      body_height -= $('.navbar-fixed-bottom').outerHeight();      
+      body_height -= $('.navbar-fixed-bottom').outerHeight();
       if (calendar_days_count == 30) {
         var now = moment().startOf('day');
         var t = calendar_start_date.clone().startOf('week');
@@ -590,9 +588,9 @@ a:focus {
           calendar_days_count = 1;
           calendarSetMode();
           var new_start_date_str = $(this).data('date');
-          calendar_start_date = moment(new_start_date_str);        
+          calendar_start_date = moment(new_start_date_str);
           $('#date-picker').datepicker('setDate', calendar_start_date.format('YYYY-MM-DD'));
-        });        
+        });
       } else {
         // timeline
         for (var i = 0; i < hour_count; i++) {
@@ -633,7 +631,7 @@ a:focus {
             xhtml += '<th class="' + classes + '">&nbsp;</th>';
             t.add(1, 'days');
           }
-          xhtml += '</tr>';      
+          xhtml += '</tr>';
         }
         $('.simple-calendar .body .cells > table > tbody').html(xhtml);
         $('.simple-calendar .body').height(body_height);
@@ -691,7 +689,7 @@ a:focus {
 
       $this.css('width', cell_width);
       $this.height($this.data('height'));
-      
+
       $this.removeClass('event-selected');
       $('.status-button-wrapper', $this).addClass('hidden');
       $('.resizer', $this).addClass('hidden');
@@ -711,10 +709,10 @@ a:focus {
       {
         var t_date = calendar_start_date.clone().startOf('week');
         for (var i = 0; i < reverse_list.length; i++) {
-          var event = reverse_list[i];        
+          var event = reverse_list[i];
           var start_date = moment(event.start_date);
           var offset = start_date.diff(t_date, 'day');
-          
+
           var row = Math.floor(offset / 7);
           var col = offset % 7;
           var xhtml = '<div class="month-event" data-id="' + event.id + '">';
@@ -748,11 +746,11 @@ a:focus {
           last_ts = start_date;
           if (!groups[group_idx]) {
             groups[group_idx] = [];
-          } 
+          }
           groups[group_idx].push(event);
         }
 
-        for (var idx in groups) { 
+        for (var idx in groups) {
           var events = groups[idx];
           for (var i = 0; i < events.length; i++) {
             var event = events[i];
@@ -812,7 +810,7 @@ a:focus {
             }
           }
         }
-        
+
 
         $('a[data-action="realty-open"]').click(function (e) {
           var realty_id = $(this).data('id');
@@ -890,7 +888,7 @@ a:focus {
           stop: function (event, obj) {
             var $this = obj.$el.closest('.event');
             if (resize) {
-              resize = false;                
+              resize = false;
               var pos_y = $this.position().top;
               var hour = Math.floor(pos_y / 100) + calendar_start_hour;
               var min = Math.floor((pos_y % 100) * (60 / 100));
@@ -953,7 +951,7 @@ a:focus {
                 dbl_click = false;
                 timer_dc = null;
               }, 300);
-            } 
+            }
           },
           start: function (event, obj) {
             clearTimeout(timer1);
@@ -962,7 +960,7 @@ a:focus {
           },
           drag: function (event, obj) {
             clearTimeout(timer1);
-            clearTimeout(timer2);          
+            clearTimeout(timer2);
             var pos_y = obj.pos.y;
             if (!pos_y) return;
             var hour = Math.floor(pos_y / 100) + calendar_start_hour;
@@ -997,7 +995,7 @@ a:focus {
               var task_id = obj.$el.data('id');
               var start_date = moment(obj.$el.data('date') + ' ' + time);
               start_date.add(add_days, 'days');
-              
+
               pos_y = obj.$el.position().top + obj.$el.height();
               hour = Math.floor(pos_y / 100) + calendar_start_hour;
               min = Math.floor((pos_y % 100) * (60 / 100));
@@ -1227,7 +1225,7 @@ a:focus {
         calendar_start_date.add(1, 'days');
       }
       calendarSetStartDay();
-      $('#date-picker').datepicker('setDate', calendar_start_date.format('YYYY-MM-DD'));      
+      $('#date-picker').datepicker('setDate', calendar_start_date.format('YYYY-MM-DD'));
     });
 
     $('#card-date-picker').datepicker({
@@ -1238,7 +1236,7 @@ a:focus {
     $('#taskModal')
       .modal({show: false, backdrop: true, keyboard: false})
       .on('show.bs.modal', function () {
-        
+
       })
       .on('shown.bs.modal', function () {
 
@@ -1261,10 +1259,10 @@ a:focus {
     }).on('mousemove touchmove', function(){
       clearTimeout(press_timer);
     }).on('mousedown', function(e){
-      press_timer = setTimeout(function() { 
+      press_timer = setTimeout(function() {
 
         var table_width = $('.simple-calendar .body .cells').width();
-        var column_width = table_width / calendar_days_count;      
+        var column_width = table_width / calendar_days_count;
 
         var pos_x = e.target.offsetLeft + e.offsetX;
         var days = Math.floor(pos_x / column_width);
@@ -1279,11 +1277,11 @@ a:focus {
 
       }, 800)
     }).on('touchstart', function(e){
-      press_timer = setTimeout(function() { 
+      press_timer = setTimeout(function() {
         var touch = e.originalEvent.touches[0]
 
         var table_width = $('.simple-calendar .body .cells').width();
-        var column_width = table_width / calendar_days_count;      
+        var column_width = table_width / calendar_days_count;
         var pos_x = e.target.offsetLeft;
         var days = Math.floor(pos_x / column_width);
         var event_date = calendar_start_date.clone().add(days, 'days');
@@ -1321,7 +1319,7 @@ a:focus {
           assigned_user_id: assigned_user_id,
           start_date: start_date.format(),
           end_date: end_date.format(),
-          summary: summary, 
+          summary: summary,
           description: description,},
       })
         .done(function (data, textStatus, jqXHR) {
@@ -1340,7 +1338,7 @@ a:focus {
     function newTaskCard(event_date) {
       $('#taskIdInput').val('');
       $('#taskTypeInput').val(1);
-      $('#taskTypeInput').change();      
+      $('#taskTypeInput').change();
       $('#card-date-picker').datepicker('setDate', event_date.format('YYYY-MM-DD'));
       timeSliderSetTime(event_date.hours(), event_date.minutes());
       $('#durationInput').val(15);    // 15 min
@@ -1482,8 +1480,8 @@ a:focus {
       var now = moment();
       var offset_y = (now.hour() - calendar_start_hour) * 100;
       offset_y += (now.minute()) * (100 / 60);
-      offset_y -= $('.simple-calendar .body').height() / 2; 
-      $('.simple-calendar .body').scrollTop(offset_y);      
+      offset_y -= $('.simple-calendar .body').height() / 2;
+      $('.simple-calendar .body').scrollTop(offset_y);
     }
 
     function leadingZero(val) {
@@ -1528,7 +1526,7 @@ a:focus {
       $('#taskSummaryDiv').css('background-color', task_types_colors[this.value]);
     });
 
-    $('.selectpicker').selectpicker();
+    //$('.selectpicker').selectpicker();
 
   })();
 
@@ -1570,7 +1568,7 @@ a:focus {
           <div class="" style="margin: 10px 20px 0px 20px;">
             <span style="float: left;">00:00</span>
             <span style="float: right;">23:55</span>
-          </div>        
+          </div>
           <div class="" style="margin: 30px 20px 0px 20px;">
             <input id="timeSlider" type="text"/>
           </div>
@@ -1583,7 +1581,7 @@ a:focus {
         <div class="row" style="border-top: 1px solid #aaa; margin-top: 25px;">
           <div class="col-lg-12 col-md-12" style="padding-top: 15px;">
             <select class="form-control input-sm selectpicker" data-size="7" name="assignedUserId" id="assignedUserIdInput">
-            % for my $x (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('user')->{account_id}, '!id' => 10000, delete_date => undef,], sort_by => 'id')}) {
+            % for my $x (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('account')->{id}, '!id' => 10000, delete_date => undef,], sort_by => 'id')}) {
               <option value="<%= $x->id %>"><%= $x->name %></option>
             % }
             </select>
@@ -1623,7 +1621,7 @@ a:focus {
   </div>
   <div class="" data-action="set-google-sync" data-val="ask" style="position: absolute; bottom: 85px; right: 25px; cursor: pointer;">
     <span><a style="text-decoration: none;">Спросить позже</a></span>
-  </div>  
+  </div>
   <div class="row" style="position: absolute; bottom: 0px; width: 100%;  border-top: 1px solid rgba(0,0,0,0.15); cursor: pointer;">
     <div class="col-lg-6 col-md-6" data-action="set-google-sync" data-val="yes" style="text-align: center; padding: 20px 0; background-color: rgb(123, 209, 72);">
       <span style="font-size: 18px; color: #555;">Да</span>
@@ -1666,7 +1664,7 @@ a:focus {
       <div class="month-body">
         <table class="table table-bordered">
           <tbody>
-          </tbody>        
+          </tbody>
         </table>
       </div>
       <div class="body">
@@ -1734,12 +1732,12 @@ a:focus {
           <li><a href="#" data-val="all" data-type="text"><strong> Все</strong></a></li>
           <li><a href="#" data-val="<%= $self->stash('user')->{id} %>" data-type="text"><strong> Мои задачи</strong></a></li>
         %   my @owned = ();
-        %   for my $m (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('user')->{account_id}, role => ['manager'], delete_date => undef], sort_by => 'name')}) {
+        %   for my $m (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('account')->{id}, role => ['manager'], delete_date => undef], sort_by => 'name')}) {
               <li class="dropdown-submenu"><a href="#" data-val="<%= $m->id %>" data-type="text"> <%= $m->name %></a><ul class="dropdown-menu dropdown-context dropdown-context-sub compressed-context" style="bottom: auto;">
                 <li><a href="#" data-val="a<%= $m->id %>" data-type="text"> Все агенты</a></li>
         %     if (scalar (@{$m->subordinate})) {
         %       push @owned, @{$m->subordinate};
-        %       for my $a (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('user')->{account_id}, id => [$m->subordinate], delete_date => undef], sort_by => 'name')}) {
+        %       for my $a (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('account')->{id}, id => [$m->subordinate], delete_date => undef], sort_by => 'name')}) {
                   <li><a href="#" data-val="<%= $a->id %>" data-type="text"> <%= $a->name %></a></li>
         %       }
         %     }
@@ -1749,7 +1747,7 @@ a:focus {
           <li><a href="#" data-val="<%= $self->stash('user')->{id} %>" data-type="text"><strong> Мои задачи</strong></a></li>
           <li><a href="#" data-val="a<%= $self->stash('user')->{id} %>" data-type="text"><strong> Мои агенты</strong></a></li>
         % if (scalar (@{$self->stash('user')->{subordinate}})) {
-        % for my $a (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('user')->{account_id}, id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
+        % for my $a (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('account')->{id}, id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
           <li><a href="#" data-val="<%= $a->id %>" data-type="text"> <%= $a->name %></a></li>
         % }
         % }
@@ -1777,5 +1775,3 @@ a:focus {
     </div>
   </div>
 </nav>
-
-

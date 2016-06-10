@@ -16,6 +16,7 @@
     layer.addTo(map);
 
     // 2GIS Geocoder
+    /*
     map.on('click', function (e) {
       $.ajax({
         url: 'http://catalog.api.2gis.ru/geo/search',
@@ -44,5 +45,6 @@
         })
       ;
     });
+    */
   }
 })();

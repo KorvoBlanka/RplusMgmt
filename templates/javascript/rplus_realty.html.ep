@@ -16,17 +16,17 @@
   "use strict";
 
   window.Rplus.Realty = {
+
     getDigest: function (r, withDescription) {
       var digest = [];
 
       digest.push('<strong>' + Rplus.Util.escape(Rplus.Table.realty_types[r.type_code].name) + '</strong>');
       if (r.rooms_count) digest.push(r.rooms_count + 'к');
-      if (r.address_object) {
+      if (r.address) {
         digest.push(
-          Rplus.Util.escape(r.address_object.name + ' ' + r.address_object.short_type) +
-          (r.sublandmark ? ' (' + r.sublandmark.name + ')' : '')
+          Rplus.Util.escape(r.address) +
+          (r.district ? ' (' + r.district + ')' : '')
         );
-        digest.push(Rplus.Util.escape(r.address_object.addr_parts[1].name + ' ' + r.address_object.addr_parts[1].short_type));
       }
       if (r.ap_scheme_id) digest.push(Rplus.Table.Dict.ap_schemes[r.ap_scheme_id].metadata.description || Rplus.Table.Dict.ap_schemes[r.ap_scheme_id].name);
       if (r.house_type_id) digest.push(Rplus.Table.Dict.house_types[r.house_type_id].metadata.description || Rplus.Table.Dict.house_types[r.house_type_id].name);
@@ -50,7 +50,7 @@
         if (agent) {
         digest.push('<br><span>Агент: ' + (agent.public_name || agent.name) + ', ' + (agent.public_phone_num || Rplus.Util.formatPhoneNum(Rplus.Table.users[r.agent_id].phone_num)) + '</span>');
         } else {
-        digest.push('<br><span>Агент: ' + 'NA' + '</span>');            
+        digest.push('<br><span>Агент: ' + 'NA' + '</span>');
         }
       } else {
         if (r.mediator_company) {
@@ -67,10 +67,9 @@
 
       digest.push('<strong>' + Rplus.Util.escape(Rplus.Table.realty_types[r.type_code].name) + '</strong>');
       if (r.rooms_count) digest.push(r.rooms_count + 'к');
-      if (r.address_object) {
+      if (r.address) {
         digest.push(
-          Rplus.Util.escape(r.address_object.name + ' ' + r.address_object.short_type  + '. ' +  (r.house_num ? r.house_num : '') + (r.sublandmark ? ' (' + r.sublandmark.name + ')' : '')));
-        digest.push(Rplus.Util.escape(r.address_object.addr_parts[1].name + ' ' + r.address_object.addr_parts[1].short_type));
+          Rplus.Util.escape(r.address + ', ' +  (r.house_num ? r.house_num : '') + (r.district ? ' (' + r.district + ')' : '')));
       }
       if (r.ap_scheme_id) digest.push(Rplus.Table.Dict.ap_schemes[r.ap_scheme_id].metadata.description || Rplus.Table.Dict.ap_schemes[r.ap_scheme_id].name);
       if (r.house_type_id) digest.push(Rplus.Table.Dict.house_types[r.house_type_id].metadata.description || Rplus.Table.Dict.house_types[r.house_type_id].name);
@@ -94,7 +93,7 @@
           if (agent) {
           digest.push('<br><span>Агент: ' + (agent.public_name || agent.name) + ', ' + (agent.public_phone_num || Rplus.Util.formatPhoneNum(Rplus.Table.users[r.agent_id].phone_num)) + '</span>');
           } else {
-          digest.push('<br><span>Агент: ' + 'NA' + '</span>');            
+          digest.push('<br><span>Агент: ' + 'NA' + '</span>');
           }
       } else {
         if (r.mediator_company) {
@@ -105,16 +104,15 @@
       }
       return digest.join(', ');
     },
-    
+
     getDigestForTask: function (r) {
       var digest = [];
 
       digest.push(Rplus.Table.realty_types[r.type_code].name);
       if (r.rooms_count) digest.push(r.rooms_count + 'к');
-      if (r.address_object) {
+      if (r.address) {
         digest.push(
-          Rplus.Util.escape(r.address_object.name + ' ' + r.address_object.short_type  + '. ' +  (r.house_num ? r.house_num : '') + (r.sublandmark ? ' (' + r.sublandmark.name + ')' : '')));
-        //digest.push(Rplus.Util.escape(r.address_object.addr_parts[1].name + ' ' + r.address_object.addr_parts[1].short_type));
+          Rplus.Util.escape(r.address + ', ' +  (r.house_num ? r.house_num : '') + (r.district ? ' (' + r.district + ')' : '')));
       }
       if (r.ap_scheme_id) digest.push(Rplus.Table.Dict.ap_schemes[r.ap_scheme_id].metadata.description || Rplus.Table.Dict.ap_schemes[r.ap_scheme_id].name);
       if (r.house_type_id) digest.push(Rplus.Table.Dict.house_types[r.house_type_id].metadata.description || Rplus.Table.Dict.house_types[r.house_type_id].name);
@@ -152,13 +150,12 @@
       tstr.push('<strong>' + Rplus.Table.realty_types[r.type_code].name + '</strong>');
       if (r.rooms_count) tstr.push(r.rooms_count + 'к');
 
-      if (r.address_object) {
-        tstr.push(r.address_object.name + ' ' + r.address_object.short_type + '. ' +  (r.house_num ? r.house_num : '') + (r.sublandmark ? ' (' + r.sublandmark.name + ')' : ''));
-        tstr.push(r.address_object.addr_parts[1].short_type + '. ' + r.address_object.addr_parts[1].name );
+      if (r.address) {
+        tstr.push(r.locality + ', ' + r.address + ', ' +  (r.house_num ? r.house_num : '') + (r.district ? ' (' + r.district + ')' : ''));
       }
       digest['dg_p1'] = tstr.join(', ');
       tstr = [];
-      
+
       if (r.ap_scheme_id) tstr.push(Rplus.Table.Dict.ap_schemes[r.ap_scheme_id].metadata.description || Rplus.Table.Dict.ap_schemes[r.ap_scheme_id].name);
       if (r.house_type_id) tstr.push(Rplus.Table.Dict.house_types[r.house_type_id].metadata.description || Rplus.Table.Dict.house_types[r.house_type_id].name);
       digest['dg_p2'] = tstr.join(', ');
@@ -167,7 +164,7 @@
       if (r.room_scheme_id) tstr.push(Rplus.Table.Dict.room_schemes[r.room_scheme_id].metadata.description || Rplus.Table.Dict.room_schemes[r.room_scheme_id].name);
       if (r.floor && r.floors_count) { tstr.push(r.floor + '/' + r.floors_count + ' эт.'); } else if (r.floor || r.floors_count) { tstr.push((r.floor || r.floors_count) + ' эт.'); }
       digest['dg_p3'] = tstr.join(', ');
-      tstr = [];    
+      tstr = [];
 
       if (r.condition_id) {
         tstr.push(Rplus.Table.Dict.conditions[r.condition_id].metadata.description || Rplus.Table.Dict.conditions[r.condition_id].name);
@@ -178,7 +175,7 @@
       if (r.balcony_id) tstr.push(Rplus.Table.Dict.balconies[r.balcony_id].metadata.description || Rplus.Table.Dict.balconies[r.balcony_id].name);
       if (r.bathroom_id) tstr.push(Rplus.Table.Dict.bathrooms[r.bathroom_id].metadata.description || Rplus.Table.Dict.bathrooms[r.bathroom_id].name);
       digest['dg_p5'] = tstr.join(', ');
-      tstr = [];   
+      tstr = [];
 
       {
         var squares = [];
@@ -192,29 +189,29 @@
       if (r.square_land && r.square_land_type) {
         tstr.push(r.square_land + ' ' + (r.square_land_type == 'ar' ? 'сот.' : 'га'));
         digest['dg_p6'] = tstr.join(', ');
-        tstr = [];        
+        tstr = [];
       }
-        
+
       if (r.description) {
         tstr.push(r.description);
       }
       digest['dg_p7'] = tstr.join(', ');
       tstr = [];
-        
+
       if (r.price) {
         tstr.push('<span class="" style="color: #CA4242">' + r.price + ' тыс. руб.' + '</span>');
       }
       digest['dg_p8'] = tstr.join(', ');
       tstr = [];
-        
+
       if (r.agent_id) {
         var agent = Rplus.Table.users[r.agent_id];
         tstr.push('<span>' + (agent.public_name || agent.name) + '</span>');
       }
       digest['dg_p9'] = tstr.join(', ');
       tstr = [];
-        
+
       return digest;
-    }    
+    }
   };
 </script>

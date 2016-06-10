@@ -78,7 +78,7 @@
 
   #photo-upload-button{
     text-align: center;
-  } 
+  }
 
 </style>
 % end
@@ -124,14 +124,14 @@
     .change(function() {
       var role = this.value;
       var uid = $("#userCard_userForm_userId").val();
-      var uname = $("#userCard_userForm_inputName").val();      
+      var uname = $("#userCard_userForm_inputName").val();
       if (uid && role == 'dispatcher') {
 
       } else if (role == 'manager') {
           $('#subordinatesTab').removeClass('hidden');
       }
     });
-    
+
     function listUsers() {
       $.ajax({
         type: "POST",
@@ -155,7 +155,7 @@
             xhtml += '<a class="pull-left" href="#">';
             xhtml += '<div class="media user-card">';
             if (x.photo_url.length > 0) {
-              xhtml += '<img src="' + '<%= $self->config->{'storage'}->{'url'} %>' + '/' + '<%= $self->session->{'user'}->{'account_name'} %>' + x.photo_url + '" style="height: 110px; width: 110px;" class="img-thumbnail">';
+              xhtml += '<img src="' + '<%= $self->config->{'storage'}->{'url'} %>' + '/' + '<%= $self->session('account')->{name} %>' + x.photo_url + '" style="height: 110px; width: 110px;" class="img-thumbnail">';
             } else {
               xhtml += '<img data-src="holder.js/110x110/text:<%= ucfloc q{no photo} %>" class="img-thumbnail">';
             }
@@ -224,7 +224,7 @@
           $('#userCard_modal').modal('show');
 
           if (data.photo_url.length > 0) {
-            $('#user-photo').attr('src', '<%= $self->config->{'storage'}->{'url'} %>' + '/' + '<%= $self->session->{'user'}->{'account_name'} %>' + data.photo_url);
+            $('#user-photo').attr('src', '<%= $self->config->{'storage'}->{'url'} %>' + '/' + '<%= $self->session('account')->{name} %>' + data.photo_url);
             $('#user-photo').data('photo_url', data.photo_url);
           } else {
             $('#user-photo').attr('data-src', 'holder.js/200x200/text:<%= ucfloc q{no photo} %>');
@@ -301,7 +301,7 @@
               alert('Невозможно сменить тип роли для менеджера, имеются подчиненные');
             } else if (data.error == 'Has Realty') {
               alert('Невозможно сменить тип роли на "Диспетчер", назанчена недвижимость');
-            } else if (data.error == 'Has Clients') { 
+            } else if (data.error == 'Has Clients') {
               alert('Невозможно сменить тип роли на "Диспетчер", назанчены купцы');
             } else if (data.error == 'bad_login') {
 			  alert('Пользователь с указанным логином уже существует');
@@ -321,7 +321,7 @@
 
     $(function () {
       $form = $('#userCard_userForm');
-      $modal = 
+      $modal =
         $('#userCard_modal')
         .modal({show: false, backdrop: 'static'})
         .on('shown.bs.modal', function (e) {
@@ -352,12 +352,12 @@
         $('#rPhoneNotice').addClass('hidden');
       }
     });
-    
+
     $('[data-action="user-delete"]').click(function (e) {
-      
+
       var uid = $("#userCard_userForm_userId").val();
       var uname = $("#userCard_userForm_inputName").val();
-      
+
       $.ajax({
         type: "POST",
         url: "/api/user/delete",
@@ -368,7 +368,7 @@
             alert('Невозможно удалить пользователя, имеются подчиненные');
           } else if (data.error == 'Has Realty') {
             alert('Невозможно удалить пользователя, назанчена недвижимость');
-          } else if (data.error == 'Has Clients') { 
+          } else if (data.error == 'Has Clients') {
             alert('Невозможно удалить пользователя, назанчены купцы');
           } else {
             alert("Пользователь " + uname + " удален");
@@ -405,10 +405,10 @@
     $('#fileupload').fileupload({
       url: '/api/user/upload_photo',
       dataType: 'json',
-      formData: function () { 
+      formData: function () {
         var uid = $("#userCard_userForm_userId").val();
         var uname = $("#userCard_userForm_inputName").val();
-        var formData = [{ name: 'user_id', value: uid }]; return formData; 
+        var formData = [{ name: 'user_id', value: uid }]; return formData;
       },
       autoUpload: true,
       singleFileUploads: true,
@@ -468,7 +468,7 @@
         })
         .fail(function (jqXHR, textStatus, errorThrown) {
           alert('Не удалось выполнить операцию, попробуйте позже или обратитесь в тех. поддержку');
-        });      
+        });
     });
 
     $('#buttonAddSub').click(function () {
@@ -552,9 +552,8 @@
                     <label for="userCard_userForm_inputRole" class="col-md-3 control-label"><%= ucfloc 'role' %></label>
                     <div class="col-md-9">
                       <select class="form-control input-sm" name="role" id="userCard_userForm_inputRole">
-                        <option value="top"> Топ менеджер</option>                      
+                        <option value="top"> Топ менеджер</option>
                         <option value="manager"><%= ucfloc 'manager' %></option>
-                        <option value="agent_ext"><%= ucfloc 'agent_ext' %></option>                        
                         <option value="agent"><%= ucfloc 'agent' %></option>
                         <option value="dispatcher"><%= ucfloc 'dispatcher' %></option>
                       </select>
@@ -604,7 +603,7 @@
                     </label>
                   </div>
                 </div>
-              </div>              
+              </div>
             </form>
           </div>
           <div class="tab-pane" id="userCard_telephonyTab">
@@ -664,7 +663,7 @@
               <div style="width: 100%; height: 190px; border: 1px solid #bbb;">
                 <select name="subordinates" size="11" style="width: 100%; border: none;">
                 </select>
-              </div>            
+              </div>
             </div>
           </div>
         </div>

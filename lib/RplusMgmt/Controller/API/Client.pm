@@ -50,7 +50,7 @@ sub list {
     my $page = $self->param("page") || 1;
     my $per_page = $self->param("per_page") || 30;
 
-    my $acc_id = $self->session('user')->{account_id};
+    my $acc_id = $self->session('account')->{id};
 
     my $res = {
         count => 0,#Rplus::Model::Client::Manager->get_objects_count(query => [account_id => $acc_id, delete_date => undef]),
@@ -58,7 +58,7 @@ sub list {
         page => $page,
     };
 
-    my @query; 
+    my @query;
     {
         if ($agent_id ne 'any') {
             if ($agent_id eq 'nobody') {
@@ -102,7 +102,7 @@ sub list {
         my $phone_num = ' ';
         if (($client->agent_id && $client->agent_id == $self->stash('user')->{id}) || ($client->agent_id && $self->has_permission(clients => 'read')->{others}) || (!$client->agent_id && $self->has_permission(clients => 'read')->{nobody})) {
             $phone_num = $client->phone_num;
-        }        
+        }
         my $x = {
             id => $client->id,
             add_date => $self->format_datetime($client->add_date),
@@ -126,7 +126,7 @@ sub list {
             }
         }
 
-        my @query; 
+        my @query;
         {
             if ($subscription_rent_type ne 'any') {
                 push @query, 'rent_type' => $subscription_rent_type;
@@ -142,11 +142,12 @@ sub list {
                 #'subscription_realty.delete_date' => undef,
             ],
         );
-        
+
         while (my $subscription = $subscription_iter->next) {
             my $sub = {
                 id => $subscription->id,
                 queries => scalar $subscription->queries,
+                search_area => $subscription->search_area,
                 offer_type_code => $subscription->offer_type_code,
                 rent_type => $subscription->rent_type,
                 add_date => $self->format_datetime($subscription->add_date),
@@ -167,9 +168,9 @@ sub get {
     my $self = shift;
 
     #return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(clients => 'read');
-    
+
     # Retrieve client (by id or phone_num)
-    my $acc_id = $self->session('user')->{account_id};
+    my $acc_id = $self->session('account')->{id};
 
     my $client;
     if (my $id = $self->param('id')) {
@@ -205,14 +206,14 @@ sub get {
             }
         }
     }
-    
+
     if ($self->param_b('with_subscriptions')) {
         # Load subscription data
         $res->{subscriptions} = [];
         my $subscription_iter = Rplus::Model::Subscription::Manager->get_objects_iterator(
             query => [
                 client_id => $client->id,
-                delete_date => undef,                
+                delete_date => undef,
                 #'!end_date' => undef,
             ],
             #require_objects => ['client'],
@@ -226,11 +227,12 @@ sub get {
                 offer_type_code => $subscription->offer_type_code,
                 rent_type => $subscription->rent_type,
                 queries => scalar $subscription->queries,
+                search_area => $subscription->search_area,
                 add_date => $self->format_datetime($subscription->add_date),
                 end_date => $self->format_datetime($subscription->end_date),
                 #realty_count => scalar @{$subscription->subscription_realty},
                 realty_limit => $subscription->realty_limit,
-                send_owner_phone => $subscription->send_owner_phone ? \1 : \0,                
+                send_owner_phone => $subscription->send_owner_phone ? \1 : \0,
             };
             push @{$res->{subscriptions}}, $x;
         }
@@ -245,7 +247,7 @@ sub save {
     # Retrieve client
     my $create_event = 0;
     my $client;
-    my $acc_id = $self->session('user')->{account_id};
+    my $acc_id = $self->session('account')->{id};
     if (my $id = $self->param('id')) {
         $client = Rplus::Model::Client::Manager->get_objects(query => [account_id => $acc_id, id => $id, delete_date => undef])->[0];
     } else {
@@ -298,7 +300,7 @@ sub save {
     }
 
     $client->change_date('now()');
-    
+
     eval {
         $client->save($client->id ? (changes_only => 1) : (insert => 1));
     } or do {
@@ -357,7 +359,7 @@ sub update {
 
     # Retrieve client
     my $id = $self->param('id');
-    my $acc_id = $self->session('user')->{account_id};
+    my $acc_id = $self->session('account')->{id};
     my $client = Rplus::Model::Client::Manager->get_objects(query => [account_id => $acc_id, id => $id, delete_date => undef])->[0];
 
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $client;
@@ -372,7 +374,7 @@ sub update {
                     $create_event = 1;
                 }
             } else {
-                $client->agent_id(undef);                
+                $client->agent_id(undef);
             }
         } elsif ($_ eq 'color_tag_id') {
             $permission_granted = 1;
@@ -396,7 +398,7 @@ sub update {
             }
         }
     }
-    # Check that we can rewrite 
+    # Check that we can rewrite
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $permission_granted;
     $client->save(changes_only => 1);
 
@@ -432,12 +434,12 @@ sub delete {
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(clients => 'write');
 
     my $id = $self->param('id');
-    my $acc_id = $self->session('user')->{account_id};
+    my $acc_id = $self->session('account')->{id};
 
     # Удалим подписки
     my $num_rows_updated = Rplus::Model::Subscription::Manager->update_objects(
         set => {delete_date => \'now()'},
-        where => [client_id => $id, delete_date => undef],        
+        where => [client_id => $id, delete_date => undef],
     );
 
     # Удалим клиента
@@ -470,11 +472,12 @@ sub subscribe {
         return $self->render(json => {errors => \@errors}, status => 400);
     }
 
-    my $acc_id = $self->session('user')->{account_id};
+    my $acc_id = $self->session('account')->{id};
 
     # Input params
     my $phone_num = $self->parse_phone_num(scalar $self->param('phone_num'));
     my $q = $self->param_n('q');
+    my $search_area = $self->param_n('search_area');
     my $offer_type_code = $self->param('offer_type_code');
     my $rent_type = $self->param('rent_type');
     my $realty_ids = Mojo::Collection->new($self->param('realty_ids[]'))->compact->uniq;
@@ -495,8 +498,9 @@ sub subscribe {
     # Add subscription
     my $subscription = Rplus::Model::Subscription->new(
         client_id => $client->id,
-        user_id => $self->session->{user}->{id},
+        user_id => $self->stash('user')->{id},
         queries => [$q],
+        search_area => $search_area,
         offer_type_code => $offer_type_code,
         rent_type => $rent_type,
         end_date => $end_date,
@@ -513,7 +517,7 @@ sub subscribe {
     for my $realty_id (@$realty_ids) {
         my $realty = Rplus::Model::Realty::Manager->get_objects(
             query => [id => $realty_id, state_code => ['work',], offer_type_code => $offer_type_code],
-            with_objects => ['address_object', 'agent', 'type', 'sublandmark'],
+            with_objects => ['agent', 'type'],
         )->[0];
         if ($realty) {
             Rplus::Model::SubscriptionRealty->new(subscription_id => $subscription->id, realty_id => $realty->id, offered => 'true')->save;
@@ -525,7 +529,8 @@ sub subscribe {
                 {
                     push @parts, $realty->type->name;
                     push @parts, $realty->rooms_count.'к' if $realty->rooms_count;
-                    push @parts, $realty->address_object->name.' '.$realty->address_object->short_type.($realty->address_object->name !~ /[()]/ && $realty->sublandmark ? ' ('.$realty->sublandmark->name.')' : '') if $realty->address_object;
+                    push @parts, $realty->locality.', '.$realty->address if $realty->address && $realty->locality;
+                    push @parts, $realty->district if $realty->district;
                     push @parts, ($realty->floor || '?').'/'.($realty->floors_count || '?').' эт.' if $realty->floor || $realty->floors_count;
                     push @parts, $realty->price.' тыс. руб.' if $realty->price;
                     push @parts, $realty->agent->public_name || $realty->agent->name if $realty->agent;
@@ -547,7 +552,7 @@ sub subscribe {
                     push @parts, $self->format_phone_num($phone_num) . ' ' . ($client->name ? $client->name : '');
                     push @parts, $realty->type->name;
                     push @parts, $realty->rooms_count.'к' if $realty->rooms_count;
-                    push @parts, $realty->address_object->name.' '.$realty->address_object->short_type.($realty->house_num ? ', '.$realty->house_num : '') if $realty->address_object;
+                    push @parts, $realty->locality.', '.$realty->address.' '.$realty->house_num if $realty->address && $realty->locality;
                     push @parts, $realty->price.' тыс. руб.' if $realty->price;
                 }
                 my $summary = join(', ', @parts);
@@ -567,7 +572,7 @@ sub subscribe {
                     {
                         push @parts, $realty->type->name;
                         push @parts, $realty->rooms_count.'к' if $realty->rooms_count;
-                        push @parts, $realty->address_object->name.' '.$realty->address_object->short_type.($realty->house_num ? ', '.$realty->house_num : '') if $realty->address_object;
+                        push @parts, $realty->locality.', '.$realty->address.' '.($realty->house_num ? ', '.$realty->house_num : '') if $realty->address && $realty->locality;
                         push @parts, $realty->price.' тыс. руб.' if $realty->price;
                         push @parts, 'Клиент: '.$self->format_phone_num($phone_num);
                     }
@@ -584,7 +589,7 @@ sub subscribe {
 sub get_active_count {
     my $self = shift;
 
-    my $acc_id = $self->session('user')->{account_id};
+    my $acc_id = $self->session('account')->{id};
 
     my $offer_type_code = $self->param('offer_type_code');
     my $rent_type = $self->param('rent_type') || 'any';

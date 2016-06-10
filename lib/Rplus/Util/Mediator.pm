@@ -76,7 +76,14 @@ sub add_mediator {
     my $added_by = shift;
     my $acc_id = shift;
 
-	my $mediator = Rplus::Model::Mediator::Manager->get_objects(query => [phone_num => $phone_num, account_id => $acc_id, delete_date => undef])->[0];
+    my $mediator = Rplus::Model::Mediator::Manager->get_objects(
+        query => [
+            phone_num => $phone_num,
+            account_id => $acc_id,
+            delete_date => undef,
+            \("NOT t1.hidden_for_aid && '{".$acc_id."}'"),
+        ]
+    )->[0];
 	unless ($mediator) {
 		$mediator = Rplus::Model::Mediator->new(phone_num => $phone_num, added_by => $added_by, account_id => $acc_id);
 	}

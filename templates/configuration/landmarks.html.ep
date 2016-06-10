@@ -161,8 +161,8 @@
     $(function () {
       // Geo
       (function () {
-        var c_lat = <%= $self->session('user')->{map_lat} %>;
-        var c_lng = <%= $self->session('user')->{map_lng} %>;
+        var c_lat = <%= $self->config->{location}->{lat} %>;
+        var c_lng = <%= $self->config->{location}->{lng} %>;
         geoMap = L.map('geoMap', {
           center: [c_lat, c_lng],
           zoom: 16,
@@ -266,7 +266,7 @@
     <select class="form-control input-sm" name="type" form="landmarkForm">
       <option value="landmark"><%= ucfloc q{landmarks} %></option>
       <option value="sublandmark"><%= ucfloc q{sublandmarks} %></option>
-      % if (0 == 1) {   # решить с ориентирами из "источников"
+      % if (1 == 1) {   # решить с ориентирами из "источников"
       % my $iter = Rplus::Model::Media::Manager->get_objects_iterator(query => [type => 'export', delete_date => undef]);
       % while (my $x = $iter->next) {
       % my $metadata = from_json($x->metadata);

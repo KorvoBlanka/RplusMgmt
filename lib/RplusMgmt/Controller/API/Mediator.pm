@@ -16,7 +16,7 @@ use Mojo::Collection;
 
 sub list {
     my $self = shift;
-    my $acc_id = $self->session('user')->{account_id};
+    my $acc_id = $self->session('account')->{id};
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(mediators => 'read');
 
     my $company_id = $self->param('company_id');
@@ -55,7 +55,7 @@ sub list {
 
 sub get {
     my $self = shift;
-    my $acc_id = $self->session('user')->{account_id};
+    my $acc_id = $self->session('account')->{id};
 
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(mediators => 'read');
 
@@ -80,7 +80,7 @@ sub get {
 
 sub save {
     my $self = shift;
-    my $acc_id = $self->session('user')->{account_id};
+    my $acc_id = $self->session('account')->{id};
 
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(mediators => 'write');
 
@@ -149,12 +149,12 @@ sub save {
             push @$found_phones, ($realty->owner_phones);
         }
         $found_phones = $found_phones->uniq;
-        
+
         if ($found_phones->size) {
             # Add additional mediators from realty owner phones
             for (@$found_phones) {
                 if ($_ ne $phone_num && !Rplus::Model::Mediator::Manager->get_objects_count(query => [phone_num => $_, delete_date => undef], db => $db)) {
-                    Rplus::Model::Mediator->new(db => $db, name => $name, phone_num => $_, company => $company)->save;
+                    Rplus::Model::Mediator->new(db => $db, name => $name, phone_num => $_, company => $company, account_id => $acc_id,)->save;
                 }
             }
         }
@@ -184,7 +184,7 @@ sub get_obj_count {
 
 sub delete {
     my $self = shift;
-    my $acc_id = $self->session('user')->{account_id};
+    my $acc_id = $self->session('account')->{id};
 
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(mediators => 'write');
 
@@ -194,19 +194,19 @@ sub delete {
 
     my $found_phones = Mojo::Collection->new();
     my $mediator = Rplus::Model::Mediator::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
-    
+
     my $hidden_for = Mojo::Collection->new(@{$mediator->hidden_for_aid});
     push @$hidden_for, ($acc_id);
     $mediator->hidden_for_aid($hidden_for->compact->uniq);
     $mediator->save(changes_only => 1);
-    
+
     my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(query => [delete_date => undef, \("owner_phones && '{".$mediator->phone_num."}'")]);
     while (my $realty = $realty_iter->next) {
         push @$found_phones, ($realty->owner_phones);
     }
 
     $found_phones = $found_phones->uniq;
-    
+
     if ($found_phones->size) {
         # Add additional mediators from realty owner phones
         for (@$found_phones) {
@@ -229,7 +229,7 @@ sub delete {
             #);
 
         }
-    }    
+    }
 
     $self->render(json => {status => 'success'});
 }

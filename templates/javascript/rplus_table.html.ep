@@ -23,12 +23,12 @@
   "use strict";
 
   window.Rplus.Functions = {};
-  
+
   window.Rplus.Variables = {
-  % my $x = Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('user')->{account_id}, id => $self->session('user')->{id}, delete_date => undef])->[0];
+  % my $x = Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('account')->{id}, id => $self->stash('user')->{id}, delete_date => undef])->[0];
     User: {id: <%= $x->id %>, offer_mode: "<%= $x->offer_mode %>", name: "<%= $x->name %>", phone_num: "<%= $x->phone_num %>", public_name: "<%= $x->{'public_name'} %>", public_phone_num: "<%= $x->{'public_phone_num'} %>",}
   }
-  
+
   window.Rplus.Table = {
     Dict: {
       ap_schemes: { <% { %>
@@ -105,11 +105,11 @@
     users: {
       /*
       10000: {
-        id: 10000, 
-        offer_mode: "sale", 
-        name: "Посредник", 
-        phone_num: "", 
-        public_name: "посредник", 
+        id: 10000,
+        offer_mode: "sale",
+        name: "Посредник",
+        phone_num: "",
+        public_name: "посредник",
         public_phone_num: "",
         superior: null,
       },*/
@@ -121,14 +121,14 @@
       %     $sub_m{$_} = $x->id;
       %   }
       % }
-      % my $iter = Rplus::Model::User::Manager->get_objects_iterator(query => [role => ['agent', 'agent_ext', 'manager', 'top'], delete_date => undef]);
+      % my $iter = Rplus::Model::User::Manager->get_objects_iterator(query => [role => ['agent', 'manager', 'top'], delete_date => undef]);
       % while (my $x = $iter->next) {
         "<%= $x->id %>": {
-          id: <%= $x->id %>, 
-          offer_mode: "<%= $x->offer_mode %>", 
-          name: "<%= $x->name %>", 
-          phone_num: "<%= $x->phone_num %>", 
-          public_name: "<%= $x->{'public_name'} %>", 
+          id: <%= $x->id %>,
+          offer_mode: "<%= $x->offer_mode %>",
+          name: "<%= $x->name %>",
+          phone_num: "<%= $x->phone_num %>",
+          public_name: "<%= $x->{'public_name'} %>",
           public_phone_num: "<%= $x->{'public_phone_num'} %>",
           superior: <%= $sub_m{$x->{'id'}} || 'null' %>,
         },

@@ -11,6 +11,9 @@ use Mojo::Util qw(trim);
 use Encode qw(decode_utf8);
 use JSON;
 
+no warnings 'experimental::smartmatch';
+
+
 # For tests (disable caching)
 our $USE_CACHE = 1;
 
@@ -71,9 +74,10 @@ sub parse {
     # Recognition blocks
     #
 
+
     # Price
     {
-        my ($matched, $price1, $price2);
+        my ($matched, $price1, $price2, $price);
         do {
             $matched = 0;
 
@@ -98,7 +102,7 @@ sub parse {
             elsif ($q =~ s/${sta_re}(?:(${tofrom_re})\s+)?(${float_re})\s*((?:${rub_re})|(?:${ths_re}\s*${rub_re})|(?:$mln_re\s*(?:$rub_re)?))${end_re}/ /i) {
                 my $prefix = $1 || '';
                 my $ss = $3;
-                my $price = ($2 =~ s/,/./r);
+                $price = ($2 =~ s/,/./r);
                 if ($ss =~ /^${rub_re}$/) {
                     $price = int($price / 1000);
                 } elsif ($ss =~ /^$mln_re\s*(?:$rub_re)?$/) {
@@ -106,7 +110,9 @@ sub parse {
                 } else {
                     $price = int($price);
                 }
-                if ($prefix eq 'от' || $prefix eq 'с') { $price1 = $price; } else { $price2 = $price; }
+                if ($prefix eq 'от' || $prefix eq 'с') { $price1 = $price; };
+                if ($prefix eq 'до' || $prefix eq 'по') { $price2 = $price; };
+
                 $matched = 1;
             }
         } while ($matched);
@@ -119,6 +125,8 @@ sub parse {
             push @params, price => {ge => $price1};
         } elsif ($price2) {
             push @params, price => {le => $price2};
+        } elsif ($price) {
+            push @params, price => $price;
         }
     }
 
@@ -163,7 +171,7 @@ sub parse {
 
     # Floor
     {
-        my ($matched, $floor1, $floor2);
+        my ($matched, $floor1, $floor2, $floor);
         do {
             $matched = 0;
 
@@ -176,7 +184,9 @@ sub parse {
             # Single value
             elsif ($q =~ s/${sta_re}(?:(${tofrom_re})\s+)?(\d{1,2})\s*${flr_re}${end_re}/ /i) {
                 my $prefix = $1 || '';
-                if ($prefix eq 'до' || $prefix eq 'по') { $floor2 = $2; } else { $floor1 = $2; }
+                $floor = $2;
+                if ($prefix eq 'от' || $prefix eq 'с') { $floor1 = $floor; };
+                if ($prefix eq 'до' || $prefix eq 'по') { $floor2 = $floor; };
                 $matched = 1;
             }
         } while ($matched);
@@ -189,12 +199,14 @@ sub parse {
             push @params, floor => {ge => $floor1};
         } elsif ($floor2) {
             push @params, floor => {le => $floor2};
+        } elsif ($floor) {
+            push @params, floor => $floor;
         }
     }
 
     # Square
     {
-        my ($matched, $square1, $square2);
+        my ($matched, $square1, $square2, $square);
         do {
             $matched = 0;
 
@@ -207,7 +219,9 @@ sub parse {
             # Single value
             elsif ($q =~ s/${sta_re}(?:(${tofrom_re})\s+)?(\d+)\s*${sqr_re}${end_re}/ /i) {
                 my $prefix = $1 || '';
-                if ($prefix eq 'до' || $prefix eq 'по') { $square2 = $2; } else { $square1 = $2; };
+                $square = $2;
+                if ($prefix eq 'от' || $prefix eq 'с') { $square1 = $square; };
+                if ($prefix eq 'до' || $prefix eq 'по') { $square2 = $square; };
                 $matched = 1;
             }
         } while ($matched);
@@ -220,6 +234,8 @@ sub parse {
             push @params, square_total => {ge => $square1};
         } elsif ($square2) {
             push @params, square_total => {le => $square2};
+        } elsif ($square) {
+            push @params, square_total => $square;
         }
     }
 
@@ -231,129 +247,121 @@ sub parse {
         }
     }
 
-    # Technical params (based on Full Text Search)
-    if ($q) {
-        my $dbh = Rplus::DB->new_or_cached->dbh;
-
-        my $_tsv2array = sub {
-            my $tsv = shift;
-            return unless $tsv;
-            $tsv = decode_utf8($tsv);
-            my @x;
-            for (split(/ /, $tsv)) {
-                if (/^'(\w+)':([\d,]+)$/) {
-                    my ($pos, $word) = ($2, $1);
-                    $x[$_] = $word for split /,/, $pos;
-                }
-            }
-            return (grep { $_ } @x);
-        };
-
-        if (my $tsv_raw = $dbh->selectrow_arrayref("SELECT to_tsvector('russian', '".($q =~ s/'/''/gr)."')")->[0]) {
-            my @tsv = $_tsv2array->($tsv_raw);
-            my $tsv = join(' ', @tsv);
-
-            my %found = (address_object => [], landmark => []);
-
-            # First processing - technical params
-            # Try to find keywords listed in query_keywords table
-            {
-                my @xfound;
-                my $sql = "SELECT QK.* FROM query_keywords QK WHERE QK.fts @@ '".join('|', @tsv)."'::tsquery AND ts_rank_cd('{1.0, 1.0, 1.0, 1.0}', QK.fts, '".join('|', @tsv)."'::tsquery) = length(QK.fts)";
-                my $sth = $dbh->prepare($sql);
-                $sth->execute;
-                while (my $row = $sth->fetchrow_hashref) {
-                    my @x = $_tsv2array->($row->{fts});
-                    push @xfound, {ftype => $row->{ftype}, fkey => $row->{fkey}, len => scalar @x, txt => join(' ', @x)};
-                }
-
-                # Delete found keywords for future processing
-                for my $x (sort { $b->{len} <=> $a->{len} } @xfound) {
-                    my $t = $x->{txt};
-                    next if $disabled_query_items->{$x->{ftype}};
-                    if ($tsv =~ s/(?:^|\s+)\Q$t\E(?:\s+|$)/ /) {
-                        $found{$x->{ftype}} = [] unless exists $found{$x->{ftype}};
-                        for my $y (@xfound) {
-                            if ($y->{txt} eq $t) {
-                                push $found{$y->{ftype}}, $y->{fkey} unless $y->{added};
-                                $y->{added} = 1;
-                            }
-                        }
-                    }
-                }
-
-                @tsv = grep { $_ } split / /, $tsv;
-                $tsv = join ' ', @tsv;
-            }
-
-            # Second processing - streets
-            {
-                my @xfound;
-
-                my $acc_data = $c->get_acc_data();
-                my $city_guid = $acc_data->{city_guid};
-
-                my $sql = "
-                    SELECT AO.id, AO.name, AO.full_type, AO.fts2, ts_rank(AO.fts2, '".join('|', @tsv)."'::tsquery) rank
-                    FROM address_objects AO
-                    WHERE AO.fts @@ '".join('|', @tsv)."'::tsquery AND AO.level = 7 AND AO.curr_status = 0 AND AO.parent_guid = '" . $city_guid . "'
-                    ORDER BY rank DESC
-                    LIMIT 30
-                ";
-                my $sth = $dbh->prepare($sql);
-                $sth->execute;
-                while (my $row = $sth->fetchrow_hashref) {
-                    my @x = $_tsv2array->($row->{fts2});
-                    push @xfound, {ftype => 'address_object', fkey => $row->{id}, len => scalar @x, txt_a => \@x};
-                }
-
-                # Delete found keywords for future processing
-                for my $x (@xfound) {
-                    for my $t (@{$x->{txt_a}}) {
-                        $tsv =~ s/(?:^|\s+)\Q$t\E(?:\s+|$)/ /g;
-                    }
-                    $found{$x->{ftype}} = [] unless exists $found{$x->{ftype}};
-                    push $found{$x->{ftype}}, $x->{fkey};
-                }
-
-                @tsv = grep { $_ } split / /, $tsv;
-                $tsv = join ' ', @tsv;
-            }
-
-            for my $x (keys %found) {
-                next if $disabled_query_items->{$x};
-                if ($x eq 'ap_scheme' || $x eq 'balcony' || $x eq 'bathroom' || $x eq 'condition' || $x eq 'house_type' || $x eq 'room_scheme') {
-                    push @params, $x.'_id' => (@{$found{$x}} == 1 ? $found{$x}->[0] : $found{$x});
-                } elsif ($x eq 'realty_type') {
-                    # TODO: Fixme
-                    push @params, \("t1.type_code IN (SELECT RT.code FROM realty_types RT WHERE RT.id IN (".join(',', @{$found{$x}})."))");
-                } elsif ($x eq 'tag') {
-                    push @params, tags => {ltree_ancestor => $found{$x}}; # @>
-                } elsif ($x eq 'media_import') {
-                    push @params, source_media_id => (@{$found{$x}} == 1 ? $found{$x}->[0] : $found{$x});
-                } elsif ($x eq 'media_export') {
-                    push @params, export_media => {'&&' => $found{$x}};
-                }
-            }
-
-            if (@{$found{address_object}} && @{$found{landmark}}) {
-                if ($q =~ s/${sta_re}улица${end_re}/ /i) {
-                    push @params, address_object_id => $found{address_object};
-                } else {
-                    push @params, OR => [
-                        address_object_id => $found{address_object},
-                        landmarks => {'&&' => $found{landmark}},
-                    ];
-                }
-            } elsif (@{$found{address_object}}) {
-                push @params, address_object_id => $found{address_object};
-            } elsif (@{$found{landmark}}) {
-                push @params, landmarks => {'&&' => $found{landmark}};
-            }
-
-            # Other words => Full Text Search in realty
-            push @params, \("t1.fts @@ '".join('|', @tsv)."'::tsquery") if @tsv;
+    given ($q) {
+        when (/дача/i) {
+          push @params, type_code => 'dacha';
+          $q =~ s/дача//i;
         }
+
+        when (/(^|\s+)дом/i) {
+            push @params, type_code => 'house';
+            $q =~ s/дом//i;
+        }
+
+        when (/квартира/i) {
+            push @params, type_code => 'apartment';
+            $q =~ s/квартира//i;
+        }
+
+        when (/коттедж/i) {
+            push @params, type_code => 'cottage';
+            $q =~ s/коттедж//i;
+        }
+
+        when (/офис/i) {
+            push @params, type_code => 'office';
+            $q =~ s/офис//i;
+        }
+
+        when (/таунхаус/i) {
+            push @params, type_code => 'townhouse';
+            $q =~ s/таунхаус//i;
+        }
+
+        when (/малосемейка/i) {
+            push @params, type_code => 'apartment_small';
+            $q =~ s/малосемейка//i;
+        }
+
+        when (/другое/i) {
+
+        }
+
+        when (/земельный участок|земля|участок/i) {
+            push @params, type_code => 'land';
+            $q =~ s/земельный участок|земля|участок//i;
+        }
+
+        when (/новостройка/i) {
+            push @params, type_code => 'apartment_new';
+            $q =~ s/новостройка//i;
+        }
+
+        when (/комната/i) {
+            push @params, type_code => 'room';
+            $q =~ s/комната//i;
+        }
+
+        when (/торговая площадь/i) {
+            push @params, type_code => '';
+            $q =~ s/торговая площадь//i;
+        }
+
+        when (/офисное помещение|офис/i) {
+            push @params, type_code => '';
+            $q =~ s/офисное помещение|офис//i;
+        }
+
+        when (/здание/i) {
+            push @params, type_code => '';
+            $q =~ s/здание//i;
+        }
+
+        when (/производственное помещение/i) {
+            push @params, type_code => '';
+            $q =~ s/производственное помещение//i;
+        }
+
+        when (/помещение свободного назначения/i) {
+            push @params, type_code => '';
+            $q =~ s/помещение свободного назначения//i;
+        }
+
+        when (/помещение под автобизнес/i) {
+            push @params, type_code => '';
+            $q =~ s/помещение под автобизнес//i;
+        }
+
+        when (/помещение под сферу услуг/i) {
+            push @params, type_code => '';
+            $q =~ s/помещение под сферу услуг//i;
+        }
+
+        when (/гараж|стояночное место/i) {
+            push @params, type_code => '';
+            $q =~ s/гараж|стояночное место//i;
+        }
+
+        when (/склад|база/i) {
+            push @params, type_code => '';
+            $q =~ s/склад|база//i;
+        }
+
+        default {
+
+        }
+    }
+
+    # fts address search
+    if ($q) {
+      if ($q =~ s/"(.*?)"// ) {
+        push @params, \("t1.fts @@ plainto_tsquery('english', '" . $1 . "')");
+      }
+    }
+
+    # FTS tag search
+    if ($q !~ /^\s*$/) {
+      push @params, \("t1.fts_vector @@ plainto_tsquery('russian', '" . $q . "')");
     }
 
     Rplus::Model::QueryCache->new(query => $q_orig, params => _params2json(@params))->save if $USE_CACHE && @params;
@@ -373,12 +381,10 @@ Rplus::Util::Query - User's query parser
 
   use Rplus::Model::Realty::Manager;
   use Rplus::Util::Query;
-  use Data::Dumper;
 
   my $q = 'двухкомнатная квартира до 5 млн в центре';
   my @params = Rplus::Util::Query->parse($q);
 
-  say Dumper(\@params);
   my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(query => \@params);
   ...
 

@@ -13,7 +13,7 @@
 <style type="text/css">
   #searchTableWrapper {
     height: 600px;
-    overflow-y: scroll; 
+    overflow-y: scroll;
     -webkit-overflow-scrolling: touch;  /* iOS Native style momentum scrolling */
   }
 
@@ -50,7 +50,7 @@
   .leaflet-top {
     z-index: 99;
   }
-  
+
   #searchTable > tbody > tr.selected > td {
     background-color: #00669C !important;
     color: #fff;
@@ -60,7 +60,7 @@
     /*background-color: #0088cc !important;*/
     color: #fff;
   }
-  
+
   #searchTable > tbody > tr.selected:hover > td {
     background-color: #006096 !important;
     color: #fff;
@@ -70,7 +70,7 @@
     /*background-color: #0082c7 !important;*/
     color: #fff;
   }
-  
+
   #searchTable > tbody > tr.selected > td > a {
     /*background-color: #0082c7 !important;*/
     color: #fff;
@@ -81,7 +81,7 @@
   }
 
   .right-inner-addon input {
-    padding-right: 30px;    
+    padding-right: 30px;
   }
 
   .right-inner-addon i {
@@ -99,7 +99,7 @@
     position: absolute;
     z-index: 10;
     top: 4px;
-    right: 120px;    
+    right: 120px;
     background: none;
     border: none;
   }
@@ -123,14 +123,14 @@
     height: 65px;
     border-radius: 0 0 0 65px;
     -moz-border-radius: 0 0 0 65px;
-    -webkit-border-radius: 0 0 0 65px;       
+    -webkit-border-radius: 0 0 0 65px;
   }
   .quarter-circle-bottom-right {
     width: 65px;
     height: 65px;
     border-radius: 0 0 65px 0;
     -moz-border-radius: 0 0 65px 0;
-    -webkit-border-radius: 0 0 65px 0;       
+    -webkit-border-radius: 0 0 65px 0;
   }
 
   .phone-button {
@@ -206,17 +206,33 @@
   #photosModal .carousel-inner img {
     margin-left: auto;
     margin-right: auto;
-  }  
+  }
+
+  svg.tracer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      /*display: none;*/
+  }
 </style>
 % end
 
 % content_for after_bootstrap => begin
 %= js_once "$assets_url/leaflet/$leafletjs_ver/leaflet.js";
 %= js_once "$assets_url/leaflet.fullscreen/$leafletjs_fullscreen_ver/Control.FullScreen.js";
+
+%= js_once "https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js";
+%= js_once "$assets_url/jsclipper/clipper.js";
+%= js_once "$assets_url/concavehull/concavehull.js";
+%= js_once "$assets_url/Leaflet.FreeDraw/dist/leaflet.freedraw.js";
+
 %= js_once "$assets_url/typeahead.js/$typeaheadjs_ver/js/typeahead.js";
 %= js_once "$assets_url/jquery.webSpeech/jquery.webSpeech-1.0.1.js";
 %= js_once "/js/leaflet/layer-2gis.js";
 %= js_once "/js/contextmenu/context.js";
+
 % end
 
 % content_for javascript => begin
@@ -244,11 +260,13 @@
 
   (function () {
     var geoMap;
+    var free_draw;
+    var geoSearchText = null;
 
     $('#searchQuery').val(localStorage.getItem('SEARCH_Q'));
 
     function initSpeech() {
-      $('#searchQuery').webSpeech({ 
+      $('#searchQuery').webSpeech({
         button      : 'speech-button', //id of the initiating button
         lang        : 'ru-RU',
         format      : 'input',            //input, textarea, html
@@ -284,7 +302,7 @@
         iconUrl: '<%= "$assets_url/leaflet/$leafletjs_ver/images/marker-icon.png" %>',
         iconRetinaUrl: '<%= "$assets_url/leaflet/$leafletjs_ver/images/marker-icon-2x.png" %>',
         shadowUrl: '<%= "$assets_url/leaflet/$leafletjs_ver/images/marker-shadow.png" %>',
-        shadowRetinaUrl: '<%= "$assets_url/leaflet/$leafletjs_ver/images/marker-shadow.png" %>',        
+        shadowRetinaUrl: '<%= "$assets_url/leaflet/$leafletjs_ver/images/marker-shadow.png" %>',
     });
 
     function getOfferType() {
@@ -294,16 +312,20 @@
     }
     function getRentType() {
       var offer_filter = $('[data-filter="offer_type_code"]').data('val')
-      console.log(offer_filter);
       if (offer_filter.match(/short/)) return 'short';
       if (offer_filter.match(/long/)) return 'long';
       return '';
     }
 
     function listRealty(page) {
+
+      console.log(geoSearchText);
+
       var q = $('#searchQuery').val();
       var offerTypeCode = getOfferType();
       var rentType = getRentType();
+
+      var stateCode = $('[data-filter="state_code"]').data('val');
 
       //if (!q) return;
 
@@ -311,7 +333,7 @@
       $.ajax({
         type: "POST",
         url: "<%= url_for q{/api/realty/list} %>",
-        data: {q: q, state_code: 'work', offer_type_code: offerTypeCode, rent_type: rentType, page: page, per_page: 30},
+        data: {q: q, search_area: geoSearchText, state_code: stateCode, offer_type_code: offerTypeCode, rent_type: rentType, page: page, per_page: 30},
         complete: function () { _listRealty_started = false; }
       })
         .done(function (data) {
@@ -412,7 +434,7 @@
           $.ajax({
             type: "POST",
             url: "/api/user/set_offer_mode",
-            data: {id: <%= $self->session('user')->{id} %>, offer_mode: $('#offer-type-filter').data('val')},
+            data: {id: <%= $self->stash('user')->{id} %>, offer_mode: $('#offer-type-filter').data('val')},
           })
             .done(function (data, textStatus, jqXHR) {
               Rplus.Variables['User'].offer_mode = $('#offer-type-filter').data('val');
@@ -422,15 +444,99 @@
       });
 
       // Geo
-      var c_lat = <%= $self->session('user')->{map_lat} %>;
-      var c_lng = <%= $self->session('user')->{map_lng} %>;
+      var c_lat = <%= $self->config->{location}->{lat} %>;
+      var c_lng = <%= $self->config->{location}->{lng} %>;
       geoMap = L.map('geoMap', {
         center: [c_lat, c_lng],
         zoom: 16,
         fullscreenControl: true,
       });
 
+      // --------------------------------------------------
       Rplus.GeoMap.initLayer(geoMap);
+      //var googleLayer = new L.Google('ROADMAP');
+      //geoMap.addLayer(googleLayer);
+
+      free_draw = new L.FreeDraw({
+        mode: 0,
+      });
+      free_draw.options.destroyPrevious = true;
+      free_draw.options.multiplePolygons = false;
+
+      free_draw.on('mode', function modeReceived(eventData) {
+          console.log('free_draw mode: ' + eventData.mode);
+      });
+
+      free_draw.on('markers', function getMarkers(eventData) {
+
+        console.log('yay!');
+
+        if (eventData.latLngs.length > 0) {
+
+          geoSearchText = L.FreeDraw.Utilities.getMySQLMultiPolygon(eventData.latLngs);
+          listRealty(1);
+        } else {
+          geoSearchText = null;
+          listRealty(1);
+        }
+
+      });
+
+      geoMap.addLayer(free_draw);
+
+      var beginDrawButton = L.Control.extend({
+        options: {
+          position: 'topright'
+          //control position - allowed: 'topleft', 'topright', 'bottomleft', 'bottomright'
+        },
+
+        onAdd: function (map) {
+          var container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
+
+          container.style.backgroundColor = 'white';
+          container.style.backgroundImage = "url('/img/map_ico_spritesheet.png')";
+          container.style.backgroundPosition = "-150px 0px";
+          //container.style.backgroundSize = "30px 30px";
+          container.style.width = '30px';
+          container.style.height = '30px';
+
+          container.onclick = function(){
+            $('svg.tracer').css('display', 'inherit');
+            free_draw.setMode(L.FreeDraw.MODES.VIEW | L.FreeDraw.MODES.CREATE);
+          }
+          return container;
+        },
+      });
+
+      var eraseButton = L.Control.extend({
+        options: {
+          position: 'topright'
+          //control position - allowed: 'topleft', 'topright', 'bottomleft', 'bottomright'
+        },
+
+        onAdd: function (map) {
+          var container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
+
+          container.style.backgroundColor = 'white';
+          container.style.backgroundImage = "url('/img/map_ico_spritesheet.png')";
+          container.style.backgroundPosition = "-180px 0px";
+          //container.style.backgroundSize = "30px 30px";
+          container.style.width = '30px';
+          container.style.height = '30px';
+
+          container.onclick = function() {
+            $('svg.tracer').css('display', 'none');
+            free_draw.setMode(L.FreeDraw.MODES.VIEW | L.FreeDraw.MODES.DELETE);
+          }
+          return container;
+        },
+      });
+
+      geoMap.addControl(new beginDrawButton());
+      geoMap.addControl(new eraseButton());
+
+      // --------------------------------------------------
+
 
       // Objects selection in realty table
       $('#searchTable > tbody').on('click', 'tr', function (e) {
@@ -471,8 +577,6 @@
           realtyIds.push($(this).data('id'));
         });
 
-
-
         if (!q) { alert("<%= ucfloc 'query cannot be empty' %>"); return; };
         //if (!days ) return;
         if (!phoneNum) { alert("<%= ucfloc 'phone num cannot be empty' %>"); return; }
@@ -482,6 +586,7 @@
           url: "/api/client/subscribe",
           data: {
             q: q,
+            search_area: geoSearchText,
             offer_type_code: offerTypeCode,
             rent_type: rentType,
             end_date: days ? moment().add('days', days).format('YYYY-MM-DDTHH:mm:ssZZ') : null,
@@ -521,7 +626,7 @@
 
       initSpeech();
       listRealty(1);
-      
+
       var guid;
       var template = $('#photosCarouselTemplate').remove().html();
 
@@ -542,8 +647,6 @@
       $('#searchTable > tbody').on('click', '[data-action="photos-show"]', function (e) {
 
         var realtyId = $(this).closest('tr').data('id');
-
-        console.log(realtyId);
 
         $.ajax({
           type: 'POST',
@@ -641,7 +744,7 @@
         </div>
       </div>
     </form>
-    <button id="speech-button" style="z-index: 100;"></button>    
+    <button id="speech-button" style="z-index: 100;"></button>
   </div>
 
   <div class="col-md-2 margin-bottom-20">
@@ -674,22 +777,35 @@
     <div class="navbar-right">
       <ul class="nav navbar-nav">
         <!-- Offer type filter -->
-        % my $m = $self->session->{'user'}->{offer_mode};
         <li class="dropdown" id="offer-type-filter" data-filter="offer_type_code" data-val="">
           <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span role="display"></span> <b class="caret"></b></a>
           <ul class="dropdown-menu">
-            %# for my $x (@{Rplus::Model::RealtyOfferType::Manager->get_objects(sort_by => 'id')}) {
-              <li><a href="#" data-val="sale"> Продажа</a></li>
-              <li class="dropdown-submenu">
-                <a href="#" data-val="rent"> Аренда</a>
-                <ul class="dropdown-menu dropdown-context dropdown-context-sub compressed-context" style="bottom: auto;">
-                    <li><a href="#" data-val="rent-short" data-type="text"> Краткосрочная</a></li>
-                    <li><a href="#" data-val="rent-long" data-type="text"> Долгосрочная</a></li>
-                </ul>
-              </li>
-            %# }
+            <li><a href="#" data-val="sale"> Продажа</a></li>
+            <li class="dropdown-submenu">
+              <a href="#" data-val="rent"> Аренда</a>
+              <ul class="dropdown-menu dropdown-context dropdown-context-sub compressed-context" style="bottom: auto;">
+                  <li><a href="#" data-val="rent-short" data-type="text"> Краткосрочная</a></li>
+                  <li><a href="#" data-val="rent-long" data-type="text"> Долгосрочная</a></li>
+              </ul>
+            </li>
           </ul>
         </li>
+
+        <!-- State filter -->
+        <li class="dropdown" data-filter="state_code" data-val="">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span role="display"><span class="glyphicon glyphicon-th-large"></span> <%= ucfloc 'any' %></span> <b class="caret"></b></a>
+          <ul class="dropdown-menu">
+            <li><a href="#" data-val=""><span class="glyphicon glyphicon-th-large"></span> Любой</a></li>
+            <li><a href="#" data-val="multy"><span class="glyphicon glyphicon-file"></span> Мультилистинг</a></li>
+
+            % for my $x (@{Rplus::Model::RealtyState::Manager->get_objects(sort_by => 'sort_idx')}) {
+            % my $metadata = from_json($x->metadata);
+              <li><a href="#" data-val="<%= $x->code %>"><span class="glyphicon <%= $metadata->{'icon-class'} %>"></span>&nbsp<%= $x->name %></a></li>
+            % }
+
+          </ul>
+        </li>
+
       </ul>
       <p class="navbar-text">
         <span class="text-primary"><%= ucfloc 'found' %></span> <span class="text-primary" id="objectsCount">0</span>

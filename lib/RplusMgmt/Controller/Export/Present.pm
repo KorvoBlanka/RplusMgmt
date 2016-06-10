@@ -77,15 +77,14 @@ sub index {
             for my $l (@landmarks) {
                 my $iter = Rplus::Model::Realty::Manager->get_objects_iterator(
                     query => [
-                        state_code => 'work',
                         offer_type_code => $offer_type_code,
                         'type.category_code' => 'room',
                         export_media => {'&&' => $media->id},
                         account_id => $acc_id,
                         ($l ? \("t1.landmarks && '{".$l->id."}'") : \("NOT (t1.landmarks && ARRAY(SELECT L.id FROM landmarks L WHERE L.type = 'present' AND L.delete_date IS NULL))")),
                     ],
-                    sort_by => 'address_object.expanded_name',
-                    with_objects => ['address_object', 'sublandmark', 'type', 'agent'],
+                    sort_by => 'address',
+                    with_objects => ['sublandmark', 'type', 'agent'],
                 );
                 my ($title, @body);
                 while (my $realty = $iter->next) {
@@ -100,11 +99,10 @@ sub index {
                     }
 
                     my $location;
-                    if ($realty->address_object_id) {
-                        my $addrobj = $realty->address_object;
-                        $location = $addrobj->name.($addrobj->short_type ne 'ул' ? ' '.$addrobj->short_type : '');
-                        if ($realty->sublandmark_id && $location !~ /[()]/) {
-                            $location .= ' ('.$realty->sublandmark->name.')';
+                    if ($realty->address) {
+                        $location = $realty->address;
+                        if ($realty->district && $location !~ /[()]/) {
+                            $location .= ' ('.$realty->district.')';
                         }
                         $location .= '.';
                     }
@@ -159,15 +157,14 @@ sub index {
             for my $l (@landmarks) {
                 my $iter = Rplus::Model::Realty::Manager->get_objects_iterator(
                     query => [
-                        state_code => 'work',
                         offer_type_code => $offer_type_code,
                         type_code => 'apartment_small',
                         export_media => {'&&' => $media->id},
                         account_id => $acc_id,
                         ($l ? \("t1.landmarks && '{".$l->id."}'") : \("NOT (t1.landmarks && ARRAY(SELECT L.id FROM landmarks L WHERE L.type = 'present' AND L.delete_date IS NULL))")),
                     ],
-                    sort_by => 'address_object.expanded_name',
-                    with_objects => ['address_object', 'sublandmark', 'type', 'agent'],
+                    sort_by => 'address',
+                    with_objects => ['sublandmark', 'type', 'agent'],
                 );
                 my ($title, @body);
                 while (my $realty = $iter->next) {
@@ -182,11 +179,10 @@ sub index {
                     }
 
                     my $location;
-                    if ($realty->address_object_id) {
-                        my $addrobj = $realty->address_object;
-                        $location = $addrobj->name.($addrobj->short_type ne 'ул' ? ' '.$addrobj->short_type : '');
-                        if ($realty->sublandmark_id && $location !~ /[()]/) {
-                            $location .= ' ('.$realty->sublandmark->name.')';
+                    if ($realty->address) {
+                        $location = $realty->address;
+                        if ($realty->district && $location !~ /[()]/) {
+                            $location .= ' ('.$realty->district.')';
                         }
                         $location .= '.';
                     }
@@ -243,7 +239,6 @@ sub index {
                 for my $l (@landmarks) {
                     my $iter = Rplus::Model::Realty::Manager->get_objects_iterator(
                         query => [
-                            state_code => 'work',
                             offer_type_code => $offer_type_code,
                             'type.category_code' => 'apartment',
                             '!type_code' => 'apartment_small',
@@ -252,8 +247,8 @@ sub index {
                             account_id => $acc_id,
                             ($l ? \("t1.landmarks && '{".$l->id."}'") : \("NOT (t1.landmarks && ARRAY(SELECT L.id FROM landmarks L WHERE L.type = 'present' AND L.delete_date IS NULL))")),
                         ],
-                        sort_by => 'address_object.expanded_name',
-                        with_objects => ['address_object', 'sublandmark', 'type', 'agent'],
+                        sort_by => 'address',
+                        with_objects => ['sublandmark', 'type', 'agent'],
                     );
                     my ($title, @body);
                     while (my $realty = $iter->next) {
@@ -268,11 +263,10 @@ sub index {
                         }
 
                         my $location;
-                        if ($realty->address_object_id) {
-                            my $addrobj = $realty->address_object;
-                            $location = $addrobj->name.($addrobj->short_type ne 'ул' ? ' '.$addrobj->short_type : '');
-                            if ($realty->sublandmark_id && $location !~ /[()]/) {
-                                $location .= ' ('.$realty->sublandmark->name.')';
+                        if ($realty->address) {
+                            $location = $realty->address;
+                            if ($realty->district && $location !~ /[()]/) {
+                                $location .= ' ('.$realty->district.')';
                             }
                             $location .= '.';
                         }
@@ -328,15 +322,14 @@ sub index {
             for my $l (@landmarks) {
                 my $iter = Rplus::Model::Realty::Manager->get_objects_iterator(
                     query => [
-                        state_code => 'work',
                         offer_type_code => $offer_type_code,
                         'type.category_code' => 'house',
                         export_media => {'&&' => $media->id},
                         account_id => $acc_id,
                         ($l ? \("t1.landmarks && '{".$l->id."}'") : \("NOT (t1.landmarks && ARRAY(SELECT L.id FROM landmarks L WHERE L.type = 'present' AND L.delete_date IS NULL))")),
                     ],
-                    sort_by => 'address_object.expanded_name',
-                    with_objects => ['address_object', 'sublandmark', 'type', 'agent'],
+                    sort_by => 'address',
+                    with_objects => ['sublandmark', 'type', 'agent'],
                 );
                 my ($title, @body);
                 while (my $realty = $iter->next) {
@@ -351,11 +344,10 @@ sub index {
                     }
 
                     my $location;
-                    if ($realty->address_object_id) {
-                        my $addrobj = $realty->address_object;
-                        $location = $addrobj->name.($addrobj->short_type ne 'ул' ? ' '.$addrobj->short_type : '');
-                        if ($realty->sublandmark_id && $location !~ /[()]/) {
-                            $location .= ' ('.$realty->sublandmark->name.')';
+                    if ($realty->address) {
+                        $location = $realty->address;
+                        if ($realty->district && $location !~ /[()]/) {
+                            $location .= ' ('.$realty->district.')';
                         }
                         $location .= '.';
                     }
@@ -410,15 +402,14 @@ sub index {
             for my $l (@landmarks) {
                 my $iter = Rplus::Model::Realty::Manager->get_objects_iterator(
                     query => [
-                        state_code => 'work',
                         offer_type_code => $offer_type_code,
                         'type.category_code' => 'land',
                         export_media => {'&&' => $media->id},
                         account_id => $acc_id,
                         ($l ? \("t1.landmarks && '{".$l->id."}'") : \("NOT (t1.landmarks && ARRAY(SELECT L.id FROM landmarks L WHERE L.type = 'present' AND L.delete_date IS NULL))")),
                     ],
-                    sort_by => 'address_object.expanded_name',
-                    with_objects => ['address_object', 'sublandmark', 'type', 'agent'],
+                    sort_by => 'address',
+                    with_objects => ['sublandmark', 'type', 'agent'],
                 );
                 my ($title, @body);
                 while (my $realty = $iter->next) {
@@ -429,11 +420,10 @@ sub index {
                     }
 
                     my $location;
-                    if ($realty->address_object_id) {
-                        my $addrobj = $realty->address_object;
-                        $location = $addrobj->name.($addrobj->short_type ne 'ул' ? ' '.$addrobj->short_type : '');
-                        if ($realty->sublandmark_id && $location !~ /[()]/) {
-                            $location .= ' ('.$realty->sublandmark->name.')';
+                    if ($realty->address) {
+                        $location = $realty->address;
+                        if ($realty->district && $location !~ /[()]/) {
+                            $location .= ' ('.$realty->district.')';
                         }
                         $location .= '.';
                     }
@@ -488,15 +478,14 @@ sub index {
             for my $l (@landmarks) {
                 my $iter = Rplus::Model::Realty::Manager->get_objects_iterator(
                     query => [
-                        state_code => 'work',
                         offer_type_code => $offer_type_code,
                         'type.category_code' => ['commercial', 'commersial',],
                         export_media => {'&&' => $media->id},
                         account_id => $acc_id,
                         ($l ? \("t1.landmarks && '{".$l->id."}'") : \("NOT (t1.landmarks && ARRAY(SELECT L.id FROM landmarks L WHERE L.type = 'present' AND L.delete_date IS NULL))")),
                     ],
-                    sort_by => 'address_object.expanded_name',
-                    with_objects => ['address_object', 'sublandmark', 'type', 'agent'],
+                    sort_by => 'address',
+                    with_objects => ['sublandmark', 'type', 'agent'],
                 );
                 my ($title, @body);
                 while (my $realty = $iter->next) {
@@ -536,11 +525,10 @@ sub index {
                     }
 
                     my $location;
-                    if ($realty->address_object_id) {
-                        my $addrobj = $realty->address_object;
-                        $location = $addrobj->name.($addrobj->short_type ne 'ул' ? ' '.$addrobj->short_type : '');
-                        if ($realty->sublandmark_id && $location !~ /[()]/) {
-                            $location .= ' ('.$realty->sublandmark->name.')';
+                    if ($realty->address) {
+                        $location = $realty->address;
+                        if ($realty->district && $location !~ /[()]/) {
+                            $location .= ' ('.$realty->district.')';
                         }
                         $location .= '.';
                     }
@@ -596,15 +584,14 @@ sub index {
             for my $l (@landmarks) {
                 my $iter = Rplus::Model::Realty::Manager->get_objects_iterator(
                     query => [
-                        state_code => 'work',
                         offer_type_code => $offer_type_code,
                         type_code => 'garage',
                         export_media => {'&&' => $media->id},
                         account_id => $acc_id,
                         ($l ? \("t1.landmarks && '{".$l->id."}'") : \("NOT (t1.landmarks && ARRAY(SELECT L.id FROM landmarks L WHERE L.type = 'present' AND L.delete_date IS NULL))")),
                     ],
-                    sort_by => 'address_object.expanded_name',
-                    with_objects => ['address_object', 'sublandmark', 'type', 'agent'],
+                    sort_by => 'address',
+                    with_objects => ['sublandmark', 'type', 'agent'],
                 );
                 my ($title, @body);
                 while (my $realty = $iter->next) {
@@ -644,11 +631,10 @@ sub index {
                     }
 
                     my $location;
-                    if ($realty->address_object_id) {
-                        my $addrobj = $realty->address_object;
-                        $location = $addrobj->name.($addrobj->short_type ne 'ул' ? ' '.$addrobj->short_type : '');
-                        if ($realty->sublandmark_id && $location !~ /[()]/) {
-                            $location .= ' ('.$realty->sublandmark->name.')';
+                    if ($realty->address) {
+                        $location = $realty->address;
+                        if ($realty->district && $location !~ /[()]/) {
+                            $location .= ' ('.$realty->district.')';
                         }
                         $location .= '.';
                     }

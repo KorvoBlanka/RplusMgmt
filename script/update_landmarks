@@ -12,7 +12,6 @@ use Rplus::Model::Landmark::Manager;
 
 my $dbh = Rplus::DB->new_or_cached->dbh;
 
-# Select landmarks changed in 15 min of last run time
 my $landmarks_count = Rplus::Model::Landmark::Manager->get_objects_count();
 say $landmarks_count;
 if ($landmarks_count) {
@@ -24,7 +23,7 @@ if ($landmarks_count) {
             SELECT array_agg(L.id) FROM landmarks L WHERE L.delete_date IS NULL AND ST_Covers(L.geodata::geography, R.geocoords)
         ), '{}')
         WHERE R.geocoords IS NOT NULL AND R.delete_date IS NULL AND NOT(R.state_code = 'delete')
-    }) if 0;
+    }) if 1;
 }
 
 1;

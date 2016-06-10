@@ -26,6 +26,7 @@ __PACKAGE__->meta->setup(
         google_id         => { type => 'varchar' },
         end_date          => { type => 'timestamp with time zone' },
         summary           => { type => 'varchar' },
+        completion_date   => { type => 'timestamp with time zone' },
     ],
 
     primary_key_columns => [ 'id' ],

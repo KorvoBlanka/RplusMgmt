@@ -45,10 +45,10 @@ sub by_sms {
 
     my $realty = Rplus::Model::Realty::Manager->get_objects(
         query => [id => $realty_id,],
-        with_objects => ['address_object', 'agent', 'type', 'sublandmark'],
+        with_objects => ['agent', 'type'],
     )->[0];
 
-    my $acc_id = $self->session('user')->{account_id};
+    my $acc_id = $self->session('account')->{id};
     my $options = Rplus::Model::Option->new(account_id => $acc_id)->load();
     my $config;
     if ($options) {
@@ -66,7 +66,8 @@ sub by_sms {
         {
             push @parts, $realty->type->name;
             push @parts, $realty->rooms_count.'к' if $realty->rooms_count;
-            push @parts, $realty->address_object->name.' '.$realty->address_object->short_type.($realty->address_object->name !~ /[()]/ && $realty->sublandmark ? ' ('.$realty->sublandmark->name.')' : '') if $realty->address_object;
+            push @parts, $realty->locality.', '.$realty->address if $realty->address && $realty->locality;
+            push @parts, $realty->district if $realty->district;
             push @parts, ($realty->floor || '?').'/'.($realty->floors_count || '?').' эт.' if $realty->floor || $realty->floors_count;
             push @parts, $realty->price.' тыс. руб.' if $realty->price;
             push @parts, $sender->public_name || $sender->name;
@@ -82,8 +83,8 @@ sub by_sms {
             my $num_rows_updated = Rplus::Model::SubscriptionRealty::Manager->update_objects(
                 set => {offered => 1},
                 where => [realty_id => $realty->id, subscription_id => $subscription->id],
-            );            
-        }        
+            );
+        }
     }
 
     return $self->render(json => {status => $status, data => $config->{active},});
@@ -100,10 +101,10 @@ sub by_email {
 
     my $realty = Rplus::Model::Realty::Manager->get_objects(
         query => [id => $realty_id,],
-        with_objects => ['address_object', 'agent', 'type', 'sublandmark'],
+        with_objects => ['agent', 'type'],
     )->[0];
 
-    my $acc_id = $self->session('user')->{account_id};
+    my $acc_id = $self->session('account')->{id};
     my $options = Rplus::Model::Option->new(account_id => $acc_id)->load();
     my $config;
     if ($options) {
@@ -118,7 +119,7 @@ sub by_email {
         my $photo_iter = Rplus::Model::Photo::Manager->get_objects_iterator(query => [realty_id => $realty->id, delete_date => undef], sort_by => 'is_main DESC, id ASC');
         while (my $photo = $photo_iter->next) {
             push @photos, $photo->thumbnail_filename;
-        }        
+        }
         # TODO: Add template settings
         my $sender = Rplus::Model::User::Manager->get_objects(query => [id => $self->stash('user')->{id}, delete_date => undef])->[0];
         my $message = get_digest($self, $realty, \@photos, $config->{'contact_info'} ? $config->{'contact_info'} : '', $sender);
@@ -134,7 +135,7 @@ sub get_digest {
 
     my $no_photo_url = 'http://storage.rplusmgmt.com/rplus/no-photo.gif';
     my $no_photo_big_url = 'http://storage.rplusmgmt.com/rplus/no-photo-big.gif';
-    
+
     my $sender_block = '';
     my $header_block = '';
     my $info_block = '';
@@ -143,7 +144,7 @@ sub get_digest {
 
     my $use_sender_data = 0;
     my $user_photo = '';
-    my $path = $c->config->{'storage'}->{'url'} . '/' . $c->session->{'user'}->{'account_name'};
+    my $path = $c->config->{'storage'}->{'url'} . '/' . $c->session('account')->{name};
     if ($sender->role eq 'manager' || $sender->role eq 'top') {
         if ($r->agent_id && $r->agent_id != 10000) {
             $use_sender_data = 0;
@@ -167,7 +168,7 @@ sub get_digest {
         $sender_block .= "<img style=\"width: 100%;\" src=\"$no_photo_url\">";
         $sender_block .= '</div>';
     }
-        
+
     if ($use_sender_data) {
         $sender_block .= '<div style="width: 350px; padding: 10px; padding-top: 30px; display: inline-block; float: left;">';
         $sender_block .= '<span>' . $contact_info . '</span>';
@@ -182,20 +183,19 @@ sub get_digest {
         $sender_block .= '</div>';
     }
     $sender_block  .=  '<hr style="clear: both;">';
-    
-    
+
+
     $header_block  .=  '<strong>' . $r->type->name . '</strong>';
     $header_block  .=  '&nbsp;' . $r->rooms_count . 'к' if ($r->rooms_count);
-    if ($r->address_object) {
-        $header_block  .=  ', &nbsp;' . $r->address_object->name . ' ' . $r->address_object->short_type . '. ' . ($r->house_num ? $r->house_num : '') . ($r->sublandmark ? ' (' . $r->sublandmark->name . ')' : '');
-        #push @digest, $r->address_object->addr_parts->[1]->name . ' ' . $r->address_object->addr_parts->[1]->short_type;
+    if ($r->address) {
+        $header_block  .=  ', &nbsp;' . $r->address . '. ' . ($r->house_num ? $r->house_num : '') . ($r->district ? ' (' . $r->district . ')' : '');
     }
 
-    
+
      if ($r->price) {
         $info_block  .=  '<br><span style="font-size: 20px;">Цена:&nbsp;<i style="color: #d9534f;">' . $r->price . ' тыс. руб.</i></span><br>';
     }
-    
+
     if ($r->ap_scheme) {
         $info_block  .=  'Планировка:&nbsp;';
         $info_block  .=  $r->ap_scheme->metadata ? from_json($r->ap_scheme->metadata)->{description} : $r->ap_scheme->name;
@@ -216,7 +216,7 @@ sub get_digest {
     if ($r->rooms_count) {
         $info_block  .=  'Кол-во комнат:&nbsp;';
         $info_block  .=  $r->rooms_count;
-        $info_block  .=  '<br>';    
+        $info_block  .=  '<br>';
     }
     if ($r->floor && $r->floors_count) {
         $info_block  .=  'Этаж:&nbsp;';
@@ -269,22 +269,22 @@ sub get_digest {
         $info_block  .= $r->square_land . ' ' . ($r->square_land_type eq 'ar' ? 'сот.' : 'га');
         $info_block  .= '<br>';
     }
-    
+
     if ($r->description) {
         $info_block  .= '<br><br><span style="font-size: 20px;">Описание:</span>';
         $info_block  .= '<br>' . $r->description . '</br>';
-    }    
-    
+    }
+
     my $message = $template_head;
 
     $message .= '<div style="">';
     $message .= $sender_block;
     $message .= '</div>';
-    
+
     $message .= '<div style="font-size: 22px;">';
     $message .= $header_block;
     $message .= '</div>';
-    
+
     $message .= '<div style="width: 65%; padding: 10px; display: inline-block; float: left;">';
     foreach(@$photos) {
         $message .= "<img style=\"\" width=\"100%\" src=\"$_\">";
@@ -292,16 +292,15 @@ sub get_digest {
     unless (scalar @$photos) {
         $message .= "<img style=\"\" width=\"100%\" src=\"$no_photo_big_url\">";
     }
-    $message .= '</div>';    
-    
+    $message .= '</div>';
+
     $message .= '<div style="width: 25%; padding: 10px; display: inline-block; float: left;">';
     $message .= $info_block;
     $message .= '</div>';
-    
+
 
     $message .= $template_tail;
     return $message;
 }
 
 1;
-

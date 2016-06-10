@@ -33,7 +33,7 @@ sub index {
 
     my $meta = from_json($media->metadata);
 
-    
+
     my @sale_realty_types = split ',', $self->param('sale_realty_types');
     my @rent_realty_types = split ',', $self->param('rent_realty_types');
 
@@ -122,14 +122,13 @@ sub index {
             # Выборка объектов недвижимости
             my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
                 query => [
-                    state_code => 'work',
                     offer_type_code => [@offer_types],
                     'type.category_code' => ['apartment'],
                     export_media => {'&&' => $media->id},
                     account_id => $acc_id,
                 ],
-                sort_by => 'address_object.expanded_name',
-                with_objects => ['address_object', 'sublandmark', 'type', 'agent'],
+                sort_by => 'address',
+                with_objects => ['sublandmark', 'type', 'agent'],
             );
 
             my $row_num = 1;
@@ -137,13 +136,11 @@ sub index {
                 my $city = 'Хабаровск';
                 my $street = '';
                 my $house_num = '';
-                if ($realty->address_object_id) {
-                    my $addrobj = $realty->address_object;
-                    my $meta = from_json($addrobj->metadata);
-                    $street = $addrobj->name.' '.$addrobj->short_type;
-                    #$street = $addrobj->name.($addrobj->short_type ne 'ул' ? ' '.$addrobj->short_type : '');
-                    $house_num = $realty->house_num;
-                }
+
+                $city = $realty->locality if $realty->locality;
+                $street = $realty->address if $realty->address;
+                $house_num = $realty->house_num if $realty->house_num;
+
                 my ($area, $subarea);
                 if (@{$realty->landmarks}) {
                     $area = Rplus::Model::Landmark::Manager->get_objects(query => [id => scalar($realty->landmarks), type => 'vnh_area', delete_date => undef], limit => 1)->[0];
@@ -186,10 +183,10 @@ sub index {
                     $realty->square_living,
                     $realty->square_kitchen,
                     getVnhBathroomScheme($realty->bathroom_id),
-                    '', # балкон
-                    '', # остекление
-                    '', # лоджия
-                    '', # остекление
+                    getVnhBalcony1($realty->balcony_id), # балкон
+                    getVnhBalcony2($realty->balcony_id), # остекление
+                    getVnhBalcony3($realty->balcony_id), # лоджия
+                    getVnhBalcony4($realty->balcony_id), # остекление
                     '', # площадь лоджии
                     #$realty->balcony_id ? (($P->{'dict'}->{'balconies'}->{$realty->balcony_id}) // '') : '',
                     getVnhCondition($realty->condition_id),
@@ -201,7 +198,7 @@ sub index {
                 for my $col_num (0..(scalar(@$row)-1)) {
                     #if ($col_num == 5) {
                     #    $worksheet->write_string($row_num, $col_num, $row->[$col_num], $txt_fmt);
-                    #} 
+                    #}
                     $worksheet->write($row_num, $col_num, $row->[$col_num]);
                 }
                 $row_num++;
@@ -256,26 +253,23 @@ sub index {
             # Выборка объектов недвижимости
             my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
                 query => [
-                    state_code => 'work',
                     offer_type_code => [@offer_types],
                     'type.category_code' => ['room'],
                     export_media => {'&&' => $media->id},
                     account_id => $acc_id,
                 ],
-                sort_by => 'address_object.expanded_name',
-                with_objects => ['address_object', 'sublandmark', 'type', 'agent'],
+                sort_by => 'address',
+                with_objects => ['sublandmark', 'type', 'agent'],
             );
             my $row_num = 1;
             while(my $realty = $realty_iter->next) {
                 my $city = 'Хабаровск';
                 my $street = '';
                 my $house_num = '';
-                if ($realty->address_object_id) {
-                    my $addrobj = $realty->address_object;
-                    my $meta = from_json($addrobj->metadata);
-                    $street = $addrobj->name.($addrobj->short_type ne 'ул' ? ' '.$addrobj->short_type : '');
-                    $house_num = $realty->house_num;
-                }
+                $city = $realty->locality if $realty->locality;
+                $street = $realty->address if $realty->address;
+                $house_num = $realty->house_num if $realty->house_num;
+
                 my ($area, $subarea);
                 if (@{$realty->landmarks}) {
                     $area = Rplus::Model::Landmark::Manager->get_objects(query => [id => scalar($realty->landmarks), type => 'vnh_area', delete_date => undef], limit => 1)->[0];
@@ -378,26 +372,23 @@ sub index {
             # Выборка частных домов и коттеджей
             my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
                 query => [
-                    state_code => 'work',
                     offer_type_code => [@offer_types],
                     'type.category_code' => 'house',
                     export_media => {'&&' => $media->id},
                     account_id => $acc_id,
                 ],
-                sort_by => 'address_object.expanded_name',
-                with_objects => ['address_object', 'sublandmark', 'type', 'agent'],
+                sort_by => 'address',
+                with_objects => ['sublandmark', 'type', 'agent'],
             );
             my $row_num = 1;
             while(my $realty = $realty_iter->next) {
                 my $city = 'Хабаровск';
                 my $street = '';
                 my $house_num = '';
-                if ($realty->address_object_id) {
-                    my $addrobj = $realty->address_object;
-                    my $meta = from_json($addrobj->metadata);
-                    $street = $addrobj->name.($addrobj->short_type ne 'ул' ? ' '.$addrobj->short_type : '');
-                    $house_num = $realty->house_num;
-                }
+                $city = $realty->locality if $realty->locality;
+                $street = $realty->address if $realty->address;
+                $house_num = $realty->house_num if $realty->house_num;
+
                 my ($area, $subarea);
                 if (@{$realty->landmarks}) {
                     $area = Rplus::Model::Landmark::Manager->get_objects(query => [id => scalar($realty->landmarks), type => 'vnh_area', delete_date => undef], limit => 1)->[0];
@@ -485,26 +476,23 @@ sub index {
             # Выборка частных домов и коттеджей
             my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
                 query => [
-                    state_code => 'work',
                     offer_type_code => [@offer_types],
                     'type.category_code' => ['commercial', 'commersial'],
                     export_media => {'&&' => $media->id},
                     account_id => $acc_id,
                 ],
-                sort_by => 'address_object.expanded_name',
-                with_objects => ['address_object', 'sublandmark', 'type', 'agent'],
+                sort_by => 'address',
+                with_objects => ['sublandmark', 'type', 'agent'],
             );
             my $row_num = 1;
             while(my $realty = $realty_iter->next) {
                 my $city = 'Хабаровск';
                 my $street = '';
                 my $house_num = '';
-                if ($realty->address_object_id) {
-                    my $addrobj = $realty->address_object;
-                    my $meta = from_json($addrobj->metadata);
-                    $street = $addrobj->name.($addrobj->short_type ne 'ул' ? ' '.$addrobj->short_type : '');
-                    $house_num = $realty->house_num;
-                }
+                $city = $realty->locality if $realty->locality;
+                $street = $realty->address if $realty->address;
+                $house_num = $realty->house_num if $realty->house_num;
+
                 my ($area, $subarea);
                 if (@{$realty->landmarks}) {
                     $area = Rplus::Model::Landmark::Manager->get_objects(query => [id => scalar($realty->landmarks), type => 'vnh_area', delete_date => undef], limit => 1)->[0];
@@ -581,26 +569,23 @@ sub index {
             # Выборка частных домов и коттеджей
             my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
                 query => [
-                    state_code => 'work',
                     offer_type_code => [@offer_types],
                     'type.category_code' => 'land',
                     export_media => {'&&' => $media->id},
                     account_id => $acc_id,
                 ],
-                sort_by => 'address_object.expanded_name',
-                with_objects => ['address_object', 'sublandmark', 'type', 'agent'],
+                sort_by => 'address',
+                with_objects => ['sublandmark', 'type', 'agent'],
             );
             my $row_num = 1;
             while(my $realty = $realty_iter->next) {
                 my $city = 'Хабаровск';
                 my $street = '';
                 my $house_num = '';
-                if ($realty->address_object_id) {
-                    my $addrobj = $realty->address_object;
-                    my $meta = from_json($addrobj->metadata);
-                    $street = $addrobj->name.($addrobj->short_type ne 'ул' ? ' '.$addrobj->short_type : '');
-                    $house_num = $realty->house_num;
-                }
+                $city = $realty->locality if $realty->locality;
+                $street = $realty->address if $realty->address;
+                $house_num = $realty->house_num if $realty->house_num;
+
                 my ($area, $subarea);
                 if (@{$realty->landmarks}) {
                     $area = Rplus::Model::Landmark::Manager->get_objects(query => [id => scalar($realty->landmarks), type => 'vnh_area', delete_date => undef], limit => 1)->[0];
@@ -674,26 +659,23 @@ sub index {
             # Выборка частных домов и коттеджей
             my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
                 query => [
-                    state_code => 'work',
                     offer_type_code => [@offer_types],
                     type_code => 'garage',
                     export_media => {'&&' => $media->id},
                     account_id => $acc_id,
                 ],
-                sort_by => 'address_object.expanded_name',
-                with_objects => ['address_object', 'sublandmark', 'type', 'agent'],
+                sort_by => 'address',
+                with_objects => ['sublandmark', 'type', 'agent'],
             );
             my $row_num = 1;
             while(my $realty = $realty_iter->next) {
                 my $city = 'Хабаровск';
                 my $street = '';
                 my $house_num = '';
-                if ($realty->address_object_id) {
-                    my $addrobj = $realty->address_object;
-                    my $meta = from_json($addrobj->metadata);
-                    $street = $addrobj->name.($addrobj->short_type ne 'ул' ? ' '.$addrobj->short_type : '');
-                    $house_num = $realty->house_num;
-                }
+                $city = $realty->locality if $realty->locality;
+                $street = $realty->address if $realty->address;
+                $house_num = $realty->house_num if $realty->house_num;
+
                 my ($area, $subarea);
                 if (@{$realty->landmarks}) {
                     $area = Rplus::Model::Landmark::Manager->get_objects(query => [id => scalar($realty->landmarks), type => 'vnh_area', delete_date => undef], limit => 1)->[0];
@@ -927,6 +909,134 @@ sub getVnhCondition {
         when (12) {
             return 'отличное';
         }
+    }
+    return '';
+}
+
+sub getVnhBalcony1 {
+    my $balcony_id = shift;
+    given ($balcony_id) {
+        when (1) {
+            return '';
+        }
+        when (2) {
+            return 1;
+        }
+        when (3) {
+            return '';
+        }
+        when (4) {
+            return 1;
+        }
+        when (5) {
+            return 1;
+        }
+        when (6) {
+            return '';
+        }
+        when (7) {
+            return 2;
+        }
+        when (8) {
+            return '';
+        }
+
+    }
+    return '';
+}
+
+sub getVnhBalcony2 {
+    my $balcony_id = shift;
+    given ($balcony_id) {
+        when (1) {
+            return '';
+        }
+        when (2) {
+            return '';
+        }
+        when (3) {
+            return '';
+        }
+        when (4) {
+            return '';
+        }
+        when (5) {
+            return 'Застеклен';
+        }
+        when (6) {
+            return '';
+        }
+        when (7) {
+            return '';
+        }
+        when (8) {
+            return '';
+        }
+
+    }
+    return '';
+}
+
+sub getVnhBalcony3 {
+    my $balcony_id = shift;
+    given ($balcony_id) {
+        when (1) {
+            return '';
+        }
+        when (2) {
+            return '';
+        }
+        when (3) {
+            return 1;
+        }
+        when (4) {
+            return 1;
+        }
+        when (5) {
+            return '';
+        }
+        when (6) {
+            return 1;
+        }
+        when (7) {
+            return '';
+        }
+        when (8) {
+            return 2;
+        }
+
+    }
+    return '';
+}
+
+sub getVnhBalcony4 {
+    my $balcony_id = shift;
+    given ($balcony_id) {
+        when (1) {
+            return '';
+        }
+        when (2) {
+            return '';
+        }
+        when (3) {
+            return '';
+        }
+        when (4) {
+            return '';
+        }
+        when (5) {
+            return '';
+        }
+        when (6) {
+            return 'Застеклена';
+        }
+        when (7) {
+            return '';
+        }
+        when (8) {
+            return '';
+        }
+
     }
     return '';
 }

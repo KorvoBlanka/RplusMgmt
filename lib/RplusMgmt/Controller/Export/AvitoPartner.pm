@@ -1,4 +1,4 @@
-package RplusMgmt::Controller::Export::Avito;
+package RplusMgmt::Controller::Export::AvitoPartner;
 
 use Mojo::Base 'Mojolicious::Controller';
 
@@ -18,7 +18,6 @@ use File::Basename;
 use DateTime;
 use JSON;
 use URI;
-
 
 my $company_name = '';
 my $contact_phone = '';
@@ -476,10 +475,20 @@ sub index {
     $xml_writer->end();
     close $fh;
 
-    $self->res->headers->content_disposition("attachment; filename=avito.xml;");
-    $self->res->content->asset(Mojo::Asset::File->new(path => $file));
+    my $file_name = 'avito_a'.$acc_id.'.xml';
+    my($file_name_a, $new_path, $ext_a) = fileparse($self->config->{'storage'}->{'path'});
+    my $new_file = $new_path.'files/export/'.$file_name;
+    my($file_name_b, $dir, $ext_b) = fileparse($new_file);
+    make_path($dir);
+    move($file, $new_file);
 
-    return $self->rendered(200);
+    my $mode = 0644;
+    chmod $mode, $new_file;
+
+    my($file_name_c, $url_part, $ext_c) = fileparse($self->config->{'storage'}->{'url'});
+    my $path = $url_part.'files/export/'.$file_name;
+
+    return $self->render(json => {path => $path});
 }
 
 1;

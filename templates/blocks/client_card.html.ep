@@ -3,67 +3,67 @@
 
 % content_for header => begin
 %= css_once "$assets_url/bootstrap-datepicker/css/datepicker3.css";
-  
+
 <style type="text/css">
-  
+
   textarea {
     resize: none;
-  } 
-  
+  }
+
   #clientCard_modal {
     overflow: hidden;
   }
-  
+
   #clientCard_modal .modal-dialog {
     width: 480px !important;
   }
-  
+
   #client-card-body {
     height: 560px !important;
     padding: 0px;
   }
-  
+
   .ctrl-button {
     text-decoration: none !important;
     font-size: 15px;
     color: #428bca !important;
   }
-  
+
   .ctrl-button:hover {
     color: #3070b0 !important;
   }
-  
+
   .mainheader > div > p {
     margin-bottom: 0px;
     margin-top: 8px;
   }
-  
+
   .subscription-container > div > div > p {
     margin-bottom: 0px;
-    margin-top: 5px;    
+    margin-top: 5px;
   }
-  
+
   hr {
     margin-top: 0px;
     margin-bottom: 0px;
   }
-  
+
   .subscription-container > hr {
     margin-top: 5px;
   }
-  
+
   #subscription-type {
     width: 90px;
   }
-  
+
   .spacer {
     height: 34px;
   }
-  
+
   .subscription {
     margin-bottom: 20px;
   }
-  
+
   .text-input,
   .text-input[readonly="readonly"]{
     border: none !important;
@@ -82,14 +82,14 @@
     box-shadow: none !important;
     background-color: #f5f5f5;
   }
-  
+
   input:focus,
   select:focus,
   textarea:focus,
   button:focus {
     outline: none;
   }
-  
+
   .ccard-input-group-addon {
     padding: 6px 12px;
     font-size: 14px;
@@ -108,11 +108,11 @@
     padding-left: 40px;
     padding-bottom: 5px;
   }
-  
+
   .ccard-input-group {
     min-height: 34px;
   }
-  
+
   .cardheader {
     min-height: 20px;
     padding: 2px;
@@ -124,7 +124,7 @@
     box-shadow: inset 0 1px 1px rgba(0,0,0,0.05);
     color: #aaa;
   }
-  
+
   .mainheader {
     color: #666;
   }
@@ -136,19 +136,19 @@
   .spec-label-red:hover {
     color: #CA2F2F;
   }
-  
+
   .glyp-big {
     font-size: 16px;
   }
-  
+
   .spec-label-green {
     color:#1F861F;
   }
-  
+
   .nodispaly {
     display: none;
   }
-  
+
   .tag-button {
     height: 14px;
     width: 14px;
@@ -161,16 +161,16 @@
     width: 14px;
     border-radius: 7px;
     margin-right: 5px;
-    
+
     margin-top: 5px;
-    
+
     float: left!important;
   }
 
   .arrow {
     font-size: 22px;
   }
-  
+
   .round-button:hover {
     box-shadow: 0px 0px 5px #888888;
   }
@@ -179,22 +179,22 @@
     background: #fff;
     border: 1px solid #aaa;
   }
-  
+
   .tag-selected {
     box-shadow: 0px 0px 8px #555;
   }
-  
+
   #subscriptionRealtyTable > tbody > tr > td {
     padding-left: 12px;
   }
-  
+
   % for my $x (@{Rplus::Model::DictColorTag::Manager->get_objects(query => [delete_date => undef], sort_by => 'id')}) {
   .color-tag-<%= $x->id %> {
     background: #<%= $x->color %>;
     border: 1px solid #<%= $x->border_color %>;
   }
   % }
-  
+
   @-webkit-keyframes shake {
     0% { -webkit-transform: translateX(4px) }
     10% { -webkit-transform: translateX(8px) }
@@ -213,11 +213,11 @@
     -webkit-animation: 0.2s 2;
     -webkit-animation-name: shake;
   }
-  
+
   .invisible {
     visibility: hidden!important;
   }
-  
+
   .ddp {
     pointer-events: none;
   }
@@ -225,7 +225,7 @@
   .form-control[disabled], .form-control[readonly], fieldset[disabled] .form-control {
     cursor: inherit;
     background-color: #fff;
-  }  
+  }
 </style>
 % end
 
@@ -262,12 +262,12 @@
       $modal.on('click', '[data-action="client-unlock"]', function (e) {
         setMode(1);
       });
-      
+
       $modal.on('click', '[data-action="client-cancel"]', function (e) {
         setMode(0);
         setClientView(cached_client, 1, false);
       });
-      
+
       $modal.on('click', '[data-action="subscription-type-change"]', function (e) {
         var $this = $(this);
         var idx = $this.data('idx') + 1;
@@ -282,7 +282,7 @@
       $modal.on('click', '[data-action="show-proposed"]', function(e) {
         var $this = $(this);
         var guid = $this.data('guid');
-        var subscription = subs[guid]; //$('.subscription[data-guid="' + guid + '"]', $modal).data('obj');        
+        var subscription = subs[guid]; //$('.subscription[data-guid="' + guid + '"]', $modal).data('obj');
         pushRealtyToTable(subscription.id);
         showProposedRealty(true);
       });
@@ -290,11 +290,11 @@
       $modal.on('click', '[data-action="close-proposed"]', function(e) {
         showProposedRealty(false);
       });
-      
+
       // Set color tag for subscription
       $modal.on('click', '[data-action="subscription-set-color_tag_id"]', function (e) {
         if (cmode == 0) return;
-        
+
         if (selected_tag_id != $(this).data('val')) {
           $('.tag-selected').removeClass('tag-selected');
           selected_tag_id = $(this).data('val');
@@ -321,9 +321,9 @@
         subscription.end_date = moment().add('days', 14).format('YYYY-MM-DDTHH:mm:ssZZ');
         subscription.realty_limit = 20;
         subscription.send_owner_phone = 0;
-  
+
         subscription.queries = ['',];
-        
+
         pushSubscriptionToTableView(subscription);
       });
 
@@ -347,13 +347,13 @@
         $('.rmode-btn').addClass("hidden");
 
         $('#proposed-realty-table').addClass('hidden');
-        $('#client-card').removeClass('hidden');        
+        $('#client-card').removeClass('hidden');
       }
     }
-    
+
     function setMode(mode) {
       cmode = mode;
-      if(mode == 0) {        
+      if(mode == 0) {
         $('.emode').addClass("invisible");
         $('.smode').removeClass("invisible");
         $('.emode-btn').addClass("hidden");
@@ -361,7 +361,7 @@
         $('#phonecb', $modal).attr('disabled', true);
         $('.text-input').attr('readonly', true);
         $('[name="end_date"]:input', $modal).addClass('ddp');
-      } else if(mode == 1) {       
+      } else if(mode == 1) {
         $('.emode').removeClass("invisible");
         $('.smode').addClass("invisible");
         $('.emode-btn').removeClass("hidden");
@@ -375,7 +375,7 @@
     function save() {
       $('#phone-num-alert', $modal).addClass('hidden');
       var cant_save = false;
-      $('#clientCard_subscriptionForm > div > div:visible', $modal).each(function (index, elem) {       
+      $('#clientCard_subscriptionForm > div > div:visible', $modal).each(function (index, elem) {
         var empty_query = false;
         $('[name="query"]', this).each(function (index, elem) {
           if ($(this).val().length == 0) {
@@ -399,7 +399,7 @@
           });
         }
       });
-      
+
       if (cant_save) {
         $modal.addClass('shaker');
         setTimeout('$("#clientCard_modal").removeClass("shaker");', 1000);
@@ -483,7 +483,7 @@
                 if ($.isFunction(events.saved)) {
                   events.saved(data);
                 }
-                
+
               })
           } else {
             $modal.addClass('shaker');
@@ -492,7 +492,7 @@
         })
         .fail(function (jqXHR, textStatus, errorThrown) {
           $modal.addClass('shaker');
-          setTimeout('$("#clientCard_modal").removeClass("shaker");', 1000); 
+          setTimeout('$("#clientCard_modal").removeClass("shaker");', 1000);
           $('#phone-num-alert', $modal).removeClass('hidden');
 
               var stackBottomRight = {"dir1": "up", "dir2": "left", "firstpos1": 75, "firstpos2": 25};
@@ -511,7 +511,7 @@
     }
 
     var cached_client = null;
-    
+
     function setClientView(client, mode, cache_it) {
       if (!client) return;
       if (cache_it) {
@@ -533,7 +533,7 @@
         $('#clientCard_clientForm [name="send_owner_phone"]', $modal).prop('checked', false);
       }
       $('#clientCard_clientForm [name="agent_id"]', $modal).val(client.agent_id);
-      
+
       if (Rplus.Variables['User'].offer_mode == 'sale') {
         var idx = 0;
       } else if (Rplus.Variables['User'].offer_mode == 'rent') {
@@ -552,7 +552,7 @@
         $(this).removeClass('tag-selected');
       });
       $('.color-tag-' + client.color_tag_id + '').addClass('tag-selected');
-      
+
       // Clear subscriptions table
       $('.subscription-container', $modal).empty();
       if (client.subscriptions) {
@@ -560,7 +560,7 @@
           pushSubscriptionToTableView(client.subscriptions[i]);
         }
       }
-      
+
       var dummy = '';
       if (client.subscriptions && client.subscriptions.length == 1) {
         for (var i = 0; i < 3; i++) {
@@ -570,7 +570,7 @@
       }
       dummy += '<hr width="90%" align="right">';
       $('.subscription-container', $modal).append(dummy);
-      
+
       setMode(mode);
     }
 
@@ -603,7 +603,7 @@
       }
       xhtml += '</div>';
       xhtml += '</div>';
-      
+
       xhtml += subscription.queries.map(function (x) {
           var res = '<div class="input-group ccard-input-group">';
           //res += '<a href="#" class="ccard-input-group-addon" data-action="tag-select"><span data-guid=' + subscription.guid +' class="tag-button color-tag-placeholder color-tag-' + subscription.color_tag_id + ' pull-right"></span></a>';
@@ -649,7 +649,7 @@
         complete: function () { _listRealty_started = false; }
       })
         .done(function (data, textStatus, jqXHR) {
-          
+
           if (page == 1) {
             $('tbody', $modal).scrollTop(0);
             var dummy = '';
@@ -679,7 +679,7 @@
           }
         });
     }
-    
+
     return function (options) {
       if (!options) options = {};
 
@@ -732,7 +732,7 @@
             },
             error: function (jqXHR, textStatus, errorThrown) {
               setClientView({
-                phone_num: phoneNum, 
+                phone_num: phoneNum,
                 //agent_id: '<%= $self->stash('user')->{id} %>',
               }, 1, true);
               $modal.modal({show: true, backdrop: false});
@@ -740,11 +740,11 @@
           });
           return $this;
         },
-        
+
         createWithSubscription: function (query, typeCode, rent_type, realtyIds, agent_id) {
           var skel = {};
           skel.id = null;
-          
+
           //skel.add_date = $self->format_datetime($client->add_date),
           skel.name = '';
           skel.phone_num = '';
@@ -754,7 +754,7 @@
           skel.agent_id = agent_id,
           skel.subscriptions = [];
           //skel.realty => []
-          
+
           var subscription = {};
           subscription.offer_type_code = typeCode;
           subscription.rent_type = rent_type;
@@ -766,9 +766,9 @@
           subscription.send_owner_phone = 0;
           subscription.color_tag_id = 0;
           subscription.realty = [];
-          
+
           skel.subscriptions.push(subscription);
-          
+
           setClientView(skel, 1, true);
 
           $modal.modal({show: true, backdrop: false});
@@ -801,14 +801,14 @@
         <a href="#" class="ctrl-button pull-right emode-btn hidden" data-action="client-save">Готово</a>
       </div>
       <div class="modal-body" id="client-card-body">
-        
+
         <div id="proposed-realty-table" class="realty col-md-12 hidden" style="padding: 0px">
           <table style="margin-bottom: 0px;" class="table table-striped table-condensed" id="subscriptionRealtyTable">
             <thead></thead>
             <tbody></tbody>
           </table>
         </div>
-        
+
         <div id="client-card" class="col-md-12" style="padding: 0px">
           <form role="form" id="clientCard_clientForm">
             <div class="input-group ccard-input-group hidden">
@@ -855,21 +855,21 @@
               % if (has_permission(clients => read => undef)) {
                 <option class="text-muted" value="">-</option>
               % }
-              
+
               % if ($self->stash('user')->{role} eq 'manager') {
               %   if (scalar (@{$self->stash('user')->{subordinate}})) {
-              %     for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [account_id => $self->session('user')->{account_id},  id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {                  
+              %     for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [account_id => $self->session('account')->{id},  id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
                 <option value="<%= $x->id %>"><%= $x->name %></option>
               %     }
               %   }
               % } elsif ($self->stash('user')->{role} eq 'top') {
-              %     for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [account_id => $self->session('user')->{account_id},  role => ['top', 'manager'], delete_date => undef], sort_by => 'name')}) {                  
+              %     for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [account_id => $self->session('account')->{id},  role => ['top', 'manager'], delete_date => undef], sort_by => 'name')}) {
                 <option value="<%= $x->id %>"><%= $x->name %></option>
               %     }
               % } else {
-              %     for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [account_id => $self->session('user')->{account_id},  id => $self->session('user')->{id}, delete_date => undef], sort_by => 'name')}) {                  
+              %     for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [account_id => $self->session('account')->{id},  id => $self->stash('user')->{id}, delete_date => undef], sort_by => 'name')}) {                  
                 <option value="<%= $x->id %>"><%= $x->name %></option>
-              %     }                  
+              %     }
               % }
               </select>
             </div>
@@ -882,13 +882,13 @@
               <p>Тэги</p>
             </div>
           </div>
-  
+
           <div class="tag-group input-group ccard-input-group">
             % for my $x (@{Rplus::Model::DictColorTag::Manager->get_objects(query => [delete_date => undef], sort_by => 'id')}) {
               <span class="round-button color-tag-<%= $x->id %>" data-action="subscription-set-color_tag_id" data-val="<%= $x->id %>"></span>
             % }
           </div>
-  
+
           <div class="cardheader mainheader">
             <div class="input-group ccard-input-group">
               <span class="hidden ccard-input-group-addon glyphicon glyphicon-send"></span>
@@ -898,7 +898,7 @@
               <a href="#" style="padding-left: 185px;" class="ccard-input-group-addon ctrl-button emode invisible" data-idx="0" data-action="subscription-type-change"><span id="subscription-type">Продажа</span></a>
             </div>
           </div>
-  
+
           <form role="form" id="clientCard_subscriptionForm">
             <div class="subscription-container">
             </div>

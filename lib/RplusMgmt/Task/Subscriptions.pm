@@ -21,7 +21,6 @@ use Rplus::Util::Query;
 use JSON;
 
 sub run {
-    my $class = shift;
     my $c = shift;
 
     my $account_iter = Rplus::Model::Account::Manager->get_objects_iterator(query => [del_date => undef]);
@@ -78,7 +77,7 @@ sub run {
                             delete_date => undef,
                             @query
                         ],
-                        with_objects => ['address_object', 'agent', 'type', 'sublandmark'],
+                        with_objects => ['agent', 'type', 'sublandmark'],
                     );
 
                     while (my $realty = $realty_iter->next) {
@@ -97,7 +96,8 @@ sub run {
                             {
                                 push @parts, $realty->type->name;
                                 push @parts, $realty->rooms_count.'к' if $realty->rooms_count;
-                                push @parts, $realty->address_object->name.' '.$realty->address_object->short_type.($realty->address_object->name !~ /[()]/ && $realty->sublandmark ? ' ('.$realty->sublandmark->name.')' : '') if $realty->address_object;
+                                push @parts, $realty->address if $realty->address;
+                                push @parts, $realty->district if $realty->district;
                                 push @parts, ($realty->floor || '?').'/'.($realty->floors_count || '?').' эт.' if $realty->floor || $realty->floors_count;
                                 push @parts, $realty->price.' тыс. руб.' if $realty->price;
                                 if ($subscr->client->send_owner_phone) {
@@ -119,7 +119,7 @@ sub run {
                             {
                                 push @parts, $realty->type->name;
                                 push @parts, $realty->rooms_count.'к' if $realty->rooms_count;
-                                push @parts, $realty->address_object->name.' '.$realty->address_object->short_type.($realty->house_num ? ', '.$realty->house_num : '') if $realty->address_object;
+                                push @parts, $realty->address.($realty->district ? ' ('.$realty->district.')' : '') if $realty->address;
                                 push @parts, $realty->price.' тыс. руб.' if $realty->price;
                                 push @parts, 'Клиент: '.$c->format_phone_num($client->phone_num);
                             }

@@ -25,8 +25,6 @@ sub qcreate {
     my $client_id = $param->{'client_id'};
     my $realty_id = $param->{'realty_id'};
 
-    say $start_date;
-    say $end_date;
 
     my $task = Rplus::Model::Task->new(task_type_id => $task_type_id, creator_user_id => $self->stash('user')->{id});
     $task->client_id($client_id);
@@ -53,10 +51,10 @@ sub qcreate {
     if ($result->{id}) {
         $task->google_id($result->{id});
     }
-    
+
     $task->save(changes_only => 1);
 
-    return $self->render(json => {status => 'success', id => $task->id, google_id => $task->google_id});    
+    return $self->render(json => {status => 'success', id => $task->id, google_id => $task->google_id});
 
     return 'success';
 }

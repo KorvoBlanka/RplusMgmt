@@ -40,14 +40,14 @@
         height: 65px;
         border-radius: 0 0 0 65px;
         -moz-border-radius: 0 0 0 65px;
-        -webkit-border-radius: 0 0 0 65px;       
+        -webkit-border-radius: 0 0 0 65px;
       }
       .quarter-circle-bottom-right {
         width: 65px;
         height: 65px;
         border-radius: 0 0 65px 0;
         -moz-border-radius: 0 0 65px 0;
-        -webkit-border-radius: 0 0 65px 0;       
+        -webkit-border-radius: 0 0 65px 0;
       }
 
       .phone-button {
@@ -107,13 +107,13 @@
       }
 
       @-webkit-keyframes ring0 {
-        0%, 100% { 
+        0%, 100% {
           -webkit-transform: rotate(0deg);
         }
         20% {
           -webkit-transform: rotate(12deg);
         }
-        40% { 
+        40% {
           -webkit-transform: rotate(-12deg);
         }
         60% {
@@ -125,7 +125,7 @@
       }
 
       @-webkit-keyframes ring1 {
-        0%, 100% { 
+        0%, 100% {
           -webkit-transform: scale(1);
         }
         50% {
@@ -163,9 +163,9 @@
         padding: 0px;
         margin: 0px;
 
-        position: fixed; 
-        top: 50%; 
-        left: 50%; 
+        position: fixed;
+        top: 50%;
+        left: 50%;
         margin-top: -67px;
         margin-left: -415px;
         height: 35px;
@@ -190,15 +190,15 @@
         padding: 0px;
         margin: 0px;
 
-        position: fixed; 
-        top: 50%; 
-        left: 50%; 
-        margin-top: -30px; 
-        margin-left: -415px; 
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        margin-top: -30px;
+        margin-left: -415px;
         z-index: 500;
         height: 320px;
         overflow-y: scroll;
-        -webkit-overflow-scrolling: touch;  /* iOS native style momentum scrolling */        
+        -webkit-overflow-scrolling: touch;  /* iOS native style momentum scrolling */
       }
 
       .calllist {
@@ -227,12 +227,12 @@
         font-size: 28px;
         font-weight: 100;
 
-        width: 260px; 
-        position: fixed; 
-        top: 50%; 
-        left: 50%; 
-        margin-top: -30px; 
-        margin-left: 155px; 
+        width: 260px;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        margin-top: -30px;
+        margin-left: 155px;
         z-index: 500;
       }
 
@@ -260,7 +260,7 @@
 
       .numpad tr > td > div:active {
         -webkit-transform: scale(0.96);
-      }  
+      }
 
       .numpad-key {
         -webkit-transition: all .08s;
@@ -289,15 +289,15 @@
       .numpad-key:active {
         /*-webkit-transform: scale(0.92);*/
         background-color: rgba(255,255,255,0.40) !important;
-      }    
+      }
     </style>
-    
+
     <style type="text/css">
       body {
         padding-top: 70px;
         padding-bottom: 50px;
       }
-  
+
       .margin-bottom-10 {
         margin-bottom: 10px;
       }
@@ -426,9 +426,9 @@
       }
 
       .disable-on-move-resize.disabled {
-        pointer-events: none;  
+        pointer-events: none;
       }
-      
+
       .ui-pnotify.stack-bottomright {
         /* These are just CSS default values to reset the pnotify CSS. */
         right: auto;
@@ -436,13 +436,13 @@
       }
 
       .help-window {
-        position: absolute; 
-        top: 50%; 
-        left: 50%; 
-        height: 600px; 
-        width: 800px; 
-        margin-top: -300px; 
-        margin-left: -400px; 
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        height: 600px;
+        width: 800px;
+        margin-top: -300px;
+        margin-left: -400px;
         z-index: 9000;
 
         background-color: #eee;
@@ -459,7 +459,7 @@
       }
 
       .navbar-inverse .navbar-nav > .open > a, .navbar-inverse .navbar-nav > .open > a:hover, .navbar-inverse .navbar-nav > .open > a:focus {
-        background-color: #00305E; 
+        background-color: #00305E;
       }
 
       .navbar-inverse .navbar-nav > li > a {
@@ -482,7 +482,7 @@
       .modal-header {
         background-color: #eaeaea;
       }
-      
+
       .modal-content {
         border-radius: 0px;
       }
@@ -491,11 +491,11 @@
         overflow-y: scroll;
         overflow-x: hidden;
         -webkit-overflow-scrolling: touch;
-        
+
         padding: 15px;
         border-radius: 0px;
       }
-      
+
     </style>
 
     <style type="text/css">
@@ -515,7 +515,7 @@
             overflow: hidden;
             /*z-index: 1100;*/
         }
-        
+
         .chat-header {
             width: 100%;
             height: 34px;
@@ -526,46 +526,46 @@
         .chat-body {
             height: 360px;
         }
-        
+
         .chat-footer {
             width: 100%;
             height: 34px;
             background-color: #f0f0f0;
         }
-        
+
         .chat-caption {
             color: #666;
             line-height: 34px;
         }
-        
+
         .chat-contactlist {
             float: left;
             width: 260px;
             height: 100%;
 
             overflow: auto;
-            overflow-y: scroll; 
+            overflow-y: scroll;
             -webkit-overflow-scrolling: touch;  /* iOS native style momentum scrolling */
-            
+
             border-right: 1px solid #666;
             background-color: #edecef;
         }
-        
+
         .chat-messagelist {
             float: right;
             width: 640px;
             height: 100%;
             background-color: #fff;
-            
+
             overflow: auto;
-            overflow-y: scroll; 
+            overflow-y: scroll;
             -webkit-overflow-scrolling: touch;  /* iOS native style momentum scrolling */
-        }        
+        }
 
         .chat-message-block {
-            
+
         }
-        
+
         .chat-message {
             min-width: 120px;
             max-width: 90%;
@@ -582,12 +582,12 @@
             float: right;
             background-color: #ace44b;
         }
-        
+
         .message-left {
             float: left;
             background-color: #38a9fa;
         }
-        
+
         .chat-message:before, .chat-message:after {
             content: "";
             height: 0px;
@@ -597,7 +597,7 @@
             border-radius: 20px / 10px;
         }
 
- 
+
         .message-right:before {
             /*border: 10px solid transparent;
             border-bottom-color: rgba(90,90,90,1.0);
@@ -612,7 +612,7 @@
             bottom: 1px;
             right: -7px;
         }
-        
+
         .message-left:before {
             /*border: 10px solid transparent;
             border-bottom-color: rgba(90,90,90,1.0);
@@ -633,16 +633,16 @@
             margin-left: 6px;
             font-size: 12px;
         }
-        
+
         .message-text {
             color: #fff;
             margin: 5px;
         }
-        
+
         .message-right > .message-text {
             color: #494949;
         }
-        
+
         .message-sender {
             display: inline-block;
             float: left;
@@ -651,14 +651,14 @@
             width: 100%;
             text-align: center;
         }
-        
+
         .search-input {
             position: absolute;
             left: 3px;
             top: 3px;
             width: 250px;
         }
-        
+
         .chat-input {
             background-color: #fff;
             border: 1px solid #848484;
@@ -668,7 +668,7 @@
             padding-right: 22px;
             margin-top: 2px;
         }
-        
+
         .chat-contactlist-switch {
             width: 25%;
             display: inline-block;
@@ -680,36 +680,36 @@
             text-align: center;
             cursor: pointer;
         }
-        
+
         .chat-contactlist-switch-text {
             color: #666;
             line-height: 28px;
             padding: 3px;
         }
-        
+
         .button-active > span {
             /*border: 1px solid #666;
             border-radius: 12px;*/
             color: rgba(50,50,150,1.0);
             text-decoration: underline;
         }
-        
+
         .chat-contact {
             min-height: 72px;
             margin: 5px;
             color: #747474;
             position: relative;
         }
-        
+
         .contact-active.chat-contact {
             color: #D2D2D2;
         }
-        
+
         .contact-img-wrapper {
             display: inline-block;
             float: left;
         }
-        
+
         .contact-info-wrapper {
             display: inline-block;
             width: 170px;
@@ -724,15 +724,15 @@
             background-color: rgba(0,0,0,0.1);
             opacity: 0;
         }
-        
+
         .chat-contact-overlay:hover {
             opacity: 1;
         }
-        
+
         .contact-active {
             background-color: rgba(50,50,150,1.0);
         }
-        
+
         .contact-state {
             width: 2px;
             height: 100%;
@@ -742,15 +742,15 @@
             top: 0px;
             right: 0px;
         }
-        
+
         .state-online {
             background-color: #0f0;
         }
-        
+
         .state-offline {
             background-color: #eee;
         }
-        
+
         .unread-count {
             position: absolute;
             right: 5px;
@@ -763,7 +763,7 @@
             line-height: 18px;
             color: #eee;
         }
-        
+
         .file_upload{
             position: relative;
             overflow: hidden;
@@ -783,7 +783,7 @@
             /* border-right: 20px solid transparent; */
             border-top: 20px solid #f00;
         }
-        
+
         .chat-show {
             color: #ddd;
         }
@@ -795,7 +795,7 @@
         .chat-show:active {
             color: #ddd;
         }
-        
+
         .chat-show:hover {
             color: #fff;
         }
@@ -804,40 +804,40 @@
             display: inline-block;
             float: left;
         }
-        
+
         .disable-selection {
             -webkit-user-select: none;
-            user-select: none; 
+            user-select: none;
         }
-        
+
         .chat-button {
             color: #666;
             cursor: pointer;
         }
-        
+
         .chat-button:hover {
             color: #aaa;
         }
-        
+
         .dz-preview {
             display: none;
         }
-        
+
         .chat-screen input:focus {
             outline: 0;
         }
-        
+
         .contact-not-found {
             width: 100%;
             margin-top: 50px;
             text-align: center;
             color: #aaa;
         }
-        
+
         .message-file-attachment {
             color: #eee;
         }
-        
+
         @media screen and (max-width: 1025px) {
             .hide-if-small {
                 display: none !important;
@@ -856,7 +856,7 @@
                 display: none !important;
             }
         }
-        
+
         .navbar .divider-vertical {
           top: 5px;
           height: 40px;
@@ -864,9 +864,9 @@
           border-right: 1px double #ffffff;
           border-left: 1px solid #E0E0E0;
         }
-        
+
     </style>
-    
+
     <%= content_for 'header' %>
   </head>
   <body>
@@ -893,17 +893,17 @@
             <div class="footer-element" style="width: 260px; height: 100%; border-right: 1px solid #666;">
               <div class="button-active" style="display: inline-block; width: 49%; text-align: center; cursor: pointer;" data-action="chat-switch-mycontacts" id="chatMycontacts">
                 <span class="chat-contactlist-switch-text">Переписка</span>
-              </div>            
+              </div>
               <div class="" style="display: inline-block; width: 49%; text-align: center;  cursor: pointer;" data-action="chat-switch-search" id="chatSearch">
                 <span class="chat-contactlist-switch-text">Поиск</span>
               </div>
             </div>
-            
+
             <div class="footer-element" style="position: relative; margin-left: 8px;">
               <input type="text" class="chat-input" style="width: 600px; margin-top: 5px;" id="chatInput"></input>
               <span class="glyphicon glyphicon-send chat-button" style="position: absolute; top: 9px; right: 7px" data-action="chat-send-message"></span>
             </div>
-            
+
             <div class="footer-element" style="position: relative; float: right;height: 100%; width: 28px;">
               <span class="glyphicon glyphicon-paperclip chat-button" style="position: absolute; top: 9px; right: 9px" data-action="chat-send-file"></span>
               <form class="hidden" enctype="multipart/form-data" id="fileForm">
@@ -913,7 +913,7 @@
         </div>
     </div>
     </div>
-    
+
   <div class="phone-screen hidden" style="">
 
     <table style="width:127px; position: fixed; top: 50%; left: 50%; margin-top: -67px; margin-left: -67px; z-index: 500;">
@@ -958,7 +958,7 @@
         text-align: center;">
       <p style="font-size: 14px; color: #bbb; font-weight: 100;letter-spacing: 1px;">
         % my $user = Rplus::Model::User::Manager->get_objects(query => [id => $self->stash('user')->{id}, delete_date => undef])->[0];
-        % my $sip = from_json($user->ip_telephony);    
+        % my $sip = from_json($user->ip_telephony);
         <%= $sip->{sip_login} %>@<%= $sip->{sip_host} %>
       </p>
     </div>
@@ -1003,7 +1003,7 @@
         </div>
         <div class="calllist-selector-button" data-action="calllist-select" data-val="MISSED" style="height: 100%; width: 50%; float: right; border-radius: 0px; border-top-right-radius: 15px; border-bottom-right-radius: 15px;">
           Пропущенные
-        </div>        
+        </div>
       </div>
     </div>
     <div class="calllist-wrapper" style="">
@@ -1063,7 +1063,7 @@
           <div class="numpad-key" data-action="numpad-click" data-key="9">
             9
           </div>
-        </td>      
+        </td>
       </tr>
       <tr>
         <td>
@@ -1107,15 +1107,15 @@
           <ul class="nav navbar-nav">
           % if (!is_hidden_nav('planner')) {
             <li class="<%= $controller eq 'planner' && 'active' %>"><span id="task-count-notifier" class="badge badge-default quick-notifier hidden"></span><a href="/planner"><span class="glyphicon glyphicon-list-alt"></span> Ежедневник</a></li>
-          % }          
+          % }
           % if (has_permission(realty => 'read') && !is_hidden_nav('search')) {
             <li class="<%= $controller eq 'search' && 'active' %> hide-if-small"><a href="/search"><span class="glyphicon glyphicon-earphone"></span> Call-центр</a></li>
           % }
           % if (has_permission(realty => 'read') && !is_hidden_nav('realty')) {
-            <li class="<%= $controller eq 'realty' && 'active' %>"><a href="/realty"><span class="glyphicon glyphicon-home"></span> <%= ucfloc q{realty} %></a></li>
+            <li class="<%= $controller eq 'realty' && 'active' %>"><a href="/realty"><span class="glyphicon glyphicon-home"></span> Предложения</a></li>
           % }
           % if (has_permission(clients => 'read') && !is_hidden_nav('clients')) {
-            <li class="<%= $controller eq 'clients' && 'active' %>"><span id="client-count-notifier" class="badge badge-default quick-notifier hidden"></span><a href="/clients"><span class="glyphicon glyphicon-user"></span> Спрос</a></li>
+            <li class="<%= $controller eq 'clients' && 'active' %>"><span id="client-count-notifier" class="badge badge-default quick-notifier hidden"></span><a href="/clients"><span class="glyphicon glyphicon-user"></span> Заявки</a></li>
           % }
           % if (has_permission(realty => 'export') || has_permission(realty => 'analyse')) {
             <li class="dropdown <%= $controller eq 'service' && 'active' %>">
@@ -1127,14 +1127,11 @@
               % if(has_permission(realty => 'analyse')) {
                 <li><a href="/service/analytics"><span class="glyphicon glyphicon-list-alt"></span> <%= ucfloc q{analytics} %></a></li>
               % }
-              % if(has_permission(realty => 'analyse')) {
-                <li><a href="/service/piramid"><span class="glyphicon glyphicon-list-alt"></span> Воронка</a></li>
-              % }
               </ul>
             </li>
           % }
           % if (
-          %  has_permission(mediators => 'read') || has_permission(landmarks => 'read') || has_permission(users => 'manage')
+          %  (has_permission(mediators => 'read') || has_permission(landmarks => 'read') || has_permission(users => 'manage'))
           % ) {
             <li class="dropdown <%= $controller eq 'configuration' && 'active' %>">
               <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-cog"></span> <b class="caret"></b></a>
@@ -1143,7 +1140,7 @@
                 <li><a href="/configuration/mediators"><span class="glyphicon glyphicon-ban-circle"></span> <%= ucfloc q{mediators} %></a></li>
               % }
               % if (has_permission(landmarks => 'read')) {
-                <li><a href="/configuration/landmarks"><span class="glyphicon glyphicon-globe"></span> <%= ucfloc q{landmarks} %></a></li>
+                <li hidden><a href="/configuration/landmarks"><span class="glyphicon glyphicon-globe"></span> <%= ucfloc q{landmarks} %></a></li>
               % }
               % if (has_permission(users => 'manage')) {
                 <li><a href="/configuration/users"><span class="glyphicon glyphicon-user"></span> <%= ucfloc q{users} %></a></li>
@@ -1188,7 +1185,7 @@
     <script type="application/javascript" src="<%= $assets_url %>/moment/<%= $momentjs_ver %>/moment-with-locales.min.js"></script>
     <!-- HolderJS -->
     <script type="application/javascript" src="<%= $assets_url %>/holder/<%= $holderjs_ver %>/holder.min.js"></script>
-    <script> 
+    <script>
       Holder.add_theme("big", {background:"#eee", foreground:"#a3cd73", size: 52});
     </script>
     <!-- Pines Notify -->
@@ -1196,13 +1193,13 @@
     <script type="application/javascript" src="/js/rphone/rphone.js"></script>
     <!-- Dropzone -->
     <script type="application/javascript" src="/js/dropzone/dropzone.js"></script>
-    
+
     <%= content_for 'after_bootstrap' %>
 
     <%= include 'javascript/rplus' %>
     <%= include 'javascript/rplus_table' %>
     <%= include 'javascript/rplus_realty' %>
-    
+
     <script type="application/javascript">
         var message_alarm = new Audio("<%= $assets_url %>/sound/on_message.ogg");
         var maxFileSize = 10000000; // максимальный размер файла - 10 мб.
@@ -1214,22 +1211,22 @@
                 var selected_contact_id = $('.contact-active').data('id');
                 var text = '';
                 var attachment = data.file_url;
-        
+
                 postMessage(selected_contact_id, text, attachment);
             }
         });
-        
-    
+
+
         var events = new EventSource('/events');
-      
+
         events.addEventListener('open', function(e) {
             console.log(e);
         }, false);
-      
+
         events.addEventListener('error', function(e) {
             console.log(e);
         }, false);
-      
+
         events.addEventListener('heartbeat', function(e) {
             var edata = event.data;
         }, false);
@@ -1242,7 +1239,7 @@
             updateMessages();
             updateContactList();
         }, false);
-      
+
         var p_x = -1;
         var p_y = -1;
         var resize = 0;
@@ -1264,7 +1261,7 @@
                 $('.disable-on-move-resize').removeClass('disabled');
             }
         });
-        
+
         $('.chat-header').mousedown( function (e) {
             if (e.which === 1) {
                 move = 1;
@@ -1280,19 +1277,19 @@
                 $('.disable-on-move-resize').removeClass('disabled');
             }
         });
-        
+
         $('[data-action="chat-show"]').click(function () {
             showChat()
         });
-        
+
         function showChat() {
             $('.chat-bg').toggleClass('hidden');
         }
-      
+
         $('.chat-screen').click( function (e) {
             e.stopPropagation();
         });
-        
+
         $('.chat-bg').click( function (e) {
             $('.chat-bg').addClass('hidden');
         });
@@ -1321,10 +1318,10 @@
                     } else if (move) {
                         var top = parseInt($('.chat-screen').css('top'));
                         var left = parseInt($('.chat-screen').css('left'));
-                        
+
                         var n_top = top + (e.pageY - p_y);
                         var n_left = left + (e.pageX - p_x);
-                        
+
                         $('.chat-screen').css('top', n_top + 'px');
                         $('.chat-screen').css('left', n_left + 'px');
                     }
@@ -1336,15 +1333,15 @@
                 move = 0;
                 $('body').removeClass('disable-selection');
                 $('.disable-on-move-resize').removeClass('disabled');
-                
+
                 p_x = -1;
                 p_y = -1;
             }
         });
-        
+
         $('#chatFileInput').change(function(){
             var file = this.files[0];
-            
+
             if (file.size > maxFileSize) {
                 alert('размер файла превышает максимально допустимый');
                 return;
@@ -1372,19 +1369,19 @@
                 contentType: false,
                 processData: false
             })
-                .done(function (data, textStatus, jqXHR) {                    
+                .done(function (data, textStatus, jqXHR) {
                     var selected_contact_id = $('.contact-active').data('id');
                     var text = '';
                     var attachment = data.file_url;
-            
+
                     postMessage(selected_contact_id, text, attachment);
                 })
                 .fail(function () {
-                    
+
                 });
-            
+
         });
-        
+
         function progressHandlingFunction(e){
             if (e.lengthComputable) {}
         }
@@ -1392,28 +1389,28 @@
         $('[data-action="chat-send-file"]').click(function () {
             $('#chatFileInput').click();
         });
-        
+
         $('[data-action="chat-send-message"]').click(function () {
-            
+
             var selected_contact_id = $('.contact-active').data('id');
             var text = $('#chatInput').val();
             var attachment = '';
-            
+
             postMessage(selected_contact_id, text, attachment);
         });
 
         $('#chatInput').on("keypress", function(e) {
-            if (e.keyCode == 13) {            
+            if (e.keyCode == 13) {
                 var selected_contact_id = $('.contact-active').data('id');
                 var text = $('#chatInput').val();
                 var attachment = '';
-                
-                postMessage(selected_contact_id, text, attachment);            
-                
+
+                postMessage(selected_contact_id, text, attachment);
+
                 return false;
             }
         });
-        
+
         $('[data-action="chat-search"]').click(function () {
             switch_to_search();
             var q = $('#chatSearchInput').val();
@@ -1421,15 +1418,15 @@
         });
 
         $('#chatSearchInput').on("keypress", function(e) {
-            if (e.keyCode == 13) {            
+            if (e.keyCode == 13) {
                 switch_to_search();
                 var q = $('#chatSearchInput').val();
                 findContacts(q);
-                
+
                 return false;
             }
         });
-        
+
         function findContacts(q) {
             $.ajax({
                 type: "POST",
@@ -1452,7 +1449,7 @@
                     $('#chatContactList').html(xhtml);
                 });
         }
-        
+
         function updateContactList() {
             $.ajax({
               type: "POST",
@@ -1463,7 +1460,7 @@
                 if(data.status == 'success') {
                     var list = data.data.list;
                     var selected_id = $('.contact-active').data('id');
-                                            
+
                     list.sort(function(a, b) {return a.sort_value - b.sort_value}).reverse();
                     var xhtml = '';
                     for (var i = 0; i < list.length; i++) {
@@ -1476,20 +1473,20 @@
                 }
               });
         }
-        
+
         function switch_to_mycontacts() {
             $('#chatSearch').removeClass('button-active');
             $('#chatMycontacts').addClass('button-active');
             $('#chatMessageList').html('');
         }
-        
+
         function switch_to_search() {
             $('#chatMycontacts').removeClass('button-active');
             $('#chatSearch').addClass('button-active');
             $('#chatContactList').html('');
             $('#chatMessageList').html('');
         }
-        
+
         $('[data-action="chat-switch-mycontacts"]').click(function () {
             switch_to_mycontacts();
             listContacts();
@@ -1505,20 +1502,20 @@
             var id = $(this).data('id');
             openDialog(id);
         });
-        
+
         function openDialog(contact_id) {
             var $this = $('.chat-contact[data-id="' + contact_id + '"]');
             var contact_name = $this.data('name');
-            
+
             $('.chat-contact').removeClass('contact-active');
             $this.addClass('contact-active');
-            
+
             $('.unread-count', $this).addClass('hidden');
             listMessages(contact_id);
-            
+
             $('#chatCaption').text(contact_name);
         }
-        
+
         $('#chatContactList').on('click', 'a[data-action="contact-remove"]', function(e) {
             e.stopPropagation();
             var $this = $(this);
@@ -1526,7 +1523,7 @@
             removeContact(id);
             $this.closest('.chat-contact').addClass('hidden');
         });
-        
+
         $('#chatContactList').on('click', 'a[data-action="contact-add"]', function(e) {
             e.stopPropagation();
             var $this = $(this);
@@ -1546,17 +1543,17 @@
             });
             //$this.html('<span class="glyphicon glyphicon-ok"><span>');
         });
-        
+
         function buildHtmlForContact(contact, my_contacts) {
-            
+
             var no_photo_url = 'http://storage.rplusmgmt.com/rplus/no-photo.gif';
-            
+
             var xhtml = '';
-            
+
             if (contact.id == <%= $self->stash('user')->{id} %>) {
                 return xhtml;
             }
-            
+
             var photo_src = no_photo_url;
             if (contact.photo_url) {
                 photo_src = '<%= $self->config->{'storage'}->{'url'} %>' + contact.photo_url
@@ -1569,15 +1566,15 @@
             xhtml += '<div class="chat-contact-overlay">';
             if (my_contacts) {
                 if (contact.can_remove) {
-                    xhtml += '<a href="#" data-id="' + contact.id + '" data-action="contact-remove" style="position: absolute; right: 5px; top: 50%; margin-top: -7px; color: #747474;"><span class="glyphicon glyphicon-remove"></span></a>';                
+                    xhtml += '<a href="#" data-id="' + contact.id + '" data-action="contact-remove" style="position: absolute; right: 5px; top: 50%; margin-top: -7px; color: #747474;"><span class="glyphicon glyphicon-remove"></span></a>';
                 }
-            } else {            
+            } else {
                 if (!contact.in_contact_list) {
                     xhtml += '<a href="#" data-id="' + contact.id + '" data-action="contact-add" style="position: absolute; right: 5px; top: 50%; margin-top: -7px; color: #747474;"><span class="glyphicon glyphicon-plus"></span></a>';
                 }
-            }            
+            }
             xhtml += '</div>';
-            
+
             xhtml += '<div class="contact-img-wrapper">';
             xhtml += '<img src="' + photo_src + '" style="width: 64px; height: 64px; border-radius: 50%; background-color: #fff;">';
             xhtml += '</div>';
@@ -1599,15 +1596,15 @@
             xhtml += '<hr style="clear: both; opacity: 0; margin: 0 5px;">';
             xhtml += '</div>';
             xhtml += '<hr style="clear: both; border-top: 1px solid #DBDBDB; margin: 0 5px;">';
-            
+
             return xhtml;
         }
-              
+
         function buildHtmlForMessage(msg) {
 
             var xhtml = '';
             xhtml += '<div class="chat-message-block">';
-            
+
             var ts = moment(msg.ts);
             var ts_str = '';
             if (ts.isSame(new Date(), "day")) {
@@ -1615,7 +1612,7 @@
             } else {
                 ts_str = ts.format("DD.MM HH:mm");
             }
-            
+
             if (msg.from == <%= $self->stash('user')->{id} %>) {
                 xhtml += '<div class="message-sender">';
                 xhtml += '<span class="message-ts">' + ts_str + '</span>';
@@ -1627,7 +1624,7 @@
                 xhtml += '</div>';
                 xhtml += '<div class="chat-message message-right">';
             }
-            
+
             xhtml += '<div class="message-text">' + msg.text + '</div>';
             if (msg.attachment) {
                 if (msg.attachment.match(/\.(gif|jpg|jpeg|tiff|png)$/i)) {
@@ -1639,10 +1636,10 @@
             xhtml += '</div>';
             xhtml += '<hr style="clear: both; opacity: 0;">';
             xhtml += '</div>';
-          
+
             return xhtml;
         }
-      
+
         function listContacts(callback) {
             $.ajax({
               type: "POST",
@@ -1663,23 +1660,27 @@
                     $('#chatContactList .chat-contact').first().addClass('contact-active');
                     var selected_name = $('.contact-active').first().data('name');
                     $('#chatCaption').text(selected_name);
-                    
+
                     if (callback) {
                         callback();
                     }
                 }
               });
         }
-        
+
         function postMessage(to, text, attachment) {
+            if ($('.chat-bg').hasClass('hidden')) {
+              return;
+            }
+
             if (!text && !attachment) {
                 return;
             }
-            
+
             if (text == '*' || text == '\'') {
                 return;
             }
-            
+
             $('#chatInput').val('');
             $.ajax({
                 type: "POST",
@@ -1702,7 +1703,7 @@
                     }
                 });
         }
-        
+
         function listMessages(from_id) {
             $('#chatMessageList').html('');
             $.ajax({
@@ -1729,11 +1730,11 @@
                     }
                 });
         }
-      
+
         function updateMessages() {
-            
+
             var selected_contact_id = $('.contact-active').data('id');
-            
+
             var last_id = $('#chatMessageList').data('last-id');
             $.ajax({
                 type: "POST",
@@ -1775,7 +1776,7 @@
                             callback(c);
                         }
                     } else {
-                        
+
                     }
                 });
         }
@@ -1791,15 +1792,15 @@
                 .done(function (data, textStatus, jqXHR) {
 
                 });
-        }        
-        
+        }
+
         function scrollToContact(id) {
             var $c = $('.chat-contact[data-id=' + id + ']');
             $('.contact-active').removeClass('contact-active');
             $c.addClass('contact-active');
             $('#chatContactList').scrollTop($c.offset().top);
         }
-        
+
         function startChatById(id) {
             switch_to_mycontacts();
             listContacts(function () {
@@ -1823,13 +1824,13 @@
             switch_to_search();
             $('#chatSearchInput').val(q_str);
             findContacts(q_str);
-            showChat(); 
+            showChat();
         }
 
         window.Rplus.Functions['showChat'] = function (q) {
             showChat();
         };
-        
+
         window.Rplus.Functions['startChatById'] = function (id) {
             startChatById(id);
         };
@@ -1837,11 +1838,11 @@
         window.Rplus.Functions['startChatByPhones'] = function (q) {
             startChatByPhones(q);
         };
-        
+
         listMessages(null);
         listContacts();
     </script>
-    
+
     <script type="application/javascript">
       "use strict";
 
@@ -1864,7 +1865,7 @@
             }
           })
           .ajaxStop(function () {
-            $('.disable-on-ajax').removeClass('disabled'); 
+            $('.disable-on-ajax').removeClass('disabled');
             $('.indicator-ajax').addClass('invisible');
           })
         ;
@@ -1936,7 +1937,7 @@
         }
         code = phone_number.substring(0, 3);
         number = phone_number.substring(3);
-        return '(' + code +') ' + phone_blocks(number);      
+        return '(' + code +') ' + phone_blocks(number);
       }
 
       function phone_blocks(number){
@@ -2054,7 +2055,7 @@
             user: '<%= $sip->{sip_login} %>',
             password: '<%= $sip->{sip_password} %>',
             proxy: '',
-          });      
+          });
         }
 
         rPhone.onRegStateChanged = function(regInfo) {
@@ -2290,7 +2291,7 @@
             async: false,
             success: function (data, textStatus, jqXHR) {
               r.name = data.name;
-              r.photo_url = '<%= $self->config->{'storage'}->{'url'} %>' + '/' + '<%= $self->session->{'user'}->{'account_name'} %>' + data.photo_url;
+              r.photo_url = '<%= $self->config->{'storage'}->{'url'} %>' + '/' + '<%= $self->session('account')->{name} %>' + data.photo_url;
             },
             error: function (jqXHR, textStatus, errorThrown) {},
           });
@@ -2308,13 +2309,13 @@
       "use strict";
       $(function () {
         $(document).on('click', 'a[href="#"]', function (event) { event.preventDefault(); });
-        $(window).on('load', function (event) { 
+        $(window).on('load', function (event) {
           var browser = /chrome/.test(navigator.userAgent.toLowerCase()) || /safari/.test(navigator.userAgent.toLowerCase());
           if (!browser) {
             alert('Для корректной работы программы необходимо использовать браузер Google Chrome');
           }
         });
-        
+
       });
 
       function getActiveSubCount() {
@@ -2338,7 +2339,7 @@
         })
           .done(function (data, textStatus, jqXHR) {
             if (data.status == 'success') {
-              if (data.client_count == 0) {              
+              if (data.client_count == 0) {
                 $('#client-count-notifier').addClass('hidden');
               } else {
                 $('#client-count-notifier').html(data.client_count);
@@ -2365,7 +2366,7 @@
         })
           .done(function (data, textStatus, jqXHR) {
             if (data.status == 'success') {
-              if (data.count == 0) {              
+              if (data.count == 0) {
                 $('#task-count-notifier').addClass('hidden');
               } else {
                 $('#task-count-notifier').html(data.count);
@@ -2385,7 +2386,7 @@
         })
           .done(function (data, textStatus, jqXHR) {
             if (data.status == 'success') {
-              if (data.data.count == 0) {              
+              if (data.data.count == 0) {
                 $('#message-count-notifier').addClass('hidden');
               } else {
                 $('#message-count-notifier').html(data.data.count);
@@ -2395,23 +2396,23 @@
           });
         supressAjaxIndicator(0);
       }
-      
+
       getTodaysTasksCount();
-      setInterval(getTodaysTasksCount, 30000);
+      setInterval(getTodaysTasksCount, 300000);
 
       getActiveSubCount();
-      setInterval(getActiveSubCount, 30000);
+      setInterval(getActiveSubCount, 300000);
 
       getUnreadMessageCount();
-      
+
       window.Rplus.Functions['getTodaysTasksCount'] = function () {
           getTodaysTasksCount();
       };
-      
+
       window.Rplus.Functions['getActiveSubCount'] =  function () {
           getActiveSubCount();
       };
-      
+
       window.Rplus.Functions['getUnreadMessageCount'] = function () {
             getUnreadMessageCount();
       };
