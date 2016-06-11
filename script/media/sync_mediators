@@ -31,7 +31,7 @@ sub run {
 
     my $ua = Mojo::UserAgent->new;
 
-    my $realty_buffer_url => 'http://192.168.5.1:3000';
+    my $realty_buffer_url = 'http://192.168.5.1:3000';
 
     my $rt_param = Rplus::Model::RuntimeParam::Manager->get_objects(query => [key => 'sync_param'])->[0];
     if (!$rt_param) {
