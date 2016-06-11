@@ -6,8 +6,7 @@ use Rplus::Model::MediatorCompany;
 use Rplus::Model::MediatorCompany::Manager;
 use Rplus::Model::Mediator;
 use Rplus::Model::Mediator::Manager;
-use Rplus::Model::MediatorRealty;
-use Rplus::Model::MediatorRealty::Manager;
+
 
 use Mojo::Util qw(trim);
 
@@ -183,12 +182,6 @@ sub delete {
         $mediator->hidden_for_aid($hidden_for->compact->uniq);
         $mediator->save(changes_only => 1);
     }
-    #Rplus::Model::MediatorRealty::Manager->delete_objects(
-    #    where => [
-    #        company_id => $company->id,
-    #        account_id => $acc_id,
-    #    ]
-    #);
 
     # Delete company
     #my $num_rows_updated = Rplus::Model::MediatorCompany::Manager->update_objects(

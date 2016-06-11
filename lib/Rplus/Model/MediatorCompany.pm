@@ -21,12 +21,6 @@ __PACKAGE__->meta->setup(
     allow_inline_column_values => 1,
 
     relationships => [
-        mediator_realty => {
-            class      => 'Rplus::Model::MediatorRealty',
-            column_map => { id => 'mediator_company_id' },
-            type       => 'one to many',
-        },
-
         mediators => {
             class      => 'Rplus::Model::Mediator',
             column_map => { id => 'company_id' },

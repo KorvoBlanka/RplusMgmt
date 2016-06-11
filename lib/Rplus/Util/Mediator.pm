@@ -10,7 +10,7 @@ use Rplus::Model::MediatorCompany;
 use Rplus::Model::MediatorCompany::Manager;
 
 use Exporter qw(import);
- 
+
 our @EXPORT_OK = qw(delete_mediator delete_mediator_by_phone add_mediator remove_obsolete_mediators);
 
 sub remove_obsolete_mediators {
@@ -28,19 +28,6 @@ sub remove_obsolete_mediators {
 
 sub delete_mediator {
     my $id = shift;
-
-    my $mediator = Rplus::Model::Mediator::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
-    return unless $mediator;
-    my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(query => [delete_date => undef, \("owner_phones && '{".$mediator->phone_num."}'")]);
-    while (my $realty = $realty_iter->next) {
-        $realty->mediator_company_id(undef);
-        $realty->save(changes_only => 1);
-        Rplus::Model::MediatorRealty::Manager->delete_objects(
-            where => [
-                realty_id => $realty->id,
-            ]
-        );
-    }
     my $num_rows_updated = Rplus::Model::Mediator::Manager->update_objects(
         set => {delete_date => \'now()'},
         where => [id => $id, delete_date => undef],
@@ -52,17 +39,7 @@ sub delete_mediator_by_phone {
 
     my $mediator = Rplus::Model::Mediator::Manager->get_objects(query => [phone_num => $phone_num, delete_date => undef])->[0];
     return unless $mediator;
-    my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(query => [delete_date => undef, \("owner_phones && '{".$mediator->phone_num."}'")]);
-    while (my $realty = $realty_iter->next) {
-        $realty->mediator_company_id(undef);
-        $realty->save(changes_only => 1);
-        Rplus::Model::MediatorRealty::Manager->delete_objects(
-            where => [
-                realty_id => $realty->id,
-            ]
-        );
-    }
-    
+
     my $num_rows_updated = Rplus::Model::Mediator::Manager->update_objects(
         set => {delete_date => \'now()'},
         where => [id => $mediator->id, delete_date => undef],
@@ -102,11 +79,6 @@ sub add_mediator {
     while (my $realty = $realty_iter->next) {
         #$realty->mediator_company_id($mediator->company->id);
         #$realty->save(changes_only => 1);
-        my $mr = Rplus::Model::MediatorRealty->new(
-            realty_id => $realty->id,
-            mediator_company_id => $company->id,
-            account_id => $acc_id,
-        )->save;
         push @$found_phones, ($realty->owner_phones);
     }
     $found_phones = $found_phones->uniq;

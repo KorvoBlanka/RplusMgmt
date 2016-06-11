@@ -9,8 +9,7 @@ use Rplus::Model::Mediator::Manager;
 use Rplus::Model::Realty;
 use Rplus::Model::Realty::Manager;
 use Rplus::Util::Mediator qw(add_mediator);
-use Rplus::Model::MediatorRealty;
-use Rplus::Model::MediatorRealty::Manager;
+
 
 use Mojo::Collection;
 
@@ -141,11 +140,6 @@ sub save {
         while (my $realty = $realty_iter->next) {
             #$realty->mediator_company_id($mediator->company->id);
             #$realty->save(changes_only => 1);
-            my $mr = Rplus::Model::MediatorRealty->new(
-                realty_id => $realty->id,
-                mediator_company_id => $company->id,
-                account_id => $acc_id,
-            )->save;
             push @$found_phones, ($realty->owner_phones);
         }
         $found_phones = $found_phones->uniq;
@@ -207,29 +201,24 @@ sub delete {
 
     $found_phones = $found_phones->uniq;
 
-    if ($found_phones->size) {
+    #if ($found_phones->size) {
         # Add additional mediators from realty owner phones
-        for (@$found_phones) {
+    #    for (@$found_phones) {
 
-            $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(query => [delete_date => undef, \("owner_phones && '{".$_."}'")]);
-            while (my $realty = $realty_iter->next) {
+    #        $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(query => [delete_date => undef, \("owner_phones && '{".$_."}'")]);
+    #        while (my $realty = $realty_iter->next) {
                 #$realty->mediator_company_id(undef);
                 #$realty->save(changes_only => 1);
-                Rplus::Model::MediatorRealty::Manager->delete_objects(
-                    where => [
-                        realty_id => $realty->id,
-                        account_id => $acc_id,
-                    ]
-                );
-            }
+
+    #        }
 
             #my $num_rows_updated = Rplus::Model::Mediator::Manager->update_objects(
             #    set => {delete_date => \'now()'},
             #    where => [phone_num => $_, delete_date => undef],
             #);
 
-        }
-    }
+    #    }
+    #}
 
     $self->render(json => {status => 'success'});
 }
