@@ -1679,10 +1679,10 @@ sub update_location {
     }
 
     if ($realty->latitude) {
-      my $res = Rplus::Util::Geo::get_location_metadata($realty->latitude, $realty->longitude);
+       my $res = Rplus::Util::Geo::get_location_metadata($realty->latitude, $realty->longitude);
 
-      $realty->district(join ', ', @{$res->{district}});
-      $realty->pois(Mojo::Collection->new($res->{pois})->uniq);
+       $realty->district(join ', ', @{$res->{district}});
+       $realty->pois(Mojo::Collection->new($res->{pois})->uniq);
     }
 
     if ($realty->latitude) {

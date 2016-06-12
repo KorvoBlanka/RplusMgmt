@@ -5,8 +5,8 @@ use Rplus::Modern;
 use Rplus::Model::Realty;
 use Rplus::Model::Realty::Manager;
 
+use Mojo::UserAgent;
 use JSON;
-use LWP::UserAgent;
 
 my $ua = Mojo::UserAgent->new;
 $ua->max_redirects(4);
@@ -35,7 +35,7 @@ sub get_location_metadata {
 
   # Locate nearby pois
 
-  my $res = $ua->get(
+  $res = $ua->get(
       'https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=' . $lat . ',' . $lng . '&radius=500&types=point_of_interest&name=&key=AIzaSyAi9zTbzWtEhLVZ8syBV6l7d3QMNLRokVY',
       {}
   )->res->json;
@@ -57,7 +57,21 @@ sub get_coords_by_addr {
     state $_geocache;
 
     my ($latitude, $longitude);
-    my $q = $locality . ', ' . $address .', '.$house_num;
+
+    my $q = '';
+    {
+      if ($locality) {
+        $q .= $locality;
+      }
+
+      if ($address) {
+        $q .= $address;
+      }
+
+      if ($house_num) {
+        $q .= $house_num;
+      }
+    }
 
     return @{$_geocache->{$q}} if exists $_geocache->{$q};
     if (my $r = Rplus::Model::Realty::Manager->get_objects(
