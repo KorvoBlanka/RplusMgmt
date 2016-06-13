@@ -61,9 +61,9 @@ sub add_mediator {
             \("NOT t1.hidden_for_aid && '{".$acc_id."}'"),
         ]
     )->[0];
-	unless ($mediator) {
-		$mediator = Rplus::Model::Mediator->new(phone_num => $phone_num, added_by => $added_by, account_id => $acc_id);
-	}
+  	unless ($mediator) {
+  		$mediator = Rplus::Model::Mediator->new(phone_num => $phone_num, added_by => $added_by, account_id => $acc_id);
+  	}
 
     my $company = Rplus::Model::MediatorCompany::Manager->get_objects(query => [[\'lower(name) = ?' => lc($company_name)], delete_date => undef])->[0];
     unless ($company) {

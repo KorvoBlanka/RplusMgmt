@@ -1270,7 +1270,7 @@
         $selected.each(function () {
           phones = phones.concat(($(this).data('obj')).owner_phones);
         });
-        $('#searchQuery').val(phones.join(', '));
+        $('#searchQuery').val(phones.join(' '));
         listRealty(1);
       });
 
