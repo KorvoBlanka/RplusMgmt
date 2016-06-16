@@ -494,7 +494,7 @@
           var container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
 
           container.style.backgroundColor = 'white';
-          container.style.backgroundImage = "url('/img/map_ico_spritesheet.png')";
+          container.style.backgroundImage = "url('<%= $assets_url%>/img/map_ico_spritesheet.png')";
           container.style.backgroundPosition = "-150px 0px";
           //container.style.backgroundSize = "30px 30px";
           container.style.width = '30px';
@@ -518,7 +518,7 @@
           var container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
 
           container.style.backgroundColor = 'white';
-          container.style.backgroundImage = "url('/img/map_ico_spritesheet.png')";
+          container.style.backgroundImage = "url('<%= $assets_url%>/img/map_ico_spritesheet.png')";
           container.style.backgroundPosition = "-180px 0px";
           //container.style.backgroundSize = "30px 30px";
           container.style.width = '30px';

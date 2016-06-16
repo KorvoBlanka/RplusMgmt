@@ -145,7 +145,7 @@ sub list_contacts {
         role => ' ',
         role_loc => '&nbsp;',
         photo_url => undef,
-        direct_photo_url => $self->config->{'assets'}->{'url'} . '/common_chat.png',
+        direct_photo_url => $self->config->{'assets'}->{'url'} . '/img/common_chat.png',
         account_id => '',
         unread_count => 0,
         company_name => '&nbsp;',
@@ -156,28 +156,30 @@ sub list_contacts {
     push @{$res->{list}}, $x;
 
     my $tech_user = Rplus::Model::User::Manager->get_objects(query => [id => $tech_support_id])->[0];
-    my $unread_count = Rplus::Model::ChatMessage::Manager->get_objects_count(
-        query => [
-            from => $tech_user->id,
-            to =>$this_user->id,
-            read => 0,
-        ],
-    );
-    $x = {
-        id => $tech_support_id,     #
-        name => 'Тех. поддержка',
-        role => ' ',
-        role_loc => '&nbsp;',
-        photo_url => undef,
-        direct_photo_url => $self->config->{'assets'}->{'url'} . '/tech_support.png',
-        account_id => '',
-        unread_count => $unread_count * 1,
-        company_name => '&nbsp;',
-        online => $self->is_logged_in($tech_user->id),,
-        can_remove => 0,
-        sort_value => 9000,
-    };
-    push @{$res->{list}}, $x;
+    if ($tech_user) {
+      my $unread_count = Rplus::Model::ChatMessage::Manager->get_objects_count(
+          query => [
+              from => $tech_user->id,
+              to =>$this_user->id,
+              read => 0,
+          ],
+      );
+      $x = {
+          id => $tech_support_id,     #
+          name => 'Тех. поддержка',
+          role => ' ',
+          role_loc => '&nbsp;',
+          photo_url => undef,
+          direct_photo_url => $self->config->{'assets'}->{'url'} . '/tech_support.png',
+          account_id => '',
+          unread_count => $unread_count * 1,
+          company_name => '&nbsp;',
+          online => $self->is_logged_in($tech_user->id),,
+          can_remove => 0,
+          sort_value => 9000,
+      };
+      push @{$res->{list}}, $x;
+    }
 
     return $self->render(json => {status => 'success', data => $res}) unless $cl->size;
 

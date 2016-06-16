@@ -8,6 +8,8 @@ use Rplus::Model::Realty::Manager;
 use Mojo::UserAgent;
 use JSON;
 
+use Data::Dumper;
+
 my $ua = Mojo::UserAgent->new;
 $ua->max_redirects(4);
 
@@ -35,10 +37,14 @@ sub get_location_metadata {
 
   # Locate nearby pois
 
-  $res = $ua->get(
-      'https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=' . $lat . ',' . $lng . '&radius=500&types=point_of_interest&name=&key=AIzaSyAi9zTbzWtEhLVZ8syBV6l7d3QMNLRokVY',
+  my $tx = $ua->get(
+      'https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=' . $lat . ',' . $lng . '&radius=1000&types=&name=станция метро&key=AIzaSyBw9CMGQ3BzbCopcUdLeaMsPEUEDWZbCWM',
       {}
-  )->res->json;
+  );
+
+  $res = $tx->res->json;
+
+  say Dumper $tx->res;
 
   $a = $res->{results};
 
@@ -121,7 +127,7 @@ sub get_coords_by_addr_google {
         'https://maps.googleapis.com/maps/api/geocode/json',
         [
             address => $q,
-            key => 'AIzaSyAi9zTbzWtEhLVZ8syBV6l7d3QMNLRokVY',
+            key => 'AIzaSyBw9CMGQ3BzbCopcUdLeaMsPEUEDWZbCWM',
         ],
     );
     if ($response->is_success) {

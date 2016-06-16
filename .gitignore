@@ -2,3 +2,5 @@ app.conf
 lib/Rplus/DB.pm
 log/
 hypnotoad.pid
+public/storage_ln
+public/import_storage_ln

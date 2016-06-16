@@ -429,7 +429,7 @@
         var uid = $("#userCard_userForm_userId").val();
         $('#user-photo').attr('src', x.src);
         $('#user-photo').data('photo_url', x.photo_url);
-        $('.user-preview[data-id=' + uid + '] .img-thumbnail').attr('src', x.photo_url);
+        $('.user-preview[data-id=' + uid + '] .img-thumbnail').attr('src', '<%= $self->config->{'storage'}->{'url'} %>' + '/' + '<%= $self->session('account')->{name} %>' + x.photo_url);
         $('.img-overlay').removeClass('img-overlay-hover');
       }
     });

@@ -1087,7 +1087,7 @@
 
   <div class="indicator-ajax invisible" style="position: absolute; top: 50%; left: 50%; margin-top: -20px; margin-left: -20px; z-index: 1000;">
     <div style="background-color: #fff; border-radius: 50%;">
-      <img style="width: 40px;" src="<%= $assets_url%>/loading-blue.gif">
+      <img style="width: 40px;" src="<%= $assets_url%>/img/loading_blue.gif">
     </div>
   </div>
     <!-- Navbar -->
@@ -1163,7 +1163,7 @@
             </a>
             <a href="/signout" class="navbar-link hide-if-small">[<%= $user->{'name'} %>]</a>
             <a class="divider-vertical hide-if-big" style="padding-top: 12px; padding-bottom: 12px; border-right-color: #797979; border-left-color: #111111;"></a>
-            <a href="/signout" class="navbar-link hide-if-big"><img style="height: 40px;" src="<%= $self->config->{'assets'}->{'url'} %>/power_off_button.png"></a>
+            <a href="/signout" class="navbar-link hide-if-big"><img style="height: 40px;" src="<%= $assets_url %>/img/power_off_button.png"></a>
           </p>
         </div>
       </div>

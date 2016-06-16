@@ -174,7 +174,8 @@ sub startup {
         my $js_included = $self->stash('rplus.js_included');
         if (!$js_included->{$js_url}) {
             $js_included->{$js_url} = 1;
-            return $self->render(partial => 1, inline => '<script type="application/javascript" src="<%= $js_url %>"></script>', js_url => $js_url);
+
+            return $self->render_to_string(inline => '<script type="application/javascript" src="<%= $js_url %>"></script>', js_url => $js_url);
         }
         return;
     });
@@ -186,7 +187,8 @@ sub startup {
         my $css_included = $self->stash('rplus.css_included');
         if (!$css_included->{$css_url}) {
             $css_included->{$css_url} = 1;
-            return $self->render(partial => 1, inline => '<link rel="stylesheet" href="<%= $css_url %>">', css_url => $css_url);
+
+            return $self->render_to_string(inline => '<link rel="stylesheet" href="<%= $css_url %>">', css_url => $css_url);
         }
         return;
     });
@@ -336,6 +338,8 @@ sub startup {
         my @parts = split(/\./, $host);
         my $account_name = $parts[0];
 
+	$account_name = 'dev';
+
         $c->session(account_name => $account_name);  # используется в get_account
 
         if (my $user_id = $c->session->{user_id}) {
@@ -387,7 +391,7 @@ sub startup {
 
     $r->route('/api/user/set_google_token')->to(namespace => 'RplusMgmt::Controller::API', controller => 'user', action => 'set_google_token');
 
-    $r->route('/api/:controller')->bridge->to(cb => sub {
+    $r->route('/api/:controller')->under->to(cb => sub {
         my $self = shift;
 
         return 1 if $self->session('account') && $self->stash('user') && $self->session_check($self->session('account')->{id}, $self->stash('user')->{id});
@@ -456,7 +460,7 @@ sub startup {
         # Backdoor
         $r2->get('/backdoor/:action')->to(controller => 'backdoor');
 
-        my $r2b = $r2->bridge->to(controller => 'authentication', action => 'auth');
+        my $r2b = $r2->under->to(controller => 'authentication', action => 'auth');
 
         # Main controller
         $r2b->get('/')->to(template => 'main/index');

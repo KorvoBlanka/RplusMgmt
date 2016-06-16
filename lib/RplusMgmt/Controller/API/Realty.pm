@@ -512,10 +512,10 @@ sub _get_near_filter {
     my $data = $ua->get(
         'https://maps.googleapis.com/maps/api/place/textsearch/json?' => form => {
             #language => 'ru',
-            location => '48.48,135.05',
+            location => '55.754035, 37.620410',
             radius => 50000,
             query => $near_q,
-            key => 'AIzaSyAhbti6ytHoMhjDBP6E1XlVjYf1MYmfw_4',
+            key => 'AIzaSyBw9CMGQ3BzbCopcUdLeaMsPEUEDWZbCWM',
         }
     )->res->json;
 
@@ -874,7 +874,7 @@ sub list {
             my @near_query = ();
             foreach (@{$points}) {
                 if ((scalar @near_query) == $max_points) {last};
-                push @near_query, \("postgis.st_distance(t1.geocoords, postgis.ST_GeographyFromText('SRID=4326;POINT(" . $_->{lon} . " " . $_->{lat} . ")'), true) < 500");
+                push @near_query, \("postgis.st_distance(t1.geocoords, postgis.ST_GeographyFromText('SRID=4326;POINT(" . $_->{lon} . " " . $_->{lat} . ")'), true) < 1000");
             }
 
             push @query, or => \@near_query;

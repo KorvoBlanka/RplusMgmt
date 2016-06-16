@@ -23,8 +23,8 @@ use URI;
 use Digest::MD5;
 
 
-my $region = 'Хабаровский';
-my $city = 'Хабаровск';
+my $region = '';
+my $city = '';
 
 my $category_hash = {
     sale => {
@@ -334,7 +334,8 @@ sub index {
         rent => \@rent_realty_types,
     };
 
-
+    $region = $self->config->{export}->{region};
+    $city = $self->config->{export}->{city};
 
     my $meta = from_json($media->metadata);
     my $contact_phones = '';

@@ -11,6 +11,8 @@
 % use Rplus::Model::User::Manager;
 % use Rplus::Model::DictColorTag::Manager;
 
+% use Data::Dumper;
+
 % content_for header => begin
 %= css_once "$assets_url/typeahead.js/$typeaheadjs_ver/css/typeahead.js-bootstrap.css";
 %= css_once "$assets_url/leaflet/$leafletjs_ver/leaflet.css";
@@ -1815,9 +1817,14 @@
               %       $categories{$x} = scalar keys %categories;
               %       $type_optgroups->[$categories{$x}] = {$x => []};
               %     }
-              %     push $type_optgroups->[$categories{$x}]->{$x}, [$_->{name}, $_->{code}];
+              %     push $type_optgroups->[$categories{$x}]->{$x}, [$_->{name} => $_->{code}];
               %   }
-              %= select_field 'type_code' => $type_optgroups, class => 'form-control input-sm', id => 'typeInput'
+              %   my @select = ();
+              %   while (my ($key, $value) = each $type_optgroups) {
+              %     my $k = (keys %$value)[0];
+              %     push @select, c($k, $value->{$k});
+              %   }
+              %= select_field 'type_code' => \@select, class => 'form-control input-sm', id => 'typeInput'
               % }
             </div>
           </div>

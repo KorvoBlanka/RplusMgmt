@@ -11,13 +11,25 @@ use Time::HiRes;
 use File::Path qw(make_path);
 use Image::Magick;
 
+use Mojo::UserAgent;
+
+
+my $ua = Mojo::UserAgent->new;
+
 sub remove_images {
     my ($realty_id) = @_;
-    
+
     Rplus::Model::Photo::Manager->update_objects(
         set => {delete_date => \'now()'},
         where => [realty_id => $realty_id],
     );
+}
+
+sub load_image_from_url {
+  my ($realty_id, $img_url, $storage_path, $crop) = @_;
+
+  my $image = $ua->get($img_url)->res->content->asset;
+  load_image($realty_id, $image, $storage_path, $crop);
 }
 
 sub load_image {
@@ -52,6 +64,8 @@ sub load_image {
     $photo->thumbnail_filename($name.'_thumbnail.jpg');
 
     $photo->save;
+
+    return $photo;
 }
 
 1;

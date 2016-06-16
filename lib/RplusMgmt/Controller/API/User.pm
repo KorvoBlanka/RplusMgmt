@@ -309,7 +309,7 @@ sub upload_photo {
             return $self->render(json => {error => $@}, status => 500);
         };
 
-        return $self->render(json => {status => 'success', photo_url => $photo_url, src => $self->config->{'storage'}->{'url'} . '/' . $self->stash('session')->{'name'} . $photo_url});
+        return $self->render(json => {status => 'success', photo_url => $photo_url, src => $self->config->{'storage'}->{'url'} . '/' . $self->session('account')->{'name'} . $photo_url});
     }
 
     return $self->render(json => {error => 'Bad Request'}, status => 400);

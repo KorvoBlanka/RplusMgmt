@@ -52,6 +52,8 @@ my $filename_hash = {
     #'rent-garages' => 'real-estate.commercial-rent.csv',
 };
 
+my $city = '';
+
 my %templates_hash = (
     sale => {
         apartments => ordered_hash_ref (
@@ -60,7 +62,7 @@ my %templates_hash = (
                     return $d->id;
                 },
             "Город" => sub {
-                    return 'Хабаровск';     # Подставить город из конфига?
+                    return $city;     # Подставить город из конфига?
                 },
             "Метро" => sub {
                     return '';
@@ -211,7 +213,7 @@ my %templates_hash = (
                     return $d->id;
                 },
             "Город" => sub {
-                    return 'Хабароск';
+                    return $city;
                 },
             "Метро" => sub {
                     return '';
@@ -354,7 +356,7 @@ my %templates_hash = (
                     return $d->id;
                 },
             "Город" => sub {
-                    return 'Хабаровск';
+                    return $city;
                 },
             "Метро" => sub {
                     return '';
@@ -488,7 +490,7 @@ my %templates_hash = (
                     return $d->id;
                 },
             "Город" => sub {
-                    return 'Хабаровск';
+                    return $city;
                 },
             "Метро" => sub {
                     return '';
@@ -623,7 +625,7 @@ my %templates_hash = (
                     return $d->id;
                 },
             "Город" => sub {
-                    return 'Хабароск';
+                    return $city;
                 },
             "Метро" => sub {
                     return '';
@@ -786,7 +788,7 @@ my %templates_hash = (
                     return $d->id;
                 },
             "Город" => sub {
-                    return 'Хабароск';
+                    return $city;
                 },
             "Метро" => sub {
                     return '';
@@ -933,7 +935,7 @@ my %templates_hash = (
                     return $d->id;
                 },
             "Город" => sub {
-                    return 'Хабароск';
+                    return $city;
                 },
             "Метро" => sub {
                     return '';
@@ -1087,7 +1089,7 @@ my %templates_hash = (
                     return $d->id;
                 },
             "Город" => sub {
-                    return 'Хабаровск';
+                    return $city;
                 },
             "Метро" => sub {
                     return '';
@@ -1227,7 +1229,7 @@ my %templates_hash = (
 sub index {
     my $self = shift;
 
-    my $acc_id = $self->session('user')->{account_id};
+    my $acc_id = $self->session('account')->{id};
 
     return $self->render_not_found unless $self->req->method eq 'POST';
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => 'export');
@@ -1242,6 +1244,8 @@ sub index {
     my $realty_type = $self->param('realty_type');
 
     my $meta = from_json($media->metadata);
+
+    $city = $self->config->{export}->{city};
 
     my $options = Rplus::Model::Option->new(account_id => $acc_id)->load();
     if ($options) {

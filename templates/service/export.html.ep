@@ -300,12 +300,13 @@
     <li><a href="#export-farpost" data-toggle="tab">Farpost</a></li>
     <li><a href="#export-vnh" data-toggle="tab">ВНХ</a></li>
     <li><a href="#export-present" data-toggle="tab">Презент</a></li>
-    % } else {
+    % } elsif ($loc_id == 2) {
     <li class="active"><a href="#export-avito" data-toggle="tab">Avito</a></li>
     <li><a href="#export-irr" data-toggle="tab">Из рук в руки</a></li>
     <li><a href="#export-farpost" data-toggle="tab">Farpost</a></li>
-    <li class="hidden"><a href="#export-vnh" data-toggle="tab">ВНХ</a></li>
-    <li class="hidden"><a href="#export-present" data-toggle="tab">Презент</a></li>
+    % } elsif ($loc_id == 3) {
+    <li class="active"><a href="#export-avito" data-toggle="tab">Avito</a></li>
+    <li><a href="#export-irr" data-toggle="tab">Из рук в руки</a></li>
     % }
   </ul>
 </div>

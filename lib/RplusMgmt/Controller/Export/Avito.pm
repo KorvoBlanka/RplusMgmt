@@ -26,8 +26,8 @@ my $agent_phone = 0;
 my $contact_name = '';
 my $contact_email = '';
 
-my $region = 'Хабаровский край';
-my $city = 'Хабаровск';
+my $region = '';
+my $city = '';
 
 my %realty_types = ();
 my %realty_types_keywords = ();
@@ -377,6 +377,9 @@ sub index {
         sale => \@sale_realty_types,
         rent => \@rent_realty_types,
     };
+
+    $region = $self->config->{export}->{region};
+    $city = $self->config->{export}->{city};
 
     my $meta = from_json($media->metadata);
 

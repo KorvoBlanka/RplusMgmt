@@ -7,9 +7,7 @@ use Rplus::Model::Photo::Manager;
 use Rplus::Model::Realty;
 use Rplus::Model::Realty::Manager;
 
-use Time::HiRes;
-use File::Path qw(make_path);
-use Image::Magick;
+use Rplus::Util::Image;
 
 sub list {
     my $self = shift;
@@ -28,13 +26,14 @@ sub list {
 
     my $photo_iter = Rplus::Model::Photo::Manager->get_objects_iterator(query => [realty_id => $realty_id, delete_date => undef], sort_by => 'id');
     while (my $photo = $photo_iter->next) {
-        my $x = {
-            id => $photo->id,
-            photo_url => $photo->filename,
-            thumbnail_url => $photo->thumbnail_filename,
-            is_main => $photo->is_main ? \1 : \0,
-        };
-        push @{$res->{list}}, $x;
+      my $url = $self->config->{storage}->{url} . '/photos/' . $realty_id;
+      my $x = {
+        id => $photo->id,
+        photo_url => $url . '/' . $photo->filename,
+        thumbnail_url => $url . '/' . $photo->thumbnail_filename,
+        is_main => $photo->is_main ? \1 : \0,
+      };
+      push @{$res->{list}}, $x;
     }
 
     $res->{count} = scalar @{$res->{list}};
@@ -54,43 +53,24 @@ sub upload {
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => write => $realty->agent_id);
 
     if (my $file = $self->param('files[]')) {
-        my $path = $self->config->{'storage'}->{'path'}.'/photos/'.$realty_id;
-        my $name = Time::HiRes::time =~ s/\.//r; # Unique name
 
-        my $photo = Rplus::Model::Photo->new;
-        eval {
-            make_path($path);
-            $file->move_to($path.'/'.$name.'.jpg');
+      my $url = $self->config->{storage}->{url} . '/photos/' . $realty_id;
+      my $storage_path = $self->config->{storage}->{path};
+      my $crop = 0;
+      my $photo;
+      eval {
+        $photo = Rplus::Util::Image::load_image($realty_id, $file, $storage_path, $crop);
+      } or do {
+        return $self->render(json => {error => $@}, status => 500);
+      };
 
-            # Convert image to jpeg
-            my $image = Image::Magick->new;
-            $image->Read($path.'/'.$name.'.jpg');
-            if ($image->Get('width') > 1920 || $image->Get('height') > 1080 || $image->Get('mime') ne 'image/jpeg') {
-                $image->Resize(geometry => '1920x1080');
-                $image->Write($path.'/'.$name.'.jpg');
-            }
-            $image->Resize(geometry => '320x240');
-            $image->Extent(geometry => '320x240', gravity => 'Center', background => 'white');
-            $image->Thumbnail(geometry => '320x240');
-            $image->Write($path.'/'.$name.'_thumbnail.jpg');
+      # Update realty change_date
+      Rplus::Model::Realty::Manager->update_objects(
+        set => {change_date => \'now()'},
+        where => [id => $realty_id],
+      );
 
-            # Save
-            $photo->realty_id($realty_id);
-            $photo->filename($self->config->{'storage'}->{'url'}.'/photos/'.$photo->realty_id.'/'.$name.'.jpg');
-            $photo->thumbnail_filename($self->config->{'storage'}->{'url'}.'/photos/'.$photo->realty_id.'/'.$name.'_thumbnail.jpg');
-
-            $photo->save;
-        } or do {
-            return $self->render(json => {error => $@}, status => 500);
-        };
-
-        # Update realty change_date
-        Rplus::Model::Realty::Manager->update_objects(
-            set => {change_date => \'now()'},
-            where => [id => $realty_id],
-        );
-
-        return $self->render(json => {status => 'success', id => $photo->id, realty_id => $realty_id, thumbnail_url => $photo->thumbnail_filename,});
+      return $self->render(json => {status => 'success', id => $photo->id, realty_id => $realty_id, thumbnail_url => $url . '/' . $photo->thumbnail_filename,});
     }
 
     return $self->render(json => {error => 'Bad Request'}, status => 400);

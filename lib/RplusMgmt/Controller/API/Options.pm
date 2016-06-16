@@ -9,12 +9,14 @@ use Rplus::Model::Option::Manager;
 
 use JSON;
 
+use Data::Dumper;
 
 sub list {
     my $self = shift;
 
     my $category = $self->param('category');
     my $acc_id = $self->session('account')->{id};
+
     my $options = Rplus::Model::Option->new(account_id => $acc_id)->load();
     my $opt = {};
     if ($options) {

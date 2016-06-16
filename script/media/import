@@ -66,20 +66,13 @@ sub update_location {
 }
 
 sub update_photos {
-    my ($realty_id, $buffer_id, $config) = @_;
+    my ($realty_id, $storage_path, $photos) = @_;
 
     Rplus::Util::Image::remove_images($realty_id);
-    my $tx = $ua->get($config->{realty_buffer_url} . "/api/realty/get_photos?realty_id=$buffer_id");
-    if (my $res = $tx->success) {
-        my $photo_data = $res->json->{list};
-        for my $photo (@$photo_data) {
-            my $new_photo = Rplus::Model::Photo->new;
-            # Save
-            $new_photo->realty_id($realty_id);
-            $new_photo->filename($photo->{photo_url});
-            $new_photo->thumbnail_filename($photo->{thumbnail_url});
-            $new_photo->save;
-        }
+
+    for my $photo_url (@{$photos}) {
+      say 'loading ' . $photo_url;
+      Rplus::Util::Image::load_image_from_url($realty_id, $photo_url, $storage_path, 0);
     }
 }
 
@@ -169,12 +162,12 @@ sub run {
                             $o_realty->save(changes_only => 1);
                             say "updated realty: $id";
 
-                            update_photos($id, $data_id, $config);
+                            update_photos($id, $config->{storage}->{path}, $data->{photo_url});
                         }
                     } else {
                         eval {
 
-                            my $realty = Rplus::Model::Realty->new((map { $_ => $data->{$_} } grep { $_ ne 'category_code' && $_ ne 'id'} keys %$data), state_code => 'raw');
+                            my $realty = Rplus::Model::Realty->new((map { $_ => $data->{$_} } grep { $_ ne 'photo_url' && $_ ne 'category_code' && $_ ne 'id'} keys %$data), state_code => 'raw');
                             $realty->last_seen_date($data->{add_date});
 
                             update_location($realty);
@@ -185,7 +178,7 @@ sub run {
                             my $id = $realty->id;
                             say "Saved new realty: $id";
 
-                            update_photos($id, $data_id, $config);
+                            update_photos($id, $config->{storage}->{path}, $data->{photo_url});
                         } or do {
                             say $@;
                         };
