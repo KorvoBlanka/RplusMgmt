@@ -58,7 +58,7 @@ sub run {
                 for my $q (@{$subscr->queries}) {
 
                     # Skip FTS data
-                    my @query = map { ref($_) eq 'SCALAR' && $$_ =~ /^t1\.fts/ ? () : $_ } (Rplus::Util::Query->parse($q, $c));
+                    my @query = map { ref($_) eq 'SCALAR' && $$_ =~ /^t1\.fts/ ? () : $_ } (Rplus::Util::Query::parse($q, $c));
 
                     if ($subscr->rent_type) {
                         push @query, rent_type => $subscr->rent_type;

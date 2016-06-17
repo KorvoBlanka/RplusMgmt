@@ -13,15 +13,28 @@ use Data::Dumper;
 my $ua = Mojo::UserAgent->new;
 $ua->max_redirects(4);
 
+sub _uniq {
+    my %seen;
+    grep !$seen{$_}++, @_;
+}
+
 sub get_location_metadata {
   # Input params
-  my ($lat, $lng) = @_;
+  my ($lat, $lng, $self) = @_;
 
   # Perform reverse geocoding
+  state $_geocache;
+
+  my $k = $lng . ',' . $lat;
+  return @{$_geocache->{$k}} if exists $_geocache->{$k};
 
   my $res = $ua->get(
-      'https://geocode-maps.yandex.ru/1.x/?format=json&geocode=' . $lng . ',' . $lat . '&key=AHRyt0oBAAAAWyicdAIAGkJ4VW61SHm2C39aWWNEBX0Ppf8AAAAAAAAAAACl2Ft6tPAwl73mh2D-gxCQ089Xsw==',
-      {}
+      'https://geocode-maps.yandex.ru/1.x/',
+      form => {
+        format => 'json',
+        geocode => $lng . ',' . $lat,
+        key => $self->config->{api_keys}->{yandex}
+      }
   )->res->json;
 
   my $a = $res->{response}->{GeoObjectCollection}->{featureMember};
@@ -38,20 +51,30 @@ sub get_location_metadata {
   # Locate nearby pois
 
   my $tx = $ua->get(
-      'https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=' . $lat . ',' . $lng . '&radius=1000&types=&name=станция метро&key=AIzaSyBw9CMGQ3BzbCopcUdLeaMsPEUEDWZbCWM',
-      {}
+      'https://maps.googleapis.com/maps/api/place/nearbysearch/json',
+      form => {
+        language => 'ru',
+        location => $lat . ',' . $lng,
+        radius => $self->config->{search}->{radius},
+        types => $self->config->{search}->{poi_types},
+        #key => $self->config->{api_keys}->{google},
+        key => 'AIzaSyAL5WfkU-scRALuR-STSvICl77fVJDkmZ4',
+      }
   );
-
   $res = $tx->res->json;
-
-  say Dumper $tx->res;
 
   $a = $res->{results};
 
   my @pois = ();
   foreach (@{$a}) {
-    push @pois, $_->{name};
+    my $t = $_->{name};
+    $t =~ s/\"//g;
+    push @pois, $t;
   }
+
+  @pois = _uniq(@pois);
+
+  $_geocache->{$k} = {district => \@districts, pois => \@pois};
 
   return {district => \@districts, pois => \@pois};
 }

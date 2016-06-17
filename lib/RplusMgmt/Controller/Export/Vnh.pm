@@ -23,7 +23,7 @@ sub index {
     my $self = shift;
 
     my $config = get_config();
-    my $acc_id = $self->session('user')->{account_id};
+    my $acc_id = $self->session('account')->{id};
 
     return $self->render_not_found unless $self->req->method eq 'POST';
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => 'export');
@@ -133,7 +133,7 @@ sub index {
 
             my $row_num = 1;
             while(my $realty = $realty_iter->next) {
-                my $city = 'Хабаровск';
+                my $city = '';
                 my $street = '';
                 my $house_num = '';
 
@@ -263,7 +263,7 @@ sub index {
             );
             my $row_num = 1;
             while(my $realty = $realty_iter->next) {
-                my $city = 'Хабаровск';
+                my $city = '';
                 my $street = '';
                 my $house_num = '';
                 $city = $realty->locality if $realty->locality;

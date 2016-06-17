@@ -13,6 +13,7 @@ use JSON;
 
 no warnings 'experimental::smartmatch';
 
+my $ua = Mojo::UserAgent->new;
 
 # For tests (disable caching)
 our $USE_CACHE = 0;
@@ -44,9 +45,46 @@ sub _json2params {
     return @params;
 }
 
+
+sub get_near_filter {
+    my ($near_q, $self) = @_;
+    my @points;
+
+    my $data = $ua->get(
+        'https://maps.googleapis.com/maps/api/place/textsearch/json',
+        form => {
+          #language => 'ru',
+          location => $self->config->{location}->{lat} . ',' . $self->config->{location}->{lng},
+          radius => $self->config->{search}->{places_radius},
+          query => $near_q,
+          key => $self->config->{api_keys}->{google},
+        }
+    )->res->json;
+
+    foreach (@{$data->{results}}) {
+
+        push @points, {
+            lat => $_->{geometry}->{location}->{lat},
+            lon => $_->{geometry}->{location}->{lng}
+        };
+    }
+
+    my $max_points = 100;
+
+    my @near_query = ();
+    foreach (@points) {
+        if ((scalar @near_query) == $max_points) {last};
+        push @near_query,
+        \("postgis.st_distance(t1.geocoords, postgis.ST_GeographyFromText('SRID=4326;POINT(" . $_->{lon} . " " . $_->{lat} . ")'), true) < " . $self->config->{search}->{radius});
+    }
+
+    return or => \@near_query;
+
+}
+
 # Parse the user's query and return Rose::DB::Object params
 sub parse {
-    my ($class, $q, $c) = @_; # Class, Query string, Mojolicious::Controller (for config)
+    my ($q, $c) = @_; # Class, Query string, Mojolicious::Controller (for config)
 
     return unless $q;
     my $q_orig = $q = trim($q);

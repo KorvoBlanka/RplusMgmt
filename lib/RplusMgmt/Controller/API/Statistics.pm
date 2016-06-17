@@ -28,7 +28,6 @@ use Rplus::Util::Mediator qw(add_mediator);
 use Rplus::Util::Task;
 use Rplus::Util::Geo;
 
-use Rplus::Model::Tag; # temp logging
 
 use File::Path qw(make_path);
 use POSIX qw(strftime);

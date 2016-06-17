@@ -36,15 +36,20 @@ use Time::Piece;
 
 no warnings 'experimental::smartmatch';
 
-my $ua = Mojo::UserAgent->new;
 
-my $export_media = {
-    13 => 'avito',
-    10 => 'irr',
-    2 => 'present',
-    4 => 'farpost',
-    3 => 'vnh',
-};
+my %export_media;
+my $media_iter = Rplus::Model::Media::Manager->get_objects_iterator(query => [type => 'export']);
+while (my $media = $media_iter->next) {
+    $export_media{$media->id} = $media->code;
+}
+
+
+my %accounts_hash;
+my $accounts_iter = Rplus::Model::Account::Manager->get_objects_iterator(query => [del_date => undef],);
+while (my $x = $accounts_iter->next) {
+    $accounts_hash{$x->id} = $x->company_name ? $x->company_name : $x->name;
+}
+
 
 my $required_export = {
     irr => {
@@ -497,39 +502,6 @@ my $required_export = {
     },
 };
 
-my %accounts_hash;
-#my %mediators_hash;
-
-my $accounts_iter = Rplus::Model::Account::Manager->get_objects_iterator(query => [del_date => undef],);
-while (my $x = $accounts_iter->next) {
-    $accounts_hash{$x->id} = $x->company_name ? $x->company_name : $x->name;
-}
-
-sub _get_near_filter {
-    my $near_q = shift;
-    my @points;
-
-    my $data = $ua->get(
-        'https://maps.googleapis.com/maps/api/place/textsearch/json?' => form => {
-            #language => 'ru',
-            location => '55.754035, 37.620410',
-            radius => 50000,
-            query => $near_q,
-            key => 'AIzaSyBw9CMGQ3BzbCopcUdLeaMsPEUEDWZbCWM',
-        }
-    )->res->json;
-
-    foreach (@{$data->{results}}) {
-
-        push @points, {
-            lat => $_->{geometry}->{location}->{lat},
-            lon => $_->{geometry}->{location}->{lng}
-        };
-    }
-
-    return \@points;
-}
-
 my $_make_copy = sub {
     my $self = shift;
     my $realty = shift;
@@ -730,10 +702,10 @@ sub list {
 
     # "where" query
     my @query;
-    my $near;
+    my $near_q;
     {
         if ($q =~ s/(рядом )(.+)/ /i) {
-            $near = $2;
+            $near_q = $2;
         }
 
         my @types;
@@ -864,21 +836,10 @@ sub list {
     }
 
     # Parse query
-    push @query, Rplus::Util::Query->parse($q, $self);
+    push @query, Rplus::Util::Query::parse($q, $self);
 
-    if ($near) {
-        my $points = _get_near_filter($near);
-
-        my $max_points = 100;
-        if (scalar @{$points}) {
-            my @near_query = ();
-            foreach (@{$points}) {
-                if ((scalar @near_query) == $max_points) {last};
-                push @near_query, \("postgis.st_distance(t1.geocoords, postgis.ST_GeographyFromText('SRID=4326;POINT(" . $_->{lon} . " " . $_->{lat} . ")'), true) < 1000");
-            }
-
-            push @query, or => \@near_query;
-        }
+    if ($near_q) {
+        push @query, Rplus::Util::Query::get_near_filter($near_q, $self);
     }
 
     #say Dumper @query;
@@ -1499,19 +1460,21 @@ sub update_multiple {
                     return;
                 }
 
-                my $exp_media_code = $export_media->{$export_media_id};
-                my $req_fields;
-                if ($required_export->{$exp_media_code}) {
-                    $req_fields = $required_export->{$exp_media_code}->{$realty->type_code}->{$realty->offer_type_code};
-                    unless ($req_fields) {
-                        $req_fields = $required_export->{$exp_media_code}->{'any'}->{$realty->offer_type_code};
+                unless ($export_media_id ~~ @{$realty->export_media}) {
+                    my $exp_media_code = $export_media{$export_media_id};
+                    my $req_fields;
+                    if ($required_export->{$exp_media_code}) {
+                        $req_fields = $required_export->{$exp_media_code}->{$realty->type_code}->{$realty->offer_type_code};
+                        unless ($req_fields) {
+                            $req_fields = $required_export->{$exp_media_code}->{'any'}->{$realty->offer_type_code};
+                        }
                     }
-                }
-                if ($req_fields) {
-                    foreach (@$req_fields) {
-                        unless ($realty->$_) {
-                            push @errors, $id;
-                            return;
+                    if ($req_fields) {
+                        foreach (@$req_fields) {
+                            unless ($realty->$_) {
+                                push @errors, $id;
+                                return;
+                            }
                         }
                     }
                 }
@@ -1649,7 +1612,7 @@ sub get_location {
     }
 
     if ($coords{latitude}) {
-      my $location_meta = Rplus::Util::Geo::get_location_metadata($coords{latitude}, $coords{longitude});
+      my $location_meta = Rplus::Util::Geo::get_location_metadata($coords{latitude}, $coords{longitude}, $self);
 
       $district = join ', ', @{$location_meta->{district}};
       $pois = $location_meta->{pois};
@@ -1679,7 +1642,7 @@ sub update_location {
     }
 
     if ($realty->latitude) {
-       my $res = Rplus::Util::Geo::get_location_metadata($realty->latitude, $realty->longitude);
+       my $res = Rplus::Util::Geo::get_location_metadata($realty->latitude, $realty->longitude, $self);
 
        $realty->district(join ', ', @{$res->{district}});
        $realty->pois(Mojo::Collection->new($res->{pois})->uniq);
