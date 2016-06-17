@@ -1605,7 +1605,7 @@ sub get_location {
     }
 
     if ($coords{latitude}) {
-      my $location_meta = Rplus::Util::Geo::get_location_metadata($coords{latitude}, $coords{longitude}, $self);
+      my $location_meta = Rplus::Util::Geo::get_location_metadata($coords{latitude}, $coords{longitude}, $self->config);
 
       $district = join ', ', @{$location_meta->{district}};
       $pois = $location_meta->{pois};
@@ -1635,7 +1635,7 @@ sub update_location {
     }
 
     if ($realty->latitude) {
-       my $res = Rplus::Util::Geo::get_location_metadata($realty->latitude, $realty->longitude, $self);
+       my $res = Rplus::Util::Geo::get_location_metadata($realty->latitude, $realty->longitude, $self->config);
 
        $realty->district(join ', ', @{$res->{district}});
        $realty->pois(Mojo::Collection->new($res->{pois})->uniq);
