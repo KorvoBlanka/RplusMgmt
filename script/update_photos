@@ -19,12 +19,15 @@ sub update_photos {
 
     my $photo_iter = Rplus::Model::Photo::Manager->get_objects_iterator(query => [delete_date => undef]);
     while (my $p = $photo_iter->next) {
-        if($p->filename !~ '^http') {
-            my $file_name = $p->filename;
-            my $realty_id = $p->realty_id;
-            say "http://tstorage.maklerdv.ru/clients/$subdomain/photos/$realty_id/$file_name";
-            $p->filename("http://tstorage.maklerdv.ru/clients/$subdomain/photos/$realty_id/$file_name");
-            $p->save;
-        }
+		my $file_name = $p->filename;
+		my $thumb_file_name = $p->thumbnail_filename;
+		
+		if ($file_name =~ /^.+\/(\d+\.jpg)/) {
+			$p->filename($1);
+		}
+		if ($thumb_file_name =~ /^.+\/(\d+\_thumbnail.jpg)/) {
+			$p->thumbnail_filename($1);
+		}		
+		$p->save(changes_only => 1);
     }
 }
