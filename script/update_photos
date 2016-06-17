@@ -17,17 +17,29 @@ sub update_photos {
     my $config = Rplus::Util::Config::get_config();
     my $subdomain = $config->{'subdomain'};
 
-    my $photo_iter = Rplus::Model::Photo::Manager->get_objects_iterator(query => [delete_date => undef]);
+    my $photo_iter = Rplus::Model::Photo::Manager->get_objects_iterator(
+		query => [\("add_date > now() - interval '365 day'")],
+		sort_by => 'realty_id desc'
+	);
+	my $path = '/var/data/storage/raven/photos/';
     while (my $p = $photo_iter->next) {
 		my $file_name = $p->filename;
 		my $thumb_file_name = $p->thumbnail_filename;
+		my $realty_id = $p->realty_id;
+		my $new_dir = $path . $realty_id;
 		
-		if ($file_name =~ /^.+\/(\d+\.jpg)/) {
-			$p->filename($1);
+		if ($file_name =~ /^.+\/(\d+)\/(\d+\.jpg)/) {
+			my $old_dir = $path . $1;
+			if (rename $old_dir, $new_dir) {
+				say 'renamed ' . $old_dir . ' to ' . $new_dir;
+			} else {
+				say 'no such dir';
+			}
+			$p->thumbnail_filename($2);
 		}
-		if ($thumb_file_name =~ /^.+\/(\d+\_thumbnail.jpg)/) {
-			$p->thumbnail_filename($1);
-		}		
+		if ($thumb_file_name =~ /^.+\/(\d+)\/(\d+\_thumbnail.jpg)/) {
+			$p->thumbnail_filename($2);
+		}	
 		$p->save(changes_only => 1);
     }
 }
