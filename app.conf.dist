@@ -1,94 +1,168 @@
 {
-    # Signed cookies keys
-    secrets => ['change me!'],
+  default_lang => 'ru',
+  roles => {
+             top => {
+                      landmarks => {
+                                     write => 1,
+                                     read => 1
+                                   },
+                      users => {
+                                 manage => 1
+                               },
+                      realty => {
+                                  write => {
+                                             nobody => 1,
+                                             others => 1
+                                           },
+                                  analyse => 1,
+                                  delete => {
+                                              others => 1,
+                                              nobody => 1
+                                            },
+                                  read => {
+                                            others => 1,
+                                            nobody => 1
+                                          },
+                                  export => 1
+                                },
+                      clients => {
+                                   subscribe => 1,
+                                   write => 1,
+                                   read => {
+                                             others => 1,
+                                             nobody => 1
+                                           }
+                                 },
+                      mediators => {
+                                     write => 1,
+                                     read => 1
+                                   },
+                      subscriptions => {
+                                         write => 1,
+                                         read => 1
+                                       }
+                    },
+             manager => {
+                          realty => {
+                                      read => {
+                                                others => 2,
+                                                nobody => 1
+                                              },
+                                      write => {
+                                                 others => 1,
+                                                 nobody => 1
+                                               },
+                                      analyse => 1,
+                                      delete => {
+                                                  nobody => 1,
+                                                  others => 1
+                                                }
+                                    },
+                          clients => {
+                                       write => 1,
+                                       subscribe => 1,
+                                       read => {
+                                                 others => 1,
+                                                 nobody => 1
+                                               }
+                                     },
+                          mediators => {
+                                         write => 1,
+                                         read => 1
+                                       },
+                          subscriptions => {
+                                             read => 1,
+                                             write => 1
+                                           }
+                        },
+             dispatcher => {
+                             subscriptions => {
+                                                write => 1,
+                                                read => 1
+                                              },
+                             clients => {
+                                          write => 1,
+                                          subscribe => 1,
+                                          read => {
+                                                    others => 1,
+                                                    nobody => 1
+                                                  }
+                                        },
+                             realty => {
+                                         write => {
+                                                    others => 0,
+                                                    nobody => 0
+                                                  },
+                                         read => {
+                                                   others => 2,
+                                                   nobody => 0
+                                                 }
+                                       }
+                           },
+             agent => {
+                            clients => {
+                                         read => {
+                                                   others => 0,
+                                                   nobody => 1
+                                                 },
+                                         write => 0
+                                       },
+                            realty => {
+                                        export => 0,
+                                        read => {
+                                                  others => 2,
+                                                  nobody => 1,
+                                                },
+                                        analyse => 1,
+                                        write => {
+                                                   nobody => 0,
+                                                   can_assign => 1,
+                                                   others => 0
+                                                 }
+                                      },
+                            subscriptions => {
+                                               write => 1,
+                                               read => 1
+                                             }
+                          },
+           },
+  default_city_guid => 'a4859da8-9977-4b62-8436-4e1b98c5d13f',
+  default_phone_prefix => 4212,
+  location_id => 1,
 
-    # Base permissions
-    roles => {
-        manager => {
-            realty => {
-                read => {others => 1, nobody => 1},
-                write => {others => 1, nobody => 1},
-                delete => {others => 1, nobody => 1},
-                export => 1,
+  location => {
+    lat => 48.480232846617845,
+    lng => 135.07203340530396,
+  },
+
+  hypnotoad => {
+                 proxy => 1,
+                 pid_file => 'hypnotoad.pid',
+                 listen => [
+                             'http://127.0.0.1:19099'
+                           ]
+               },
+  query_cache_lifetime => '3 days',
+  assets => {
+              url => 'http://assets.rplusmgmt.com'
             },
-            clients => {read => 1, write => 1, subscribe => 1},
-            subscriptions => {read => 1, write => 1},
-            mediators => {read => 1, write => 1},
-            landmarks => {read => 1, write => 1},
-            users => {manage => 1},
-        },
-        agent => {
-            realty => {
-                read => {others => 0, nobody => 0},
-                write => {others => 0, nobody => 0},
+  realty => {
+              close_on_save => 1
             },
-            subscriptions => {read => 1, write => 0},
-        },
-        dispatcher => {
-            realty => {
-                read => {others => 2, nobody => 0},
-                write => {others => 0, nobody => 0},
-            },
-            clients => {read => 1, write => 1, subscribe => 1},
-            subscriptions => {read => 1, write => 1},
-        },
-    },
-
-    force_hide_nav => {
-        agent => ['search'],
-        dispatcher => ['realty'],
-    },
-
-    default_lang => 'ru',
-    default_city_guid => 'a4859da8-9977-4b62-8436-4e1b98c5d13f',
-    default_phone_prefix => '4212',
-
-    query_cache_lifetime => '3 days',
-
-    storage => {
-        path => '/mnt/data/storage/mgmt',
-        url => 'http://storage.dvnic.com/mgmt',
-    },
-
-    assets => {
-        url => 'http://assets.dvnic.com',
-    },
-
-    smsc => {
-        active => 0,
-        psw => 'password',
-        sender => 'myname',
-        tz => '+7',
-        login => 'login',
-    },
-
-    subscriptions => {
-        contact_info => 'Тест',
-    },
-
-    realty => {
-        close_on_save => 1,
-    },
-
-    hypnotoad => {
-        listen => ['http://127.0.0.1:9100'],
-        proxy => 1,
-        pid_file => 'hypnotoad.pid',
-    }
-    
-    import => {
-        media_name => {
-            proxy => 'http://127.0.0.1:8080',
-            pause => 20,
-            crop_image_y => -40,
-            avito_url => 'http://www.site.ru',
-            sell_flats_url => '/habarovsk/kvartiry/prodam',
-            rent_flats_url => '/habarovsk/kvartiry/sdam',
-            sell_rooms_url => '/habarovsk/komnaty/prodam',
-            rent_rooms_url => '/habarovsk/komnaty/sdam',
-            sell_houses_url => '/habarovsk/doma_dachi_kottedzhi/prodam',
-            rent_houses_url => '/habarovsk/doma_dachi_kottedzhi/sdam',
-            sell_land_url => '/habarovsk/zemelnye_uchastki/prodam',
-        },
-    }
+  secret => 'pelbHipE5pTQvKAAyhZxkhhXNTArcxiN',
+  force_hide_nav => {
+                      dispatcher => [
+                                      'realty',
+                                      'clients'
+                                    ],
+                      agent => [
+                                 'search'
+                               ]
+                    },
+  account_type => 'dev',
+  storage => {
+               url => 'http://storage.rplusmgmt.com/raven',
+               path => '/var/data/storage/raven'
+             },
+  realty_buffer_url => 'http://192.168.5.1:3000'
 }

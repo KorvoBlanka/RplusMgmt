@@ -2,21 +2,14 @@ package RplusMgmt::Controller::API::Realty;
 
 use Mojo::Base 'Mojolicious::Controller';
 
-use Rplus::Model::Account;
 use Rplus::Model::Account::Manager;
-use Rplus::Model::Realty;
 use Rplus::Model::Realty::Manager;
-use Rplus::Model::MediatorCompany;
 use Rplus::Model::MediatorCompany::Manager;
-use Rplus::Model::Mediator;
 use Rplus::Model::Mediator::Manager;
-use Rplus::Model::Photo;
+use Rplus::Model::Media::Manager;
 use Rplus::Model::Photo::Manager;
-use Rplus::Model::RealtyColorTag;
 use Rplus::Model::RealtyColorTag::Manager;
-use Rplus::Model::SubscriptionRealty;
 use Rplus::Model::SubscriptionRealty::Manager;
-use Rplus::Model::Option;
 use Rplus::Model::Option::Manager;
 
 use Rplus::Util::PhoneNum;
