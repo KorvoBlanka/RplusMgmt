@@ -338,8 +338,6 @@ sub startup {
         my @parts = split(/\./, $host);
         my $account_name = $parts[0];
 
-	$account_name = 'dev';
-
         $c->session(account_name => $account_name);  # используется в get_account
 
         if (my $user_id = $c->session->{user_id}) {
