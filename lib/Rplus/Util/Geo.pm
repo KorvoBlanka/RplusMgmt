@@ -20,7 +20,7 @@ sub _uniq {
 
 sub get_location_metadata {
   # Input params
-  my ($lat, $lng, $self) = @_;
+  my ($lat, $lng, $config) = @_;
 
   # Perform reverse geocoding
   state $_geocache;
@@ -33,7 +33,7 @@ sub get_location_metadata {
       form => {
         format => 'json',
         geocode => $lng . ',' . $lat,
-        key => $self->config->{api_keys}->{yandex}
+        key => $config->{api_keys}->{yandex}
       }
   )->res->json;
 
@@ -55,9 +55,9 @@ sub get_location_metadata {
       form => {
         language => 'ru',
         location => $lat . ',' . $lng,
-        radius => $self->config->{search}->{radius},
-        types => $self->config->{search}->{poi_types},
-        #key => $self->config->{api_keys}->{google},
+        radius => $config->{search}->{radius},
+        types => $config->{search}->{poi_types},
+        #key => $config->{api_keys}->{google},
         key => 'AIzaSyAL5WfkU-scRALuR-STSvICl77fVJDkmZ4',
       }
   );

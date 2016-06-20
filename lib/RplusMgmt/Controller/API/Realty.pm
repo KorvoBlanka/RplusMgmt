@@ -2,21 +2,14 @@ package RplusMgmt::Controller::API::Realty;
 
 use Mojo::Base 'Mojolicious::Controller';
 
-use Rplus::Model::Account;
 use Rplus::Model::Account::Manager;
-use Rplus::Model::Realty;
 use Rplus::Model::Realty::Manager;
-use Rplus::Model::MediatorCompany;
 use Rplus::Model::MediatorCompany::Manager;
-use Rplus::Model::Mediator;
 use Rplus::Model::Mediator::Manager;
-use Rplus::Model::Photo;
+use Rplus::Model::Media::Manager;
 use Rplus::Model::Photo::Manager;
-use Rplus::Model::RealtyColorTag;
 use Rplus::Model::RealtyColorTag::Manager;
-use Rplus::Model::SubscriptionRealty;
 use Rplus::Model::SubscriptionRealty::Manager;
-use Rplus::Model::Option;
 use Rplus::Model::Option::Manager;
 
 use Rplus::Util::PhoneNum;
@@ -1612,7 +1605,7 @@ sub get_location {
     }
 
     if ($coords{latitude}) {
-      my $location_meta = Rplus::Util::Geo::get_location_metadata($coords{latitude}, $coords{longitude}, $self);
+      my $location_meta = Rplus::Util::Geo::get_location_metadata($coords{latitude}, $coords{longitude}, $self->config);
 
       $district = join ', ', @{$location_meta->{district}};
       $pois = $location_meta->{pois};
@@ -1642,7 +1635,7 @@ sub update_location {
     }
 
     if ($realty->latitude) {
-       my $res = Rplus::Util::Geo::get_location_metadata($realty->latitude, $realty->longitude, $self);
+       my $res = Rplus::Util::Geo::get_location_metadata($realty->latitude, $realty->longitude, $self->config);
 
        $realty->district(join ', ', @{$res->{district}});
        $realty->pois(Mojo::Collection->new($res->{pois})->uniq);

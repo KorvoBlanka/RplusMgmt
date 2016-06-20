@@ -45,6 +45,7 @@ my $parser_tz = DateTime::Format::Strptime->new( pattern => '%FT%T%z' );
 
 sub update_location {
   my $realty = shift;
+  my $config = shift;
   if ($realty->address) {
       my %coords = Rplus::Util::Geo::get_coords_by_addr($realty->locality, $realty->address, $realty->house_num);
 
@@ -58,7 +59,7 @@ sub update_location {
   }
 
   if ($realty->latitude) {
-     my $res = Rplus::Util::Geo::get_location_metadata($realty->latitude, $realty->longitude);
+     my $res = Rplus::Util::Geo::get_location_metadata($realty->latitude, $realty->longitude, $config);
 
      $realty->district(join ', ', @{$res->{district}});
      $realty->pois(Mojo::Collection->new($res->{pois})->uniq);
@@ -170,7 +171,7 @@ sub run {
                             my $realty = Rplus::Model::Realty->new((map { $_ => $data->{$_} } grep { $_ ne 'photo_url' && $_ ne 'category_code' && $_ ne 'id'} keys %$data), state_code => 'raw');
                             $realty->last_seen_date($data->{add_date});
 
-                            update_location($realty);
+                            update_location($realty, $config);
 
                             $realty->pois(undef);
                             $realty->save;
