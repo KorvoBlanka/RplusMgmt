@@ -50,7 +50,7 @@ sub startup {
     # Default stash values
     $self->defaults(
         jquery_ver => '2.0.3',
-        bootstrap_ver => '3.0.2',
+        bootstrap_ver => '3.0.3',
         momentjs_ver => '2.8.2',
         holderjs_ver => '2.2.0',
         leafletjs_ver => '0.7.7',
@@ -107,14 +107,6 @@ sub startup {
         }
 
         return 1;
-    });
-
-    $self->helper(get_account_by_name => sub {
-        my ($self, $acc_name) = @_;
-
-        my $account = Rplus::Model::Account::Manager->get_objects(query => [name => $acc_name, del_date => undef])->[0];
-
-        return $account;
     });
 
     $self->helper(get_account => sub {

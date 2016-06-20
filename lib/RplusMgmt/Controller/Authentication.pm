@@ -9,6 +9,7 @@ use Rplus::Model::User::Manager;
 
 use JSON;
 
+use Data::Dumper;
 
 sub auth {
     my $self = shift;
@@ -28,22 +29,23 @@ sub signin {
     my $remember_me = $self->param_b('remember_me');
     my $msg = '';
 
+    $self->session(account_name => $account_name);
+
     return $self->render(json => {status => 'failed', reason => 'no_data'}) unless $login && defined $password;
 
-    my $account = $self->get_account_by_name($account_name);
+    my $account = $self->get_account($account_name);
     return $self->render(json => {status => 'failed', reason => 'account_not_found'}) unless $account;
 
     my $user = Rplus::Model::User::Manager->get_objects(query => [account_id => $account->{id}, login => $login, password => $password, delete_date => undef])->[0];
     return $self->render(json => {status => 'failed', reason => 'user_not_found'}) unless $user;
 
     return $self->render(json => {status => 'failed', reason => 'no_money'}) if $account->{balance} < 0;
-    return $self->render(json => {status => 'failed', reason => 'user_limit'}) if $self->uc_check($user->account_id, $user->id, $account->{user_count} * 1) == 0;
+    return $self->render(json => {status => 'failed', reason => 'user_limit'}) if $self->uc_check($account->id, $user->id, $account->user_count * 1) == 0;
 
     $msg = 'Пользователь с таким логином уже вошел в систему' if $self->is_logged_in($user->account_id, $user->id);
 
     $self->session(sid => int(rand(100000)));
     $self->session(user_id => $user->id);
-    $self->session(account_name => $account_name);
 
     $self->session(account => {
         id => $account->id,
