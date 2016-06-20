@@ -1,4 +1,4 @@
-package RplusMgmt::Controller::Backdoor;
+package RplusMgmt::Controller::Service;
 
 use Mojo::Base 'Mojolicious::Controller';
 use Mojo::IOLoop;

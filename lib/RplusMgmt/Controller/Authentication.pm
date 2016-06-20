@@ -22,6 +22,7 @@ sub auth {
 sub signin {
     my $self = shift;
 
+    my $account_name = $self->param_n('account');
     my $login = $self->param_n('login');
     my $password = $self->param('password');
     my $remember_me = $self->param_b('remember_me');
@@ -29,7 +30,7 @@ sub signin {
 
     return $self->render(json => {status => 'failed', reason => 'no_data'}) unless $login && defined $password;
 
-    my $account = $self->get_account();
+    my $account = $self->get_account_by_name($account_name);
     return $self->render(json => {status => 'failed', reason => 'account_not_found'}) unless $account;
 
     my $user = Rplus::Model::User::Manager->get_objects(query => [account_id => $account->{id}, login => $login, password => $password, delete_date => undef])->[0];
@@ -42,6 +43,7 @@ sub signin {
 
     $self->session(sid => int(rand(100000)));
     $self->session(user_id => $user->id);
+    $self->session(account_name => $account_name);
 
     $self->session(account => {
         id => $account->id,
@@ -49,7 +51,6 @@ sub signin {
         mode => $account->mode,
         location_id => $account->location_id,
     });
-
 
     if ($remember_me) {
         $self->session(expiration => 28800);

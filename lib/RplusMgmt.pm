@@ -109,6 +109,14 @@ sub startup {
         return 1;
     });
 
+    $self->helper(get_account_by_name => sub {
+        my ($self, $acc_name) = @_;
+
+        my $account = Rplus::Model::Account::Manager->get_objects(query => [name => $acc_name, del_date => undef])->[0];
+
+        return $account;
+    });
+
     $self->helper(get_account => sub {
         my ($self) = @_;
 
@@ -333,14 +341,6 @@ sub startup {
     #
     $self->hook(before_routes => sub {
         my $c = shift;
-
-        my $host = $c->req->url->to_abs->host;
-        my @parts = split(/\./, $host);
-        my $account_name = $parts[0];
-
-	$account_name = 'dev';
-
-        $c->session(account_name => $account_name);  # используется в get_account
 
         if (my $user_id = $c->session->{user_id}) {
             if (my $user = Rplus::Model::User::Manager->get_objects(query => [id => $user_id, delete_date => undef])->[0]) {
