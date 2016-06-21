@@ -480,7 +480,7 @@ sub subscribe {
     my $search_area = $self->param_n('search_area');
     my $offer_type_code = $self->param('offer_type_code');
     my $rent_type = $self->param('rent_type');
-    my $realty_ids = Mojo::Collection->new($self->param('realty_ids[]'))->compact->uniq;
+    my $realty_ids = Mojo::Collection->new(@{$self->every_param('realty_ids[]')})->compact->uniq;
     my $end_date = $self->parse_datetime(scalar $self->param('end_date'));
 
 

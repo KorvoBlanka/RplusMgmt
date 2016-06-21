@@ -5,6 +5,7 @@ use Rplus::Modern;
 use Rplus::Model::Account;
 use Rplus::Model::Account::Manager;
 
+use Data::Dumper;
 
 my $ua = Mojo::UserAgent->new;
 
@@ -13,9 +14,11 @@ sub run {
 
     my $account_iter = Rplus::Model::Account::Manager->get_objects_iterator(query => [del_date => undef]);
     while (my $account = $account_iter->next) {
-    #    Rplus::Util::Billing::syncAll($account->id);
 
-      my $tx = $ua->get('http://rplusmgmt.com/api/account/get_by_name?name=' . $account->name);
+      my $url = $c->config->{billing_url} . '/api/account/get_by_name';
+
+      my $tx = $ua->get($url, form => {name => $account->name});
+
       if (my $res = $tx->success) {
           if ($res->json->{'status'} eq 'ok') {
               my $acc_data = $res->json->{'data'};

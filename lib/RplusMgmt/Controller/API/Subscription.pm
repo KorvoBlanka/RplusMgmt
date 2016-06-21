@@ -469,7 +469,7 @@ sub update {
     my $subscription = Rplus::Model::Subscription::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $subscription;
 
-    my $queries = Mojo::Collection->new($self->param('queries[]'))->map(sub { trim $_ })->compact->uniq;
+    my $queries = Mojo::Collection->new(@{$self->every_param('queries[]')})->map(sub { trim $_ })->compact->uniq;
     $subscription->queries($queries);
     $subscription->add_date('now()');
 
@@ -524,10 +524,10 @@ sub save {
     my $offer_type_code = $self->param('offer_type_code');
     my $rent_type = $self->param('rent_type');
     my $end_date = $self->parse_datetime(scalar $self->param('end_date'));
-    my $queries = Mojo::Collection->new($self->param('queries[]'))->map(sub { trim $_ })->compact->uniq;
+    my $queries = Mojo::Collection->new(@{$self->every_param('queries[]')})->map(sub { trim $_ })->compact->uniq;
     my $realty_limit = $self->param('realty_limit') || 20;
     my $send_owner_phone = $self->param_b('send_owner_phone');
-    my $realty_ids = Mojo::Collection->new($self->param('realty_ids[]'))->compact->uniq;
+    my $realty_ids = Mojo::Collection->new(@{$self->every_param('realty_ids[]')})->compact->uniq;
 
     return $self->render(json => {errors => [{queries => 'Empty queries'}]}, status => 400) unless @$queries;
 

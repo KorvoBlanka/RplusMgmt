@@ -197,9 +197,9 @@ sub save {
         return $self->render(json => {errors => \@errors}, status => 400);
     }
 
-	if (Rplus::Model::User::Manager->get_objects_count(query => [account_id => $acc_id, '!id' => $user->id, login => $self->param_n('login'), delete_date => undef]) > 0) {
-		return $self->render(json => {error => 'bad_login'}, status => 200)
-	}
+  	if (Rplus::Model::User::Manager->get_objects_count(query => [account_id => $acc_id, '!id' => $user->id, login => $self->param_n('login'), delete_date => undef]) > 0) {
+  		return $self->render(json => {error => 'bad_login'}, status => 200)
+  	}
 
     # Input params
     my $login = $self->param_n('login');
@@ -212,7 +212,7 @@ sub save {
     my $public_phone_num = $self->param_n('public_phone_num');
     my $photo_url = $self->param_n('photo_url');
 
-    my @subordinates = $self->param('subordinates[]');
+    my $subordinates = Mojo::Collection->new(@{$self->every_param('subordinates[]')})->compact->uniq;
 
     my $sip = {};
     $sip->{sip_host} = $self->param_n('sip_host');
@@ -235,11 +235,11 @@ sub save {
     $user->public_phone_num($public_phone_num);
     $user->ip_telephony(encode_json($sip));
     $user->photo_url($photo_url);
-    $user->subordinate(Mojo::Collection->new(@subordinates)->compact->uniq);
+    $user->subordinate($subordinates);
     $user->account_id($acc_id);
 
-    if (scalar(@subordinates) > 0 && $role ne 'manager') {
-        $user->subordinate([]);
+    if (scalar(@{$subordinates}) > 0 && $role ne 'manager') {
+        $user->subordinate(Mojo::Collection->new());
     }
 
     # если пользователь не агент он не может быть в подчиненных

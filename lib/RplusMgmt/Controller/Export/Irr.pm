@@ -1327,12 +1327,11 @@ sub index {
                 my $img_realty_id = (URI->new($_->filename)->path_segments)[-2];
                 my $img_name = (URI->new($_->filename)->path_segments)[-1];
                 my $img_zipname = $img_realty_id . '_' . $img_name;
-                #my $image = $ua->get($_->filename)->res->content->asset;
                 my $img_path = '';
-                if ($_->filename =~ /import/) {     # http://tstorage.rplusmgmt.com/import/photos/287752/140416998258953.jpg
-                    $img_path = $import_storage_path . $img_realty_id . '/' . $img_name
-                } else {                            # http://tstorage.maklerdv.ru/clients/makler/photos/99018/140417050218249.jpg
-                    $img_path = $self->config->{'storage'}->{'path'} . '/photos/' . $img_realty_id . '/' . $img_name
+                if ($_->filename =~ /import/) {
+                    $img_path = $import_storage_path . $img_realty_id . '/' . $img_name;
+                } else {
+                    $img_path = $self->config->{'storage'}->{'path'} . '/photos/' . $img_realty_id . '/' . $img_name;
                 }
                 if (-e $img_path) {
                     my $member = $zip->addFile($img_path, $img_zipname);

@@ -112,7 +112,7 @@ sub run {
                 $obj_count = $res->json->{count};
                 for my $data (@$realty_data) {
                     say '-----------------------';
-                    if (scalar @{$data->{'owner_phones'}} > 0) {
+                    if ($data->{'owner_phones'} && scalar @{$data->{'owner_phones'}} > 0) {
                         my $mediator = Rplus::Model::Mediator::Manager->get_objects(
                             query => [
                                 phone_num => [@{$data->{'owner_phones'}}],

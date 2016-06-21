@@ -133,8 +133,8 @@ sub by_email {
 sub get_digest {
     my ($c, $r, $photos, $contact_info, $sender) = @_;
 
-    my $no_photo_url = 'http://storage.rplusmgmt.com/rplus/no-photo.gif';
-    my $no_photo_big_url = 'http://storage.rplusmgmt.com/rplus/no-photo-big.gif';
+    my $no_photo_url =  '<%= $assets_url %>/img/no-photo.gif';
+    my $no_photo_big_url = '<%= $assets_url %>/img/no-photo-big.gif';
 
     my $sender_block = '';
     my $header_block = '';

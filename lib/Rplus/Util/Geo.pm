@@ -22,11 +22,7 @@ sub get_location_metadata {
   # Input params
   my ($lat, $lng, $config) = @_;
 
-  # Perform reverse geocoding
-  state $_geocache;
-
   my $k = $lng . ',' . $lat;
-  return @{$_geocache->{$k}} if exists $_geocache->{$k};
 
   my $res = $ua->get(
       'https://geocode-maps.yandex.ru/1.x/',
@@ -74,16 +70,12 @@ sub get_location_metadata {
 
   @pois = _uniq(@pois);
 
-  $_geocache->{$k} = {district => \@districts, pois => \@pois};
-
   return {district => \@districts, pois => \@pois};
 }
 
 # Геокодирование google
 sub get_coords_by_addr {
     my ($locality, $address, $house_num) = @_;
-
-    state $_geocache;
 
     my ($latitude, $longitude);
 
@@ -102,7 +94,6 @@ sub get_coords_by_addr {
       }
     }
 
-    return @{$_geocache->{$q}} if exists $_geocache->{$q};
     if (my $r = Rplus::Model::Realty::Manager->get_objects(
       select => ['id', 'latitude', 'longitude'],
       query => [locality => $locality, address => $address, house_num => $house_num, '!latitude' => undef, '!longitude' => undef],
@@ -122,7 +113,6 @@ sub get_coords_by_addr {
 
       $latitude = $pos[1];
       $longitude = $pos[0];
-      $_geocache->{$q} = [latitude => $latitude, longitude => $longitude];
     }
 
     return ($latitude && $longitude ? (latitude => $latitude, longitude => $longitude) : ());
@@ -131,12 +121,9 @@ sub get_coords_by_addr {
 sub get_coords_by_addr_google {
     my ($locality, $address, $house_num) = @_;
 
-    state $_geocache;
-
     my ($latitude, $longitude);
     my $q = $locality . ', ' . $address .', '.$house_num;
 
-    return @{$_geocache->{$q}} if exists $_geocache->{$q};
     if (my $r = Rplus::Model::Realty::Manager->get_objects(
       select => ['id', 'latitude', 'longitude'],
       query => [locality => $locality, address => $address, house_num => $house_num, '!latitude' => undef, '!longitude' => undef],
@@ -160,7 +147,6 @@ sub get_coords_by_addr_google {
             return unless $data->{'status'} ne 'OK';
             if (my $loc = $data->{'results'}->[0]->{'geometry'}->{'location'}) {
                 ($longitude, $latitude) = ($loc->{'lng'}, $loc->{'lat'});
-                $_geocache->{$q} = [latitude => $latitude, longitude => $longitude];
             }
         } or do {};
     } else {
@@ -173,8 +159,6 @@ sub get_coords_by_addr_google {
 # Геокодирование
 sub get_coords_by_addr_2gis {
     my ($city, $addr, $house_num) = @_;
-
-    state $_geocache;
 
     my ($latitude, $longitude);
     my $q = $city . ', ' . $addr . ', ' . $house_num;
@@ -198,7 +182,6 @@ sub get_coords_by_addr_2gis {
             if (my $centroid = $data->{'result'}->[0]->{'centroid'}) {
                 if ($centroid =~ /^POINT\((\d+\.\d+) (\d+\.\d+)\)$/) {
                     ($longitude, $latitude) = ($1, $2);
-                    $_geocache->{$q} = [latitude => $latitude, longitude => $longitude];
                 }
             }
             1;

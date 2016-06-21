@@ -350,6 +350,7 @@ sub startup {
         }
     });
 
+
     my $task_timer_id = Mojo::IOLoop->recurring(180 => sub {
 
       my $tp = $fmap->get('task_process');
@@ -361,11 +362,11 @@ sub startup {
         } else {
 
           say 'child: doing chords';
-          RplusMgmt::Task::BillingSync::run();
+          RplusMgmt::Task::BillingSync::run($self);
           RplusMgmt::Task::CalendarSync::run();
 
           RplusMgmt::Task::Subscriptions::run($self);
-          #RplusMgmt::Task::SMS::run();
+          #RplusMgmt::Task::SMS::run($self);
           say 'child: done';
 
           exit(0);
@@ -447,10 +448,8 @@ sub startup {
             });
         });
 
-        # Tasks
-        $r2->get('/tasks/:action')->to(controller => 'tasks');
-        # Backdoor
-        $r2->get('/backdoor/:action')->to(controller => 'backdoor');
+        # service 
+        $r2->get('/service/:action')->to(controller => 'service');
 
         my $r2b = $r2->under->to(controller => 'authentication', action => 'auth');
 

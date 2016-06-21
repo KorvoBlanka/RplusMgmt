@@ -26,7 +26,6 @@ use JSON;
 use Mojo::Collection;
 use Time::Piece;
 
-
 no warnings 'experimental::smartmatch';
 
 
@@ -697,7 +696,7 @@ sub list {
     my @query;
     my $near_q;
     {
-        if ($q =~ s/(рядом )(.+)/ /i) {
+        if ($q && $q =~ s/(рядом )(.+)/ /i) {
             $near_q = $2;
         }
 
@@ -835,7 +834,6 @@ sub list {
         push @query, Rplus::Util::Query::get_near_filter($near_q, $self);
     }
 
-    #say Dumper @query;
 
     my $res = {
         count => Rplus::Model::Realty::Manager->get_objects_count(
@@ -978,10 +976,10 @@ sub save {
     }
 
     # attachments
-    $data{attachments} = Mojo::Collection->new($self->param('attachments[]'))->compact->uniq;
+    $data{attachments} = Mojo::Collection->new(@{$self->every_param('attachments[]')})->compact->uniq;
 
     # Owner phones
-    $data{owner_phones} = Mojo::Collection->new($self->param('owner_phones[]'))->map(sub { $self->parse_phone_num($_) })->compact->uniq;
+    $data{owner_phones} = Mojo::Collection->new(@{$self->every_param('owner_phones[]')})->map(sub { $self->parse_phone_num($_) })->compact->uniq;
     push @errors, {owner_phones => 'Empty phones'} unless @{$data{owner_phones}};
 
     my $realty;
@@ -1016,11 +1014,11 @@ sub save {
         }
     }
 
-    $data{pois} = Mojo::Collection->new($self->param('pois[]'))->uniq;
+    $data{pois} = Mojo::Collection->new(@{$self->every_param('pois[]')})->uniq;
 
     # Export media
     my $export_media_ok = Rplus::DB->new_or_cached->dbh->selectall_hashref(q{SELECT M.id, M.name FROM media M WHERE M.type = 'export' AND M.delete_date IS NULL}, 'id');
-    $data{export_media} = Mojo::Collection->new($self->param('export_media[]'))->grep(sub { exists $export_media_ok->{$_} })->uniq;
+    $data{export_media} = Mojo::Collection->new(@{$self->every_param('export_media[]')})->grep(sub { exists $export_media_ok->{$_} })->uniq;
 
     if (!$realty->agent_id) {
         $realty->export_media(Mojo::Collection->new());
@@ -1187,50 +1185,6 @@ sub save {
     $self->render(json => $res);
 }
 
-sub set_color_tag {
-    my $self = shift;
-
-    my $acc_id = $self->session('account')->{id};
-    my $user_id = $self->stash('user')->{id};
-    my $id = $self->param('id');
-    my $color_tag_id = $self->param('color_tag_id');
-
-    my $realty = Rplus::Model::Realty::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
-    return $self->render(json => {error => 'Not Found'}, status => 404) unless $realty;
-
-    my $realty_tag = Rplus::Model::RealtyColorTag::Manager->get_objects(query => [realty_id => $id],)->[0];
-    if (!$realty_tag) {
-        $realty_tag = Rplus::Model::RealtyColorTag->new(realty_id => $id);
-    }
-
-    for (my $i = 0; $i <= 7; $i ++) {
-        my $tag_name = 'tag' . $i;
-        if ($i == $color_tag_id) {
-            if ($self->stash('user')->{id} ~~ @{$realty_tag->$tag_name}) {
-                my $t_tags = Mojo::Collection->new(grep { $_ != $self->stash('user')->{id} } @{$realty_tag->$tag_name});
-                $realty_tag->$tag_name($t_tags->compact->uniq);
-            } else {
-                my $t_tags = Mojo::Collection->new(@{$realty_tag->$tag_name});
-                push @$t_tags, ($user_id);
-                $realty_tag->$tag_name($t_tags->compact->uniq);
-            }
-        } else {
-            my $t_tags = Mojo::Collection->new(grep { $_ != $self->stash('user')->{id} } @{$realty_tag->$tag_name});
-            $realty_tag->$tag_name($t_tags->compact->uniq);
-        }
-    }
-
-    $realty_tag->save(changes_only => 1);
-
-    my $res = {
-        status => 'success',
-        id => $id,
-        realty => $_serialize->($self, $realty),
-    };
-
-    return $self->render(json => $res);
-}
-
 sub set_color_tag_multiple {
     my $self = shift;
 
@@ -1238,7 +1192,7 @@ sub set_color_tag_multiple {
     my $user_id = $self->stash('user')->{id};
 
     my $color_tag_id = $self->param('color_tag_id');
-    my $ids = Mojo::Collection->new($self->param('id[]'));
+    my $ids = Mojo::Collection->new(@{$self->every_param('id[]')});
 
     my %realtys;
     my @errors;
@@ -1286,125 +1240,6 @@ sub set_color_tag_multiple {
     return $self->render(json => $res);
 }
 
-sub update {
-    my $self = shift;
-
-    #return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => 'write');
-
-    my $acc_id = $self->session('account')->{id};
-    my $user_id = $self->stash('user')->{id};
-
-    my $id = $self->param('id');
-    my $create_event = 0;
-    my $realty = Rplus::Model::Realty::Manager->get_objects(query => [id => $id, or => [account_id => undef, account_id => $acc_id], \("NOT hidden_for && '{".$acc_id."}'"), delete_date => undef])->[0];
-    return $self->render(json => {error => 'Not Found'}, status => 404) unless $realty;
-
-
-    for ($self->param) {
-
-        if ($_ eq 'agent_id') {
-            my $agent_id = $self->param_n('agent_id');
-
-            unless ($self->has_permission(realty => write => $realty->agent_id)) {
-                return $self->render(json => {error => 'Forbidden'}, status => 403 , data => {uid => $user_id, aid => $agent_id,},) unless $self->has_permission(realty => 'write')->{can_assign} && $agent_id == $user_id;
-            }
-        } elsif ($_ eq 'color_tag_id') {
-            # без проверок
-        } elsif ($_ eq 'state_code' || $_ eq 'export_media' || $_ eq 'export_media[]') {
-            return $self->render(json => {error => 'Forbidden'}, status => 403, data => $_) unless $self->has_permission(realty => write => $realty->agent_id);
-        }
-    }
-
-    unless ($realty->account_id) {
-        $realty = $_make_copy->($self, $realty);
-        return $self->render(json => {error => 'Unable to make a copy'}, status => 404) unless $realty;
-    }
-
-    for ($self->param) {
-
-        if ($_ eq 'agent_id') {
-            my $agent_id = $self->param_n('agent_id');
-
-            unless ($agent_id) {
-                $realty->agent_id(undef);
-            } else {
-                if ($agent_id == 10000) {
-                    add_mediator('ПОСРЕДНИК В НЕДВИЖИМОСТИ', $realty->owner_phones->[0], 'user_' . $user_id, $acc_id);
-                } else {
-                    $realty->agent_id($agent_id);
-                    $create_event = 1;
-                }
-            }
-
-            $realty->assign_date('now()');
-            $realty->change_date('now()');
-
-
-        } elsif ($_ eq 'state_code') {
-            $realty->state_code(scalar $self->param('state_code'));
-            $realty->change_date('now()');
-        } elsif ($_ eq 'color_tag_id') {
-
-        } elsif ($_ eq 'export_media[]') {
-            my $export_media_ok = Rplus::DB->new_or_cached->dbh->selectall_hashref(q{SELECT M.id, M.name FROM media M WHERE M.type = 'export' AND M.delete_date IS NULL}, 'id');
-            $realty->export_media(Mojo::Collection->new($self->param('export_media[]'))->grep(sub { exists $export_media_ok->{$_} })->uniq);
-
-        } elsif ($_ eq 'export_media') {
-            $realty->export_media(Mojo::Collection->new());
-        }
-    }
-
-    # Save data
-    eval {
-        $realty->save(changes_only => 1);
-        1;
-    } or do {
-
-        return $self->render(json => {error => $@}, status => 500) unless $realty;
-    };
-
-    $realty->load;
-
-    eval {
-        if ($create_event) {
-            my $start_date = localtime;
-            my $end_date = $start_date + 15 * 60;
-            my $start_date_str = $start_date->datetime . '+' . ($start_date->tzoffset / (60 * 60));
-            my $end_date_str = $end_date->datetime . '+' . ($start_date->tzoffset / (60 * 60));
-
-            my @parts;
-            {
-                push @parts, $realty->type->name;
-                push @parts, $realty->rooms_count.'к' if $realty->rooms_count;
-                push @parts, $realty->address.($realty->house_num ? ', '.$realty->house_num : '') if $realty->address;
-                push @parts, $realty->price.' тыс. руб.' if $realty->price;
-            }
-            my $summary = join(', ', @parts);
-
-            Rplus::Util::Task::qcreate($self, {
-                    task_type_id => 9, # назначен объект
-                    assigned_user_id => $realty->agent_id,
-                    start_date => $start_date_str,
-                    end_date => $end_date_str,
-                    summary => $summary,
-                    client_id => undef,
-                    realty_id => $realty->id,
-                });
-        }
-    };
-    if ($@) {
-
-    }
-
-    my $res = {
-        status => 'success',
-        id => $realty->id,
-        realty => $_serialize->($self, $realty),
-    };
-
-    return $self->render(json => $res);
-}
-
 sub update_multiple {
     my $self = shift;
 
@@ -1415,7 +1250,11 @@ sub update_multiple {
     my $acc_id = $self->session('account')->{id};
     my $user_id = $self->stash('user')->{id};
 
-    my $ids = Mojo::Collection->new($self->param('id[]'));
+    my $ids = Mojo::Collection->new(@{$self->every_param('id[]')});
+
+    my $agent_id = $self->param('agent_id');
+    my $export_media = $self->param('export_media');
+    my $state_code = $self->param('state_code');
 
     my %realtys;
     my @errors;
@@ -1431,55 +1270,6 @@ sub update_multiple {
         }
         my $old_id = $realty->id;
 
-        for ($self->param) {
-
-            if ($_ eq 'agent_id') {
-                my $agent_id = $self->param_n('agent_id');
-
-                unless ($self->has_permission(realty => write => $realty->agent_id)) {
-                    unless ($self->has_permission(realty => 'write')->{can_assign} && $agent_id == $user_id) {
-                        push @errors, $id;
-                        return;
-                    }
-                }
-            } elsif ($_ eq 'color_tag_id') {
-
-            } elsif ($_ eq 'export_media') {
-                my $export_media_id = $self->param_n('export_media');
-                my $export_media_ok = Rplus::DB->new_or_cached->dbh->selectall_hashref(q{SELECT M.id, M.name FROM media M WHERE M.type = 'export' AND M.delete_date IS NULL}, 'id');
-
-                unless ($self->has_permission(realty => write => $realty->agent_id) || !exists $export_media_ok->{$export_media_id}) {
-                    push @errors, $id;
-                    return;
-                }
-
-                unless ($export_media_id ~~ @{$realty->export_media}) {
-                    my $exp_media_code = $export_media{$export_media_id};
-                    my $req_fields;
-                    if ($required_export->{$exp_media_code}) {
-                        $req_fields = $required_export->{$exp_media_code}->{$realty->type_code}->{$realty->offer_type_code};
-                        unless ($req_fields) {
-                            $req_fields = $required_export->{$exp_media_code}->{'any'}->{$realty->offer_type_code};
-                        }
-                    }
-                    if ($req_fields) {
-                        foreach (@$req_fields) {
-                            unless ($realty->$_) {
-                                push @errors, $id;
-                                return;
-                            }
-                        }
-                    }
-                }
-
-            } elsif ($_ eq 'state_code') {
-                unless ($self->has_permission(realty => write => $realty->agent_id)) {
-                    push @errors, $id;
-                    return;
-                }
-            }
-        }
-
         unless ($realty->account_id) {
             $realty = $_make_copy->($self, $realty);
             unless ($realty) {
@@ -1488,45 +1278,74 @@ sub update_multiple {
             }
         }
 
-        for ($self->param) {
+        if ($agent_id) {
+            unless ($self->has_permission(realty => write => $realty->agent_id)) {
+                unless ($self->has_permission(realty => 'write')->{can_assign} && $agent_id == $user_id) {
+                    push @errors, $id;
+                    return;
+                }
+            }
 
-            if ($_ eq 'agent_id') {
-                my $agent_id = $self->param_n('agent_id');
-
-                unless ($agent_id) {
-                    $realty->agent_id(undef);
+            unless ($agent_id) {
+                $realty->agent_id(undef);
+            } else {
+                if ($agent_id == 10000) {
+                    add_mediator('ПОСРЕДНИК В НЕДВИЖИМОСТИ', $realty->owner_phones->[0], 'user_' . $user_id, $acc_id);
                 } else {
-                    if ($agent_id == 10000) {
-                        add_mediator('ПОСРЕДНИК В НЕДВИЖИМОСТИ', $realty->owner_phones->[0], 'user_' . $user_id, $acc_id);
-                    } else {
-                        $realty->agent_id($agent_id);
-                        $create_event = 1;
+                    $realty->agent_id($agent_id);
+                    $create_event = 1;
+                }
+            }
+            $realty->assign_date('now()');
+            $realty->change_date('now()');
+        }
+
+        if ($export_media) {
+            my $export_media_id = $self->param_n('export_media');
+            my $export_media_ok = Rplus::DB->new_or_cached->dbh->selectall_hashref(q{SELECT M.id, M.name FROM media M WHERE M.type = 'export' AND M.delete_date IS NULL}, 'id');
+
+            unless ($self->has_permission(realty => write => $realty->agent_id) || !exists $export_media_ok->{$export_media_id}) {
+                push @errors, $id;
+                return;
+            }
+
+            unless ($export_media_id ~~ @{$realty->export_media}) {
+                my $exp_media_code = $export_media{$export_media_id};
+                my $req_fields;
+                if ($required_export->{$exp_media_code}) {
+                    $req_fields = $required_export->{$exp_media_code}->{$realty->type_code}->{$realty->offer_type_code};
+                    unless ($req_fields) {
+                        $req_fields = $required_export->{$exp_media_code}->{'any'}->{$realty->offer_type_code};
                     }
                 }
-
-                $realty->assign_date('now()');
-                $realty->change_date('now()');
-
-
-            } elsif ($_ eq 'state_code') {
-                $realty->state_code(scalar $self->param('state_code'));
-                $realty->change_date('now()');
-            } elsif ($_ eq 'color_tag_id') {
-
-            } elsif ($_ eq 'export_media') {
-                my $export_media_id = $self->param_n('export_media');
-
-                if ($export_media_id ~~ @{$realty->export_media}) {
-                    my $new_export_media = Mojo::Collection->new(grep { $_ != $export_media_id } @{$realty->export_media});
-                    $realty->export_media($new_export_media->compact->uniq);
-                } else {
-                    my $new_export_media = Mojo::Collection->new(@{$realty->export_media});
-                    push @$new_export_media, ($export_media_id);
-                    $realty->export_media($new_export_media->compact->uniq);
+                if ($req_fields) {
+                    foreach (@$req_fields) {
+                        unless ($realty->$_) {
+                            push @errors, $id;
+                            return;
+                        }
+                    }
                 }
-            } elsif ($_ eq 'export_media') {
-                $realty->export_media(Mojo::Collection->new());
             }
+
+            if ($export_media_id ~~ @{$realty->export_media}) {
+                my $new_export_media = Mojo::Collection->new(grep { $_ != $export_media_id } @{$realty->export_media});
+                $realty->export_media($new_export_media->compact->uniq);
+            } else {
+                my $new_export_media = Mojo::Collection->new(@{$realty->export_media});
+                push @$new_export_media, ($export_media_id);
+                $realty->export_media($new_export_media->compact->uniq);
+            }
+        }
+
+        if ($state_code) {
+            unless ($self->has_permission(realty => write => $realty->agent_id)) {
+                push @errors, $id;
+                return;
+            }
+
+            $realty->state_code(scalar $self->param('state_code'));
+            $realty->change_date('now()');
         }
 
         # Save data

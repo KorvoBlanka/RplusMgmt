@@ -14,7 +14,6 @@ use JSON;
 sub run {
     my $c = shift;
 
-
     my $stop = 0;
     my $account_iter = Rplus::Model::Account::Manager->get_objects_iterator(query => [del_date => undef]);
     while (my $account = $account_iter->next) {
