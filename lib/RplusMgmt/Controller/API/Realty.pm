@@ -1000,7 +1000,7 @@ sub save {
 
     my $changed = 0;
     foreach (keys %data) {
-        if ($realty->$_ ne $data{$_}) {
+        if ($data{$_} && $realty->$_ ne $data{$_}) {
             $changed = 1;
             last;
         }

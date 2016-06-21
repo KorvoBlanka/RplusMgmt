@@ -171,6 +171,8 @@
     display: box;
     display: -moz-box;
     display: -webkit-box;
+
+    width: 100%;
   }
 
   .view-label {
