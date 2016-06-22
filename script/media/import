@@ -77,11 +77,17 @@ sub update_photos {
     }
 }
 
+my $num_args = $#ARGV + 1;
+my $from_ts;
+if ($num_args > 0) {
+  $from_ts = $ARGV[0];
 
-run(get_config());
+}
+
+run(get_config(), $from_ts);
 
 sub run {
-    my $config = shift;
+    my ($config, $from_ts) = @_;
 
     my $rt_param = Rplus::Model::RuntimeParam->new(key => 'import_param')->load();
     my $last_ts;
@@ -90,8 +96,11 @@ sub run {
     }
     $last_ts = $rt_param->ts;
 
-    $rt_param->ts('now');
-    $rt_param->save(chages_only => 1);
+    $rt_param->ts("now");
+
+    if ($from_ts) {
+      $last_ts = $from_ts;
+    }
 
     my $realty_buffer_url = $config->{realty_buffer_url},
 
@@ -111,6 +120,9 @@ sub run {
                 my $realty_data = $res->json->{list};
                 $obj_count = $res->json->{count};
                 for my $data (@$realty_data) {
+
+                  eval {
+
                     say '-----------------------';
                     if ($data->{'owner_phones'} && scalar @{$data->{'owner_phones'}} > 0) {
                         my $mediator = Rplus::Model::Mediator::Manager->get_objects(
@@ -166,30 +178,29 @@ sub run {
                             update_photos($id, $config->{storage}->{path}, $data->{photo_url});
                         }
                     } else {
-                        eval {
+                        my $realty = Rplus::Model::Realty->new((map { $_ => $data->{$_} } grep { $_ ne 'photo_url' && $_ ne 'category_code' && $_ ne 'id'} keys %$data), state_code => 'raw');
+                        $realty->last_seen_date($data->{add_date});
 
-                            my $realty = Rplus::Model::Realty->new((map { $_ => $data->{$_} } grep { $_ ne 'photo_url' && $_ ne 'category_code' && $_ ne 'id'} keys %$data), state_code => 'raw');
-                            $realty->last_seen_date($data->{add_date});
+                        update_location($realty, $config);
 
-                            update_location($realty, $config);
+                        $realty->pois(undef);
+                        $realty->save;
+                        my $data_id = $data->{id};
+                        my $id = $realty->id;
+                        say "Saved new realty: $id";
 
-                            $realty->pois(undef);
-                            $realty->save;
-                            my $data_id = $data->{id};
-                            my $id = $realty->id;
-                            say "Saved new realty: $id";
-
-                            update_photos($id, $config->{storage}->{path}, $data->{photo_url});
-                        } or do {
-                            say $@;
-                        };
+                        update_photos($id, $config->{storage}->{path}, $data->{photo_url});
                     }
+                  } or do {
+                      say $@;
+                  };
                 }
             } else { # !tx->success
               $obj_count = 0;
             }
         }
     }
+    $rt_param->save(chages_only => 1);
 }
 
 1
