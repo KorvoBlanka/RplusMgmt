@@ -405,7 +405,7 @@ sub realty_update {
 
     for my $q (@{$subscription->queries}) {
         # Skip FTS data
-        my @query = Rplus::Util::Query->parse($q, $self);
+        my @query = Rplus::Util::Query::parse($q, $self);
 
         if ($subscription->search_area) {
           push @query, \("postgis.st_covers(postgis.ST_GeomFromEWKT('SRID=4326;" . $subscription->search_area . "')::postgis.geography, t1.geocoords)");

@@ -244,8 +244,6 @@
 %= js_once "/js/leaflet/layer-yandex.js";
 %= js_once "/js/contextmenu/context.js";
 
-<script src="http://api-maps.yandex.ru/2.0/?load=package.map&lang=ru-RU" type="text/javascript"></script>
-<!--<script src="http://cdnjs.cloudflare.com/ajax/libs/floatthead/1.2.7/jquery.floatThead.min.js"></script>-->
 
 % end
 
@@ -1574,8 +1572,7 @@
                 zoom: 15,
               });
 
-              var yndx = new L.Yandex();
-              //geoMap.addLayer(yndx);
+              geoMap.addLayer(yndx);
               Rplus.GeoMap.initLayer(geoMap);
 
               markerLG = new L.LayerGroup();

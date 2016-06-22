@@ -325,7 +325,7 @@ sub save {
         $color_tag->save(insert => 1);
     }
 
-    if ($create_event) {
+    if ($create_event && 0) {
         my $start_date = localtime;
         my $end_date = $start_date + 15 * 60;
         my $start_date_str = $start_date->datetime . '+' . ($start_date->tzoffset / (60 * 60));

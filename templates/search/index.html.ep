@@ -4,6 +4,8 @@
 % use JSON;
 
 %= include 'blocks/client_card';
+%= include 'blocks/realty_card';
+%= include 'blocks/event_card';
 
 % content_for header => begin
 %= css_once "$assets_url/leaflet/$leafletjs_ver/leaflet.css";
@@ -265,6 +267,234 @@
 
     $('#searchQuery').val(localStorage.getItem('SEARCH_Q'));
 
+    function createContextMenu() {
+
+        var $assign_e = $("#el_assign");
+
+        var $delete_e = $("#el_delete");
+
+        var $control_els = $(".control_els");     // state, agent, media_export
+        var $menu_els = $(".menu_els");           // state, agent, media_export
+
+        var context_cb = function(e){
+
+            var role = "<%= $self->stash('user')->{role} %>";
+            var can_control = false;
+            var can_delete = false;
+            var can_assign = false;
+
+            var $menu_states = $('#el_states');
+            var $menu_export = $('#el_export');
+
+            $("#el_assign").removeClass('disabled');
+            $("#el_delete").removeClass('disabled');
+            $("#el_open").removeClass('disabled');
+            $("#el_agents").removeClass('disabled');
+            $menu_states.removeClass('disabled');
+            $menu_export.removeClass('disabled');
+
+            // set export checkmarks
+            var $menu_el = $(".export-check");
+            $menu_el.each(function () {
+                var $this = $(this);
+                $this.removeClass("export-check-visible").removeClass("export-check-grayed").addClass("export-check-hidden");
+            });
+
+            var $selected = $('#realtyTable > tbody > tr.selected');
+            var ids = new Array();
+            $selected.each(function () {
+                var $this = $(this);
+                var id = $this.data('id');
+                var obj = $this.data('obj');
+
+                var s_id = Rplus.Table['users'][obj.agent_id] ? Rplus.Table['users'][obj.agent_id].superior : null;
+
+                var media_export_row = media_export[id];
+                for (var id_key in media_export_row) {
+                    var val = media_export_row[id_key];
+                    if (ids[val] === undefined) {
+                        ids[val] = 1;
+                    } else {
+                        ids[val] += 1;
+                    }
+                }
+                for (var id_key in ids) {
+                    if (ids[id_key] == $selected.length) {
+                        $(".export-check" + id_key).removeClass("export-check-hidden").removeClass("export-check-grayed").addClass("export-check-visible");
+                    } else {
+                        $(".export-check" + id_key).removeClass("export-check-hidden").removeClass("export-check-visible").addClass("export-check-grayed");
+                    }
+                }
+                //
+
+                if (role == 'top' || role == 'manager' && (!obj.agent_id || s_id == "<%= $self->stash('user')->{id} %>")) {
+
+                } else {
+                    if (obj.agent_id == null) {
+                        $("#el_assign").removeClass('disabled');
+
+                        $menu_export.addClass('disabled');
+                        $menu_states.addClass('disabled');
+                        $("#el_delete").addClass('disabled');
+                    } else {
+                        $("#el_assign").addClass('disabled');
+                        $("#el_agents").addClass('disabled');
+                        if (obj.agent_id != <%= $self->stash('user')->{id} %>) {
+                            $menu_export.addClass('disabled');
+                            $menu_states.addClass('disabled');
+                            $("#el_delete").addClass('disabled');
+                        }
+                    }
+                }
+            });
+
+            var state_code = $('[data-filter="state_code"]').data('val');
+            if (state_code == 'multy') {
+                $menu_export.addClass('disabled');
+                $menu_states.addClass('disabled');
+                $("#el_delete").addClass('disabled');
+                $("#el_agents").addClass('disabled');
+            }
+        };
+
+      context.init({preventDoubleContext: true, compress: true, above: 'auto',}, context_cb);
+      context.attach('#searchTable', [
+        {text: '<span class="glyphicon glyphicon-ok"></span>&nbsp&nbspПроверить', element_id: 'el_check', data_action: 'realty-check',},
+        {text: '<span class="glyphicon glyphicon-folder-open"></span>&nbsp&nbsp<%= ucfloc 'open' %>', element_id: 'el_open', data_action: 'realty-open',},
+        % if (has_permission(realty => 'write')->{can_assign}) {
+          {text: '<span class="glyphicon glyphicon-user"></span>&nbsp&nbspНазначить', element_id: 'el_assign', data_action: 'realty-set-agent', data_val: "<%= $self->stash('user')->{id} %>",},
+        % }
+        {text: '<span class="glyphicon glyphicon-trash"></span>&nbsp&nbsp<%= ucfloc 'delete' %>', element_id: 'el_delete', data_action: 'realty-set-state', data_val: "deleted",},
+        {divider: true},
+        {text: '<span class="glyphicon glyphicon-th-large"></span> <%= ucfloc 'state' %>', element_id: 'el_states', subMenu: [
+          % my $iter = Rplus::Model::RealtyState::Manager->get_objects_iterator(sort_by => 'sort_idx');
+          % while (my $x = $iter->next) {
+          % my $metadata = from_json($x->metadata);
+            {text: '<span class="glyphicon <%= $metadata->{'icon-class'} %>"></span>&nbsp<%= $x->name %>', data_action: 'realty-set-state', data_val: '<%= $x->code %>', },
+          % }
+        ]},
+        % if (has_permission(realty => 'write')->{nobody} || has_permission(realty => 'write')->{others}) {
+        {text: '<span class="glyphicon glyphicon-user"></span> Назначить', element_id: 'el_agents', subMenu: [
+            {text: '<strong><%= ucfloc 'nobody' %></strong>', data_action: 'realty-set-agent', data_val: '', },
+            {text: '<strong> Посредник</strong>', data_action: 'realty-set-agent', data_val: '10000', },
+            {text: '<strong> <%= $self->stash('user')->{name} %></strong>', data_action: 'realty-set-agent', data_val: '<%= $self->stash('user')->{id} %>', },
+        % if ($self->stash('user')->{role} eq 'top') {
+        %   my @owned = ();
+        %   for my $m (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('account')->{id}, role => ['manager'], delete_date => undef], sort_by => 'name')}) {
+        %     if (scalar (@{$m->subordinate})) {
+              {text: '<%= $m->name %>', data_action: 'realty-set-agent', data_val: '<%= $m->id %>', subMenu: [
+        %       push @owned, @{$m->subordinate};
+        %       for my $a (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('account')->{id}, id => [$m->subordinate], delete_date => undef], sort_by => 'name')}) {
+                {text: '<%= $a->name %>', data_action: 'realty-set-agent', data_val: '<%= $a->id %>'},
+        %       }
+              ]},
+        %     } else {
+              {text: '<%= $m->name %>', data_action: 'realty-set-agent', data_val: '<%= $m->id %>',},
+        %     }
+        %   }
+        % } elsif ($self->stash('user')->{role} eq 'manager') {
+          % if (scalar (@{$self->stash('user')->{subordinate}})) {
+            % for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [account_id => $self->session('account')->{id}, id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
+              % if ($x->id != 10000) {
+                {text: '<%= $x->name %>', data_action: 'realty-set-agent', data_val: '<%= $x->id %>', },
+              % }
+            % }
+          % }
+        % }
+        ]},
+        % }
+        {text: '<span class="glyphicon glyphicon-cog"></span> Задача', element_id: 'el_task', subMenu: [
+        % my $t_iter = Rplus::Model::DictTaskType::Manager->get_objects_iterator(query => [or => [category => 'seller', category => 'both'], delete_date => undef,], sort_by => 'id');
+        % while (my $x = $t_iter->next) {
+              {text: '&nbsp<%= $x->name %>', data_action: 'task-create', data_val: '<%= $x->id %>', },
+        % }
+        ]},
+        {text: '<span class="glyphicon glyphicon-export"></span>  <%= ucfloc q{advertisement} %>', element_id: 'el_export', subMenu: [
+        % for my $x (@{Rplus::Model::Media::Manager->get_objects(query => [type => 'export', delete_date => undef])}) {
+          {text: '<span class="export-check export-check<%= $x->id %> glyphicon glyphicon-ok"></span>&nbsp&nbsp<%= $x->name %>', data_action: 'realty-set-export', data_val: '<%= $x->id %>', },
+        % }
+        ]},
+        {divider: true},
+        {header: '&nbspТеги...'},
+        {header:  // '+' to concat strings, '' - to match last +
+        '<span class="cmenu-tag-group">' +
+        % for my $x (@{Rplus::Model::DictColorTag::Manager->get_objects(query => [delete_date => undef], sort_by => 'id')}) {
+          '<span class="round-button color-tag-<%= $x->id %>" data-action="realty-set-color_tag_id" data-val="<%= $x->id %>"></span>' +
+        % }
+        '</span>'},
+        {divider: true},
+        {text: '<span class="glyphicon glyphicon-send"></span>  Написать сообщение', element_id: 'el_chat', data_action: 'start-chat',},
+        {text: '<span class="glyphicon glyphicon-print"></span>  Печать'},
+      ]);
+    }
+
+    // Open realty object card
+    var card_opened = false;
+    function openRealtyCard(id) {
+      var card = RealtyCard({
+        loaded: function (r) {
+          // Mark opened realty object in the table
+          var $tr = $('#searchTable > tbody > tr[data-id="' + id + '"]');
+          if ($tr) {
+            $tr.addClass('opened').removeClass('error');;
+          }
+          card_opened = true;
+          $tr.data('lat', r.latitude);
+          $tr.data('lng', r.longitude);
+        },
+        saved: function (r) {
+          // Update object row in the table
+          var $tr = $('#searchTable > tbody > tr[data-id="' + id + '"]');
+          if ($tr) {
+            for (var j = 0; j < realtyTableConf.fields.length; j++) {
+              var f = realtyTableConf.fields[j];
+              $('td:nth-child(' + (j + 1) + ')', $tr).html(f.val(r));
+            }
+            if(r.state_code == 'deleted') {
+              $tr.removeClass('modified').removeClass('shown').addClass('deleted');
+            } else {
+              $tr.removeClass('deleted').addClass('modified');
+            }
+            media_export[r.id] = r.export_media;
+            $tr.data('obj', r);
+            $tr.data('lat', r.latitude);
+            $tr.data('lng', r.longitude);
+            $tr.data('id', r.id);
+            $tr.data('prev_id', id);
+            $tr.attr('data-id', r.id);
+            $tr.attr('data-prev_id', id);
+            id = r.id;
+          } else {
+
+          }
+        },
+        addr_changed: function (r) {
+          var $tr = $('#searchTable > tbody > tr[data-id="' + r.id + '"]');
+          if ($tr) {
+            $tr.data('lat', r.latitude);
+            $tr.data('lng', r.longitude);
+          }
+        },
+        close: function (r) {
+          var $tr = $('#searchTable > tbody > tr[data-id="' + r.id + '"]');
+          if ($tr) {
+            $tr.removeClass('opened').addClass('shown');
+          }
+          card_opened = false;
+        },
+      });
+      if (id != null) {
+        card.open(id);
+      } else {
+        card.create({
+          type_code: 'apartment',
+          state_code: 'raw',
+          agent_id: '<%= $self->stash('user')->{id} %>',
+          offer_type_code: getOfferType(),
+        });
+      }
+    }
+
     function initSpeech() {
       $('#searchQuery').webSpeech({
         button      : 'speech-button', //id of the initiating button
@@ -377,6 +607,11 @@
             }
 
             $('#searchTable > tbody').append($obj);
+          }
+
+          for (var i = 0; i < data.list.length; i++) {
+            var r = data.list[i];
+            $('#searchTable > tbody > tr[data-id="' + r.id + '"]').data('obj', r);
           }
 
           if (data.list.length > 0) { _listRealty_finished = false } else { _listRealty_finished = true };
@@ -625,7 +860,28 @@
       $('#geoMap').height(height);
 
       initSpeech();
+      createContextMenu();
       listRealty(1);
+
+      // Open realty object card
+      $('[data-action="realty-check"]').click(function (e) {
+        console.log('!');
+        var $selected = $('#searchTable > tbody > tr.selected');
+        var phones = [];
+        $selected.each(function () {
+          phones = phones.concat(($(this).data('obj')).owner_phones);
+        });
+        $('#searchQuery').val(phones.join(' '));
+        listRealty(1);
+      });
+
+      // Open realty object card
+      $('[data-action="realty-open"]').click(function (e) {
+        var $selected = $('#searchTable > tbody > tr.selected');
+        $selected.each(function () {
+          openRealtyCard($(this).data('id'));
+        });
+      });
 
       var guid;
       var template = $('#photosCarouselTemplate').remove().html();

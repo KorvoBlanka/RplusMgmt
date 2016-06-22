@@ -286,107 +286,109 @@ sub parse {
     }
 
     given ($q) {
-        when (/дача/i) {
+        when (/(^|\s+)дача($|\s+)/i) {
           push @params, type_code => 'dacha';
           $q =~ s/дача//i;
         }
 
-        when (/(^|\s+)дом/i) {
+        when (/(^|\s+)дом($|\s+)/i) {
             push @params, type_code => 'house';
             $q =~ s/дом//i;
         }
 
-        when (/квартира/i) {
+        when (/(^|\s+)квартира($|\s+)/i) {
             push @params, type_code => 'apartment';
             $q =~ s/квартира//i;
         }
 
-        when (/коттедж/i) {
+        when (/(^|\s+)коттедж($|\s+)/i) {
             push @params, type_code => 'cottage';
             $q =~ s/коттедж//i;
         }
 
-        when (/офис/i) {
-            push @params, type_code => 'office';
-            $q =~ s/офис//i;
-        }
-
-        when (/таунхаус/i) {
+        when (/(^|\s+)таунхаус($|\s+)/i) {
             push @params, type_code => 'townhouse';
             $q =~ s/таунхаус//i;
         }
 
-        when (/малосемейка/i) {
+        when (/(^|\s+)малосемейка($|\s+)/i) {
             push @params, type_code => 'apartment_small';
             $q =~ s/малосемейка//i;
         }
 
-        when (/другое/i) {
-
-        }
-
-        when (/земельный участок|земля|участок/i) {
-            push @params, type_code => 'land';
-            $q =~ s/земельный участок|земля|участок//i;
-        }
-
-        when (/новостройка/i) {
+        when (/(^|\s+)новостройка($|\s+)/i) {
             push @params, type_code => 'apartment_new';
             $q =~ s/новостройка//i;
         }
 
-        when (/комната/i) {
+        when (/(^|\s+)комната($|\s+)/i) {
             push @params, type_code => 'room';
             $q =~ s/комната//i;
         }
 
-        when (/торговая площадь/i) {
-            push @params, type_code => '';
+        when (/(^|\s+)земельный участок($|\s+)/i) {
+            push @params, type_code => 'land';
+            $q =~ s/земельный участок//i;
+        }
+
+        when (/(^|\s+)земля($|\s+)/i) {
+            push @params, type_code => 'land';
+            $q =~ s/земля//i;
+        }
+
+        when (/(^|\s+)участок($|\s+)/i) {
+            push @params, type_code => 'land';
+            $q =~ s/участок//i;
+        }
+
+        when (/(^|\s+)офис($|\s+)/i) {
+            push @params, type_code => 'office_place';
+            $q =~ s/офис//i;
+        }
+
+        when (/(^|\s+)торговая площадь($|\s+)/i) {
+            push @params, type_code => 'market_place';
             $q =~ s/торговая площадь//i;
         }
 
-        when (/офисное помещение|офис/i) {
-            push @params, type_code => '';
-            $q =~ s/офисное помещение|офис//i;
+        when (/(^|\s+)гараж($|\s+)/i) {
+            push @params, type_code => 'garage';
+            $q =~ s/гараж//i;
         }
 
-        when (/здание/i) {
-            push @params, type_code => '';
+        when (/(^|\s+)здание($|\s+)/i) {
+            push @params, type_code => 'building';
             $q =~ s/здание//i;
         }
 
-        when (/производственное помещение/i) {
-            push @params, type_code => '';
+        when (/(^|\s+)производственное помещение($|\s+)/i) {
+            push @params, type_code => 'production_place';
             $q =~ s/производственное помещение//i;
         }
 
-        when (/помещение свободного назначения/i) {
-            push @params, type_code => '';
+        when (/(^|\s+)помещение свободного назначения($|\s+)/i) {
+            push @params, type_code => 'gpurpose_place';
             $q =~ s/помещение свободного назначения//i;
         }
 
-        when (/помещение под автобизнес/i) {
-            push @params, type_code => '';
+        when (/(^|\s+)помещение под автобизнес($|\s+)/i) {
+            push @params, type_code => 'autoservice_place';
             $q =~ s/помещение под автобизнес//i;
         }
 
-        when (/помещение под сферу услуг/i) {
-            push @params, type_code => '';
+        when (/(^|\s+)помещение под сферу услуг($|\s+)/i) {
+            push @params, type_code => 'service_place';
             $q =~ s/помещение под сферу услуг//i;
         }
 
-        when (/гараж|стояночное место/i) {
-            push @params, type_code => '';
-            $q =~ s/гараж|стояночное место//i;
+        when (/(^|\s+)склад($|\s+)/i) {
+            push @params, type_code => 'warehouse_place';
+            $q =~ s/склад//i;
         }
 
-        when (/склад|база/i) {
-            push @params, type_code => '';
-            $q =~ s/склад|база//i;
-        }
-
-        default {
-
+        when (/(^|\s+)база($|\s+)/i) {
+            push @params, type_code => 'warehouse_place';
+            $q =~ s/база//i;
         }
     }
 
