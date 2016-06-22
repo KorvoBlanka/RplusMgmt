@@ -9,37 +9,53 @@ use Rplus::Model::Photo;
 use Rplus::Model::Photo::Manager;
 
 use Rplus::Util::Config;
+use File::Copy;
 
 say 'updating photos';
 update_photos();
 
 sub update_photos {
-    my $config = Rplus::Util::Config::get_config();
-    my $subdomain = $config->{'subdomain'};
+  my $config = Rplus::Util::Config::get_config();
+  my $path = $config->{storage}->{path};
 
-    my $photo_iter = Rplus::Model::Photo::Manager->get_objects_iterator(
-		query => [\("add_date > now() - interval '365 day'")],
+  my $photo_iter = Rplus::Model::Photo::Manager->get_objects_iterator(
+    query => [\("add_date > now() - interval '365 day'")],
 		sort_by => 'realty_id desc'
-	);
-	my $path = '/var/data/storage/raven/photos/';
-    while (my $p = $photo_iter->next) {
-		my $file_name = $p->filename;
+  );
+
+	my $path = '/var/data/rplus/storage/photos/';
+
+  while (my $p = $photo_iter->next) {
+    my $file_name = $p->filename;
 		my $thumb_file_name = $p->thumbnail_filename;
 		my $realty_id = $p->realty_id;
-		my $new_dir = $path . $realty_id;
-		
-		if ($file_name =~ /^.+\/(\d+)\/(\d+\.jpg)/) {
-			my $old_dir = $path . $1;
-			if (rename $old_dir, $new_dir) {
-				say 'renamed ' . $old_dir . ' to ' . $new_dir;
-			} else {
-				say 'no such dir';
-			}
-			$p->thumbnail_filename($2);
+
+    my $new_file_name = $realty_id . '_' . $file_name;
+		my $current_path = $path . $realty_id . '/' . $file_name;
+		my $new_path = $path . $new_file_name;
+
+    say '------------------';
+    say $current_path . '->' . $new_path;
+    if (move($current_path, $new_path)) {
+      say 'moved ' . $current_path . ' to ' . $new_path;
+      $p->filename($new_file_name);
+		} else {
+			say 'wtf' . $!;
 		}
-		if ($thumb_file_name =~ /^.+\/(\d+)\/(\d+\_thumbnail.jpg)/) {
-			$p->thumbnail_filename($2);
-		}	
-		$p->save(changes_only => 1);
-    }
+
+
+    my $new_thumb_file_name = $realty_id . '_' . $thumb_file_name;
+    $current_path = $path . $realty_id . '/' . $thumb_file_name;
+		$new_path = $path . $new_thumb_file_name;
+
+    say $current_path . '->' . $new_path;
+		if (move($current_path, $new_path)) {
+			say 'moved ' . $current_path . ' to ' . $new_path;
+      $p->thumbnail_filename($new_thumb_file_name);
+		} else {
+			say 'wtf ' . $!;
+		}
+
+    $p->save(changes_only => 1);
+	}
 }

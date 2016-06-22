@@ -35,8 +35,8 @@ sub load_image_from_url {
 sub load_image {
     my ($realty_id, $file, $storage_path, $crop) = @_;
 
-    my $path = $storage_path.'/photos/'.$realty_id;
-    my $name = Time::HiRes::time =~ s/\.//r; # Unique name
+    my $path = $storage_path.'/photos/';
+    my $name = $realty_id . '_' . Time::HiRes::time =~ s/\.//r; # Unique name
 
     my $photo = Rplus::Model::Photo->new;
 

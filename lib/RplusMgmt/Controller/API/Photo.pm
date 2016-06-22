@@ -26,7 +26,7 @@ sub list {
 
     my $photo_iter = Rplus::Model::Photo::Manager->get_objects_iterator(query => [realty_id => $realty_id, delete_date => undef], sort_by => 'id');
     while (my $photo = $photo_iter->next) {
-      my $url = $self->config->{storage}->{url} . '/photos/' . $realty_id;
+      my $url = $self->config->{storage}->{url} . '/photos';
       my $x = {
         id => $photo->id,
         photo_url => $url . '/' . $photo->filename,
@@ -54,7 +54,7 @@ sub upload {
 
     if (my $file = $self->param('files[]')) {
 
-      my $url = $self->config->{storage}->{url} . '/photos/' . $realty_id;
+      my $url = $self->config->{storage}->{url} . '/photos';
       my $storage_path = $self->config->{storage}->{path};
       my $crop = 0;
       my $photo;
