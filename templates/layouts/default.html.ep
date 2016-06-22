@@ -1546,7 +1546,7 @@
 
         function buildHtmlForContact(contact, my_contacts) {
 
-            var no_photo_url = 'http://storage.rplusmgmt.com/rplus/no-photo.gif';
+            var no_photo_url = '<%= $assets_url %>/img/no_user_image.gif';
 
             var xhtml = '';
 

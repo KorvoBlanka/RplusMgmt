@@ -146,7 +146,7 @@ sub get_digest {
     my $user_photo = '';
     my $path = $c->config->{'storage'}->{'url'} . '/' . $c->session('account')->{name};
     if ($sender->role eq 'manager' || $sender->role eq 'top') {
-        if ($r->agent_id && $r->agent_id != 10000) {
+        if ($r->agent_id) {
             $use_sender_data = 0;
             $user_photo = $r->agent->photo_url;
         } else {
