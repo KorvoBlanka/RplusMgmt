@@ -18,6 +18,7 @@ use Rplus::Util::Realty;
 use Rplus::Util::Mediator qw(add_mediator);
 use Rplus::Util::Task;
 use Rplus::Util::Geo;
+use Rplus::Util::Misc;
 
 use File::Path qw(make_path);
 use POSIX qw(strftime);
@@ -26,8 +27,8 @@ use JSON;
 use Mojo::Collection;
 use Time::Piece;
 
-no warnings 'experimental::smartmatch';
 
+no warnings 'experimental::smartmatch';
 
 my %export_media;
 my $media_iter = Rplus::Model::Media::Manager->get_objects_iterator(query => [type => 'export']);
@@ -686,6 +687,7 @@ sub list {
     my $rq_id = $self->param("rq_id") || 42;
     my $acc_id = $self->session('account')->{id};
 
+
     my $multy = 0;
     if ($state_code eq 'multy') {
         $multy = 1;
@@ -834,7 +836,6 @@ sub list {
         push @query, Rplus::Util::Query::get_near_filter($near_q, $self);
     }
 
-
     my $res = {
         count => Rplus::Model::Realty::Manager->get_objects_count(
             query => [
@@ -846,6 +847,7 @@ sub list {
         list => [],
         page => $page,
         rq_id => $rq_id,
+        Rplus::Util::Misc::generate_code() => 0,   # wtf, что-то кэширует ответы!? >_<
     };
 
     # Additionaly check found phones for mediators

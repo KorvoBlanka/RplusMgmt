@@ -270,6 +270,19 @@
       $('#offer-type-filter > a > span').text('Долгосрочная');
     }
 
+    function makeid()
+    {
+        var id = "";
+        var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+        for( var i=0; i < 5; i++ )
+            id += possible.charAt(Math.floor(Math.random() * possible.length));
+
+        console.log(id);
+
+        return id;
+    }
+
     var realtyTableConf = {
       fields: [
         {id: "state", name: "", menuName: "<%= ucfloc 'state' %>", sortName: "state.name", visible: false, val: function (r) {
@@ -681,15 +694,17 @@
 
       var sortBy = $('#realtyTable').data('sort');
       var colorTagId = $('[data-filter="color_tag_id"]').data('val');
+
       _listRealty_started = true;
 
       clearTimeout(_tid);
       _tid = setTimeout(function(){updateRealty()}, 180000);
-      rq_id ++;
+      rq_id = makeid();
       $.ajax({
         type: "POST",
+        cache: false,
         url: "/api/realty/list",
-        data: {q: q, depth: depth, state_code: stateCode, offer_type_code: offerTypeCode, rent_type: rentType, agent_id: agentId, color_tag_id: colorTagId, sort_by: sortBy, rq_id: rq_id, page: page, per_page: 34},
+        data: {q: q, depth: depth, state_code: stateCode, offer_type_code: offerTypeCode, rent_type: rentType, agent_id: agentId, color_tag_id: colorTagId, sort_by: sortBy, page: page, per_page: 34, rq_id: rq_id},
         complete: function () { _listRealty_started = false; }
       })
         .done(function (data, textStatus, jqXHR) {
@@ -786,8 +801,7 @@
 
       _listRealty_started = true;
       supressAjaxIndicator(1);
-      rq_id ++;
-
+      rq_id = makeid();
       $.ajax({
         type: "POST",
         url: "/api/realty/list",

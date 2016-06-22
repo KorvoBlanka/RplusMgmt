@@ -133,7 +133,7 @@ sub by_email {
 sub get_digest {
     my ($c, $r, $photos, $contact_info, $sender) = @_;
 
-    my $no_photo_url =  '<%= $assets_url %>/img/no-photo.gif';
+    my $no_photo_url =  '<%= $assets_url %>/img/no_user_image.gif';
     my $no_photo_big_url = '<%= $assets_url %>/img/no-photo-big.gif';
 
     my $sender_block = '';
