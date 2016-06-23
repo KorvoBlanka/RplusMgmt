@@ -27,6 +27,7 @@ use JSON;
 use Mojo::Collection;
 use Time::Piece;
 
+use Data::Dumper;
 
 no warnings 'experimental::smartmatch';
 
@@ -1261,6 +1262,7 @@ sub update_multiple {
     my %realtys;
     my @errors;
 
+
     $ids->each(sub {
         my ($id, $idx) = @_;
 
@@ -1280,7 +1282,7 @@ sub update_multiple {
             }
         }
 
-        if ($agent_id) {
+        if (defined $agent_id) {
             unless ($self->has_permission(realty => write => $realty->agent_id)) {
                 unless ($self->has_permission(realty => 'write')->{can_assign} && $agent_id == $user_id) {
                     push @errors, $id;
