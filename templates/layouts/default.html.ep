@@ -1151,7 +1151,6 @@
                 <li><a href="/configuration/notifications"><span class="glyphicon glyphicon-send"></span> <%= ucfloc q{notifications} %></a></li>
                 <li><a href="/configuration/multylisting"><span class="glyphicon glyphicon-file"></span> Мультилистинг</a></li>
               % }
-                <li><a href="/configuration/tasks"><span class="glyphicon glyphicon-list-alt"></span> Задачи</a></li>
               </ul>
             </li>
           % }
