@@ -230,12 +230,26 @@
   .glyphicon.mls {
       color: #ace44b;
   }
+
+  svg.tracer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      /*display: none;*/
+  }
 </style>
 % end
 
 % content_for after_bootstrap => begin
 %= js_once "$assets_url/leaflet/$leafletjs_ver/leaflet.js";
 %= js_once "$assets_url/leaflet.fullscreen/$leafletjs_fullscreen_ver/Control.FullScreen.js";
+
+%= js_once "https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js";
+%= js_once "$assets_url/jsclipper/clipper.js";
+%= js_once "$assets_url/concavehull/concavehull.js";
+%= js_once "$assets_url/Leaflet.FreeDraw/dist/leaflet.freedraw.js";
 
 %= js_once "$assets_url/typeahead.js/$typeaheadjs_ver/js/typeahead.js";
 %= js_once "$assets_url/jquery.webSpeech/jquery.webSpeech-1.0.1.js";
@@ -252,6 +266,7 @@
   "use strict";
 
   registerGlobalAjaxEvents();
+  var geoSearchText = null;
 
   $('#searchQuery').val(localStorage.getItem('REALTY_Q'));
 
@@ -461,7 +476,6 @@
       timestamp: "",
     };
 
-    var media_export = {};
     var card_opened = false;
 
     function loadHistory() {
@@ -545,7 +559,7 @@
 
                 var s_id = Rplus.Table['users'][obj.agent_id] ? Rplus.Table['users'][obj.agent_id].superior : null;
 
-                var media_export_row = media_export[id];
+                var media_export_row = obj.media_export;
                 for (var id_key in media_export_row) {
                     var val = media_export_row[id_key];
                     if (ids[val] === undefined) {
@@ -602,7 +616,7 @@
         % }
         {text: '<span class="glyphicon glyphicon-trash"></span>&nbsp&nbsp<%= ucfloc 'delete' %>', element_id: 'el_delete', data_action: 'realty-set-state', data_val: "deleted",},
         {divider: true},
-        {text: '<span class="glyphicon glyphicon-th-large"></span> <%= ucfloc 'state' %>', element_id: 'el_states', subMenu: [
+        {text: '<span class="glyphicon glyphicon-th-large"></span> Стадия', element_id: 'el_states', subMenu: [
           % my $iter = Rplus::Model::RealtyState::Manager->get_objects_iterator(sort_by => 'sort_idx');
           % while (my $x = $iter->next) {
           % my $metadata = from_json($x->metadata);
@@ -702,13 +716,10 @@
         type: "POST",
         cache: false,
         url: "/api/realty/list",
-        data: {q: q, depth: depth, state_code: stateCode, offer_type_code: offerTypeCode, rent_type: rentType, agent_id: agentId, color_tag_id: colorTagId, sort_by: sortBy, page: page, per_page: 34, rq_id: rq_id},
+        data: {q: q, search_area: geoSearchText, depth: depth, state_code: stateCode, offer_type_code: offerTypeCode, rent_type: rentType, agent_id: agentId, color_tag_id: colorTagId, sort_by: sortBy, page: page, per_page: 34, rq_id: rq_id},
         complete: function () { _listRealty_started = false; }
       })
         .done(function (data, textStatus, jqXHR) {
-          if (page == 1) {
-            media_export = {};
-          }
           if (data.rq_id != rq_id) {
             return 0;
           }
@@ -720,7 +731,6 @@
               console.log('d: ' + r.id);
             }*/
 
-            media_export[r.id] = r.export_media;
             xhtml += '<tr data-page="' + data.page + '" data-id="' + r.id + '" data-lat="' + r.latitude + '" data-lng="' + r.longitude +  '"';
             xhtml += ' class="';
             var h = getHistory(r.id);
@@ -878,7 +888,6 @@
             } else {
               $tr.removeClass('deleted').addClass('modified');
             }
-            media_export[r.id] = r.export_media;
             putToHistory(r.id, "modified", 1);
             $tr.data('obj', r);
             $tr.data('lat', r.latitude);
@@ -1396,15 +1405,6 @@
             for (var i = 0; i < errors.length; i++) {
               $('#realtyTable > tbody > tr[data-id="' + errors[i] + '"]').addClass('error').removeClass('selected');
             }
-            if (stateCode == 'work') {
-              if (errors.length == 1) {
-                alert('объект не может быть назначены в рабочую базу');
-              } else if (errors.length > 1 && errors.length < 5) {
-                alert(errors.length + ' объекта не могут быть назначены в рабочую базу');
-              } else if (errors.length > 1 && errors.length >= 5) {
-                alert(errors.length + ' объектов не могут быть назначены в рабочую базу');
-              }
-            }
           }
         }).fail(function (jqXHR, textStatus, errorThrown) {});
       });
@@ -1434,7 +1434,6 @@
                 var r = realty;
                 var $tr = $('#realtyTable > tbody > tr[data-id="' + old_id + '"]');
 
-                media_export[r.id] = r.export_media;
                 $tr.data('id', r.id);
                 $tr.data('prev_id', old_id);
                 $tr.attr('data-id', r.id);
@@ -1489,7 +1488,6 @@
                 var r = realty;
                 var $tr = $('#realtyTable > tbody > tr[data-id="' + old_id + '"]');
 
-                media_export[r.id] = r.export_media;
                 $tr.data('id', r.id);
                 $tr.data('prev_id', old_id);
                 $tr.attr('data-id', r.id);
@@ -1558,6 +1556,7 @@
       // Geo
       (function () {
         var geoMap, markerLG;
+        var free_draw;
         $('#geoModal')
           .modal({show: false, backdrop: true, keyboard: false})
           .on('show.bs.modal', function () {
@@ -1572,11 +1571,90 @@
                 zoom: 15,
               });
 
-              geoMap.addLayer(yndx);
               Rplus.GeoMap.initLayer(geoMap);
 
               markerLG = new L.LayerGroup();
               markerLG.addTo(geoMap);
+
+              free_draw = new L.FreeDraw({
+                mode: 0,
+              });
+              free_draw.options.destroyPrevious = true;
+              free_draw.options.multiplePolygons = false;
+
+              free_draw.on('mode', function modeReceived(eventData) {
+                  console.log('free_draw mode: ' + eventData.mode);
+              });
+
+              free_draw.on('markers', function getMarkers(eventData) {
+
+                console.log('yay!');
+
+                if (eventData.latLngs.length > 0) {
+
+                  geoSearchText = L.FreeDraw.Utilities.getMySQLMultiPolygon(eventData.latLngs);
+                  listRealty(1);
+                } else {
+                  geoSearchText = null;
+                  listRealty(1);
+                }
+
+              });
+
+              geoMap.addLayer(free_draw);
+
+              var beginDrawButton = L.Control.extend({
+                options: {
+                  position: 'topright'
+                  //control position - allowed: 'topleft', 'topright', 'bottomleft', 'bottomright'
+                },
+
+                onAdd: function (map) {
+                  var container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
+
+                  container.style.backgroundColor = 'white';
+                  container.style.backgroundImage = "url('<%= $assets_url%>/img/map_ico_spritesheet.png')";
+                  container.style.backgroundPosition = "-150px 0px";
+                  //container.style.backgroundSize = "30px 30px";
+                  container.style.width = '30px';
+                  container.style.height = '30px';
+
+                  container.onclick = function(){
+                    $('svg.tracer').css('display', 'inherit');
+                    free_draw.setMode(L.FreeDraw.MODES.VIEW | L.FreeDraw.MODES.CREATE);
+                  }
+                  return container;
+                },
+              });
+
+              var eraseButton = L.Control.extend({
+                options: {
+                  position: 'topright'
+                  //control position - allowed: 'topleft', 'topright', 'bottomleft', 'bottomright'
+                },
+
+                onAdd: function (map) {
+                  var container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
+
+                  container.style.backgroundColor = 'white';
+                  container.style.backgroundImage = "url('<%= $assets_url%>/img/map_ico_spritesheet.png')";
+                  container.style.backgroundPosition = "-180px 0px";
+                  //container.style.backgroundSize = "30px 30px";
+                  container.style.width = '30px';
+                  container.style.height = '30px';
+
+                  container.onclick = function() {
+                    $('svg.tracer').css('display', 'none');
+                    free_draw.setMode(L.FreeDraw.MODES.VIEW | L.FreeDraw.MODES.DELETE);
+                  }
+                  return container;
+                },
+              });
+
+              geoMap.addControl(new beginDrawButton());
+              geoMap.addControl(new eraseButton());
+
+
             }
             // Show realty on the map
             var bounds = [];

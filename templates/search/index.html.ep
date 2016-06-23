@@ -13,6 +13,23 @@
 %= css_once "$assets_url/typeahead.js/$typeaheadjs_ver/css/typeahead.js-bootstrap.css";
 %= css_once "/css/context.css";
 <style type="text/css">
+  .cmenu-tag-group {
+      height: 22px;
+      display: block;
+  }
+
+  .export-check-hidden {
+    visibility: hidden;
+  }
+
+  .export-check-visible {
+    color: #000000;
+  }
+
+  .export-check-grayed {
+    color: #888888;
+  }
+
   #searchTableWrapper {
     height: 600px;
     overflow-y: scroll;
@@ -300,24 +317,25 @@
                 $this.removeClass("export-check-visible").removeClass("export-check-grayed").addClass("export-check-hidden");
             });
 
-            var $selected = $('#realtyTable > tbody > tr.selected');
+            var $selected = $('#searchTable > tbody > tr.selected');
             var ids = new Array();
             $selected.each(function () {
-                var $this = $(this);
-                var id = $this.data('id');
-                var obj = $this.data('obj');
+              var $this = $(this);
+              var id = $this.data('id');
+              var obj = $this.data('obj');
 
-                var s_id = Rplus.Table['users'][obj.agent_id] ? Rplus.Table['users'][obj.agent_id].superior : null;
+              var s_id = Rplus.Table['users'][obj.agent_id] ? Rplus.Table['users'][obj.agent_id].superior : null;
 
-                var media_export_row = media_export[id];
-                for (var id_key in media_export_row) {
-                    var val = media_export_row[id_key];
-                    if (ids[val] === undefined) {
-                        ids[val] = 1;
-                    } else {
-                        ids[val] += 1;
-                    }
+              var media_export_row = obj.export_media;
+              for (var id_key in media_export_row) {
+                var val = media_export_row[id_key];
+                if (ids[val] === undefined) {
+                  ids[val] = 1;
+                } else {
+                  ids[val] += 1;
                 }
+              }
+
                 for (var id_key in ids) {
                     if (ids[id_key] == $selected.length) {
                         $(".export-check" + id_key).removeClass("export-check-hidden").removeClass("export-check-grayed").addClass("export-check-visible");
@@ -366,7 +384,7 @@
         % }
         {text: '<span class="glyphicon glyphicon-trash"></span>&nbsp&nbsp<%= ucfloc 'delete' %>', element_id: 'el_delete', data_action: 'realty-set-state', data_val: "deleted",},
         {divider: true},
-        {text: '<span class="glyphicon glyphicon-th-large"></span> <%= ucfloc 'state' %>', element_id: 'el_states', subMenu: [
+        {text: '<span class="glyphicon glyphicon-th-large"></span> Стадия', element_id: 'el_states', subMenu: [
           % my $iter = Rplus::Model::RealtyState::Manager->get_objects_iterator(sort_by => 'sort_idx');
           % while (my $x = $iter->next) {
           % my $metadata = from_json($x->metadata);
@@ -446,16 +464,13 @@
           // Update object row in the table
           var $tr = $('#searchTable > tbody > tr[data-id="' + id + '"]');
           if ($tr) {
-            for (var j = 0; j < realtyTableConf.fields.length; j++) {
-              var f = realtyTableConf.fields[j];
-              $('td:nth-child(' + (j + 1) + ')', $tr).html(f.val(r));
-            }
+            var $html = $('<td>' + Rplus.Realty.getDigest(r, true) + (r.main_photo_thumbnail ? '&nbsp;&nbsp;&nbsp;<a href="#" data-action="photos-show"><span class="glyphicon glyphicon-camera"></span></a>' : '') + '</td>');
+            $tr.html($html);
             if(r.state_code == 'deleted') {
               $tr.removeClass('modified').removeClass('shown').addClass('deleted');
             } else {
               $tr.removeClass('deleted').addClass('modified');
             }
-            media_export[r.id] = r.export_media;
             $tr.data('obj', r);
             $tr.data('lat', r.latitude);
             $tr.data('lng', r.longitude);
@@ -552,6 +567,11 @@
       console.log(geoSearchText);
 
       var q = $('#searchQuery').val();
+
+      var agentId = $('[data-filter="agent_id"]').data('val');
+      var depth = $('[data-filter="depth"]').data('val');
+      var colorTagId = $('[data-filter="color_tag_id"]').data('val');
+
       var offerTypeCode = getOfferType();
       var rentType = getRentType();
 
@@ -563,7 +583,7 @@
       $.ajax({
         type: "POST",
         url: "<%= url_for q{/api/realty/list} %>",
-        data: {q: q, search_area: geoSearchText, state_code: stateCode, offer_type_code: offerTypeCode, rent_type: rentType, page: page, per_page: 30},
+        data: {q: q, depth: depth, state_code: stateCode, agent_id: agentId, color_tag_id: colorTagId, search_area: geoSearchText, offer_type_code: offerTypeCode, rent_type: rentType, page: page, per_page: 30},
         complete: function () { _listRealty_started = false; }
       })
         .done(function (data) {
@@ -582,7 +602,10 @@
 
           for (var i = 0; i < data.list.length; i++) {
             var r = data.list[i];
-            var $obj = $('<tr data-id="' + r.id + '" data-page="' + data.page + '" data-lat="' + r.latitude + '" data-lng="' + r.longitude + '"><td>' + Rplus.Realty.getDigest(r, true) + (r.main_photo_thumbnail ? '&nbsp;&nbsp;&nbsp;<a href="#" data-action="photos-show"><span class="glyphicon glyphicon-camera"></span></a>' : '') + '</td></tr>');
+            var $obj = $('<tr data-id="' + r.id + '" data-page="' + data.page + '" data-lat="' + r.latitude + '" data-lng="' + r.longitude + '"><td>' +
+            Rplus.Realty.getDigest(r, true) + (r.main_photo_thumbnail ? '&nbsp;&nbsp;&nbsp;<a href="#" data-action="photos-show"><span class="glyphicon glyphicon-camera"></span></a>' : '') +
+            '<span class="tag-button color-tag-' + r.color_tag_id + ' pull-right"></span>' +
+            '</td></tr>');
 
             // Display realty object on the map
             var marker_id = -1;
@@ -772,7 +795,6 @@
 
       // --------------------------------------------------
 
-
       // Objects selection in realty table
       $('#searchTable > tbody').on('click', 'tr', function (e) {
         var $this = $(this);
@@ -789,6 +811,29 @@
         } else if (marker) {
           marker.closePopup();
           marker.setIcon(unselectedIcon);
+        }
+      });
+
+      $('#searchTable > tbody').on('mousedown', 'tr', function (e) {
+        var $this = $(this);
+        var id = $this.data('id');
+        switch (event.which) {
+            case 1:   // lmb
+              break;
+            case 2:    // mmb
+              break;
+            case 3:    // rmb
+              if (!$this.hasClass('selected')) {
+                var $selected = $('#searchTable > tbody > tr.selected');
+                $selected.each(function () {
+                  var $this = $(this);
+                  var id = $this.data('id');
+                  $this.removeClass('selected');
+                });
+              }
+              $this.addClass('selected');
+              break;
+            default:
         }
       });
 
@@ -863,6 +908,44 @@
       createContextMenu();
       listRealty(1);
 
+
+      var guid;
+      var template = $('#photosCarouselTemplate').remove().html();
+
+      $('#photosModal')
+        .modal({show: false})
+        .on('show.bs.modal', function (e) {
+          $('#photosModal .modal-dialog').css('max-width', $(window).width()*0.7);
+          $('#photosModal .carousel-inner > .item > img').css('max-height', $(window).height()*0.8);
+
+          // Init carousel
+          $('#photosCarousel-' + guid).carousel({
+            interval: false,
+          });
+        })
+      ;
+
+      // -----------------------------------------------------
+
+      function updateRecord(old_id, data_obj) {
+        var r = data_obj;
+        var $tr = $('#searchTable > tbody > tr[data-id="' + old_id + '"]');
+        if ($tr) {
+          var $html = $('<td>' +
+            Rplus.Realty.getDigest(r, true) +
+            (r.main_photo_thumbnail ? '&nbsp;&nbsp;&nbsp;<a href="#" data-action="photos-show"><span class="glyphicon glyphicon-camera"></span></a>' : '') +
+            '<span class="tag-button color-tag-' + r.color_tag_id + ' pull-right"></span>' +
+            '</td>');
+          $tr.html($html);
+
+          $tr.data('id', data_obj.id);
+          $tr.attr('data-id', data_obj.id);
+          $tr.data('prev_id', old_id);
+          $tr.attr('data-prev_id', old_id);
+          $tr.data('obj', data_obj);
+        }
+      }
+
       // Open realty object card
       $('[data-action="realty-check"]').click(function (e) {
         console.log('!');
@@ -883,21 +966,216 @@
         });
       });
 
-      var guid;
-      var template = $('#photosCarouselTemplate').remove().html();
+      // Change agent
+      $('[data-action="realty-set-agent"]').click(function (e) {
 
-      $('#photosModal')
-        .modal({show: false})
-        .on('show.bs.modal', function (e) {
-          $('#photosModal .modal-dialog').css('max-width', $(window).width()*0.7);
-          $('#photosModal .carousel-inner > .item > img').css('max-height', $(window).height()*0.8);
+        if (e.isDefaultPrevented()) return;
+        e.preventDefault();
 
-          // Init carousel
-          $('#photosCarousel-' + guid).carousel({
-            interval: false,
-          });
+        var agentId = $(this).data('val');
+        var $selected = $('#searchTable > tbody > tr.selected');
+
+        var ids = [];
+        $selected.each(function () {
+          var $this = $(this);
+          if (ids.indexOf($this.data('id')) < 0) {
+            ids.push($this.data('id'));
+          }
+        });
+
+        $.ajax({
+          type: "POST",
+          url: "/api/realty/update_multiple",
+          data: {id: ids, agent_id: agentId},
         })
-      ;
+          .done(function (data, textStatus, jqXHR) {
+            if (data.status == 'success') {
+              var list = data.list;
+              jQuery.each(list, function (old_id, realty) {
+                var r = realty;
+                updateRecord(old_id, realty);
+              });
+              var errors = data.errors;
+              for (var i = 0; i < errors.length; i++) {
+                $('#searchTable > tbody > tr[data-id="' + errors[i] + '"]').addClass('error').removeClass('selected');
+              }
+            }
+          }).fail(function (jqXHR, textStatus, errorThrown) {});
+      });
+
+      // Change state
+      $('[data-action="realty-set-state"]').click(function (e) {
+        var stateCode = $(this).data('val');
+        var $selected = $('#searchTable > tbody > tr.selected');
+
+        var ids = [];
+        $selected.each(function () {
+          var $this = $(this);
+          if (ids.indexOf($this.data('id')) < 0) {
+            ids.push($this.data('id'));
+          }
+        });
+
+        $.ajax({
+          type: "POST",
+          url: "/api/realty/update_multiple",
+          data: {id: ids, state_code: stateCode},
+        })
+        .done(function (data, textStatus, jqXHR) {
+          if (data.status == 'success') {
+            var list = data.list;
+            jQuery.each(list, function (old_id, realty) {
+              var r = realty;
+              var $tr = $('#searchTable > tbody > tr[data-id="' + old_id + '"]');
+
+              var state_mode = $('[data-filter="state_code"]').data('val');
+              if (r.state_code == 'deleted' && state_mode != 'deleted') {
+                $tr.remove();
+              } else {
+                updateRecord(old_id, realty);
+              }
+            });
+            var errors = data.errors;
+            for (var i = 0; i < errors.length; i++) {
+              $('#searchTable > tbody > tr[data-id="' + errors[i] + '"]').addClass('error').removeClass('selected');
+            }
+          }
+        }).fail(function (jqXHR, textStatus, errorThrown) {});
+      });
+
+      // Set export
+      $('[data-action="realty-set-export"]').click(function (e) {
+        var export_media_id = $(this).data('val');
+        var $selected = $('#searchTable > tbody > tr.selected');
+
+        var ids = [];
+        $selected.each(function () {
+          var $this = $(this);
+          if (ids.indexOf($this.data('id')) < 0) {
+            ids.push($this.data('id'));
+          }
+        });
+
+        $.ajax({
+          type: "POST",
+          url: "/api/realty/update_multiple",
+          data: {id: ids, export_media: export_media_id},
+        })
+          .done(function (data, textStatus, jqXHR) {
+            if (data.status == 'success') {
+              var list = data.list;
+              jQuery.each(list, function (old_id, realty) {
+                var r = realty;
+                updateRecord(old_id, realty);
+              });
+              var errors = data.errors;
+              for (var i = 0; i < errors.length; i++) {
+                $('#searchTable > tbody > tr[data-id="' + errors[i] + '"]').addClass('error').removeClass('selected');
+
+              }
+              if (errors.length == 1) {
+                alert('объект не назначен в импорт, проверьте заполнение необходимых полей');
+              } else if (errors.length > 1 && errors.length < 5) {
+                alert(errors.length + ' объекта не назначено в импорт, проверьте заполнение необходимых полей');
+              } else if (errors.length > 1 && errors.length >= 5) {
+                alert(errors.length + ' объектов не назначено в импорт, проверьте заполнение необходимых полей');
+              }
+            }
+          }).fail(function (jqXHR, textStatus, errorThrown) {});
+      });
+
+      // Set color tag for realty object
+      $('[data-action="realty-set-color_tag_id"]').click(function (e) {
+        var new_tag_id = $(this).data('val');
+        var $selected = $('#searchTable > tbody > tr.selected');
+
+        var ids = [];
+        $selected.each(function () {
+          var $this = $(this);
+          if (ids.indexOf($this.data('id')) < 0) {
+            ids.push($this.data('id'));
+          }
+        });
+
+        $.ajax({
+          type: "POST",
+          url: "/api/realty/set_color_tag_multiple",
+          data: {id: ids, color_tag_id: new_tag_id}
+        })
+          .done(function (data, textStatus, jqXHR) {
+            if (data.status == 'success') {
+              var list = data.list;
+              jQuery.each(list, function (old_id, realty) {
+                var r = realty;
+                updateRecord(old_id, realty);
+              });
+            }
+          }).fail(function (jqXHR, textStatus, errorThrown) {});
+      });
+
+      $('[data-action="task-create"]').click(function (e) {
+        var task_type_id = $(this).data('val');
+        var task_title = $(this)[0].textContent;
+        var card = TaskCard({
+          title: 'Задача: ' + task_title,
+          task_type_id: task_type_id,
+          saved: function (data) {
+
+            var start_date = data.start_date;
+            var end_date = start_date.clone().add(30, 'minutes');
+            var agent_id = data.agent_id;
+            var summary_postfix = data.summary;
+            var task_type_id = data.task_type_id;
+
+            var $selected = $('#searchTable > tbody > tr.selected');
+            $selected.each(function () {
+              var $this = $(this);
+              var r = $this.data('obj');
+              var summary = Rplus.Realty.getDigestForTask(r) + ' ' + summary_postfix;
+              var description = '';
+
+              $.ajax({
+                type: "POST",
+                url: "/api/task/save",
+                data: {
+                  task_type_id: task_type_id,
+                  assigned_user_id: agent_id,
+                  start_date: start_date.format(),
+                  end_date: end_date.format(),
+                  realty_id: r.id,
+                  summary: summary,
+                  description: description,
+                },
+              })
+                .done(function (data, textStatus, jqXHR) {
+                  if (data.status == 'success') {
+                    $('#taskModal').modal('hide');
+                  } else {
+
+                  }
+                }).fail(function (jqXHR, textStatus, errorThrown) {});
+            });
+            card.close();
+          },
+        }).open();
+      });
+
+      // Open realty object card
+      $('[data-action="start-chat"]').click(function (e) {
+        var $selected = $('#realtyTable > tbody > tr.selected');
+        var obj = $selected.data('obj');
+        if (obj.agent_id && obj.agent_id != 10000) {
+            if (obj.agent_id == <%= $self->stash('user')->{id} %>) {
+                Rplus.Functions.showChat();
+            } else {
+                Rplus.Functions.startChatById(obj.agent_id);
+            }
+        } else {
+            Rplus.Functions.startChatByPhones(obj.owner_phones);
+        }
+      });
+
+      // -----------------------------------------------------
 
       // Load photos
       $('#searchTable > tbody').on('click', '[data-action="photos-show"]', function (e) {
@@ -1032,6 +1310,55 @@
     <!--p class="navbar-text" style="margin-left: 0;"><span class="text-danger" id="sfDisplay"></span></p-->
     <div class="navbar-right">
       <ul class="nav navbar-nav">
+
+        <!-- Color tag filter -->
+        <li class="dropdown" data-filter="color_tag_id" data-val="">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span role="display"><span class="glyphicon glyphicon-tags"></span>&nbsp&nbspВсе</span> <b class="caret"></b></a>
+          <ul class="dropdown-menu">
+            <li><a href="#" data-val=""><span class="glyphicon glyphicon-tags"></span>&nbsp&nbspВсе</a></li>
+            % for my $x (@{Rplus::Model::DictColorTag::Manager->get_objects(query => [delete_date => undef], sort_by => 'id')}) {
+              <li><a href="#" data-val="<%= $x->id %>"><span class="tag-button color-tag-<%= $x->id %> pull-left"></span>&nbsp<%= $x->name %></a></li>
+            % }
+          </ul>
+        </li>
+
+        <!-- Agent filter -->
+        <li class="dropdown" data-filter="agent_id" data-val="">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-user"></span><span role="display"> Все объекты</span> <b class="caret"></b></a>
+          <ul class="dropdown-menu">
+            % if (has_permission(realty => 'read')->{nobody} || has_permission(realty => 'read')->{others}) {
+            <li><a href="#" data-val="" data-type="text"><strong> Все объекты</strong></a></li>
+            % }
+            % if (has_permission(realty => 'read')->{others}) {
+            <li><a href="#" data-val="all" data-type="text"><strong><%= ucfloc 'all agents' %></strong></a></li>
+            <li><a href="#" data-val="med" data-type="text"><strong> Посредник</strong></a></li>
+            <li><a href="#" data-val="not_med" data-type="text"><strong> Собственник</strong></a></li>
+            <li><a href="#" data-val="<%= $self->stash('user')->{id} %>" data-type="text"><strong> Мои объекты</strong></a></li>
+            % }
+            % if ($self->stash('user')->{role} eq 'top') {
+            %   my @owned = ();
+            %   for my $m (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('account')->{id}, role => ['manager'], delete_date => undef], sort_by => 'name')}) {
+                  <li class="dropdown-submenu"><a href="#" data-val="<%= $m->id %>" data-type="text"><%= $m->name %></a><ul class="dropdown-menu dropdown-context dropdown-context-sub compressed-context" style="bottom: auto;">
+                    <li><a href="#" data-val="a<%= $m->id %>" data-type="text"> Все агенты</a></li>
+            %     if (scalar (@{$m->subordinate})) {
+            %       push @owned, @{$m->subordinate};
+            %       for my $a (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('account')->{id}, id => [$m->subordinate], delete_date => undef], sort_by => 'name')}) {
+                      <li><a href="#" data-val="<%= $a->id %>" data-type="text"><%= $a->name %></a></li>
+            %       }
+            %     }
+                  </ul></li>
+            %   }
+            % } elsif ($self->stash('user')->{role} eq 'manager') {
+            <li><a href="#" data-val="a<%= $self->stash('user')->{id} %>" data-type="text"><strong> Мои агенты</strong></a></li>
+            %   if (scalar (@{$self->stash('user')->{subordinate}})) {
+            %     for my $a (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('account')->{id}, id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
+                    <li><a href="#" data-val="<%= $a->id %>" data-type="text"><%= $a->name %></a></li>
+            %     }
+            %   }
+            % }
+          </ul>
+        </li>
+
         <!-- Offer type filter -->
         <li class="dropdown" id="offer-type-filter" data-filter="offer_type_code" data-val="">
           <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span role="display"></span> <b class="caret"></b></a>
@@ -1059,6 +1386,21 @@
               <li><a href="#" data-val="<%= $x->code %>"><span class="glyphicon <%= $metadata->{'icon-class'} %>"></span>&nbsp<%= $x->name %></a></li>
             % }
 
+          </ul>
+        </li>
+
+        <!-- depth selector -->
+        <li class="dropdown" data-filter="depth" data-val="90">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span role="display"><span class="glyphicon glyphicon-calendar"></span> 3 Месяца</span> <b class="caret"></b></a>
+          <ul class="dropdown-menu">
+              <li><a href="#" data-val="1"> 1 день</a></li>
+              <li><a href="#" data-val="2"> 2 дня</a></li>
+              <li><a href="#" data-val="3"> 3 дня</a></li>
+              <li><a href="#" data-val="7"> Неделя</a></li>
+              <li><a href="#" data-val="14"> 2 недели</a></li>
+              <li><a href="#" data-val="30"> Месяц</a></li>
+              <li><a href="#" data-val="90"> 3 Месяца</a></li>
+              <li><a href="#" data-val="full"> Вся</a></li>
           </ul>
         </li>
 

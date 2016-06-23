@@ -16,14 +16,12 @@ update_photos();
 
 sub update_photos {
   my $config = Rplus::Util::Config::get_config();
-  my $path = $config->{storage}->{path};
+  my $path = $config->{storage}->{path} . '/photos/';
 
   my $photo_iter = Rplus::Model::Photo::Manager->get_objects_iterator(
     query => [\("add_date > now() - interval '365 day'")],
 		sort_by => 'realty_id desc'
   );
-
-	my $path = '/var/data/rplus/storage/photos/';
 
   while (my $p = $photo_iter->next) {
     my $file_name = $p->filename;
