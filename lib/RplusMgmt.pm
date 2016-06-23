@@ -366,7 +366,7 @@ sub startup {
           RplusMgmt::Task::CalendarSync::run();
 
           RplusMgmt::Task::Subscriptions::run($self);
-          #RplusMgmt::Task::SMS::run($self);
+          RplusMgmt::Task::SMS::run($self);
           say 'child: done';
 
           exit(0);
@@ -448,7 +448,7 @@ sub startup {
             });
         });
 
-        # service 
+        # service
         $r2->get('/service/:action')->to(controller => 'service');
 
         my $r2b = $r2->under->to(controller => 'authentication', action => 'auth');
