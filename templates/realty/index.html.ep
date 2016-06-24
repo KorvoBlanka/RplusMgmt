@@ -246,7 +246,7 @@
 %= js_once "$assets_url/leaflet/$leafletjs_ver/leaflet.js";
 %= js_once "$assets_url/leaflet.fullscreen/$leafletjs_fullscreen_ver/Control.FullScreen.js";
 
-%= js_once "https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js";
+%= js_once "$assets_url/d3/d3.min.js";
 %= js_once "$assets_url/jsclipper/clipper.js";
 %= js_once "$assets_url/concavehull/concavehull.js";
 %= js_once "$assets_url/Leaflet.FreeDraw/dist/leaflet.freedraw.js";
@@ -287,12 +287,8 @@
     {
         var id = "";
         var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-
         for( var i=0; i < 5; i++ )
             id += possible.charAt(Math.floor(Math.random() * possible.length));
-
-        console.log(id);
-
         return id;
     }
 
@@ -559,9 +555,8 @@
 
                 var s_id = Rplus.Table['users'][obj.agent_id] ? Rplus.Table['users'][obj.agent_id].superior : null;
 
-                var media_export_row = obj.media_export;
-                for (var id_key in media_export_row) {
-                    var val = media_export_row[id_key];
+                for (var idx in obj.media_export) {
+                    var val = obj.media_export[idx];
                     if (ids[val] === undefined) {
                         ids[val] = 1;
                     } else {
@@ -726,10 +721,6 @@
           var xhtml = '';
           for (var i = 0; i < data.list.length; i++) {
             var r = data.list[i];
-
-            /*if ($('#realtyTable > tbody > tr[data-id="' + r.id + '"]').length > 0) {
-              console.log('d: ' + r.id);
-            }*/
 
             xhtml += '<tr data-page="' + data.page + '" data-id="' + r.id + '" data-lat="' + r.latitude + '" data-lng="' + r.longitude +  '"';
             xhtml += ' class="';
@@ -1330,20 +1321,9 @@
           .done(function (data, textStatus, jqXHR) {
             if (data.status == 'success') {
               var list = data.list;
-              jQuery.each(list, function (old_id, realty) {
-                var r = realty;
-                var $tr = $('#realtyTable > tbody > tr[data-id="' + old_id + '"]');
-
-                $tr.data('id', r.id);
-                $tr.data('prev_id', old_id);
-                $tr.attr('data-id', r.id);
-                $tr.attr('data-prev_id', old_id);
-                // Update row data in realty table
-                for (var j = 0; j < realtyTableConf.fields.length; j++) {
-                  var f = realtyTableConf.fields[j];
-                  $('td:nth-child(' + (j + 1) + ')', $tr).html(f.val(r));
-                }
-                $tr.data('obj', r);
+              jQuery.each(list, function (prev_id, realty) {
+                updateRealtyRow(prev_id, realty);
+                var $tr = $('#realtyTable > tbody > tr[data-id="' + prev_id + '"]');
                 $tr.removeClass('selected').addClass('modified');
                 putToHistory(r.id, "selected", 0);
                 putToHistory(r.id, "modified", 1);
@@ -1355,6 +1335,21 @@
             }
           }).fail(function (jqXHR, textStatus, errorThrown) {});
       });
+
+      function updateRealtyRow(prev_id, realty) {
+        var $tr = $('#realtyTable > tbody > tr[data-id="' + prev_id + '"]');
+
+        $tr.data('id', realty.id);
+        $tr.data('prev_id', prev_id);
+        $tr.attr('data-id', realty.id);
+        $tr.attr('data-prev_id', prev_id);
+        $tr.data('obj', realty);
+        // Update row data in realty table
+        for (var j = 0; j < realtyTableConf.fields.length; j++) {
+          var f = realtyTableConf.fields[j];
+          $('td:nth-child(' + (j + 1) + ')', $tr).html(f.val(realty));
+        }
+      }
 
       // Change state
       $('[data-action="realty-set-state"]').click(function (e) {
@@ -1378,27 +1373,16 @@
         .done(function (data, textStatus, jqXHR) {
           if (data.status == 'success') {
             var list = data.list;
-            jQuery.each(list, function (old_id, realty) {
-              var r = realty;
-              var $tr = $('#realtyTable > tbody > tr[data-id="' + old_id + '"]');
-
+            jQuery.each(list, function (prev_id, realty) {
+              var $tr = $('#realtyTable > tbody > tr[data-id="' + prev_id + '"]');
               var state_mode = $('[data-filter="state_code"]').data('val');
-              if (r.state_code == 'deleted' && state_mode != 'deleted') {
+              if (realty.state_code == 'deleted' && state_mode != 'deleted') {
                 $tr.remove();
               } else {
-                $tr.data('id', r.id);
-                $tr.data('prev_id', old_id);
-                $tr.attr('data-id', r.id);
-                $tr.attr('data-prev_id', old_id);
-                // Update row data in realty table
-                for (var j = 0; j < realtyTableConf.fields.length; j++) {
-                  var f = realtyTableConf.fields[j];
-                  $('td:nth-child(' + (j + 1) + ')', $tr).html(f.val(r));
-                }
-                $tr.data('obj', r);
+                updateRealtyRow(prev_id, realty);
                 $tr.removeClass('selected').addClass('modified').removeClass('error');
-                putToHistory(r.id, "selected", 0);
-                putToHistory(r.id, "modified", 1);
+                putToHistory(realty.id, "selected", 0);
+                putToHistory(realty.id, "modified", 1);
               }
             });
             var errors = data.errors;
@@ -1430,23 +1414,12 @@
           .done(function (data, textStatus, jqXHR) {
             if (data.status == 'success') {
               var list = data.list;
-              jQuery.each(list, function (old_id, realty) {
-                var r = realty;
-                var $tr = $('#realtyTable > tbody > tr[data-id="' + old_id + '"]');
-
-                $tr.data('id', r.id);
-                $tr.data('prev_id', old_id);
-                $tr.attr('data-id', r.id);
-                $tr.attr('data-prev_id', old_id);
-                // Update row data in realty table
-                for (var j = 0; j < realtyTableConf.fields.length; j++) {
-                  var f = realtyTableConf.fields[j];
-                  $('td:nth-child(' + (j + 1) + ')', $tr).html(f.val(r));
-                }
-                $tr.data('obj', r);
+              jQuery.each(list, function (prev_id, realty) {
+                updateRealtyRow(prev_id, realty);
+                var $tr = $('#realtyTable > tbody > tr[data-id="' + prev_id + '"]');
                 $tr.removeClass('selected').addClass('modified').removeClass('error');;
-                putToHistory(r.id, "selected", 0);
-                putToHistory(r.id, "modified", 1);
+                putToHistory(realty.id, "selected", 0);
+                putToHistory(realty.id, "modified", 1);
               });
               var errors = data.errors;
               for (var i = 0; i < errors.length; i++) {
@@ -1484,23 +1457,12 @@
           .done(function (data, textStatus, jqXHR) {
             if (data.status == 'success') {
               var list = data.list;
-              jQuery.each(list, function (old_id, realty) {
-                var r = realty;
-                var $tr = $('#realtyTable > tbody > tr[data-id="' + old_id + '"]');
-
-                $tr.data('id', r.id);
-                $tr.data('prev_id', old_id);
-                $tr.attr('data-id', r.id);
-                $tr.attr('data-prev_id', old_id);
-                // Update row data in realty table
-                for (var j = 0; j < realtyTableConf.fields.length; j++) {
-                  var f = realtyTableConf.fields[j];
-                  $('td:nth-child(' + (j + 1) + ')', $tr).html(f.val(r));
-                }
-                $tr.data('obj', r);
+              jQuery.each(list, function (prev_id, realty) {
+                updateRealtyRow(prev_id, realty);
+                var $tr = $('#realtyTable > tbody > tr[data-id="' + prev_id + '"]');
                 $tr.removeClass('selected').addClass('modified').removeClass('error');;
-                putToHistory(r.id, "selected", 0);
-                putToHistory(r.id, "modified", 1);
+                putToHistory(realty.id, "selected", 0);
+                putToHistory(realty.id, "modified", 1);
               });
             }
           }).fail(function (jqXHR, textStatus, errorThrown) {});
@@ -1587,8 +1549,6 @@
               });
 
               free_draw.on('markers', function getMarkers(eventData) {
-
-                console.log('yay!');
 
                 if (eventData.latLngs.length > 0) {
 

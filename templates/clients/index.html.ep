@@ -399,8 +399,6 @@
       return Modernizr.touch;
     }
 
-    var media_export = {};
-
     function createContextMenu() {
       var context_cb = function(e){
 
@@ -438,9 +436,8 @@
 
           var s_id = Rplus.Table['users'][obj.agent_id] ? Rplus.Table['users'][obj.agent_id].superior : null;
 
-          var media_export_row = media_export[id];
-          for (var id_key in media_export_row) {
-            var val = media_export_row[id_key];
+          for (var idx in obj.media_export) {
+            var val = obj.media_export[idx];
             if (ids[val] === undefined) {
               ids[val] = 1;
             } else {
@@ -894,14 +891,12 @@
     }
 
     function updateRealtyRow(prev_id, realty) {
-      var r = realty;
       var $tr = $('#realtyTable > tbody > tr[data-id="' + prev_id + '"]');
 
       if ($tr.length) {
         var page = $tr.data('page');
         $tr.replaceWith(buildHtmlForRealty(realty, page));
-        $('#realtyTable > tbody > tr[data-id="' + r.id + '"]').data('obj', realty);
-        media_export[r.id] = r.export_media;
+        $('#realtyTable > tbody > tr[data-id="' + realty.id + '"]').data('obj', realty);
       }
     }
 
@@ -1682,25 +1677,31 @@
 
         var agentId = $(this).data('val');
         var $selected = $('#realtyTable > tbody > tr.selected');
-
+        var ids = [];
         $selected.each(function () {
           var $this = $(this);
-          var id = $this.data('id');
+          if (ids.indexOf($this.data('id')) < 0) {
+            ids.push($this.data('id'));
+          }
+        });
+
+
           $.ajax({
             type: "POST",
             async: false,
-            url: "/api/realty/update",
-            data: {id: id, agent_id: agentId},
+            url: "/api/realty/update_multiple",
+            data: {id: ids, agent_id: agentId},
             success: function (data, textStatus, jqXHR) {
               if (data.status == 'success') {
-                var r = data.realty;
-                // Update row data in realty table
-                updateRealtyRow(id, r);
+                var list = data.list;
+                jQuery.each(list, function (prev_id, realty) {
+                  updateRealtyRow(prev_id, realty);
+                });
               }
             },
             error: function (jqXHR, textStatus, errorThrown) {},
           });
-        });
+
       });
 
       // Change state
@@ -1713,14 +1714,15 @@
             var id = $this.data('id');
             $.ajax({
               type: "POST",
-              url: "/api/realty/update",
-              data: {id: id, state_code: stateCode},
+              url: "/api/realty/update_multiple",
+              data: {id: [id], state_code: stateCode},
             })
               .done(function (data, textStatus, jqXHR) {
                 if (data.status == 'success') {
-                  var r = data.realty;
-                  // Update row data in realty table
-                  updateRealtyRow(id, r);
+                  var list = data.list;
+                  jQuery.each(list, function (prev_id, realty) {
+                    updateRealtyRow(prev_id, realty);
+                  });
                 }
               });
           }
@@ -1753,7 +1755,6 @@
                 } else {
                   clients[client_id].color_tag_id = set_tag_id;
                 }
-                // Update row data in realty table
                 updateTreeEntry(clients[client_id], false);
               }
             });
@@ -1785,7 +1786,6 @@
             .done(function (data, textStatus, jqXHR) {
               if (data.status == 'success') {
                 clients[client_id].agent_id = agent_id;
-                // Update row data in client tree
                 updateTreeEntry(clients[client_id], false);
                 Rplus.Functions.getActiveSubCount();
               }
@@ -1797,23 +1797,29 @@
       $('[data-action="realty-set-color_tag_id"]').click(function (e) {
         var new_tag_id = $(this).data('val');
         var $selected = $('#realtyTable > tbody > tr.selected');
-        $selected.each(function () {
 
+        var ids = [];
+        $selected.each(function () {
           var $this = $(this);
-          var id = $this.data('id');
-          $.ajax({
-            type: "POST",
-            url: "/api/realty/set_color_tag",
-            data: {id: id, color_tag_id: new_tag_id}
-          })
-            .done(function (data, textStatus, jqXHR) {
-              if (data.status == 'success') {
-                var r = data.realty;
-                // Update row data in realty table
-                updateRealtyRow(id, r);
-              }
-            });
+          if (ids.indexOf($this.data('id')) < 0) {
+            ids.push($this.data('id'));
+          }
         });
+
+        $.ajax({
+          type: "POST",
+          url: "/api/realty/set_color_tag_multiple",
+          data: {id: ids, color_tag_id: new_tag_id}
+        })
+          .done(function (data, textStatus, jqXHR) {
+            if (data.status == 'success') {
+              var list = data.list;
+              jQuery.each(list, function (prev_id, realty) {
+                updateRealtyRow(prev_id, realty);
+              });
+            }
+          });
+
       });
 
       // Set export
@@ -1823,7 +1829,8 @@
         $selected.each(function () {
           var $this = $(this);
           var id = $this.data('id');
-          var export_array = media_export[id].slice(0);
+          var r = $this.data('obj');
+          var export_array = r.media_export; //.slice(0);
           var index = $.inArray(export_code, export_array);
           if(index > -1) {
             export_array.splice(index, 1);
@@ -1836,14 +1843,15 @@
           }
           $.ajax({
             type: "POST",
-            url: "/api/realty/update",
-            data: {id: id, export_media: ajax_array},
+            url: "/api/realty/update_multiple",
+            data: {id: [id], export_media: ajax_array},
           })
             .done(function (data, textStatus, jqXHR) {
               if (data.status == 'success') {
-                var r = data.realty;
-                // Update row data in realty table
-                updateRealtyRow(id, r);
+                var list = data.list;
+                jQuery.each(list, function (prev_id, realty) {
+                  updateRealtyRow(prev_id, realty);
+                });
               }
             }).fail(function (jqXHR, textStatus, errorThrown) {
 
@@ -1854,8 +1862,12 @@
 
       $('[data-action="task-create"]').click(function (e) {
         var task_type_id = $(this).data('val');
+        var task_title = $(this)[0].textContent;
         var card = TaskCard({
-          saved: function (start_date) {
+          title: 'Задача: ' + task_title,
+          task_type_id: task_type_id,
+          saved: function (data) {
+            var start_date = data.start_date;
             var end_date = start_date.clone().add(30, 'minutes');
             // если выбрано несколько клиентов, игнорируем выбранную недвижимость
             //
@@ -1867,16 +1879,15 @@
                 var $this = $(this);
                 var client_id = $this.data('id');
                 var client = clients[client_id];
-                var agent_id = client.agent_id ? client.agent_id : <%= $self->stash('user')->{id} %>;
-                var summary = (client.name || '') + ' ' + Rplus.Util.formatPhoneNum(client.phone_num);
+                var summary = data.summary + '; ' + (client.name || '') + ' ' + Rplus.Util.formatPhoneNum(client.phone_num);
                 var description = '';
 
                 $.ajax({
                   type: "POST",
                   url: "/api/task/save",
                   data: {
-                    task_type_id: task_type_id,
-                    assigned_user_id: agent_id,
+                    task_type_id: data.task_type_id,
+                    assigned_user_id: data.agent_id,
                     start_date: start_date.format(),
                     end_date: end_date.format(),
                     client_id: client.id,
@@ -1899,14 +1910,12 @@
               var $node = $($cselected[0]);
               var client_id = $node.data('id');
               var client = clients[client_id];
-              var client_agent_id = client.agent_id ? client.agent_id : <%= $self->stash('user')->{id} %>;
-              var client_description = '<br>' + (client.name || '') + ' <strong>' + Rplus.Util.formatPhoneNum(client.phone_num) + '</strong> ';
+              var client_description = data.summary + '<br>' + (client.name || '') + ' <strong>' + Rplus.Util.formatPhoneNum(client.phone_num) + '</strong> ';
 
               $selected.each(function () {
                 var $this = $(this);
                 var id = $this.data('id');
                 var r = $this.data('obj');
-                var agent_id = r.agent_id && r.agent_id != 10000 ? r.agent_id : <%= $self->stash('user')->{id} %>;
 
                 var summary = client_description + ' ' + Rplus.Realty.getDigestForTask(r);
                 var description = '';
@@ -1916,8 +1925,8 @@
                   type: "POST",
                   url: "/api/task/save",
                   data: {
-                    task_type_id: task_type_id,
-                    assigned_user_id: agent_id,
+                    task_type_id: data.task_type_id,
+                    assigned_user_id: data.agent_id,
                     start_date: start_date.format(),
                     end_date: end_date.format(),
                     client_id: client.id,
@@ -1935,29 +1944,6 @@
                   }).fail(function (jqXHR, textStatus, errorThrown) {
 
                   });
-
-                if (agent_id != client_agent_id) {
-                  $.ajax({
-                    type: "POST",
-                    url: "/api/task/save",
-                    data: {
-                      task_type_id: task_type_id,
-                      assigned_user_id: client_agent_id,
-                      dead_line: dead_line,
-                      summary: summary,
-                      description: description,
-                    },
-                  })
-                    .done(function (data, textStatus, jqXHR) {
-                      if (data.status == 'success') {
-
-                      } else {
-
-                      }
-                    }).fail(function (jqXHR, textStatus, errorThrown) {
-
-                    });
-                }
               });
             }
             card.close();

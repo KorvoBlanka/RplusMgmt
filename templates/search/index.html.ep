@@ -242,7 +242,7 @@
 %= js_once "$assets_url/leaflet/$leafletjs_ver/leaflet.js";
 %= js_once "$assets_url/leaflet.fullscreen/$leafletjs_fullscreen_ver/Control.FullScreen.js";
 
-%= js_once "https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js";
+%= js_once "$assets_url/d3/d3.min.js";
 %= js_once "$assets_url/jsclipper/clipper.js";
 %= js_once "$assets_url/concavehull/concavehull.js";
 %= js_once "$assets_url/Leaflet.FreeDraw/dist/leaflet.freedraw.js";

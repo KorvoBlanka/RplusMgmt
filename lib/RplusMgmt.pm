@@ -49,8 +49,8 @@ sub startup {
 
     # Default stash values
     $self->defaults(
-        jquery_ver => '2.0.3',
-        bootstrap_ver => '3.0.3',
+        jquery_ver => '2.2.4',
+        bootstrap_ver => '3.3.6',
         momentjs_ver => '2.8.2',
         holderjs_ver => '2.2.0',
         leafletjs_ver => '0.7.7',
