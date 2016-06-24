@@ -18,9 +18,12 @@ use File::Temp qw(tmpnam);
 use Spreadsheet::WriteExcel;
 use JSON;
 
+my $config;
 
 sub index {
     my $self = shift;
+
+    $config = $self->config;
 
     my $acc_id = $self->session('account')->{id};
 
@@ -145,7 +148,7 @@ sub index {
                         $realty->floors_count || '',
                         'нет',
                         $realty->description,
-                        @photos ? {type => 'photo_list', body => join("\n", map { $_->filename } @photos)} : '',
+                        @photos ? {type => 'photo_list', body => join("\n", map { $config->{storage}->{external} . '/photos/' . $_->filename } @photos)} : '',
                         $realty->price * 1000,
                     ];
                     for my $col_num (0..(scalar(@$row)-1)) {

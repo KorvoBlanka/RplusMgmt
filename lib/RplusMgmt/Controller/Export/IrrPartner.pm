@@ -22,7 +22,7 @@ use JSON;
 use URI;
 use Digest::MD5;
 
-
+my $config;
 my $region = '';
 my $city = '';
 
@@ -315,6 +315,8 @@ sub buildTitle {
 sub index {
     my $self = shift;
 
+    $config = $self->config;
+
     my $acc_id = $self->session('account')->{id};
 
     return $self->render_not_found unless $self->req->method eq 'POST';
@@ -362,7 +364,6 @@ sub index {
 
     $media->metadata(encode_json($meta));
     $media->save(changes_only => 1);
-
 
 
     my $xml_writer = XML::Writer->new(OUTPUT => $fh, DATA_MODE => 1, DATA_INDENT => '  ');
@@ -469,17 +470,14 @@ sub index {
                 my $photo_iter = Rplus::Model::Photo::Manager->get_objects_iterator(query => [realty_id => $realty->id, delete_date => undef], sort_by => 'id', limit => 10);
                 while (my $photo = $photo_iter->next) {
 
-                    my $img_filename = '';
-                    if ($photo->filename =~ /http:\/\/.+\.com(.+)/) {
-                        $img_filename = '/var/data/storage' . $1;
-                    }
+                    my $img_filename = $config->{storage}->{path} . '/photos/' . $photo->filename;
 
                     if (open(my $img_fh, "<", $img_filename)) {
                         my $ctx = Digest::MD5->new;
                         $ctx->addfile($img_fh);
                         $xml_writer->emptyTag(
                             'foto-remote',
-                            url => $photo->filename,
+                            url => $config->{storage}->{external} . '/photos/' . $photo->filename,
                             md5 => $ctx->hexdigest,
                         );
                         close $img_fh;
@@ -527,19 +525,15 @@ sub index {
     close $fh;
 
     my $file_name = 'irr_a'.$acc_id.'.xml';
-    my($file_name_a, $new_path, $ext_a) = fileparse($self->config->{'storage'}->{'path'});
-    my $new_file = $new_path.'files/export/'.$file_name;
-    my($file_name_b, $dir, $ext_b) = fileparse($new_file);
-    make_path($dir);
-    move($file, $new_file);
+    my $path = $config->{'storage'}->{'path'} . '/files/export/' . $file_name;
+    move($file, $path);
 
     my $mode = 0644;
-    chmod $mode, $new_file;
+    chmod $mode, $path;
 
-    my($file_name_c, $url_part, $ext_c) = fileparse($self->config->{'storage'}->{'url'});
-    my $path = $url_part.'files/export/'.$file_name;
+    my $url = $config->{'storage'}->{'external'} .'/files/export/' . $file_name;
 
-    return $self->render(json => {path => $path});
+    return $self->render(json => {path => $url});
 }
 
 1;

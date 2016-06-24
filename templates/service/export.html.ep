@@ -222,14 +222,13 @@
             }
         })
 
-        return;
-
         setTimeout(function(realty_types_str) {
-        $('<form action="/export/irr" method="POST">' +
+          $('<form action="/export/irr" method="POST">' +
             '<input name="realty_type" value="' + realty_types_str + '">' +
             '<input name="pictures" value="1">' +
             '</form>').submit();
-        }, 1500 * k, JSON.stringify(realty_types));
+        }, 1500 * k, btoa(JSON.stringify(realty_types)));
+        //
 
         var iid = setInterval(function(realty_types_str) {
           if (readCookie('download') == 'start') {
@@ -238,6 +237,7 @@
             $(".indicator-download").addClass('invisible');
           }
         }, 500);
+
       }
     });
 
@@ -433,32 +433,32 @@
           </label>
           <div class="checkbox">
             <label>
-              <input type="checkbox" checked="checked" id="apartments"> Квартиры
+              <input type="checkbox" checked="checked" id="apartment"> Квартиры
             </label>
           </div>
           <div class="checkbox">
             <label>
-              <input type="checkbox" checked="checked" id="rooms"> Комнаты
+              <input type="checkbox" checked="checked" id="room"> Комнаты
             </label>
           </div>
           <div class="checkbox">
             <label>
-              <input type="checkbox" checked="checked" id="houses"> Дома, коттеджи
+              <input type="checkbox" checked="checked" id="house"> Дома, коттеджи
             </label>
           </div>
           <div class="checkbox">
             <label>
-              <input type="checkbox" checked="checked" id="commercials"> Коммерческая недвижимость
+              <input type="checkbox" checked="checked" id="commercial"> Коммерческая недвижимость
             </label>
           </div>
           <div class="checkbox">
             <label>
-              <input type="checkbox" checked="checked" id="lands"> Земельные участки
+              <input type="checkbox" checked="checked" id="land"> Земельные участки
             </label>
           </div>
           <div class="checkbox">
             <label>
-              <input type="checkbox" checked="checked" id="garages"> Гаражи и стоянки
+              <input type="checkbox" checked="checked" id="garage"> Гаражи и стоянки
             </label>
           </div>
         </div>
@@ -468,32 +468,32 @@
           </label>
           <div class="checkbox">
             <label>
-              <input type="checkbox" checked="checked" id="apartments"> Квартиры
+              <input type="checkbox" checked="checked" id="apartment"> Квартиры
             </label>
           </div>
           <div class="checkbox">
             <label>
-              <input type="checkbox" checked="checked" id="rooms"> Комнаты
+              <input type="checkbox" checked="checked" id="room"> Комнаты
             </label>
           </div>
           <div class="checkbox">
             <label>
-              <input type="checkbox" checked="checked" id="houses"> Дома, коттеджи
+              <input type="checkbox" checked="checked" id="house"> Дома, коттеджи
             </label>
           </div>
           <div class="checkbox">
             <label>
-              <input type="checkbox" checked="checked" id="commercials"> Коммерческая недвижимость
+              <input type="checkbox" checked="checked" id="commercial"> Коммерческая недвижимость
             </label>
           </div>
           <div class="checkbox">
             <label>
-              <input type="checkbox" checked="checked" id="lands"> Земельные участки
+              <input type="checkbox" checked="checked" id="land"> Земельные участки
             </label>
           </div>
           <div class="checkbox">
             <label>
-              <input type="checkbox" checked="checked" id="garages"> Гаражи и стоянки
+              <input type="checkbox" checked="checked" id="other"> Гаражи и стоянки
             </label>
           </div>
         </div>

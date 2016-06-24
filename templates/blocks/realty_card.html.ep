@@ -206,6 +206,11 @@
       position: absolute;
       right: 10px;
   }
+
+  .checkbox {
+    margin-left: 35px;
+  }
+
 </style>
 % end
 
@@ -2119,7 +2124,7 @@
             </div>
           </div>
 
-          <div class="checkbox" style="margin-left: 15px;">
+          <div class="checkbox">
             <input type="checkbox" name="multylisting" value="1" form="realty-form"> <small>Показывать в списке мультилистинга</small>
           </div>
 

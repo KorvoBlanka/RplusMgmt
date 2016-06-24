@@ -19,6 +19,8 @@ use DateTime;
 use JSON;
 use URI;
 
+my $config;
+
 my $company_name = '';
 my $contact_phone = '';
 my $agent_phone = 0;
@@ -349,7 +351,7 @@ my %fields_sub = (
         my @photos;
         my $photo_iter = Rplus::Model::Photo::Manager->get_objects_iterator(query => [realty_id => $r->id, delete_date => undef], sort_by => 'id');
         while (my $photo = $photo_iter->next) {
-            push @photos, $photo->filename;
+            push @photos, $config->{storage}->{external} . '/photos/' . $photo->filename;
         }
         return \@photos;
     },
@@ -358,6 +360,8 @@ my %fields_sub = (
 
 sub index {
     my $self = shift;
+
+    $config = $self->config;
 
     my $acc_id = $self->session('account')->{id};
 
@@ -377,8 +381,8 @@ sub index {
         rent => \@rent_realty_types,
     };
 
-    $region = $self->config->{export}->{region};
-    $city = $self->config->{export}->{city};
+    $region = $config->{export}->{region};
+    $city = $config->{export}->{city};
 
     my $meta = from_json($media->metadata);
 
@@ -478,20 +482,16 @@ sub index {
     $xml_writer->end();
     close $fh;
 
-    my $file_name = 'avito_a'.$acc_id.'.xml';
-    my($file_name_a, $new_path, $ext_a) = fileparse($self->config->{'storage'}->{'path'});
-    my $new_file = $new_path.'files/export/'.$file_name;
-    my($file_name_b, $dir, $ext_b) = fileparse($new_file);
-    make_path($dir);
-    move($file, $new_file);
+    my $file_name = 'avito_a' . $acc_id . '.xml';
+    my $path = $self->config->{'storage'}->{'path'} . '/files/export/' . $file_name;
+    move($file, $path);
 
     my $mode = 0644;
-    chmod $mode, $new_file;
+    chmod $mode, $path;
 
-    my($file_name_c, $url_part, $ext_c) = fileparse($self->config->{'storage'}->{'url'});
-    my $path = $url_part.'files/export/'.$file_name;
+    my $url = $config->{'storage'}->{'external'} .'/files/export/' . $file_name;
 
-    return $self->render(json => {path => $path});
+    return $self->render(json => {path => $url});
 }
 
 1;

@@ -19,7 +19,7 @@ use DateTime;
 use JSON;
 use URI;
 
-
+my $config;
 my $company_name = '';
 my $contact_phone = '';
 my $agent_phone = 0;
@@ -350,7 +350,7 @@ my %fields_sub = (
         my @photos;
         my $photo_iter = Rplus::Model::Photo::Manager->get_objects_iterator(query => [realty_id => $r->id, delete_date => undef], sort_by => 'id');
         while (my $photo = $photo_iter->next) {
-            push @photos, $photo->filename;
+            push @photos, $config->{storage}->{external} . '/photos/' . $photo->filename;
         }
         return \@photos;
     },
@@ -359,6 +359,8 @@ my %fields_sub = (
 
 sub index {
     my $self = shift;
+
+    $config = $self->config;
 
     my $acc_id = $self->session('account')->{id};
 
@@ -378,8 +380,8 @@ sub index {
         rent => \@rent_realty_types,
     };
 
-    $region = $self->config->{export}->{region};
-    $city = $self->config->{export}->{city};
+    $region = $config->{export}->{region};
+    $city = $config->{export}->{city};
 
     my $meta = from_json($media->metadata);
 

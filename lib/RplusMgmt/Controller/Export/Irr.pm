@@ -19,9 +19,13 @@ use JSON;
 use Text::CSV;
 use Tie::IxHash;
 use URI;
+use MIME::Base64;
 use Archive::Zip qw( :ERROR_CODES :CONSTANTS );
 
-my $import_storage_path = '/var/data/storage/import/photos/';
+use Data::Dumper;
+
+
+my $config;
 
 my $contact_phones = '';
 my $agent_phone = 0;
@@ -35,15 +39,15 @@ sub ordered_hash_ref {
 }
 
 my $filename_hash = {
-    'sale-rooms' => 'real-estate.rooms-sale.csv',
-    'rent-rooms' => 'real-estate.rooms-rent.csv',
-    'sale-apartments' => 'real-estate.apartments-sale.secondary.csv',
-    'rent-apartments' => 'real-estate.rent.csv',
-    'sale-houses' => 'real-estate.out-of-town.houses.csv',
-    'rent-houses' => 'real-estate.out-of-town-rent.csv',
+    'sale-room' => 'real-estate.rooms-sale.csv',
+    'rent-room' => 'real-estate.rooms-rent.csv',
+    'sale-apartment' => 'real-estate.apartments-sale.secondary.csv',
+    'rent-apartment' => 'real-estate.rent.csv',
+    'sale-house' => 'real-estate.out-of-town.houses.csv',
+    'rent-house' => 'real-estate.out-of-town-rent.csv',
 
-    'sale-commercials' => 'real-estate.commercial.offices.csv',
-    'rent-commercials' => 'real-estate.commercial-rent.csv',
+    'sale-commercial' => 'real-estate.commercial.offices.csv',
+    'rent-commercial' => 'real-estate.commercial-rent.csv',
 
     #'sale-lands' => 'real-estate.commercial.offices.csv',
     #'rent-lands' => 'real-estate.commercial-rent.csv',
@@ -56,7 +60,7 @@ my $city = '';
 
 my %templates_hash = (
     sale => {
-        apartments => ordered_hash_ref (
+        apartment => ordered_hash_ref (
             "ID" => sub {
                     my $d = shift;
                     return $d->id;
@@ -178,9 +182,7 @@ my %templates_hash = (
             "Фото" => sub {
                     my $d = shift;
                     my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $d->id, delete_date => undef], sort_by => 'id ASC', limit => 2)};
-                    return join(", ", map {
-                        (URI->new($_->filename)->path_segments)[-2] . '_' . (URI->new($_->filename)->path_segments)[-1];
-                    } @photos);
+                    return join ", ", map {$_->filename} @photos;
                 },
             "Контактное лицо" => sub {
                     my $d = shift;
@@ -207,7 +209,7 @@ my %templates_hash = (
                     return $site_url;
                 },
         ),
-        rooms => ordered_hash_ref (
+        room => ordered_hash_ref (
             "ID" => sub {
                     my $d = shift;
                     return $d->id;
@@ -314,9 +316,7 @@ my %templates_hash = (
             "Фото" => sub {
                     my $d = shift;
                     my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $d->id, delete_date => undef], sort_by => 'id ASC', limit => 2)};
-                    return join(", ", map {
-                        (URI->new($_->filename)->path_segments)[-2] . '_' . (URI->new($_->filename)->path_segments)[-1];
-                    } @photos);
+                    return join ", ", map {$_->filename} @photos;
                 },
             "e-mail" => sub {
                     return $contact_email;
@@ -350,7 +350,7 @@ my %templates_hash = (
                 },
 
         ),
-        houses => ordered_hash_ref (
+        house => ordered_hash_ref (
             "ID" => sub {
                     my $d = shift;
                     return $d->id;
@@ -454,9 +454,7 @@ my %templates_hash = (
             "Фото" => sub {
                     my $d = shift;
                     my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $d->id, delete_date => undef], sort_by => 'id ASC', limit => 2)};
-                    return join(", ", map {
-                        (URI->new($_->filename)->path_segments)[-2] . '_' . (URI->new($_->filename)->path_segments)[-1];
-                    } @photos);
+                    return join ", ", map {$_->filename} @photos;
                 },
             "e-mail" => sub {
                     return $contact_email;
@@ -484,7 +482,7 @@ my %templates_hash = (
                 },
 
         ),
-        commercials => ordered_hash_ref (
+        commercial => ordered_hash_ref (
             "ID" => sub {
                     my $d = shift;
                     return $d->id;
@@ -587,9 +585,7 @@ my %templates_hash = (
             "Фото" => sub {
                     my $d = shift;
                     my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $d->id, delete_date => undef], sort_by => 'id ASC', limit => 2)};
-                    return join(", ", map {
-                        (URI->new($_->filename)->path_segments)[-2] . '_' . (URI->new($_->filename)->path_segments)[-1];
-                    } @photos);
+                    return join ", ", map {$_->filename} @photos;
                 },
             "www-адрес" => sub {
                     return $site_url;
@@ -619,7 +615,7 @@ my %templates_hash = (
 
     },
     rent => {
-        apartments => ordered_hash_ref (
+        apartment => ordered_hash_ref (
             "ID" => sub {
                     my $d = shift;
                     return $d->id;
@@ -746,9 +742,7 @@ my %templates_hash = (
             "Фото" => sub {
                     my $d = shift;
                     my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $d->id, delete_date => undef], sort_by => 'id ASC', limit => 2)};
-                    return join(", ", map {
-                        (URI->new($_->filename)->path_segments)[-2] . '_' . (URI->new($_->filename)->path_segments)[-1];
-                    } @photos);
+                    return join ", ", map {$_->filename} @photos;
                 },
             "e-mail" => sub {
                     return $contact_email;
@@ -782,7 +776,7 @@ my %templates_hash = (
                 },
 
         ),
-        rooms => ordered_hash_ref (
+        room => ordered_hash_ref (
             "ID" => sub {
                     my $d = shift;
                     return $d->id;
@@ -891,9 +885,7 @@ my %templates_hash = (
             "Фото" => sub {
                     my $d = shift;
                     my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $d->id, delete_date => undef], sort_by => 'id ASC', limit => 2)};
-                    return join(", ", map {
-                        (URI->new($_->filename)->path_segments)[-2] . '_' . (URI->new($_->filename)->path_segments)[-1];
-                    } @photos);
+                    return join ", ", map {$_->filename} @photos;
                 },
             "e-mail" => sub {
                     return $contact_email;
@@ -929,7 +921,7 @@ my %templates_hash = (
                     return '';
                 },
         ),
-        houses => ordered_hash_ref (
+        house => ordered_hash_ref (
             "ID" => sub {
                     my $d = shift;
                     return $d->id;
@@ -1045,9 +1037,7 @@ my %templates_hash = (
             "Фото" => sub {
                     my $d = shift;
                     my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $d->id, delete_date => undef], sort_by => 'id ASC', limit => 2)};
-                    return join(", ", map {
-                        (URI->new($_->filename)->path_segments)[-2] . '_' . (URI->new($_->filename)->path_segments)[-1];
-                    } @photos);
+                    return join ", ", map {$_->filename} @photos;
                 },
             "e-mail" => sub {
                     return $contact_email;
@@ -1082,8 +1072,7 @@ my %templates_hash = (
                 },
         ),
 
-
-        commercials => ordered_hash_ref (
+        commercial => ordered_hash_ref (
             "ID" => sub {
                     my $d = shift;
                     return $d->id;
@@ -1186,9 +1175,7 @@ my %templates_hash = (
             "Фото" => sub {
                     my $d = shift;
                     my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $d->id, delete_date => undef], sort_by => 'id ASC', limit => 2)};
-                    return join(", ", map {
-                        (URI->new($_->filename)->path_segments)[-2] . '_' . (URI->new($_->filename)->path_segments)[-1];
-                    } @photos);
+                    return join ", ", map {$_->filename} @photos;
                 },
             "www-адрес" => sub {
                     return $site_url;
@@ -1229,6 +1216,8 @@ my %templates_hash = (
 sub index {
     my $self = shift;
 
+    $config = $self->config;
+
     my $acc_id = $self->session('account')->{id};
 
     return $self->render_not_found unless $self->req->method eq 'POST';
@@ -1244,8 +1233,66 @@ sub index {
     my $realty_type = $self->param('realty_type');
 
     my $meta = from_json($media->metadata);
+    my ($fh, $file) = tmpnam();
+    $meta->{'prev_file'} = $file;
 
-    $city = $self->config->{export}->{city};
+    $media->metadata(encode_json($meta));
+    $media->save(changes_only => 1);
+
+    if ($pictures && $pictures == 1) {
+
+        my $types = from_json(decode_base64($realty_type));
+
+        my @sq;
+
+        while (my ($offer_type_code, $type_codes) = each %$types) {
+          foreach (@{$type_codes}) {
+            push @sq, and => [offer_type_code => $offer_type_code, 'type.category_code' =>  $_];
+          }
+        }
+
+        my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
+            query => [
+                or => [
+                  @sq
+                ],
+                account_id => $acc_id,
+            ],
+            sort_by => 'id ASC',
+            require_objects => ['type', 'offer_type'],
+            with_objects => ['house_type', 'balcony', 'bathroom', 'condition', 'agent'],
+        );
+
+        my $arch_name = "pictures";
+        my $zip = Archive::Zip->new();
+        while(my $realty = $realty_iter->next) {
+
+            my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $realty->id, delete_date => undef], sort_by => 'id ASC', limit => 2)};
+
+            foreach (@photos) {
+                my $img_realty_id = (URI->new($_->filename)->path_segments)[-2];
+                my $img_name = $_->filename;
+                my $img_zipname = $img_name;
+                my $img_path = '';
+
+                $img_path = $self->config->{'storage'}->{'path'} . '/photos/' . $img_name;
+                if (-e $img_path) {
+                    my $member = $zip->addFile($img_path, $img_zipname);
+                    $member->desiredCompressionLevel(COMPRESSION_LEVEL_NONE);
+                }
+            }
+        }
+        # Save the Zip file
+        unless ( $zip->writeToFileNamed($file) == AZ_OK ) {
+
+        }
+        $self->res->headers->content_disposition("attachment; filename=pictures.zip;");
+        $self->res->headers->set_cookie('download=start; path=/');
+        $self->res->content->asset(Mojo::Asset::File->new(path => $file));
+        return $self->rendered(200);
+    }
+
+    $city = $config->{export}->{city};
 
     my $options = Rplus::Model::Option->new(account_id => $acc_id)->load();
     if ($options) {
@@ -1257,13 +1304,6 @@ sub index {
         $site_url = $e_opt->{'irr-url'} ? $e_opt->{'irr-url'} : '';
     }
 
-    #unlink($meta->{'prev_file'}) if $meta->{'prev_file'};
-    my ($fh, $file) = tmpnam();
-    $meta->{'prev_file'} = $file;
-
-    $media->metadata(encode_json($meta));
-    $media->save(changes_only => 1);
-
     my $csv = Text::CSV->new ( { binary => 1, quote_binary => 0, quote_space => 0, sep_char=> ";", eol => $/, } ) or return $self->render(json => {error => 'Server error'}, status => 500);
 
     my $template = $templates_hash{$offer_type_code}->{$realty_type};
@@ -1272,96 +1312,45 @@ sub index {
     $csv->column_names(@f_names);
     $csv->print ($fh, $_) for \@f_names;
 
-
-    my $realty_category = {};
-
     my @tc;
-    if ($realty_type =~ /apartments/) {
-        push @tc, ('type.category_code' => ['apartment',]);
-    };
-
-    if ($realty_type =~ /rooms/) {
-        push @tc, (type_code => 'room');
-    }
-
-    if ($realty_type =~ /houses/) {
-        push @tc, ('type.category_code' => ['house']);
-    }
-
-    if ($realty_type =~ /commercials/) {
-        push @tc, ('type.category_code' => ['commercial', 'commersial']);
-    }
-
-    if ($realty_type =~ /lands/) {
-        push @tc, ('type.category_code' => ['land']);
-    }
-
-    if ($realty_type =~ /garages/) {
-
+    if ($realty_type eq 'apartment') {
+      push @tc, type_code => ['apartment' , 'apartment_new', 'apartment_small', 'townhouse'];
+    } elsif ($realty_type eq 'room') {
+      push @tc, type_code => ['room'];
+    } elsif ($realty_type eq 'house') {
+      push @tc, type_code => ['house', 'cottage'];
+    } elsif ($realty_type eq 'commercial') {
+      push @tc, type_code => ['house'];
+    } elsif ($realty_type eq 'land') {
+      push @tc, type_code => ['land'];
+    } elsif ($realty_type eq 'other') {
+      push @tc, type_code => ['other'];
     }
 
     my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(
         query => [
             offer_type_code => $offer_type_code,
-            or => [
-                    @tc,
-                ],
+            @tc,
             export_media => {'&&' => $media->id},
             account_id => $acc_id,
         ],
         sort_by => 'id ASC',
-        require_objects => ['type', 'offer_type'],
         with_objects => ['house_type', 'balcony', 'bathroom', 'condition', 'agent'],
     );
 
-    if ($pictures && $pictures == 1) {
-        my $ua = Mojo::UserAgent->new;
-
-        my $arch_name = "pictures";
-        my $zip = Archive::Zip->new();
-        while(my $realty = $realty_iter->next) {
-
-            my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $realty->id, delete_date => undef], sort_by => 'id ASC', limit => 2)};
-
-            foreach (@photos) {
-                my $img_realty_id = (URI->new($_->filename)->path_segments)[-2];
-                my $img_name = (URI->new($_->filename)->path_segments)[-1];
-                my $img_zipname = $img_realty_id . '_' . $img_name;
-                my $img_path = '';
-                if ($_->filename =~ /import/) {
-                    $img_path = $import_storage_path . $img_realty_id . '/' . $img_name;
-                } else {
-                    $img_path = $self->config->{'storage'}->{'path'} . '/photos/' . $img_realty_id . '/' . $img_name;
-                }
-                if (-e $img_path) {
-                    my $member = $zip->addFile($img_path, $img_zipname);
-                    $member->desiredCompressionLevel(COMPRESSION_LEVEL_NONE);
-                }
-            }
-            # Save the Zip file
-            unless ( $zip->writeToFileNamed($file) == AZ_OK ) {
-
-            }
-            $self->res->headers->content_disposition("attachment; filename=pictures.zip;");
-            $self->res->headers->set_cookie('download=start; path=/');
-            $self->res->content->asset(Mojo::Asset::File->new(path => $file));
+    while(my $realty = $realty_iter->next) {
+        my @val_array;
+        foreach (keys %$template) {
+            push @val_array, $template->{$_}->($realty);
         }
-    } else {
-
-        while(my $realty = $realty_iter->next) {
-            my @val_array;
-            foreach (keys %$template) {
-                push @val_array, $template->{$_}->($realty);
-            }
-            $csv->print ($fh, \@val_array);
-        }
-
-        close $fh;
-
-        my $file_name = $filename_hash->{"$offer_type_code-$realty_type"};
-        $self->res->headers->content_disposition("attachment; filename=$file_name;");
-        $self->res->content->asset(Mojo::Asset::File->new(path => $file));
+        $csv->print ($fh, \@val_array);
     }
+
+    close $fh;
+
+    my $file_name = $filename_hash->{"$offer_type_code-$realty_type"};
+    $self->res->headers->content_disposition("attachment; filename=$file_name;");
+    $self->res->content->asset(Mojo::Asset::File->new(path => $file));
 
     return $self->rendered(200);
 }
