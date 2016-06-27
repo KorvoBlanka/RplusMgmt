@@ -2033,6 +2033,11 @@
             ;
 
           });
+          if ($('#realtyTable > tbody > tr').not('.hidden').length < 20) {
+            var last_page = $('#realtyTable > tbody > tr:last').data('page');
+            listSubscriptionRealty(subscription_id, last_page);
+          }
+
         });
 
         // Load photos
