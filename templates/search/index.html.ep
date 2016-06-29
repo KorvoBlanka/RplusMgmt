@@ -53,7 +53,7 @@
   }
 
   #geoMap {
-    height: 600px;
+    height: 1080px;
   }
 
   /* Typeahead.js input-sm fix */
@@ -896,8 +896,6 @@
       var height = $(window).height() - $('#searchTable').get(0).getBoundingClientRect().top - 50/*$('.navbar-fixed-bottom').height()*/
       $('#searchTableWrapper').height(height);
       $('#geoMap').height(height);
-
-      console.log(height);
 
       initSpeech();
       createContextMenu();
