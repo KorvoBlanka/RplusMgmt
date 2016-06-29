@@ -842,9 +842,9 @@
             </div>
             <hr width="90%" align="right">
             <div class="input-group ccard-input-group">
-              <span class="ccard-input-group-addon glyphicon glyphicon-phone"></span>
-              <span class="ccard-input-group-addon">Телефон собственника</span>
-              <input class="" type="checkbox" id="phonecb" name="send_owner_phone" style="margin-top: 10px"></textarea>
+              <span class="ccard-input-group-addon glyphicon"></span>
+              <span class="ccard-input-group-addon"></span>
+              <input class="hidden" type="checkbox" id="phonecb" name="send_owner_phone" style="margin-top: 10px"></textarea>
             </div>
 
             <hr class="hidden" width="90%" align="right">
@@ -867,7 +867,7 @@
                 <option value="<%= $x->id %>"><%= $x->name %></option>
               %     }
               % } else {
-              %     for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [account_id => $self->session('account')->{id},  id => $self->stash('user')->{id}, delete_date => undef], sort_by => 'name')}) {                  
+              %     for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [account_id => $self->session('account')->{id},  id => $self->stash('user')->{id}, delete_date => undef], sort_by => 'name')}) {
                 <option value="<%= $x->id %>"><%= $x->name %></option>
               %     }
               % }
