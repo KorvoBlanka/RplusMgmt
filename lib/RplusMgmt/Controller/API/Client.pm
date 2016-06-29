@@ -25,6 +25,7 @@ use Mojo::Util qw(trim);
 use Mojo::Collection;
 use Time::Piece;
 
+use Data::Dumper;
 
 sub list {
     my $self = shift;
@@ -359,45 +360,49 @@ sub update {
 
     # Retrieve client
     my $id = $self->param('id');
+    my $agent_id = $self->param('agent_id');
+    my $color_tag_id = $self->param('color_tag_id');
+
+
     my $acc_id = $self->session('account')->{id};
     my $client = Rplus::Model::Client::Manager->get_objects(query => [account_id => $acc_id, id => $id, delete_date => undef])->[0];
 
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $client;
 
     my $permission_granted = $self->has_permission(clients => 'write');
-    for ($self->param) {
-        if ($_ eq 'agent_id') {
-            my $agent_id = $self->param('agent_id');
-            if ($agent_id) {
-                if ($client->agent_id != $agent_id) {
-                    $client->agent_id($agent_id);
-                    $create_event = 1;
-                }
-            } else {
-                $client->agent_id(undef);
+
+    if (defined $agent_id) {
+        if ($agent_id) {
+            if ($client->agent_id != $agent_id) {
+                $client->agent_id($agent_id);
+                $create_event = 1;
             }
-        } elsif ($_ eq 'color_tag_id') {
-            $permission_granted = 1;
-            my $color_tag_id = $self->param('color_tag_id');
-            my $user_id = $self->stash('user')->{id};
-            my $color_tag = Rplus::Model::ClientColorTag::Manager->get_objects(query => [client_id => $client->id, user_id => $user_id,])->[0];
-            if ($color_tag) {
-                if ($color_tag_id != $color_tag->color_tag_id) {
-                  $color_tag->color_tag_id($color_tag_id);
-                } else {
-                  #$color_tag->color_tag_id(undef);
-                }
-                $color_tag->save(changes_only => 1);
-            } else {
-                $color_tag = Rplus::Model::ClientColorTag->new(
-                    client_id => $client->id,
-                    user_id => $user_id,
-                    color_tag_id => $color_tag_id,
-                );
-                $color_tag->save(insert => 1);
-            }
+        } else {
+            $client->agent_id(undef);
         }
     }
+    if (defined $color_tag_id) {
+        $permission_granted = 1;
+        my $color_tag_id = $self->param('color_tag_id');
+        my $user_id = $self->stash('user')->{id};
+        my $color_tag = Rplus::Model::ClientColorTag::Manager->get_objects(query => [client_id => $client->id, user_id => $user_id,])->[0];
+        if ($color_tag) {
+            if ($color_tag_id != $color_tag->color_tag_id) {
+              $color_tag->color_tag_id($color_tag_id);
+            } else {
+              #$color_tag->color_tag_id(undef);
+            }
+            $color_tag->save(changes_only => 1);
+        } else {
+            $color_tag = Rplus::Model::ClientColorTag->new(
+                client_id => $client->id,
+                user_id => $user_id,
+                color_tag_id => $color_tag_id,
+            );
+            $color_tag->save(insert => 1);
+        }
+    }
+
     # Check that we can rewrite
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $permission_granted;
     $client->save(changes_only => 1);
@@ -405,8 +410,8 @@ sub update {
     if ($create_event) {
         my $start_date = localtime;
         my $end_date = $start_date + 15 * 60;
-        my $start_date_str = $start_date->datetime . '+' . ($start_date->tzoffset / (60 * 60));
-        my $end_date_str = $end_date->datetime . '+' . ($start_date->tzoffset / (60 * 60));
+        my $start_date_str = $start_date->datetime; # . '+' . ($start_date->tzoffset / (60 * 60));
+        my $end_date_str = $end_date->datetime;# . '+' . ($start_date->tzoffset / (60 * 60));
 
         my @parts;
         {

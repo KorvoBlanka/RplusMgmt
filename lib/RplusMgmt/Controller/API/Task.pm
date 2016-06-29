@@ -332,40 +332,4 @@ sub delete {
     return $self->render(json => {status => 'success'});
 }
 
-sub get_piramid_data {  # вынести всю аналитику в отдельный модуль (realty.get_for_plot)
-    my $self = shift;
-
-    my $task_iter = Rplus::Model::Task::Manager->get_objects_iterator(
-        query => [
-            '!realty_id' => undef,
-            task_type_id => [1, 2, 3, 4, 5],
-            delete_date => undef,
-        ],
-    );
-
-    my %groups = ();
-    while (my $task = $task_iter->next) {
-        if (exists $groups{$task->realty_id}) {
-            if ($groups{$task->realty_id}->{id} < $task->id) {
-                $groups{$task->realty_id} = {id => $task->id, task_type_id => $task->task_type_id};
-            }
-        } else {
-            $groups{$task->realty_id} = {id => $task->id, task_type_id => $task->task_type_id};
-        }
-    }
-
-    my @res = (0,0,0,0);
-    while( my ($k, $v) = each %groups ) {
-        given ($v->{task_type_id}) {
-            when (1) {$res[0] ++;}
-            when (2) {$res[0] ++; $res[1] ++;}
-            when (3) {$res[0] ++; $res[1] ++; $res[2] ++;}
-            when (4) {$res[0] ++; $res[1] ++; $res[2] ++; $res[3] ++;}
-            when (5) {$res[0] ++; $res[1] ++; $res[2] ++; $res[3] ++; $res[4] ++;}
-        }
-    }
-
-    return $self->render(json => {status => 'success', data => \@res});
-}
-
 1;
