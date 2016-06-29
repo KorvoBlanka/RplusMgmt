@@ -1325,8 +1325,8 @@
                 updateRealtyRow(prev_id, realty);
                 var $tr = $('#realtyTable > tbody > tr[data-id="' + prev_id + '"]');
                 $tr.removeClass('selected').addClass('modified');
-                putToHistory(r.id, "selected", 0);
-                putToHistory(r.id, "modified", 1);
+                putToHistory(realty.id, "selected", 0);
+                putToHistory(realty.id, "modified", 1);
               });
               var errors = data.errors;
               for (var i = 0; i < errors.length; i++) {

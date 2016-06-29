@@ -326,11 +326,11 @@ sub save {
         $color_tag->save(insert => 1);
     }
 
-    if ($create_event && 0) {
+    if ($create_event) {
         my $start_date = localtime;
         my $end_date = $start_date + 15 * 60;
-        my $start_date_str = $start_date->datetime . '+' . ($start_date->tzoffset / (60 * 60));
-        my $end_date_str = $end_date->datetime . '+' . ($start_date->tzoffset / (60 * 60));
+        my $start_date_str = $start_date->datetime;
+        my $end_date_str = $end_date->datetime;
 
         my @parts;
         {
@@ -410,8 +410,8 @@ sub update {
     if ($create_event) {
         my $start_date = localtime;
         my $end_date = $start_date + 15 * 60;
-        my $start_date_str = $start_date->datetime; # . '+' . ($start_date->tzoffset / (60 * 60));
-        my $end_date_str = $end_date->datetime;# . '+' . ($start_date->tzoffset / (60 * 60));
+        my $start_date_str = $start_date->datetime;
+        my $end_date_str = $end_date->datetime;
 
         my @parts;
         {
