@@ -144,7 +144,7 @@ sub get_digest {
 
     my $use_sender_data = 0;
     my $user_photo = '';
-    my $path = $c->config->{'storage'}->{'url'} . '/' . $c->session('account')->{name};
+    my $path = $c->config->{'storage'}->{'external'} . '/' . $c->session('account')->{name};
     if ($sender->role eq 'manager' || $sender->role eq 'top') {
         if ($r->agent_id) {
             $use_sender_data = 0;
@@ -214,7 +214,7 @@ sub get_digest {
         $info_block  .=  '<br>';
     }
     if ($r->rooms_count) {
-        $info_block  .=  'Кол-во комнат:&nbsp;';
+        $info_block  .=  'Кол-во комнат: ';
         $info_block  .=  $r->rooms_count;
         $info_block  .=  '<br>';
     }
@@ -287,7 +287,7 @@ sub get_digest {
 
     $message .= '<div style="width: 65%; padding: 10px; display: inline-block; float: left;">';
     foreach(@$photos) {
-        $message .= "<img style=\"\" width=\"100%\" src=\"$_\">";
+        $message .= "<img style=\"\" width=\"100%\" src=\"" . $c->config->{storage}->{external} . '/photos/' . "$_\">";
     }
     unless (scalar @$photos) {
         $message .= "<img style=\"\" width=\"100%\" src=\"$no_photo_big_url\">";
