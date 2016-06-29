@@ -142,6 +142,13 @@ sub get_agent_objects_data {
 
   my $agent_id = $self->param('agent_id');
   my $offer_type_code = $self->param('offer_type_code') || 'any';
+  my $acc_id = $self->session('account')->{id};
+
+  my @query;
+  push @query, agent_id => $agent_id;
+  push @query, offer_type_code => $offer_type_code;
+  push @query, or => [account_id => undef, account_id => $acc_id];
+  push @query, \("NOT hidden_for && '{".$acc_id."}'");
 
   my $res = {
     list => []
@@ -149,7 +156,11 @@ sub get_agent_objects_data {
 
   for my $x (@{Rplus::Model::RealtyState::Manager->get_objects(sort_by => 'sort_idx')}) {
     my $state_count = Rplus::Model::Realty::Manager->get_objects_count (
-        query => [agent_id => $agent_id, state_code => $x->code, offer_type_code => $offer_type_code, delete_date => undef,],
+        query => [
+          @query,
+          state_code => $x->code,
+          delete_date => undef,
+        ],
     );
     my $x = {
         state_code => $x->name,
