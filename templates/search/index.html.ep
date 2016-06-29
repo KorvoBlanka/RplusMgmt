@@ -564,8 +564,6 @@
 
     function listRealty(page) {
 
-      console.log(geoSearchText);
-
       var q = $('#searchQuery').val();
 
       var agentId = $('[data-filter="agent_id"]').data('val');
@@ -710,10 +708,7 @@
         fullscreenControl: true,
       });
 
-      // --------------------------------------------------
       Rplus.GeoMap.initLayer(geoMap);
-      //var googleLayer = new L.Google('ROADMAP');
-      //geoMap.addLayer(googleLayer);
 
       free_draw = new L.FreeDraw({
         mode: 0,
@@ -726,8 +721,6 @@
       });
 
       free_draw.on('markers', function getMarkers(eventData) {
-
-        console.log('yay!');
 
         if (eventData.latLngs.length > 0) {
 
@@ -904,6 +897,8 @@
       $('#searchTableWrapper').height(height);
       $('#geoMap').height(height);
 
+      console.log(height);
+
       initSpeech();
       createContextMenu();
       listRealty(1);
@@ -948,7 +943,6 @@
 
       // Open realty object card
       $('[data-action="realty-check"]').click(function (e) {
-        console.log('!');
         var $selected = $('#searchTable > tbody > tr.selected');
         var phones = [];
         $selected.each(function () {
