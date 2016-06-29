@@ -285,6 +285,13 @@
 
           });
       }
+
+      // Filters
+      $('[data-filter] > ul a').click(function (e) {
+        var $filter = $(this).closest('[data-filter]');
+        var $display = $filter.data('val', $(this).data('val')).find('> a [role="display"]');
+        if ($(this).data('type') == 'text') { $display.text($(this).text()) } else { $display.html($(this).html()) };
+      });
 	});
 </script>
 % end

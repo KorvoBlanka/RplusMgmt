@@ -76,6 +76,10 @@ sub get_price_data {
           push @query, add_date => {le => $to_date};
         }
 
+        if ($offer_type_code ne 'any') {
+            push @query, offer_type_code => $offer_type_code;
+        }
+
         if ($offer_type_code eq 'rent' && $rent_type ne 'any') {
             push @query, rent_type => $rent_type;
         }
@@ -99,7 +103,7 @@ sub get_price_data {
     push @query, \("NOT hidden_for && '{".$acc_id."}'");
 
     # Parse query
-    push @query, Rplus::Util::Query->parse($q, $self);
+    push @query, Rplus::Util::Query::parse($q, $self);
 
     if ($near) {
         my $points = get_near_filter($near);
@@ -135,7 +139,7 @@ sub get_price_data {
     while (my $realty = $realty_iter->next) {
         my $x = {
             add_date => $realty->add_date,
-            cost => $realty->price,
+            cost => $realty->price * 1000,
         };
         push @{$res->{list}}, $x;
     }
