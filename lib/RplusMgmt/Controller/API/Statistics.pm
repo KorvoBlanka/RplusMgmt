@@ -2,24 +2,14 @@ package RplusMgmt::Controller::API::Statistics;
 
 use Mojo::Base 'Mojolicious::Controller';
 
-use Rplus::Model::Account;
 use Rplus::Model::Account::Manager;
-use Rplus::Model::Realty;
 use Rplus::Model::Realty::Manager;
-use Rplus::Model::MediatorCompany;
 use Rplus::Model::MediatorCompany::Manager;
-use Rplus::Model::Mediator;
 use Rplus::Model::Mediator::Manager;
-use Rplus::Model::Photo;
-use Rplus::Model::Photo::Manager;
-use Rplus::Model::RealtyColorTag;
-use Rplus::Model::RealtyColorTag::Manager;
-use Rplus::Model::SubscriptionRealty;
 use Rplus::Model::SubscriptionRealty::Manager;
-use Rplus::Model::Option;
 use Rplus::Model::Option::Manager;
-use Rplus::Model::DictTaskType;
 use Rplus::Model::DictTaskType::Manager;
+use Rplus::Model::RealtyState::Manager;
 
 use Rplus::Util::PhoneNum;
 use Rplus::Util::Query;
@@ -74,6 +64,10 @@ sub get_price_data {
 
         if ($to_date) {
           push @query, add_date => {le => $to_date};
+        }
+
+        if ($offer_type_code ne 'any') {
+            push @query, offer_type_code => $offer_type_code;
         }
 
         if ($offer_type_code eq 'rent' && $rent_type ne 'any') {
@@ -135,7 +129,7 @@ sub get_price_data {
     while (my $realty = $realty_iter->next) {
         my $x = {
             add_date => $realty->add_date,
-            cost => $realty->price,
+            cost => $realty->price * 1000,
         };
         push @{$res->{list}}, $x;
     }
@@ -148,6 +142,13 @@ sub get_agent_objects_data {
 
   my $agent_id = $self->param('agent_id');
   my $offer_type_code = $self->param('offer_type_code') || 'any';
+  my $acc_id = $self->session('account')->{id};
+
+  my @query;
+  push @query, agent_id => $agent_id;
+  push @query, offer_type_code => $offer_type_code;
+  push @query, or => [account_id => undef, account_id => $acc_id];
+  push @query, \("NOT hidden_for && '{".$acc_id."}'");
 
   my $res = {
     list => []
@@ -155,7 +156,11 @@ sub get_agent_objects_data {
 
   for my $x (@{Rplus::Model::RealtyState::Manager->get_objects(sort_by => 'sort_idx')}) {
     my $state_count = Rplus::Model::Realty::Manager->get_objects_count (
-        query => [agent_id => $agent_id, state_code => $x->code, offer_type_code => $offer_type_code, delete_date => undef,],
+        query => [
+          @query,
+          state_code => $x->code,
+          delete_date => undef,
+        ],
     );
     my $x = {
         state_code => $x->name,

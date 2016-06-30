@@ -327,6 +327,9 @@
         {id: "district", name: "Район", sortName: "district", visible: true, val: function (r) {
           return (r.district || '');
         }},
+        {id: "poi", name: "Ориентир", sortName: "poi", visible: true, val: function (r) {
+          return (r.poi || '');
+        }},
         {id: "address", name: "<%= ucfloc 'address' %>", sortName: "address", visible: true, val: function (r) {
           var addr = '';
           if (r.address) {
