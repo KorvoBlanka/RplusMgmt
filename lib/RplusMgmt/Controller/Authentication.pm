@@ -68,9 +68,10 @@ sub signin {
 sub signout {
     my $self = shift;
 
-    $self->log_out($self->session('account')->{id}, $self->stash('user')->{id});
-
-    delete $self->session->{'account'};
+    if ($self->session('account') && $self->stash('user')) {
+      $self->log_out($self->session('account')->{id}, $self->stash('user')->{id});
+      delete $self->session->{'account'};
+    }
 
     return $self->redirect_to('/');
 }
