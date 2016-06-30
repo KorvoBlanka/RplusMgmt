@@ -29,7 +29,7 @@
 <script type="text/javascript">
 	$(function() {
 
-      google.charts.load('current', {'packages':['scatter', 'bar', 'corechart']});
+      google.charts.load('current', {'packages':['scatter', 'bar', 'corechart'], 'language': 'ru'});
       google.charts.setOnLoadCallback(drawEmpty);
 
       $('.date-picker').datepicker();
@@ -88,11 +88,11 @@
         var to_date;
 
         if (from_date_r) {
-          from_date = moment(from_date_r, "DD-MM-YYYY").format();
+          from_date = moment(from_date_r + ' 00:00', "DD-MM-YYYY HH:mm").format();
         }
 
         if (to_date_r) {
-          to_date = moment(to_date_r, "DD-MM-YYYY").format();
+          to_date = moment(to_date_r + ' 23:59', "DD-MM-YYYY HH:mm").format();
         }
 
         $.ajax({
@@ -122,7 +122,7 @@
                 title: '',
                 subtitle: ''
               },
-              hAxis: {title: 'дата'},
+              hAxis: {title: 'дата'}, //format: 'dd/MM/yyyy HH:mm'
               vAxis: {title: 'цена'}
             };
 

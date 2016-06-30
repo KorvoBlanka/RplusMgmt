@@ -410,32 +410,3 @@ sub parse {
 }
 
 1;
-
-=encoding utf8
-
-=head1 NAME
-
-Rplus::Util::Query - User's query parser
-
-=head1 SYNOPSIS
-
-  use Rplus::Model::Realty::Manager;
-  use Rplus::Util::Query;
-
-  my $q = 'двухкомнатная квартира до 5 млн в центре';
-  my @params = Rplus::Util::Query->parse($q);
-
-  my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(query => \@params);
-  ...
-
-=head1 DESCRIPTION
-
-L<Rplus::Util::Query> provides OO style function(s) to parse user's queries.
-
-=head1 METHODS
-
-L<Rplus::Util::Query> implements the following methods.
-
-=head2 Rplus::Util::Query->parse($q, $c);
-
-=cut

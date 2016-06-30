@@ -99,7 +99,7 @@ sub get_price_data {
     push @query, \("NOT hidden_for && '{".$acc_id."}'");
 
     # Parse query
-    push @query, Rplus::Util::Query->parse($q, $self);
+    push @query, Rplus::Util::Query::parse($q, $self);
 
     if ($near) {
         my $points = get_near_filter($near);
