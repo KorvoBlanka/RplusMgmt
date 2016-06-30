@@ -246,7 +246,6 @@ sub save {
     my $self = shift;
 
     # Retrieve client
-    my $create_event = 0;
     my $client;
     my $acc_id = $self->session('account')->{id};
     if (my $id = $self->param('id')) {
@@ -294,7 +293,6 @@ sub save {
     if ($agent_id) {
         if ($client->agent_id != $agent_id) {
             $client->agent_id($agent_id);
-            $create_event = 1;
         }
     } else {
         $client->agent_id(undef);
@@ -326,29 +324,6 @@ sub save {
         $color_tag->save(insert => 1);
     }
 
-    if ($create_event) {
-        my $start_date = localtime;
-        my $end_date = $start_date + 15 * 60;
-        my $start_date_str = $start_date->datetime;
-        my $end_date_str = $end_date->datetime;
-
-        my @parts;
-        {
-            push @parts, $self->format_phone_num($client->phone_num) . ' ' . ($client->name ? $client->name : '');
-        }
-        my $summary = join(', ', @parts);
-
-        Rplus::Util::Task::qcreate($self, {
-                task_type_id => 11, # добавлен клиент
-                assigned_user_id => $client->agent_id,
-                start_date => $start_date_str,
-                end_date => $end_date_str,
-                summary => $summary,
-                client_id => $client->id,
-                realty_id => undef,
-            });
-    }
-
     return $self->render(json => {status => 'success', id => $client->id});
 }
 
@@ -356,7 +331,6 @@ sub update {
     my $self = shift;
 
     #return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(clients => 'write') || $client->agent_id == $self->stash('user')->{id};
-    my $create_event = 0;
 
     # Retrieve client
     my $id = $self->param('id');
@@ -375,7 +349,6 @@ sub update {
         if ($agent_id) {
             if ($client->agent_id != $agent_id) {
                 $client->agent_id($agent_id);
-                $create_event = 1;
             }
         } else {
             $client->agent_id(undef);
@@ -406,29 +379,6 @@ sub update {
     # Check that we can rewrite
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $permission_granted;
     $client->save(changes_only => 1);
-
-    if ($create_event) {
-        my $start_date = localtime;
-        my $end_date = $start_date + 15 * 60;
-        my $start_date_str = $start_date->datetime;
-        my $end_date_str = $end_date->datetime;
-
-        my @parts;
-        {
-            push @parts, $self->format_phone_num($client->phone_num) . ' ' . ($client->name ? $client->name : '');
-        }
-        my $summary = join(', ', @parts);
-
-        Rplus::Util::Task::qcreate($self, {
-                task_type_id => 11, # добавлен клиент
-                assigned_user_id => $client->agent_id,
-                start_date => $start_date_str,
-                end_date => $end_date_str,
-                summary => $summary,
-                client_id => $client->id,
-                realty_id => undef,
-            });
-    }
 
     return $self->render(json => {status => 'success', id => $client->id});
 }
@@ -547,30 +497,6 @@ sub subscribe {
             }
 
             if ($realty->agent) {
-                my $start_date = localtime;
-                my $end_date = $start_date + 15 * 60;
-                my $start_date_str = $start_date->datetime . '+' . ($start_date->tzoffset / (60 * 60));
-                my $end_date_str = $end_date->datetime . '+' . ($start_date->tzoffset / (60 * 60));
-
-                my @parts;
-                {
-                    push @parts, $self->format_phone_num($phone_num) . ' ' . ($client->name ? $client->name : '');
-                    push @parts, $realty->type->name;
-                    push @parts, $realty->rooms_count.'к' if $realty->rooms_count;
-                    push @parts, $realty->locality.', '.$realty->address.' '.$realty->house_num if $realty->address && $realty->locality;
-                    push @parts, $realty->price.' тыс. руб.' if $realty->price;
-                }
-                my $summary = join(', ', @parts);
-
-                Rplus::Util::Task::qcreate($self, {
-                        task_type_id => 10, # спрос
-                        assigned_user_id => $realty->agent_id,
-                        start_date => $start_date_str,
-                        end_date => $end_date_str,
-                        summary => $summary,
-                        client_id => $client->id,
-                        realty_id => $realty->id,
-                    });
                 if (($realty->agent->phone_num || '') =~ /^9\d{9}$/) {
                     # TODO: Add template settings
                     my @parts;

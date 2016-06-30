@@ -917,8 +917,6 @@ sub save {
 
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => 'write');
 
-    my $create_event = 0;
-
     my $acc_id = $self->session('account')->{id};
 
     # Input validation
@@ -1027,16 +1025,6 @@ sub save {
         $realty->export_media(Mojo::Collection->new());
     }
 
-    if ($data{agent_id}) {
-        if ($realty->id) {
-            if ($realty->agent_id != $data{agent_id}) {
-                $create_event = 1;
-            }
-        } else {
-            $create_event = 1;
-        }
-    }
-
     unless ($realty->account_id) {
         $realty = $_make_copy->($self, $realty);
         return $self->render(json => {error => 'Unable to make a copy'}, status => 404) unless $realty;
@@ -1130,53 +1118,6 @@ sub save {
 
     $realty->load;
 
-    eval {
-        my $user_id = $self->stash('user')->{id};
-        my $realty_tag = Rplus::Model::RealtyColorTag::Manager->get_objects(query => [realty_id => $realty->id],)->[0];
-        if (!$realty_tag) {
-            $realty_tag = Rplus::Model::RealtyColorTag->new(realty_id => $realty->id);
-        }
-        for (my $i = 0; $i <= 7; $i ++) {
-            my $tag_name = 'tag' . $i;
-            my $t_tags = Mojo::Collection->new(grep { $_ != $self->stash('user')->{id} } @{$realty_tag->$tag_name});
-            $realty_tag->$tag_name($t_tags->compact->uniq);
-        }
-        my $tag_name = 'tag' . $color_tag_id;
-        my $t_tags = Mojo::Collection->new(@{$realty_tag->$tag_name});
-        push @$t_tags, ($user_id);
-        $realty_tag->$tag_name($t_tags->compact->uniq);
-        $realty_tag->save;
-
-        if ($create_event) {
-            my $start_date = localtime;
-            my $end_date = $start_date + 15 * 60;
-            my $start_date_str = $start_date->datetime;
-            my $end_date_str = $end_date->datetime;
-
-            my @parts;
-            {
-                push @parts, $realty->type->name;
-                push @parts, $realty->rooms_count.'к' if $realty->rooms_count;
-                push @parts, $realty->address.($realty->house_num ? ', '.$realty->house_num : '') if $realty->address;
-                push @parts, $realty->price.' тыс. руб.' if $realty->price;
-            }
-            my $summary = join(', ', @parts);
-
-            Rplus::Util::Task::qcreate($self, {
-                    task_type_id => 9, # назначен объект
-                    assigned_user_id => $realty->agent_id,
-                    start_date => $start_date_str,
-                    end_date => $end_date_str,
-                    summary => $summary,
-                    client_id => undef,
-                    realty_id => $realty->id,
-                });
-        }
-    };
-    if ($@) {
-
-    }
-
     my $res = {
         status => 'success',
         id => $realty->id,
@@ -1266,7 +1207,6 @@ sub update_multiple {
     $ids->each(sub {
         my ($id, $idx) = @_;
 
-        my $create_event = 0;
         my $realty = Rplus::Model::Realty::Manager->get_objects(query => [id => $id, or => [account_id => undef, account_id => $acc_id], \("NOT hidden_for && '{".$acc_id."}'"), delete_date => undef])->[0];
         unless ($realty) {
             push @errors, $id;
@@ -1297,7 +1237,6 @@ sub update_multiple {
                     add_mediator('ПОСРЕДНИК В НЕДВИЖИМОСТИ', $realty->owner_phones->[0], 'user_' . $user_id, $acc_id);
                 } else {
                     $realty->agent_id($agent_id);
-                    $create_event = 1;
                 }
             }
             $realty->assign_date('now()');
@@ -1366,38 +1305,6 @@ sub update_multiple {
         $realty->load;
 
         $realtys{$old_id} = $_serialize->($self, $realty);
-
-        eval {
-            if ($create_event) {
-                my $start_date = localtime;
-                my $end_date = $start_date + 15 * 60;
-                my $start_date_str = $start_date->datetime;
-                my $end_date_str = $end_date->datetime;
-
-                my @parts;
-                {
-                    push @parts, $realty->type->name;
-                    push @parts, $realty->rooms_count.'к' if $realty->rooms_count;
-                    push @parts, $realty->address.($realty->house_num ? ', '.$realty->house_num : '') if $realty->address;
-                    push @parts, $realty->price.' тыс. руб.' if $realty->price;
-                }
-                my $summary = join(', ', @parts);
-
-                Rplus::Util::Task::qcreate($self, {
-                        task_type_id => 9, # назначен объект
-                        assigned_user_id => $realty->agent_id,
-                        start_date => $start_date_str,
-                        end_date => $end_date_str,
-                        summary => $summary,
-                        client_id => undef,
-                        realty_id => $realty->id,
-                    });
-            }
-        };
-        if ($@) {
-
-        }
-
     });
 
     my $res = {
