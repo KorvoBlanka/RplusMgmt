@@ -1684,7 +1684,7 @@
         <a href="#" class="ctrl-button pull-right emode-btn hidden" data-action="realty-save">Готово</a>
       </div>
       <div class="modal-body" id="realty-card-body">
-        <div id="realty-main" class="main col-md-12 smode-btn" style="padding: 0px;">
+        <div id="realty-main" class="main col-md-12 smode-btn" style="padding: 0px; background-color: white;">
           <div id="view-group" class="" style="margin-top: 10px;">
             <div class="form-group view-group">
               <label class="col-sm-4 col-md-4 col-lg-4 control-label view-label">Улица/Район</label>
