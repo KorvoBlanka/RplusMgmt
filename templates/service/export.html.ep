@@ -30,6 +30,34 @@
 
   !function () {
 
+    $('[data-action="export-zipal"]').on('click', function (e) {
+      var sale_realty_types = [];
+      var rent_realty_types = [];
+      $('#formExportZipal #sale-column [type="checkbox"]:input').each( function () {
+        if(this.checked) {
+          sale_realty_types.push(this.id);
+        }
+      });
+      $('#formExportZipal #rent-column [type="checkbox"]:input').each( function () {
+        if(this.checked) {
+          rent_realty_types.push(this.id);
+        }
+      });
+
+      $.ajax({
+        type: "POST",
+        url: "/export/zipal",
+        data: {
+          rent_realty_types: sale_realty_types.join(),
+          sale_realty_types: rent_realty_types.join(),
+        },
+      })
+        .done(function (data) {
+          console.log(data);
+        });
+
+    });
+
     $('[data-action="export-avito"]').on('click', function (e) {
         var sale_realty_types = [];
         var rent_realty_types = [];
@@ -305,16 +333,120 @@
     <li><a href="#export-irr" data-toggle="tab">Из рук в руки</a></li>
     <li><a href="#export-farpost" data-toggle="tab">Farpost</a></li>
     % } elsif ($loc_id == 3) {
-    <li class="active"><a href="#export-avito" data-toggle="tab">Avito</a></li>
+    <li class="active"><a href="#export-zipal" data-toggle="tab">Zipal</a></li>
+    <li><a href="#export-avito" data-toggle="tab">Avito</a></li>
     <li><a href="#export-irr" data-toggle="tab">Из рук в руки</a></li>
     % }
   </ul>
 </div>
 
 <!-- Tab panes -->
+
 <div class="tab-content">
 
-  <div class="tab-pane active" id="export-avito">
+  <div class="tab-pane active" id="export-zipal">
+    <div class="" role="form" id="formExportZipal">
+      <div class="row">
+        <div class="col-lg-4" id="sale-column">
+          <label class="type-column-header">
+            <span>Продажа</span>
+          </label>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" checked="checked" id="rooms"> Комнаты
+            </label>
+          </div>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" checked="checked" id="apartments"> Квартиры
+            </label>
+          </div>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" checked="checked" id="houses"> Дома, коттеджи
+            </label>
+          </div>
+
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" checked="checked" id="commercials"> Коммерческая недвижимость
+            </label>
+          </div>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" checked="checked" id="lands"> Участки
+            </label>
+          </div>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" checked="checked" id="garages"> Гаражи
+            </label>
+          </div>
+
+        </div>
+        <div class="col-lg-4" id="rent-column">
+          <label class="type-column-header">
+            <span>Аренда</span>
+          </label>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" checked="checked" id="rooms"> Комнаты
+            </label>
+          </div>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" checked="checked" id="apartments"> Квартиры
+            </label>
+          </div>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" checked="checked" id="houses"> Дома, коттеджи
+            </label>
+          </div>
+
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" checked="checked" id="commercials"> Коммерческая недвижимость
+            </label>
+          </div>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" checked="checked" id="lands"> Участки
+            </label>
+          </div>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" checked="checked" id="garages"> Гаражи
+            </label>
+          </div>
+
+        </div>
+      </div>
+      <hr>
+
+
+      <div class="form-group">
+        <!--<span class="hidden" id="irr-file-ref" style="margin-left: 25px;"></span>-->
+          <div class="form-group">
+            <button type="" class="btn btn-primary btn-save" data-action="export-zipal" style="float: left; margin-right: 25px; width: 85px;">Экспорт</button>
+            <div class="col-sm-6 col-md-6 col-lg-6">
+              <input type="text" class="form-control" name="zipal-file-ref" style="">
+            </div>
+            <label id="zipal-last-update-ts" class="control-label hidden" style="padding-top: 5px; font-weight: normal;"></label>
+          </div>
+      </div>
+      <div class="" id="export-zipal-notes">
+        <br><hr>
+        Для автоматической загрузки объявлений укажите полученную ссылку в настройках Zipal.
+        <br>
+        <a target="_blank" href="http://zipal.ru">Подробнее</a>
+      </div>
+
+
+    </div>
+  </div>
+
+  <div class="tab-pane" id="export-avito">
     <div class="" role="form" id="formExportAvito">
       <div class="row">
         <div class="col-lg-4" id="sale-column">

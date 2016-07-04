@@ -643,9 +643,7 @@
         % } elsif ($self->stash('user')->{role} eq 'manager') {
           % if (scalar (@{$self->stash('user')->{subordinate}})) {
             % for my $x (@{Rplus::Model::User::Manager->get_objects(select => 'id, name', query => [account_id => $self->session('account')->{id}, id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
-              % if ($x->id != 10000) {
                 {text: '<%= $x->name %>', data_action: 'realty-set-agent', data_val: '<%= $x->id %>', },
-              % }
             % }
           % }
         % }
