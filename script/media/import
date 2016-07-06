@@ -97,6 +97,7 @@ sub run {
     $last_ts = $rt_param->ts;
 
     $rt_param->ts("now");
+    $rt_param->save(chages_only => 1);
 
     if ($from_ts) {
       $last_ts = $from_ts;
@@ -200,7 +201,6 @@ sub run {
             }
         }
     }
-    $rt_param->save(chages_only => 1);
 }
 
 1
