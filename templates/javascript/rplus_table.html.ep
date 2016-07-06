@@ -121,7 +121,7 @@
       %     $sub_m{$_} = $x->id;
       %   }
       % }
-      % my $iter = Rplus::Model::User::Manager->get_objects_iterator(query => [role => ['agent', 'manager', 'top'], delete_date => undef]);
+      % $iter = Rplus::Model::User::Manager->get_objects_iterator(query => [role => ['agent', 'manager', 'top'], delete_date => undef]);
       % while (my $x = $iter->next) {
         "<%= $x->id %>": {
           id: <%= $x->id %>,

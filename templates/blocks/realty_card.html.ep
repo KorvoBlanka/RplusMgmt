@@ -363,8 +363,8 @@
     }
 
     function setRealtyView(realty) {
-      console.log(realty);
       var digest_dict = Rplus.Realty.getDigestDict(realty);
+      console.log(digest_dict);
       for (var f in digest_dict) {
         var v = digest_dict[f];
         var el = $('span[data-name="' + f + '"]', $realty_modal);
@@ -867,7 +867,7 @@
 
     var fields = [
         'type_code', 'offer_type_code', 'rent_type', 'state_code',
-        'address', 'house_num', 'house_type_id', 'ap_num', 'ap_scheme_id',
+        'locality', 'address', 'house_num', 'house_type_id', 'ap_num', 'ap_scheme_id',
         'rooms_count', 'rooms_offer_count', 'room_scheme_id',
         'floor', 'floors_count', 'levels_count', 'condition_id', 'balcony_id', 'bathroom_id',
         'square_total', 'square_living', 'square_kitchen', 'square_land', 'square_land_type',
@@ -931,586 +931,134 @@
             'square_total', 'square_living', 'square_kitchen'
         ],
 
-        office: [
+        office_place: [
             'house_type_id', 'ap_num', 'ap_scheme_id',
             'rooms_count', 'rooms_offer_count', 'room_scheme_id',
-            'floor', 'floors_count', 'levels_count', 'balcony_id', 'bathroom_id',
+            'levels_count', 'balcony_id', 'bathroom_id',
             'square_land', 'square_land_type', 'square_living', 'square_kitchen',
         ],
 
-        other: [
+        warehouse_place: [
             'house_type_id', 'ap_num', 'ap_scheme_id',
             'rooms_count', 'rooms_offer_count', 'room_scheme_id',
-            'floor', 'floors_count', 'levels_count', 'balcony_id', 'bathroom_id',
+            'floor', 'levels_count', 'balcony_id', 'bathroom_id',
             'square_land', 'square_land_type', 'square_living', 'square_kitchen',
-            'condition_id',
         ],
+
+        garage: [
+          'house_type_id', 'ap_num', 'ap_scheme_id',
+          'rooms_count', 'rooms_offer_count', 'room_scheme_id',
+          'floor', 'floors_count', 'levels_count', 'balcony_id', 'bathroom_id',
+          'square_land', 'square_land_type', 'square_living', 'square_kitchen',
+          'condition_id',
+        ],
+
+        other: [
+
+        ],
+
+        any: [
+          'house_type_id', 'ap_num', 'ap_scheme_id',
+          'rooms_count', 'rooms_offer_count', 'room_scheme_id',
+          'levels_count', 'balcony_id', 'bathroom_id',
+          'square_land', 'square_land_type', 'square_living', 'square_kitchen',
+        ]
     };
 
     var required = {
         apartment: [
-            'address', 'house_num', 'house_type_id', 'ap_scheme_id',
+            'locality', 'address', 'house_num', 'house_type_id', 'ap_scheme_id',
             'rooms_count', 'room_scheme_id',
             'floor', 'floors_count', 'condition_id', 'balcony_id', 'bathroom_id',
             'square_total',
-            'description', 'owner_price', 'mls_price', 'owner_phones',
+            'description', 'owner_price', 'owner_phones',
         ],
         apartment_new: [
-            'address', 'house_num', 'house_type_id', 'ap_scheme_id',
+            'locality', 'address', 'house_num', 'house_type_id', 'ap_scheme_id',
             'rooms_count', 'room_scheme_id',
             'floor', 'floors_count', 'condition_id', 'balcony_id', 'bathroom_id',
             'square_total',
-            'description', 'owner_price', 'mls_price', 'owner_phones',
+            'description', 'owner_price', 'owner_phones',
         ],
         townhouse: [
-            'address', 'house_num', 'house_type_id', 'ap_scheme_id',
+            'locality', 'address', 'house_num', 'house_type_id', 'ap_scheme_id',
             'rooms_count', 'room_scheme_id',
             'floor', 'floors_count', 'condition_id', 'balcony_id', 'bathroom_id',
             'square_total',
-            'description', 'owner_price', 'mls_price', 'owner_phones',
+            'description', 'owner_price', 'owner_phones',
         ],
         apartment_small: [
-            'address', 'house_num', 'house_type_id', 'ap_scheme_id',
+            'locality', 'address', 'house_num', 'house_type_id', 'ap_scheme_id',
             'rooms_count', 'room_scheme_id',
             'floor', 'floors_count', 'condition_id', 'balcony_id', 'bathroom_id',
             'square_total',
-            'description', 'owner_price', 'mls_price', 'owner_phones',
+            'description', 'owner_price', 'owner_phones',
         ],
         room: [
-            'address', 'house_num', 'house_type_id', 'ap_scheme_id',
+            'locality', 'address', 'house_num', 'house_type_id', 'ap_scheme_id',
             'rooms_count', 'rooms_offer_count', 'room_scheme_id',
             'floor', 'floors_count', 'condition_id', 'balcony_id', 'bathroom_id',
             'square_total',
-            'description', 'owner_price', 'mls_price', 'owner_phones',
+            'description', 'owner_price', 'owner_phones',
         ],
 
         house: [
-            'address', 'house_num', 'house_type_id',
+            'locality', 'address', 'house_num', 'house_type_id',
             'rooms_count', 'rooms_offer_count',
             'condition_id', 'bathroom_id',
             'square_total',
-            'description', 'owner_price', 'mls_price', 'owner_phones',
+            'description', 'owner_price', 'owner_phones',
         ],
         cottage: [
-            'address', 'house_num', 'house_type_id',
+            'locality', 'address', 'house_num', 'house_type_id',
             'rooms_count', 'rooms_offer_count',
             'condition_id', 'bathroom_id',
             'square_total',
-            'description', 'owner_price', 'mls_price', 'owner_phones',
+            'description', 'owner_price', 'owner_phones',
         ],
 
         dacha: [
-            'address', 'house_num', 'house_type_id',
+            'locality', 'address', 'house_num', 'house_type_id',
             'rooms_count', 'rooms_offer_count',
             'condition_id', 'bathroom_id',
             'square_total',
-            'description', 'owner_price', 'mls_price', 'owner_phones',
+            'description', 'owner_price', 'owner_phones',
         ],
 
         land: [
-            'square_land', 'square_land_type',
+            'locality', 'address', 'square_land', 'square_land_type',
             'description', 'owner_price',
-            'mls_price', 'owner_phones',
+            'owner_phones',
         ],
 
-        office: [
-            'address', 'house_num',
+        office_place: [
+            'locality', 'address', 'house_num',
             'square_total',
             'description', 'owner_price',
-            'mls_price', 'owner_phones',
+            'owner_phones',
+        ],
+
+        warehouse_place: [
+            'locality', 'address', 'house_num',
+            'square_total', 'floors_count',
+            'description', 'owner_price',
+            'owner_phones',
+        ],
+
+        garage: [
+            'locality', 'address', 'description',
+            'owner_price', 'owner_phones',
         ],
 
         other: [
-            'description', 'owner_price',
-            'mls_price', 'owner_phones',
+            'locality', 'address', 'description',
+            'owner_price', 'owner_phones',
         ],
-    };
 
-    var required_export = {
-        irr: {
-            apartment: {
-                sale: [
-                    'owner_price', 'address', 'house_num', 'floor', 'rooms_count', 'square_total',
-                ],
-                rent: [
-                    'owner_price', 'address', 'house_num', 'floor', 'rooms_count', 'square_total',
-                ],
-            },
-            apartment_new: {
-                sale: [
-                    'owner_price', 'address', 'house_num', 'floor', 'rooms_count', 'square_total',
-                ],
-                rent: [
-                    'owner_price', 'address', 'house_num', 'floor', 'rooms_count', 'square_total',
-                ],
-            },
-            townhouse: {
-                sale: [
-                    'owner_price', 'address', 'house_num', 'floor', 'rooms_count', 'square_total',
-                ],
-                rent: [
-                    'owner_price', 'address', 'house_num', 'floor', 'rooms_count', 'square_total',
-                ],
-            },
-            apartment_small: {
-                sale: [
-                    'owner_price', 'address', 'house_num', 'floor', 'rooms_count', 'square_total',
-                ],
-                rent: [
-                    'owner_price', 'address', 'house_num', 'floor', 'rooms_count', 'square_total',
-                ],
-            },
-            room: {
-                sale: [
-                    'owner_price', 'address', 'house_num', 'rooms_count', 'floor',
-                ],
-                rent: [
-                    'owner_price', 'address', 'house_num', 'rooms_count', 'rooms_offer_count',,
-                ],
-            },
-            house: {
-                sale: [
-                    'owner_price', 'address', 'house_num', 'square_total',
-                ],
-                rent: [
-                    'owner_price', 'address', 'house_num', 'square_total',
-                ],
-            },
-            cottage: {
-                sale: [
-                    'owner_price', 'address', 'house_num', 'square_total',
-                ],
-                rent: [
-                    'owner_price', 'address', 'house_num', 'square_total',
-                ],
-            },
-
-            dacha: {
-                sale: [
-                    'owner_price', 'address', 'house_num', 'square_total',
-                ],
-                rent: [
-                    'owner_price', 'address', 'house_num', 'square_total',
-                ],
-            },
-
-            land: {
-                sale: [
-                    'owner_price', 'square_land', 'square_land_type',
-                ],
-                rent: [
-                    'owner_price', 'square_land', 'square_land_type',
-                ],
-            },
-
-            office: {
-                sale: [
-                    'owner_price', 'address', 'square_total',
-                ],
-                rent: [
-                    'owner_price', 'address', 'square_total',
-                ],
-            },
-
-            other: {
-                sale: [
-                    'owner_price',
-                ],
-                rent: [
-                    'owner_price',
-                ],
-            },
-
-            garage: {
-                sale: [
-                    'owner_price',
-                ],
-                rent: [
-                    'owner_price',
-                ],
-            },
-
-            any: {
-                sale: [
-                    'owner_price', 'address', 'square_total',
-                ],
-                rent: [
-                    'owner_price', 'address', 'square_total',
-                ],
-            }
-        },
-        present: {
-            apartment: {
-                sale: [
-                    'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
-                ],
-                rent: [
-                    'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
-                ],
-            },
-            apartment_new: {
-                sale: [
-                    'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
-                ],
-                rent: [
-                    'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
-                ],
-            },
-            townhouse: {
-                sale: [
-                    'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
-                ],
-                rent: [
-                    'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
-                ],
-            },
-            apartment_small: {
-                sale: [
-                    'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
-                ],
-                rent: [
-                    'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
-                ],
-            },
-            room: {
-                sale: [
-                    'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_offer_count', 'square_total', 'square_living', 'square_kitchen',
-                ],
-                rent: [
-                    'owner_price', 'address', 'ap_scheme_id','house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_offer_count', 'square_total', 'square_living', 'square_kitchen',
-                ],
-            },
-            house: {
-                sale: [
-                    'owner_price', 'address', 'house_type_id', 'floors_count', 'square_land', 'square_total',
-                ],
-                rent: [
-                    'owner_price', 'address', 'house_type_id', 'floors_count', 'square_land', 'square_total',
-                ],
-            },
-            cottage: {
-                sale: [
-                    'owner_price', 'address', 'house_type_id', 'floors_count', 'square_land',  'square_total',
-                ],
-                rent: [
-                    'owner_price', 'address', 'house_type_id', 'floors_count', 'square_land',  'square_total',
-                ],
-            },
-
-            dacha: {
-                sale: [
-                    'owner_price', 'square_land', 'square_land_type',
-                ],
-                rent: [
-                    'owner_price', 'square_land', 'square_land_type',
-                ],
-            },
-
-            land: {
-                sale: [
-                    'owner_price', 'square_land', 'square_land_type',
-                ],
-                rent: [
-                    'owner_price', 'square_land', 'square_land_type',
-                ],
-            },
-
-            office: {
-                sale: [
-                    'owner_price', 'address', 'square_total',
-                ],
-                rent: [
-                    'owner_price', 'address', 'square_total',
-                ],
-            },
-
-            other: {
-                sale: [
-                    'owner_price',
-                ],
-                rent: [
-                    'owner_price',
-                ],
-            },
-
-            garage: {
-                sale: [
-                    'owner_price',
-                ],
-                rent: [
-                    'owner_price',
-                ],
-            },
-
-            any: {
-                sale: [
-                    'owner_price', 'address', 'square_total',
-                ],
-                rent: [
-                    'owner_price', 'address', 'square_total',
-                ],
-            }
-        },
-        vnh: {
-            apartment: {
-                sale: [
-                    'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
-                ],
-                rent: [
-                    'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
-                ],
-            },
-            apartment_new: {
-                sale: [
-                    'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
-                ],
-                rent: [
-                    'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
-                ],
-            },
-            townhouse: {
-                sale: [
-                    'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
-                ],
-                rent: [
-                    'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
-                ],
-            },
-            apartment_small: {
-                sale: [
-                    'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
-                ],
-                rent: [
-                    'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_count', 'square_total', 'square_living', 'square_kitchen',
-                ],
-            },
-            room: {
-                sale: [
-                    'owner_price', 'address', 'ap_scheme_id', 'house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_offer_count', 'square_total', 'square_living', 'square_kitchen',
-                ],
-                rent: [
-                    'owner_price', 'address', 'ap_scheme_id','house_type_id', 'condition_id', 'bathroom_id', 'floor', 'floors_count', 'rooms_offer_count', 'square_total', 'square_living', 'square_kitchen',
-                ],
-            },
-            house: {
-                sale: [
-                    'owner_price', 'address', 'house_type_id', 'floors_count', 'square_land', 'square_total',
-                ],
-                rent: [
-                    'owner_price', 'address', 'house_type_id', 'floors_count', 'square_land', 'square_total',
-                ],
-            },
-            cottage: {
-                sale: [
-                    'owner_price', 'address', 'house_type_id', 'floors_count', 'square_land',  'square_total',
-                ],
-                rent: [
-                    'owner_price', 'address', 'house_type_id', 'floors_count', 'square_land',  'square_total',
-                ],
-            },
-
-            dacha: {
-                sale: [
-                    'owner_price', 'square_land', 'square_land_type',
-                ],
-                rent: [
-                    'owner_price', 'square_land', 'square_land_type',
-                ],
-            },
-
-            land: {
-                sale: [
-                    'owner_price', 'square_land', 'square_land_type',
-                ],
-                rent: [
-                    'owner_price', 'square_land', 'square_land_type',
-                ],
-            },
-
-            office: {
-                sale: [
-                    'owner_price', 'address', 'square_total',
-                ],
-                rent: [
-                    'owner_price', 'address', 'square_total',
-                ],
-            },
-
-            other: {
-                sale: [
-                    'owner_price',
-                ],
-                rent: [
-                    'owner_price',
-                ],
-            },
-
-            garage: {
-                sale: [
-                    'owner_price',
-                ],
-                rent: [
-                    'owner_price',
-                ],
-            },
-
-            any: {
-                sale: [
-                    'owner_price', 'address', 'square_total',
-                ],
-                rent: [
-                    'owner_price', 'address', 'square_total',
-                ],
-            }
-        },
-        avito: {
-            apartment: {
-                sale: [
-                    'owner_price', 'address', 'house_num', 'floor',
-                    'floors_count', 'rooms_count', 'square_total', 'house_type_id',
-                    'description', 'agency_price',
-                ],
-                rent: [
-                    'owner_price', 'address', 'house_num', 'floor',
-                    'floors_count', 'rooms_count', 'square_total', 'house_type_id',
-                    'description', 'agency_price',
-                ],
-            },
-            apartment_new: {
-                sale: [
-                    'owner_price', 'address', 'house_num', 'floor',
-                    'floors_count', 'rooms_count', 'square_total', 'house_type_id',
-                    'description', 'agency_price',
-                ],
-                rent: [
-                    'owner_price', 'address', 'house_num', 'floor',
-                    'floors_count', 'rooms_count', 'square_total', 'house_type_id',
-                    'description', 'agency_price',
-                ],
-            },
-            townhouse: {
-                sale: [
-                    'owner_price', 'address', 'house_num', 'floor',
-                    'floors_count', 'rooms_count', 'square_total', 'house_type_id',
-                    'description', 'agency_price',
-                ],
-                rent: [
-                    'owner_price', 'address', 'house_num', 'floor',
-                    'floors_count', 'rooms_count', 'square_total', 'house_type_id',
-                    'description', 'agency_price',
-                ],
-            },
-            apartment_small: {
-                sale: [
-                    'owner_price', 'address', 'house_num', 'floor',
-                    'floors_count', 'rooms_count', 'square_total', 'house_type_id',
-                    'description', 'agency_price',
-                ],
-                rent: [
-                    'owner_price', 'address', 'house_num', 'floor',
-                    'floors_count', 'rooms_count', 'square_total', 'house_type_id',
-                    'description', 'agency_price',
-                ],
-            },
-            room: {
-                sale: [
-                    'owner_price', 'address', 'house_num', 'floor',
-                    'floors_count', 'square_total', 'house_type_id',
-                    'description', 'agency_price',
-                ],
-                rent: [
-                    'owner_price', 'address', 'house_num', 'floor',
-                    'floors_count', 'square_total', 'house_type_id',
-                    'description', 'agency_price',
-                ],
-            },
-            house: {
-                sale: [
-                    'owner_price', 'address', 'square_land', 'square_land_type',
-                    'square_total', 'floors_count', 'house_type_id', 'description', 'agency_price',
-                ],
-                rent: [
-                    'owner_price', 'address', 'square_land', 'square_total',
-                    'square_total', 'floors_count', 'house_type_id', 'description', 'agency_price',
-                ],
-            },
-            cottage: {
-                sale: [
-                    'owner_price', 'address', 'square_land', 'square_total',
-                    'square_total', 'floors_count', 'house_type_id', 'description', 'agency_price',
-                ],
-                rent: [
-                    'owner_price', 'address', 'square_land', 'square_total',
-                    'square_total', 'floors_count', 'house_type_id', 'description', 'agency_price',
-                ],
-            },
-
-            dacha: {
-                sale: [
-                    'owner_price', 'address', 'square_land', 'square_total',
-                    'square_total', 'floors_count', 'house_type_id', 'description', 'agency_price',
-                ],
-                rent: [
-                    'owner_price', 'address', 'square_land', 'square_total',
-                    'square_total', 'floors_count', 'house_type_id', 'description', 'agency_price',
-                ],
-            },
-
-            land: {
-                sale: [
-                    'owner_price', 'square_land', 'square_land_type',
-                    'description', 'agency_price',
-                ],
-                rent: [
-                    'owner_price', 'square_land', 'square_land_type',
-                    'description', 'agency_price',
-                ],
-            },
-
-            office: {
-                sale: [
-                    'owner_price', 'address', 'square_total',
-                    'description', 'agency_price',
-                ],
-                rent: [
-                    'owner_price', 'address', 'square_total',
-                    'description', 'agency_price',
-                ],
-            },
-
-            other: {
-                sale: [
-                    'owner_price',
-                    'description', 'agency_price',
-                ],
-                rent: [
-                    'owner_price',
-                    'description', 'agency_price',
-                ],
-            },
-
-            garage: {
-                sale: [
-                    'owner_price',
-                    'description', 'agency_price',
-                ],
-                rent: [
-                    'owner_price',
-                    'description', 'agency_price',
-                ],
-            },
-
-            any: {
-                sale: [
-                    'owner_price', 'address', 'square_total',
-                    'description', 'agency_price',
-                ],
-                rent: [
-                    'owner_price', 'address', 'square_total',
-                    'description', 'agency_price',
-                ],
-            }
-        },
+        any: [
+            'locality', 'address', 'description',
+            'owner_price', 'owner_phones',
+        ]
     };
 
     var media_dict = {
@@ -1523,22 +1071,40 @@
         var realty_type = $('#typeInput', $('#realtyCard_modal')).val();
         var offer_type = $('#offerTypeInput', $('#realtyCard_modal')).val();
         var multylisting_checked = $('[name="multylisting"]:input', $('#realtyCard_modal')).is(':checked');
+        var export_checked = $('[name="export_media"]:input', $('#realtyCard_modal')).is(':checked');
+
 
         var exclude_fields = [];
         if (exclude[realty_type]) {
           exclude_fields = exclude[realty_type];
+        } else {
+          exclude_fields = exclude['any'];
         }
         exclude_fields = exclude_fields.concat(exclude_by_offer_type[offer_type]);
-        var rq_fields = required[realty_type];
+        var rq_fields;
+        if (required[realty_type]) {
+          rq_fields = required[realty_type];
+        } else {
+          rq_fields = required['any'];
+        }
+
+        console.log(realty_type);
+        console.log(exclude_fields);
 
         for (var idx = 0; idx < fields.length; ++idx) {
             var field = fields[idx];
             var el = $('[name="' + field + '"]:input', $('#realtyCard_modal'));
-            if (field == 'rooms_offer_count' || field == 'square_living' || field == 'square_kitchen' || field == 'ap_num') {
+            if (field == 'floor' || field == 'levels_count' || field == 'rooms_offer_count' || field == 'square_living' || field == 'square_kitchen' || field == 'ap_num') {
                 el.removeClass('hidden');
                 el.siblings('.slash').removeClass('hidden');
             } else {
                 el.closest('.edit-group').removeClass('hidden');
+            }
+
+            el.removeClass('required');
+            if (field == 'address') {
+                el = $('[name="address"]:input', $('#realtyCard_modal')).siblings('.input-group').find('.input-group-addon');
+                el.removeClass('required');
             }
         }
 
@@ -1546,7 +1112,7 @@
             for (var idx = 0; idx < exclude_fields.length; ++idx) {
                 var field = exclude_fields[idx];
                 var el = $('[name="' + field + '"]:input', $('#realtyCard_modal'));
-                if (field == 'rooms_offer_count' || field == 'square_living' || field == 'square_kitchen' || field == 'ap_num') {
+                if (field == 'floor' || field == 'levels_count' || field == 'rooms_offer_count' || field == 'square_living' || field == 'square_kitchen' || field == 'ap_num') {
                     el.addClass('hidden');
                     el.siblings('.slash').addClass('hidden');
                 } else {
@@ -1555,70 +1121,17 @@
             }
         }
 
-        for (var idx = 0; idx < fields.length; ++idx) {
-            var field = fields[idx];
-            var el;
-            el = $('[name="' + field + '"]:input', $('#realtyCard_modal'));
-            el.removeClass('required');
-            if (field == 'address') {
-                el = $('[name="address"]:input', $('#realtyCard_modal')).siblings('.input-group').find('.input-group-addon');
-                el.removeClass('required');
+        if (multylisting_checked) {
+            var el = $('[name="mls_price"]:input', $('#realtyCard_modal'));
+            if (!el.val()) {
+                el.addClass('required');
             }
         }
 
-       if (multylisting_checked) {
+        if (multylisting_checked || export_checked) {
             if (rq_fields) {
                 for (idx = 0; idx < rq_fields.length; ++idx) {
                     var field = rq_fields[idx];
-                    var el;
-                    el = $('[name="' + field + '"]:input', $('#realtyCard_modal'));
-                    if (field == 'owner_phones') {
-                        var light_up = true;
-                        el.each(function () {
-                            if ($(this).val()) {
-                                light_up = false;
-                            }
-                        });
-                        if (light_up) {
-                            el.first().addClass('required');
-                        }
-                    } else {
-                        if (!el.val()) {
-                            el.addClass('required');
-                            if (field == 'address') {
-                                el = $('[name="address"]:input', $('#realtyCard_modal')).siblings('.input-group').find('.input-group-addon');
-                                el.addClass('required');
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        var export_media = [];
-        var formArray = $('#realty-form').serializeArray();
-
-        for (var i = 0; i < formArray.length; i++) {
-            var x = formArray[i];
-            if (x.name == 'export_media') {
-                export_media.push(x.value);
-            }
-        }
-        for (var i = 0; i < export_media.length; i++) {
-            var m_name = media_dict[export_media[i]];
-            if (!required_export[m_name]) {
-              continue;
-            }
-            var m_rq_fields;
-            if (!required_export[m_name][realty_type]) {
-              m_rq_fields = required_export[m_name]['any'][offer_type];
-            } else {
-              m_rq_fields = required_export[m_name][realty_type][offer_type];
-            }
-
-            if (m_rq_fields) {
-                for (idx = 0; idx < m_rq_fields.length; ++idx) {
-                    var field = m_rq_fields[idx];
                     var el;
                     el = $('[name="' + field + '"]:input', $('#realtyCard_modal'));
                     if (field == 'owner_phones') {

@@ -2048,8 +2048,8 @@
 
         rPhone.initDone = function() {
           rPhone.register({
-            % my $user = Rplus::Model::User::Manager->get_objects(query => [id => $self->stash('user')->{id}, delete_date => undef])->[0];
-            % my $sip = from_json($user->ip_telephony);
+            % #my $user = Rplus::Model::User::Manager->get_objects(query => [id => $self->stash('user')->{id}, delete_date => undef])->[0];
+            % #my $sip = from_json($user->ip_telephony);
             host: '<%= $sip->{sip_host} %>',
             user: '<%= $sip->{sip_login} %>',
             password: '<%= $sip->{sip_password} %>',

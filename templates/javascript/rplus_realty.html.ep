@@ -150,8 +150,12 @@
       tstr.push('<strong>' + Rplus.Table.realty_types[r.type_code].name + '</strong>');
       if (r.rooms_count) tstr.push(r.rooms_count + 'к');
 
+      if (r.locality) {
+        tstr.push(r.locality);
+      }
+
       if (r.address) {
-        tstr.push(r.locality + ', ' + r.address + ', ' +  (r.house_num ? r.house_num : '') + (r.district ? ' (' + r.district + ')' : ''));
+        tstr.push(r.address + ', ' +  (r.house_num ? r.house_num : '') + (r.district ? ' (' + r.district + ')' : ''));
       }
       digest['dg_p1'] = tstr.join(', ');
       tstr = [];

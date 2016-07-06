@@ -29,6 +29,11 @@
       })
         .done(function (data, textStatus, jqXHR) {
 
+          $('#formExportZipal [name="company"]:input').val(data.options['zipal-company']);
+          $('#formExportZipal [name="phone"]:input').val(data.options['zipal-phone']);
+          $('#formExportZipal [name="agent-phone"]:input').attr('checked', (data.options['zipal-agent-phone'] == 'true' || data.options['zipal-agent-phone'] == '1') ? true : false);
+          $('#formExportZipal [name="email"]:input').val(data.options['zipal-email']);
+
           $('#formExportAvito [name="company"]:input').val(data.options['avito-company']);
           $('#formExportAvito [name="phone"]:input').val(data.options['avito-phone']);
           $('#formExportAvito [name="agent-phone"]:input').attr('checked', (data.options['avito-agent-phone'] == 'true' || data.options['avito-agent-phone'] == '1') ? true : false);
@@ -83,6 +88,19 @@
 
         var t;
         var opt_hash = {};
+
+        t = $('#formExportZipal [name="company"]:input').val();
+        opt_hash['zipal-company'] = t;
+
+        t = $('#formExportZipal [name="phone"]:input').val();
+        opt_hash['zipal-phone'] = t;
+
+        t = $('#formExportZipal [name="agent-phone"]:input').is(':checked');
+        opt_hash['zipal-agent-phone'] = t;
+
+        t = $('#formExportZipal [name="email"]:input').val();
+        opt_hash['zipal-email'] = t;
+
 
         t = $('#formExportAvito [name="company"]:input').val();
         opt_hash['avito-company'] = t;
@@ -169,12 +187,16 @@
     <li><a href="#export-farpost" data-toggle="tab">Farpost</a></li>
     <li><a href="#export-present" data-toggle="tab">Презент</a></li>
     <li><a href="#export-vnh" data-toggle="tab">ВНХ</a></li>
-    % } else {
+    % } elsif ($loc_id == 2) {
     <li class="active"><a href="#export-avito" data-toggle="tab">Avito</a></li>
     <li><a href="#export-irr" data-toggle="tab">Из рук в руки</a></li>
     <li><a href="#export-farpost" data-toggle="tab">Farpost</a></li>
     <li class="hidden"><a href="#export-vnh" data-toggle="tab">ВНХ</a></li>
     <li class="hidden"><a href="#export-present" data-toggle="tab">Презент</a></li>
+    % } elsif ($loc_id == 3) {
+    <li class="active"><a href="#export-zipal" data-toggle="tab">Zipal</a></li>
+    <li class=""><a href="#export-avito" data-toggle="tab">Avito</a></li>
+    <li><a href="#export-irr" data-toggle="tab">Из рук в руки</a></li>
     % }
 
   </ul>
@@ -183,7 +205,39 @@
   <!-- Tab panes -->
   <div class="tab-content">
 
-    <div class="tab-pane active" id="export-avito">
+    <div class="tab-pane active" id="export-zipal">
+      <form class="" role="form" id="formExportZipal">
+        <div class="row" style="padding-top: 15px;">
+          <label class="col-lg-2 control-label">Название компании</label>
+          <div class="col-lg-5">
+            <input type="text" class="form-control" name="company" placeholder="Название компании">
+          </div>
+        </div>
+        <div class="row" style="padding-top: 15px;">
+          <label class="col-lg-2 control-label">Контактный телефон</label>
+          <div class="col-lg-5">
+            <input type="text" class="form-control" name="phone" placeholder="телефон">
+          </div>
+        </div>
+        <div class="row" style="padding-top: 15px;">
+          <label class="col-lg-2 control-label">Телефон агента</label>
+          <div class="col-lg-5">
+            <input type="checkbox" name="agent-phone">
+          </div>
+        </div>
+        <div class="row" style="padding-top: 15px;">
+          <label class="col-lg-2 control-label">e-mail</label>
+          <div class="col-lg-5">
+            <input type="text" class="form-control" name="email" placeholder="somemail@mail.com">
+          </div>
+        </div>
+      </form>
+      <div class="form-group">
+        <button type="" class="btn btn-primary btn-save" style="margin-top: 15px">Сохранить</button>
+      </div>
+    </div>
+
+    <div class="tab-pane" id="export-avito">
       <form class="" role="form" id="formExportAvito">
         <div class="row" style="padding-top: 15px;">
           <label class="col-lg-2 control-label">Название компании</label>
