@@ -1,0 +1,9 @@
+<!DOCTYPE html>
+<html>
+  <head><title>Страница не найдена</title></head>
+  <body>
+    <%= $status %> Страница не найдена
+    <br>
+    <a href="/">назад</a>
+  </body>
+</html>
