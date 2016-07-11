@@ -1230,7 +1230,7 @@
 </div><!-- /.modal -->
 % end
 
-<table style="width:127px; position: fixed; top: 50%; left: 50%; margin-top: -67px; margin-left: -67px; z-index: 500;">
+<table style="width:132px; height:132px; position: fixed; top: 50%; left: 50%; margin-top: -66px; margin-left: -66px; z-index: 500;">
   <tr>
     <td>
       <div id="answer-button" class="quarter-circle-top-left phone-button answer-button disabled-button" data-action="call-answer">
@@ -1261,7 +1261,7 @@
     <form role="search">
       <div class="input-group input-group-sm">
         <input type="text" class="form-control input-sm" id="searchQuery" name="q" placeholder="<%= ucfloc 'search' %>" autocomplete="off">
-        <div class="input-group-btn">
+        <div class="input-group-btn" style="vertical-align: top;">
           <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">Сохранить <span class="caret"></span></button>
           <ul class="dropdown-menu pull-right" role="menu">
             <li><a href="#" data-action="client-subscribe" data-days="">Сохранить </a></li>

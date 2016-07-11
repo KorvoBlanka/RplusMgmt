@@ -14,14 +14,13 @@
 % use Data::Dumper;
 
 % content_for header => begin
-%= css_once "$assets_url/typeahead.js/$typeaheadjs_ver/css/typeahead.js-bootstrap.css";
 %= css_once "$assets_url/leaflet/$leafletjs_ver/leaflet.css";
 %= css_once "$assets_url/leaflet.fullscreen/$leafletjs_fullscreen_ver/Control.FullScreen.css";
 %= css_once "$assets_url/jquery-file-upload/8.8.5/css/jquery.fileupload-ui.css";
 <style type="text/css">
 
   .control-label {
-    padding-top: 5px;
+    padding-top: 7px;
   }
 
   #realtyCard_modal .modal-dialog {
@@ -215,7 +214,6 @@
 % end
 
 % content_for after_bootstrap => begin
-%= js_once "$assets_url/typeahead.js/$typeaheadjs_ver/js/typeahead.js";
 %= js_once "$assets_url/leaflet/$leafletjs_ver/leaflet.js";
 %= js_once "$assets_url/leaflet.fullscreen/$leafletjs_fullscreen_ver/Control.FullScreen.js";
 %= js_once "/js/leaflet/layer-2gis.js";
@@ -445,23 +443,6 @@
     });
     % }
 
-    $('[name="address"]', $realty_modal)
-      .typeahead({
-        name: 'address',
-        valueKey: "suggestion",
-        limit: 10,
-        remote: "/api/address/complete?term=%QUERY&limit=10",
-      })
-      .bind('typeahead:selected', function (e, obj) {
-        updateGeo();
-      })
-      .blur(function (e) {
-        if ($(this).val() == '') {
-          updateGeo();
-        }
-      })
-    ;
-
     var updateGeoTimeout = null;
 
     $('[name="address"]:input', $realty_modal).bind('input', function (e) {
@@ -510,7 +491,7 @@
         var el = $('[name="' + f + '"]:input', $realty_modal);
 
         if (f == 'address' && v) {
-          $('[name="address"]:input', $realty_modal).typeahead('setQuery', v);
+          $('[name="address"]:input', $realty_modal).val(v);
         } else if (f == 'owner_phones' && v) {
           $('[name="owner_phones"]:input', $realty_modal).each(function (i) {
             $(this).val(Rplus.Util.formatPhoneNum(v[i]));
@@ -1201,77 +1182,77 @@
           <div id="view-group" class="" style="margin-top: 10px;">
             <div class="form-group view-group">
               <label class="col-sm-4 col-md-4 col-lg-4 control-label view-label">Улица/Район</label>
-              <div class="col-sm-8 col-md-8 col-lg-8" style="padding-top: 5px;">
+              <div class="col-sm-8 col-md-8 col-lg-8">
                 <p class="form-control-static text-left"><span class="" data-name="dg_p1"></span></p>
               </div>
             </div>
 
             <div class="form-group view-group">
               <label class="col-sm-4 col-md-4 col-lg-4 control-label view-label">Ориентир</label>
-              <div class="col-sm-8 col-md-8 col-lg-8" style="padding-top: 5px;">
+              <div class="col-sm-8 col-md-8 col-lg-8">
                 <p class="form-control-static text-left"><span class="" data-name="dg_p1_poi"></span></p>
               </div>
             </div>
 
             <div class="form-group view-group">
               <label class="col-sm-4 col-md-4 col-lg-4 control-label view-label">Планировка/Тип</label>
-              <div class="col-sm-8 col-md-8 col-lg-8" style="padding-top: 5px;">
+              <div class="col-sm-8 col-md-8 col-lg-8">
                 <p class="form-control-static text-left"><span class="" data-name="dg_p2"></span></p>
               </div>
             </div>
 
             <div class="form-group view-group">
               <label class="col-sm-4 col-md-4 col-lg-4 control-label view-label">Комнаты/Этаж</label>
-              <div class="col-sm-8 col-md-8 col-lg-8" style="padding-top: 5px;">
+              <div class="col-sm-8 col-md-8 col-lg-8">
                 <p class="form-control-static text-left"><span class="" data-name="dg_p3"></span></p>
               </div>
             </div>
 
             <div class="form-group view-group">
               <label class="col-sm-4 col-md-4 col-lg-4 control-label view-label">Состояние</label>
-              <div class="col-sm-8 col-md-8 col-lg-8" style="padding-top: 5px;">
+              <div class="col-sm-8 col-md-8 col-lg-8">
                 <p class="form-control-static text-left"><span class="" data-name="dg_p4"></span></p>
               </div>
             </div>
 
             <div class="form-group view-group">
               <label class="col-sm-4 col-md-4 col-lg-4 control-label view-label">Балконы/Ванные</label>
-              <div class="col-sm-8 col-md-8 col-lg-8" style="padding-top: 5px;">
+              <div class="col-sm-8 col-md-8 col-lg-8">
                 <p class="form-control-static text-left"><span class="" data-name="dg_p5"></span></p>
               </div>
             </div>
 
             <div class="form-group view-group">
               <label class="col-sm-4 col-md-4 col-lg-4 control-label view-label">Площадь</label>
-              <div class="col-sm-8 col-md-8 col-lg-8" style="padding-top: 5px;">
+              <div class="col-sm-8 col-md-8 col-lg-8">
                 <p class="form-control-static text-left"><span class="" data-name="dg_p6"></span></p>
               </div>
             </div>
 
             <div class="form-group view-group">
               <label class="col-sm-4 col-md-4 col-lg-4 control-label view-label">Описание</label>
-              <div class="col-sm-8 col-md-8 col-lg-8" style="padding-top: 5px;">
+              <div class="col-sm-8 col-md-8 col-lg-8">
                 <p class="form-control-static text-left"><span class="" data-name="dg_p7"></span></p>
               </div>
             </div>
 
             <div class="form-group view-group">
               <label class="col-sm-4 col-md-4 col-lg-4 control-label view-label">Цена</label>
-              <div class="col-sm-8 col-md-8 col-lg-8" style="padding-top: 5px;">
+              <div class="col-sm-8 col-md-8 col-lg-8">
                 <p class="form-control-static text-left"><span class="" data-name="dg_p8"></span></p>
               </div>
             </div>
 
             <div class="form-group view-group">
               <label class="col-sm-4 col-md-4 col-lg-4 control-label view-label" id="dg_p9_label">Агент</label>
-              <div class="col-sm-8 col-md-8 col-lg-8" style="padding-top: 5px;">
+              <div class="col-sm-8 col-md-8 col-lg-8">
                 <p class="form-control-static text-left"><span class="" data-name="dg_p9"></span></p>
               </div>
             </div>
 
             <div class="form-group view-group">
               <label class="col-sm-4 col-md-4 col-lg-4 control-label view-label" id="dg_p_contacts_label"></label>
-              <div class="col-sm-8 col-md-8 col-lg-8" style="padding-top: 5px;">
+              <div class="col-sm-8 col-md-8 col-lg-8">
                 <p class="form-control-static text-left">
                   <span class="" id="dg_p_contacts"></span>
                 </p>
@@ -1280,7 +1261,7 @@
 
             <div class="form-group view-group">
               <label class="col-sm-4 col-md-4 col-lg-4 control-label view-label">Тэги</label>
-              <div class="col-sm-8 col-md-8 col-lg-8" style="padding-top: 5px;">
+              <div class="col-sm-8 col-md-8 col-lg-8">
                 <div id="rcard-tag-group" class="tag-group input-group ccard-input-group" style="padding-left: 0px;">
                   <span id="realty-color-tag-1" class="realty-color-tag round-button" style="margin-top: 0px;"></span>
                 </div>
@@ -1319,7 +1300,7 @@
 
           <div class="form-group edit-group">
             <label class="col-sm-3 col-md-3 col-lg-3 control-label">Дата</label>
-            <div class="col-sm-9 col-md-9 col-lg-9" style="padding-top: 5px;">
+            <div class="col-sm-9 col-md-9 col-lg-9">
               <p class="form-control-static text-left"><small><span class="text-primary" data-name="add_date"></span>&nbsp;/&nbsp;<span class="text-success" data-name="change_date"></span></small></p>
             </div>
           </div>
@@ -1703,7 +1684,7 @@
             <div class="input-group ccard-input-group">
               <span class="rcard-input-group-addon glyphicon glyphicon-camera"></span>
               <p>Фотографии</p>
-              <span class="fileinput-button ccard-input-group-addon input-group-addon emode-btn hidden">
+              <span class="rcard-input-group-addon fileinput-button emode-btn hidden" style="padding-left: 380px;">
                 <i class="glyphicon glyphicon-plus"></i>
                 <!-- The file input field used as target for the file upload widget -->
                 <input id="fileupload" type="file" name="files[]" multiple>

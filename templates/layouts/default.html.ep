@@ -915,8 +915,7 @@
     </div>
 
   <div class="phone-screen hidden" style="">
-
-    <table style="width:127px; position: fixed; top: 50%; left: 50%; margin-top: -67px; margin-left: -67px; z-index: 500;">
+    <table style="width:132px; height: 132px; position: fixed; top: 50%; left: 50%; margin-top: -66px; margin-left: -66px; z-index: 500;">
       <tr>
         <td>
           <div id="answer-button" class="quarter-circle-top-left phone-button answer-button disabled-button" data-action="call-answer">
