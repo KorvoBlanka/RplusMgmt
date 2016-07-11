@@ -1887,7 +1887,7 @@
       }
 
       function format_phone(phone_str) {
-        if (!phone_str) return;
+        if (!phone_str) return '';
         if (phone_str.length < 5) {                     // внутренний номер? 100X ?
           return phone_str; //phone_blocks(phone_str);
         }
