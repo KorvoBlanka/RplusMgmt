@@ -24,6 +24,13 @@ use Data::Dumper;
 
 # синхронизация базы посредниклв клиента и буффера
 
+my $num_args = $#ARGV + 1;
+my $from_ts;
+if ($num_args > 0) {
+  $from_ts = $ARGV[0];
+
+}
+
 run(get_config());
 
 sub run {
@@ -39,6 +46,13 @@ sub run {
     }
     my $last_ts = $rt_param->ts;
 
+    $rt_param->ts('now');
+    $rt_param->save(chages_only => 1);
+
+    if ($from_ts) {
+      $last_ts = $from_ts;
+    }
+
     #if ($acc_data->{use_mediators_buffer}) {
         my $tx = $ua->get($realty_buffer_url . '/api/mediator/list_mediators_ex', form => {mode => 'new', ts => $last_ts});
         if (my $res = $tx->success) {
@@ -49,9 +63,6 @@ sub run {
             }
         }
     #}
-
-    $rt_param->ts('now');
-    $rt_param->save(chages_only => 1);
 }
 
 1;
