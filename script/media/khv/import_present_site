@@ -298,7 +298,7 @@ sub process_url_list {
                     my $realty = Import::Model::Realty->new((map { $_ => $data->{$_} } grep { $_ ne 'category_code' } keys %$data), state_code => 'raw');
                     $realty->save;
                     $id = $realty->id;
-                    say "Saved new realty: $id";                    
+                    say "Saved new realty: $id";
                 } or do {
                     say $@;
                 }
@@ -394,12 +394,12 @@ sub parse_adv {
         for my $x (split /[ .,]/, $body) {
             if ($x =~ /^\s*([\d-]{6,})\s*$/) {
                 say $1;
-                if (my $phone_num = Import::Util::PhoneNum->parse($1, $config->{default_phone_prefix})) {
+                if (my $phone_num = Import::Util::PhoneNum::parse($1, $config->{default_phone_prefix})) {
                     push @owner_phones, $phone_num;
                 }
                 $body =~ s/$x//;
             } elsif ($x =~ /(7|8)(\(\d{3,4}\)[\d-]{6,})/) {
-                if (my $phone_num = Import::Util::PhoneNum->parse($2, $config->{default_phone_prefix})) {
+                if (my $phone_num = Import::Util::PhoneNum::parse($2, $config->{default_phone_prefix})) {
                     push @owner_phones, $phone_num;
                 }
                 $x =~ s/\+//;
@@ -460,7 +460,7 @@ sub parse_adv {
 		my $img_url = $main_url . $_->{'href'};
 		push @{$data->{photo_url}}, $img_url;
 	});
-	
+
     if ($addr) {
         $data->{'address'} = $addr;
     }

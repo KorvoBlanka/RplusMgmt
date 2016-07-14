@@ -3,19 +3,12 @@ package RplusMgmt::Controller::Service;
 use Mojo::Base 'Mojolicious::Controller';
 use Mojo::IOLoop;
 
-use Rplus::Model::Account;
 use Rplus::Model::Account::Manager;
-use Rplus::Model::Option;
 use Rplus::Model::Option::Manager;
-use Rplus::Model::User;
 use Rplus::Model::User::Manager;
-use Rplus::Model::Client;
 use Rplus::Model::Client::Manager;
-use Rplus::Model::Subscription;
 use Rplus::Model::Subscription::Manager;
-use Rplus::Model::Realty;
 use Rplus::Model::Realty::Manager;
-use Rplus::Model::Photo;
 use Rplus::Model::Photo::Manager;
 
 use JSON;

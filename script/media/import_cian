@@ -3,21 +3,16 @@
 use FindBin;
 use lib "$FindBin::Bin/../../lib";
 
-use Import::Modern;
+use Rplus::Modern;
 
+use Rplus::Model::Media::Manager;
+use Rplus::Model::Realty::Manager;
+use Rplus::Model::MediaImportHistory::Manager;
 
-use Import::Model::Media;
-use Import::Model::Media::Manager;
-use Import::Model::MediaImportHistory;
-use Import::Model::MediaImportHistory::Manager;
-use Import::Model::Variable;
-use Import::Model::Variable::Manager;
-use Import::Model::ImportTask;
-use Import::Model::ImportTask::Manager;
-
-use Import::Util::PhoneNum;
-use Import::Util::Config;
-use Import::Util::Mediator qw(add_mediator);
+use Rplus::Util::Config;
+use Rplus::Util::PhoneNum;
+use Rplus::Util::Realty qw(put_object);
+use Rplus::Util::Mediator qw(add_mediator);
 
 use DateTime;
 use DateTime::Format::Strptime;
@@ -29,7 +24,7 @@ use Data::Dumper;
 no warnings 'experimental';
 
 
-my $config = Import::Util::Config::get_config();
+my $config = Rplus::Util::Config::get_config();
 my $site_config = $config->{import}->{cian};
 
 my $site_url = $site_config->{url};
@@ -39,7 +34,7 @@ my $source_list = $site_config->{source_list};
 my $pause = $site_config->{pause};
 my $depth = $site_config->{depth};
 
-my $timezone = $site_config->{timezone};
+my $timezone = $config->{timezone};
 
 my $lock_file = $site_config->{lock_file};
 
@@ -47,7 +42,7 @@ my $lock_file = $site_config->{lock_file};
 my $parser = DateTime::Format::Strptime->new(pattern => '%Y-%m-%d %H:%M:%S');
 
 
-my $MEDIA = Import::Model::Media::Manager->get_objects(query => [type => 'import', code => 'cian', delete_date => undef])->[0];    # code => 'avito'
+my $MEDIA = Rplus::Model::Media::Manager->get_objects(query => [type => 'import', code => 'cian', delete_date => undef])->[0];    # code => 'avito'
 exit unless $MEDIA;
 
 my $ua = Mojo::UserAgent->new;
@@ -60,10 +55,10 @@ while (1) {
 }
 
 sub process_cian {
-    my $user = shift;   # avito user argument: 1 - частн. 2 - агенство
+    my $user = shift;
 
     foreach (@{$source_list}) {
-      process_category($site_url . $_->{url}, 1);
+        process_category($site_url . $_->{url}, 1);
     }
 }
 
@@ -92,28 +87,23 @@ sub process_category {
                     my $dt = parse_date($date_str);
                     my $eid = make_eid($item_id, $dt);
 
-                    unless (Import::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $eid])) {
+                    unless (Rplus::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $eid])) {
                         my $t = get_res($site_url . $item_url, $host)->dom;
                         my $data = process_item($t, $offers->{$item_id});
-
 
                         my $id;
                         {
                             eval {
-                                my $realty = Import::Model::Realty->new((map { $_ => $data->{$_} } keys %$data), state_code => 'raw');
-                                $realty->save;
-                                $id = $realty->id;
-                                say "Saved new realty: $id";
-
+                                $id = put_object($data, $config);
                             } or do {
                                 say $@;
                             }
                         }
 
                         # Сохраним историю
-                        if ($id && !Import::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $eid])) {
+                        if ($id && !Rplus::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $eid])) {
                             eval {
-                                Import::Model::MediaImportHistory->new(media_id => $MEDIA->id, media_num => $eid, media_text => $site_url . $item_url, realty_id => $id)->save;
+                                Rplus::Model::MediaImportHistory->new(media_id => $MEDIA->id, media_num => $eid, media_text => $site_url . $item_url, realty_id => $id)->save;
                             } or do {};
                         }
                     } else {
@@ -148,7 +138,7 @@ sub process_item {
         add_date => $dt->datetime() . $timezone,
     };
 
-    $data->{owner_phones} = [Import::Util::PhoneNum->parse($obj->{phone}, $config->{default_phone_prefix})];
+    $data->{owner_phones} = [Rplus::Util::PhoneNum::parse($obj->{phone}, $config->{default_phone_prefix})];
     $data->{price} = $obj->{price}->{rur} / 1000;
 
     if ($item_url =~ /sale/) {

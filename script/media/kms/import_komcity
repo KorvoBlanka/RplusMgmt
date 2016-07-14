@@ -122,14 +122,14 @@ sub getPhone {
         $vals .= '%2C';
     }
 
-    my $rq = 'http://www.komcity.ru/board/main/GetContact/?id=' . $id . '&h=&vals=' . $vals . '&s=' . $s;    
+    my $rq = 'http://www.komcity.ru/board/main/GetContact/?id=' . $id . '&h=&vals=' . $vals . '&s=' . $s;
     my $str = decode('utf-8', $ua->post($rq)->res->text);
     my $b = rindex($str, ':');
     my $e = rindex($str, '.');
-    
+
     my $phone = substr $str, $b + 1, $e - $b;
     $phone = trim $phone;
-    
+
     return $phone;
 }
 
@@ -336,25 +336,25 @@ sub import_komcity {
     #process_url_list($sell_apartment_small_url_2, 'apartment', 'apartment', 1, 'sale');
     #process_url_list($sell_apartment_small_url_3, 'apartment', 'apartment', 1, 'sale');
     #process_url_list($sell_apartment_small_url_4, 'apartment', 'apartment', 1, 'sale');
-    #process_url_list($sell_apartment_small_url_5, 'apartment', 'apartment', 1, 'sale');  
-  
+    #process_url_list($sell_apartment_small_url_5, 'apartment', 'apartment', 1, 'sale');
+
     process_url_list($sell_apartment1_url_1, 'apartment', 'apartment', 1, 'sale');
     #process_url_list($sell_apartment1_url_2, 'apartment', 'apartment', 1, 'sale');
     #process_url_list($sell_apartment1_url_3, 'apartment', 'apartment', 1, 'sale');
     #process_url_list($sell_apartment1_url_4, 'apartment', 'apartment', 1, 'sale');
     #process_url_list($sell_apartment1_url_5, 'apartment', 'apartment', 1, 'sale');
-    
+
     #process_url_list($sell_apartment2_url_1, 'apartment', 'apartment', 2, 'sale');
     #process_url_list($sell_apartment2_url_2, 'apartment', 'apartment', 2, 'sale');
     #process_url_list($sell_apartment2_url_3, 'apartment', 'apartment', 2, 'sale');
     #process_url_list($sell_apartment2_url_4, 'apartment', 'apartment', 2, 'sale');
     #process_url_list($sell_apartment2_url_5, 'apartment', 'apartment', 2, 'sale');
-    
+
     #process_url_list($sell_apartment3_url_1, 'apartment', 'apartment', 3, 'sale');
     #process_url_list($sell_apartment3_url_2, 'apartment', 'apartment', 3, 'sale');
     #process_url_list($sell_apartment3_url_3, 'apartment', 'apartment', 3, 'sale');
     #process_url_list($sell_apartment3_url_4, 'apartment', 'apartment', 3, 'sale');
-    #process_url_list($sell_apartment3_url_5, 'apartment', 'apartment', 3, 'sale');    
+    #process_url_list($sell_apartment3_url_5, 'apartment', 'apartment', 3, 'sale');
 }
 
 sub process_url_list {
@@ -367,7 +367,7 @@ sub process_url_list {
         $dom->find('a')->each (sub {
 
             sleep 20;
-          
+
             my $data = {
                 source_media_id => $MEDIA->id,
             };
@@ -381,7 +381,7 @@ sub process_url_list {
             if (decode('utf-8', $_->{onclick}) =~ m/(\d+)/) {
                 #$phone_num = getPhone($1);
             }
-            $phone_num = Import::Util::PhoneNum->parse(getFakePhone($idx), $config->{default_phone_prefix});
+            $phone_num = Import::Util::PhoneNum::parse(getFakePhone($idx), $config->{default_phone_prefix});
             $idx ++;
             say $phone_num;
             $data->{'owner_phones'} = [$phone_num, ];
@@ -408,10 +408,10 @@ sub process_url_list {
                 if ($id && !Import::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $media_num, realty_id => $id])) {
                     Import::Model::MediaImportHistory->new(media_id => $MEDIA->id, media_num => $media_num, media_text => $data->{'source_media_text'}, realty_id => $id)->save;
                 }
-            }            
+            }
         });
     }
-    
+
 
 }
 
@@ -462,14 +462,14 @@ sub recognize_adv {
     }
 
     my @t = split ',', $text;
-    
+
     $addr = $t[0] . ' ' . $t[1];
     splice @t, 0, 2;
     $body = join ',', @t;
 
     say $addr;
     say $body;
-    
+
     $addr = trim $addr;
     $body = trim $body;
     return unless $body;

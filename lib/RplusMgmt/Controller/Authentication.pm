@@ -2,9 +2,7 @@ package RplusMgmt::Controller::Authentication;
 
 use Mojo::Base 'Mojolicious::Controller';
 
-use Rplus::Model::Account;
 use Rplus::Model::Account::Manager;
-use Rplus::Model::User;
 use Rplus::Model::User::Manager;
 
 use JSON;

@@ -193,7 +193,7 @@ sub process_url_list {
                 my @owner_phones;
                 for my $x (split /[.,;:]/, $phone->text) {
                     $x =~ s/^479/89/;   # оцр путает + и 4
-                    if (my $phone_num = Import::Util::PhoneNum->parse($x, $config->{default_phone_prefix})) {
+                    if (my $phone_num = Import::Util::PhoneNum::parse($x, $config->{default_phone_prefix})) {
                         push @owner_phones, $phone_num;
                     }
                 }

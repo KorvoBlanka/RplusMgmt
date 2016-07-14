@@ -3,7 +3,6 @@ package Rplus::Util::PhoneNum;
 use Rplus::Modern;
 
 sub parse {
-    my $class = shift;
     my $phone_num = shift;
     my $default_phone_prefix = shift || '';
 

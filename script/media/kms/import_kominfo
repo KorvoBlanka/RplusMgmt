@@ -86,7 +86,7 @@ sub process_url_list {
 
     if($do->size > 0) {
         $do->first->find('td[align="left"]')->each (sub {
-            
+
             sleep 20;
 
             my $data = {
@@ -123,7 +123,7 @@ sub process_url_list {
 
             my @owner_phones;
             for my $x (split /[ .,]/, $phone_str) {
-                if (my $phone_num = Import::Util::PhoneNum->parse($x, $config->{default_phone_prefix})) {
+                if (my $phone_num = Import::Util::PhoneNum::parse($x, $config->{default_phone_prefix})) {
                     push @owner_phones, $phone_num;
                 }
             }

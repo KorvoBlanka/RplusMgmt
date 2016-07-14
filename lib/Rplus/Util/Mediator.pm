@@ -53,6 +53,10 @@ sub add_mediator {
     my $added_by = shift;
     my $acc_id = shift;
 
+    unless ($added_by) {
+        $added_by = 'system';
+    }
+
     my $mediator;
     if ($acc_id) {
         $mediator = Rplus::Model::Mediator::Manager->get_objects(

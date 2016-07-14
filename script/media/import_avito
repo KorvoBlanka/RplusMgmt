@@ -3,18 +3,16 @@
 use FindBin;
 use lib "$FindBin::Bin/../../lib";
 
-use Import::Modern;
+use Rplus::Modern;
 
-use Import::Model::Media::Manager;
-use Import::Model::Mediator::Manager;
-use Import::Model::MediaImportHistory::Manager;
-use Import::Model::Realty::Manager;
-use Import::Model::Variable::Manager;
+use Rplus::Model::Media::Manager;
+use Rplus::Model::Realty::Manager;
+use Rplus::Model::MediaImportHistory::Manager;
 
-use Import::Util::Config;
-use Import::Util::PhoneNum;
-use Import::Util::Realty;
-use Import::Util::Mediator qw(add_mediator);
+use Rplus::Util::Config;
+use Rplus::Util::PhoneNum;
+use Rplus::Util::Realty qw(put_object);
+use Rplus::Util::Mediator qw(add_mediator);
 
 use DateTime;
 use DateTime::Format::Strptime;
@@ -26,7 +24,7 @@ use Data::Dumper;
 no warnings 'experimental';
 
 
-my $config = Import::Util::Config::get_config();
+my $config = Rplus::Util::Config::get_config();
 my $site_config = $config->{import}->{avito};
 
 my $site_url = $site_config->{url};
@@ -37,12 +35,12 @@ my $pause_category = $site_config->{pause_category};
 my $pause_item = $site_config->{pause_item};
 my $depth = $site_config->{depth};
 
-my $timezone = $site_config->{timezone};
+my $timezone = $config->{timezone};
 
 my $lock_file = $site_config->{lock_file};
 
 
-my $MEDIA = Import::Model::Media::Manager->get_objects(query => [type => 'import', code => 'avito', delete_date => undef])->[0];	# code => 'avito'
+my $MEDIA = Rplus::Model::Media::Manager->get_objects(query => [type => 'import', code => 'avito', delete_date => undef])->[0];	# code => 'avito'
 exit unless $MEDIA;
 my $META = from_json($MEDIA->metadata);
 
@@ -89,10 +87,13 @@ sub get_url_list {
                 my $dt = parse_date($date_str);
                 my $eid = make_eid($item_id, $dt);
 
-                unless (Import::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $eid])) {
+                unless (Rplus::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $eid])) {
                     say $item_url;
                     push(@url_list, {eid => $eid, id => $item_id, url => $item_url, dt => $dt});
+                } else {
+                    say 'was processed already';
                 }
+
             });
         } or do {
           say 'EXCEPTION!!!';
@@ -143,17 +144,11 @@ sub process_url_list {
             }
 
             say Dumper $data;
-
-            my $id;
-            my $realty = Import::Model::Realty->new((map { $_ => $data->{$_} } keys %$data), state_code => 'raw');
-            $realty->save;
-            $id = $realty->id;
-            say "Saved new realty: $id";
-
+            my $id = put_object($data, $config);
 
             # Сохраним историю
-            if ($id && !Import::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $eid])) {
-                Import::Model::MediaImportHistory->new(media_id => $MEDIA->id, media_num => $eid, media_text => $site_url . $item_url, realty_id => $id)->save;
+            if ($id && !Rplus::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $eid])) {
+                Rplus::Model::MediaImportHistory->new(media_id => $MEDIA->id, media_num => $eid, media_text => $site_url . $item_url, realty_id => $id)->save;
             }
         }  or do {
             say 'EXCEPTION!!!';
@@ -347,7 +342,6 @@ sub parse_adv {
     $dom->find('meta[property="og:image"]')->each (sub {
         unless ($_->{content} =~ /logo/) {
             my $img_url = $_->{content};
-            say 'image '.$img_url;
             push @photos, $img_url;
         }
     });
@@ -364,13 +358,14 @@ sub parse_adv {
 
     $pkey = phone_demixer($item_id * 1, $item_phone);
 
-    get_res('https://m.avito.ru' . $item_url, $host, $site_url);
-    my $mr = get_res('https://m.avito.ru' . $item_url . '/phone/' . $pkey . '?async', $host, 'https://m.avito.ru' . $item_url, 'application/json, text/javascript, */*; q=0.01');
+    my $m_url = 'https://m.avito.ru' . $item_url;
+    get_res($m_url, 'm.avito.ru', $site_url);
+    my $mr = get_res($m_url . '/phone/' . $pkey . '?async', 'm.avito.ru', $m_url, 'application/json, text/javascript, */*; q=0.01');
 
     if ($mr && $mr->json) {
          my $phone_str = $mr->json->{phone};
         for my $x (split /[.,;:]/, $phone_str) {
-            if (my $phone_num = Import::Util::PhoneNum->parse($x, $config->{default_phone_prefix})) {
+            if (my $phone_num = Rplus::Util::PhoneNum::parse($x, $config->{default_phone_prefix})) {
                 push @owner_phones, $phone_num;
                 say $phone_num;
             }
@@ -391,6 +386,7 @@ sub get_res {
     push @headers, 'Referer' => $referer if $referer;
     push @headers, 'Accept' => $accept if $accept;
     push @headers, 'Host' => $host if $host;
+
     while ($retry > 0) {
         $retry -= 1;
         if ($retry < 5) {
@@ -455,7 +451,7 @@ sub parse_date {
     my $date = lc(shift);
 
     my $res;
-    my $dt_now = DateTime->now(time_zone => "+1000");
+    my $dt_now = DateTime->now(time_zone => $timezone);
     my $year = $dt_now->year();
     my $mon = $dt_now->month();
     my $mday = $dt_now->mday();

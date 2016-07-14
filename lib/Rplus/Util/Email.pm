@@ -8,34 +8,13 @@ use JSON;
 use Net::SMTP::SSL;
 
 sub send {
-    my ($class, $self, $email, $message_text, $config) = @_;
+    my ($self, $email, $message_text, $config) = @_;
 
     $self->app->log->debug(sprintf("Sending email: (%s) %s => %s", -1, $email, $message_text));
     my $s = send_email($email, 'Подобрана недвижимость', $message_text, $config);
 
     return 'success' if $s;
     return 'fail';
-}
-
-sub send_email_old {
-    my ($to, $subject, $message, $config) = @_;
-
-    my $from = 'info@rplusmgmt.com';
-
-    my $msg = MIME::Lite->new(
-                   From     => $from,
-                   To       => $to,
-                   Subject  => $subject,
-                   Data     => $message
-                   );
-
-    $msg->attr("content-type" => "text/html; charset=UTF-8");
-
-    my $port = 587;
-    if ($config->{'email-port'} =~ /^(\d+)$/) {
-      $port = $1;
-    }
-    $msg->send('smtp', $config->{'email-smtp'}, AuthUser => $config->{'email-user'}, AuthPass => $config->{'email-password'}, Port => $port);
 }
 
 sub send_email {

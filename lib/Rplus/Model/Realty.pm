@@ -178,12 +178,6 @@ __PACKAGE__->meta->setup(
             type       => 'one to many',
         },
 
-        media_import_history => {
-            class      => 'Rplus::Model::MediaImportHistory',
-            column_map => { id => 'realty_id' },
-            type       => 'one to many',
-        },
-
         photos => {
             class      => 'Rplus::Model::Photo',
             column_map => { id => 'realty_id' },

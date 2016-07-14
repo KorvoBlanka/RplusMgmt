@@ -3,17 +3,16 @@
 use FindBin;
 use lib "$FindBin::Bin/../../lib";
 
-use Import::Modern;
+use Rplus::Modern;
 
-use Import::Model::Media::Manager;
-use Import::Model::Mediator::Manager;
-use Import::Model::MediaImportHistory::Manager;
-use Import::Model::Realty::Manager;
+use Rplus::Model::Media::Manager;
+use Rplus::Model::Realty::Manager;
+use Rplus::Model::MediaImportHistory::Manager;
 
-use Import::Util::Config;
-use Import::Util::PhoneNum;
-use Import::Util::Realty;
-use Import::Util::Mediator qw(add_mediator);
+use Rplus::Util::Config;
+use Rplus::Util::PhoneNum;
+use Rplus::Util::Realty qw(put_object);
+use Rplus::Util::Mediator qw(add_mediator);
 
 use JSON;
 use MIME::Base64;
@@ -25,7 +24,7 @@ use Data::Dumper;
 no warnings 'experimental';
 
 
-my $config = Import::Util::Config::get_config();
+my $config = Rplus::Util::Config::get_config();
 my $site_config = $config->{import}->{irru};
 
 my $site_url = $site_config->{url};
@@ -35,14 +34,14 @@ my $source_list = $site_config->{source_list};
 my $pause = $site_config->{pause};
 my $depth = $site_config->{depth};
 
-my $timezone = $site_config->{timezone};
+my $timezone = $config->{timezone};
 
 my $lock_file = $site_config->{lock_file};
 my $postfix = 'search/list=list/sort/date_sort:desc/';
 my $parser = DateTime::Format::Strptime->new( pattern => '%Y-%m-%d %H:%M' );
 
 
-my $MEDIA = Import::Model::Media::Manager->get_objects(query => [type => 'import', code => 'irr', delete_date => undef])->[0];
+my $MEDIA = Rplus::Model::Media::Manager->get_objects(query => [type => 'import', code => 'irr', delete_date => undef])->[0];
 exit unless $MEDIA;
 my $META = from_json($MEDIA->metadata);
 
@@ -114,7 +113,7 @@ sub get_url_list {
                 my $dt = parse_date($date_str);
                 my $eid = make_eid($item_id, $dt);
 
-                if (Import::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $eid])) {
+                if (Rplus::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $eid])) {
                     say 'was processed already';
                 } else {
                     say $item_url;
@@ -164,12 +163,13 @@ sub process_url_list {
 
                 parse_adv($dom, $data);
 
-                if (my $user_a = $dom->find('tr[class="seller"] a')->first) {
-                    my $user_ref = $user_a->{href};
-                    say $user_ref;
-                    unless ($user_ref =~ /^\/user/) {
-                        my $seller = $user_a->span->text;
-                        say 'seller: ' . $seller;
+                if (my $user_node = $dom->find('div[class~="productPage__inlineWrapper"]')->first) {
+                    my $offer_count_str = $user_node->at('div[class~="productPage__infoText productPage__infoText_inline"]')->text;
+                    my $offer_count = $offer_count_str =~ s/\D//g;
+                    my $seller = $user_node->at('div[class~="productPage__infoTextBold productPage__infoTextBold_inline"]')->all_text;
+                    say 'seller: ' . $seller;
+                    say 'of_count: ' . $offer_count;
+                    if ($offer_count > 3) {
                         foreach (@{$data->{'owner_phones'}}) {
                             say 'add mediator ' . $_;
                             add_mediator($seller, $_);
@@ -180,15 +180,11 @@ sub process_url_list {
 
             say Dumper $data;
 
-            my $id;
-            my $realty = Import::Model::Realty->new((map { $_ => $data->{$_} } keys %$data), state_code => 'raw');
-            $realty->save;
-            $id = $realty->id;
-            say "Saved new realty: $id";
+            my $id = put_object($data, $config);
 
             # Сохраним историю
-            if ($id && !Import::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $eid])) {
-                Import::Model::MediaImportHistory->new(media_id => $MEDIA->id, media_num => $eid, media_text => $item_url, realty_id => $id)->save;
+            if ($id && !Rplus::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $eid])) {
+                Rplus::Model::MediaImportHistory->new(media_id => $MEDIA->id, media_num => $eid, media_text => $item_url, realty_id => $id)->save;
             }
         } or do {
             say 'EXCEPTION!!!';
@@ -262,7 +258,7 @@ sub parse_adv {
     if ($dom->find('div[class~="js-productPagePhoneLabel"]')->first) {
         my $phone_num_raw = decode_base64($dom->find('div[class~="js-productPagePhoneLabel"]')->first->attr('data-phone'));
 
-        if (my $phone_num = Import::Util::PhoneNum->parse($phone_num_raw, $config->{default_phone_prefix})) {
+        if (my $phone_num = Rplus::Util::PhoneNum::parse($phone_num_raw, $config->{default_phone_prefix})) {
             push @owner_phones, $phone_num;
         }
     } else {
@@ -437,7 +433,6 @@ sub parse_adv {
     my @photos;
     $dom->find('div[class~="productGallery"] img')->each ( sub {
         my $img_url = $_->attr('data-src');
-        say 'image ' . $img_url;
         push @photos, $img_url;
     });
     $data->{photo_url} = \@photos;

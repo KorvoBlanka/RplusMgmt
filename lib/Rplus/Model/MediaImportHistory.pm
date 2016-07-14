@@ -10,7 +10,7 @@ __PACKAGE__->meta->setup(
     columns => [
         id         => { type => 'serial', not_null => 1 },
         media_id   => { type => 'integer', not_null => 1, remarks => 'Источник СМИ' },
-        media_num  => { type => 'varchar', length => 16, remarks => 'Номер, в котором вышло объявление' },
+        media_num  => { type => 'varchar', length => 32, remarks => 'Номер, в котором вышло объявление' },
         media_text => { type => 'text', not_null => 1, remarks => 'Тест объявления' },
         realty_id  => { type => 'integer', not_null => 1, remarks => 'Связанный объект недвижимости' },
         add_date   => { type => 'timestamp with time zone', default => 'now()', not_null => 1, remarks => 'Дата/время добавления (импорта)' },
@@ -26,11 +26,6 @@ __PACKAGE__->meta->setup(
         media => {
             class       => 'Rplus::Model::Media',
             key_columns => { media_id => 'id' },
-        },
-
-        realty => {
-            class       => 'Rplus::Model::Realty',
-            key_columns => { realty_id => 'id' },
         },
     ],
 );

@@ -247,13 +247,13 @@ sub import_present {
             my @owner_phones;
             for my $x (split /[ .,]/, $body) {
                 if ($x =~ /^\s*([\d-]{6,})\s*$/) {
-                    if (my $phone_num = Import::Util::PhoneNum->parse($1, $config->{default_phone_prefix})) {
+                    if (my $phone_num = Import::Util::PhoneNum::parse($1, $config->{default_phone_prefix})) {
                         push @owner_phones, $phone_num;
                     }
                     $body =~ s/$x//;
                 }
                 if ($x =~ /^\s*8\(\d{3,4}\)([\d-]{6,})\s*$/) {
-                    if (my $phone_num = Import::Util::PhoneNum->parse($1, $config->{default_phone_prefix})) {
+                    if (my $phone_num = Import::Util::PhoneNum::parse($1, $config->{default_phone_prefix})) {
                         push @owner_phones, $phone_num;
                     }
                     $body =~ s/$x//;

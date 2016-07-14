@@ -3,21 +3,16 @@
 use FindBin;
 use lib "$FindBin::Bin/../../lib";
 
-use Import::Modern;
+use Rplus::Modern;
 
+use Rplus::Model::Media::Manager;
+use Rplus::Model::Realty::Manager;
+use Rplus::Model::MediaImportHistory::Manager;
 
-use Import::Model::Media;
-use Import::Model::Media::Manager;
-use Import::Model::MediaImportHistory;
-use Import::Model::MediaImportHistory::Manager;
-use Import::Model::Variable;
-use Import::Model::Variable::Manager;
-use Import::Model::ImportTask;
-use Import::Model::ImportTask::Manager;
-
-use Import::Util::PhoneNum;
-use Import::Util::Config;
-use Import::Util::Mediator qw(add_mediator);
+use Rplus::Util::Config;
+use Rplus::Util::PhoneNum;
+use Rplus::Util::Realty qw(put_object);
+use Rplus::Util::Mediator qw(add_mediator);
 
 use DateTime;
 use DateTime::Format::Strptime;
@@ -29,7 +24,7 @@ use Data::Dumper;
 no warnings 'experimental';
 
 
-my $config = Import::Util::Config::get_config();
+my $config = Rplus::Util::Config::get_config();
 my $site_config = $config->{import}->{bn};
 
 my $site_url = $site_config->{url};
@@ -39,7 +34,7 @@ my $source_list = $site_config->{source_list};
 my $pause = $site_config->{pause};
 my $depth = $site_config->{depth};
 
-my $timezone = $site_config->{timezone};
+my $timezone = $config->{timezone};
 
 my $lock_file = $site_config->{lock_file};
 
@@ -47,7 +42,7 @@ my $lock_file = $site_config->{lock_file};
 my $parser = DateTime::Format::Strptime->new(pattern => '%Y-%m-%d %H:%M:%S');
 
 
-my $MEDIA = Import::Model::Media::Manager->get_objects(query => [type => 'import', code => 'bn', delete_date => undef])->[0];    # code => 'avito'
+my $MEDIA = Rplus::Model::Media::Manager->get_objects(query => [type => 'import', code => 'bn', delete_date => undef])->[0];    # code => 'avito'
 exit unless $MEDIA;
 
 my $ua = Mojo::UserAgent->new;
@@ -94,21 +89,17 @@ sub process_category {
 
                     my $eid = $item_id . '_0';
 
-                    unless (Import::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $eid])) {
+                    unless (Rplus::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $eid])) {
                         my $t = get_res($site_url . $item_url, $host)->dom;
                         my $data = process_item($item_url, $t);
 
                         say Dumper $data;
 
-                        my $id;
-                        my $realty = Import::Model::Realty->new((map { $_ => $data->{$_} } keys %$data), state_code => 'raw');
-                        $realty->save;
-                        $id = $realty->id;
-                        say "Saved new realty: $id";
+                        my $id = put_object($data, $config);
 
                         # Сохраним историю
-                        if ($id && !Import::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $eid])) {
-                            Import::Model::MediaImportHistory->new(media_id => $MEDIA->id, media_num => $eid, media_text => $site_url . $item_url, realty_id => $id)->save;
+                        if ($id && !Rplus::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $eid])) {
+                            Rplus::Model::MediaImportHistory->new(media_id => $MEDIA->id, media_num => $eid, media_text => $site_url . $item_url, realty_id => $id)->save;
                         }
                     } else {
                         say 'was processed already';
@@ -141,7 +132,7 @@ sub process_item {
         source_url => $site_url . $item_url,
         type_code => 'other',
         offer_type_code => 'sale',
-        add_date => 'now()',  # fix it!
+        add_date => DateTime->now() . $timezone,
     };
 
     my $title = $dom->at('section[class="round_gr detail"]')->at('h1')->text;
@@ -250,7 +241,7 @@ sub process_item {
         when (/телефон/i) {
           my @owner_phones;
           for my $x (split /[.,;:]/, $d) {
-            if (my $phone_num = Import::Util::PhoneNum->parse($x, $config->{default_phone_prefix})) {
+            if (my $phone_num = Rplus::Util::PhoneNum::parse($x, $config->{default_phone_prefix})) {
               push @owner_phones, $phone_num;
             }
           }

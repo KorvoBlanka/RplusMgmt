@@ -76,7 +76,7 @@ sub by_sms {
         my $sms_body = join(', ', @parts);
         $sms_text = 'Вы интересовались: '.$sms_body.($sms_body =~ /\.$/ ? '' : '.').($config->{'contact_info'} ? $config->{'contact_info'} : '');
 
-        $status = Rplus::Util::SMS->send($self, $config, $acc_id, $client->phone_num, $sms_text);
+        $status = Rplus::Util::SMS::send($self, $config, $acc_id, $client->phone_num, $sms_text);
 
         my $subscription_iter = Rplus::Model::Subscription::Manager->get_objects_iterator(query => [client_id => $client->id, delete_date => undef,]);
         while (my $subscription = $subscription_iter->next) {
@@ -124,7 +124,7 @@ sub by_email {
         my $sender = Rplus::Model::User::Manager->get_objects(query => [id => $self->stash('user')->{id}, delete_date => undef])->[0];
         my $message = get_digest($self, $realty, \@photos, $config->{'contact_info'} ? $config->{'contact_info'} : '', $sender);
 
-        $status = Rplus::Util::Email->send($self, $client->email, $message, $config);
+        $status = Rplus::Util::Email::send($self, $client->email, $message, $config);
     }
 
     return $self->render(json => {status => $status,});

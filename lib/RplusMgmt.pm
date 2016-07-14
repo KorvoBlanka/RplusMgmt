@@ -4,11 +4,8 @@ use Mojo::Base 'Mojolicious';
 
 our $VERSION = '1.0';
 
-use Rplus::Model::Account;
 use Rplus::Model::Account::Manager;
-use Rplus::Model::User;
 use Rplus::Model::User::Manager;
-use Rplus::Model::Realty;
 use Rplus::Model::Realty::Manager;
 use Rplus::DB;
 
@@ -380,10 +377,12 @@ sub startup {
     # Router
     my $r = $self->routes;
 
-    # API namespace
-
+    # service
+    $r->get('/service/:action')->to(controller => 'service');
+    $r->route('/remoteimport/:action')->to(controller => 'remoteimport');
     $r->route('/api/user/set_google_token')->to(namespace => 'RplusMgmt::Controller::API', controller => 'user', action => 'set_google_token');
 
+    # API namespace
     $r->route('/api/:controller')->under->to(cb => sub {
         my $self = shift;
 
@@ -448,9 +447,6 @@ sub startup {
             });
         });
 
-        # service
-        $r2->get('/service/:action')->to(controller => 'service');
-
         my $r2b = $r2->under->to(controller => 'authentication', action => 'auth');
 
         # Main controller
@@ -460,7 +456,7 @@ sub startup {
         $r2b->route('/export')->to(namespace => 'RplusMgmt::Controller::Export')->post('/:controller')->to(action => 'index');
 
         # Other controllers
-        $r2b->get('/:controller/:action')->to(action => 'index');
+        #$r2b->get('/:controller/:action')->to(action => 'index');
     }
 }
 

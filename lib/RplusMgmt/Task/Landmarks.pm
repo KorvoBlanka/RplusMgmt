@@ -6,7 +6,6 @@ use Rplus::Model::Landmark;
 use Rplus::Model::Landmark::Manager;
 
 sub run {
-    my $class = shift;
     my $c = shift;
 
     # Select landmarks changed in 15 min of last run time

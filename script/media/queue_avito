@@ -3,19 +3,14 @@
 use FindBin;
 use lib "$FindBin::Bin/../../lib";
 
-use Import::Modern;
+use Rplus::Modern;
 
+use Rplus::Model::Media::Manager;
+use Rplus::Model::Realty::Manager;
+use Rplus::Model::MediaImportHistory::Manager;
+use Rplus::Model::MediaImportTask::Manager;
 
-use Import::Model::Media;
-use Import::Model::Media::Manager;
-use Import::Model::MediaImportHistory;
-use Import::Model::MediaImportHistory::Manager;
-use Import::Model::Variable;
-use Import::Model::Variable::Manager;
-use Import::Model::ImportTask;
-use Import::Model::ImportTask::Manager;
-
-use Import::Util::Config;
+use Rplus::Util::Config;
 
 use DateTime;
 use DateTime::Format::Strptime;
@@ -27,7 +22,7 @@ use Data::Dumper;
 no warnings 'experimental';
 
 
-my $config = Import::Util::Config::get_config();
+my $config = Rplus::Util::Config::get_config();
 my $site_config = $config->{import}->{avito};
 
 my $site_url = $site_config->{url};
@@ -41,7 +36,7 @@ my $depth = $site_config->{depth};
 my $parser = DateTime::Format::Strptime->new(pattern => '%Y-%m-%d %H:%M:%S');
 
 
-my $MEDIA = Import::Model::Media::Manager->get_objects(query => [type => 'import', code => 'avito', delete_date => undef])->[0];    # code => 'avito'
+my $MEDIA = Rplus::Model::Media::Manager->get_objects(query => [type => 'import', code => 'avito', delete_date => undef])->[0];    # code => 'avito'
 exit unless $MEDIA;
 
 my $ua = Mojo::UserAgent->new;
@@ -95,7 +90,7 @@ sub get_url_list {
 
                 say $dt;
                 say $eid;
-                unless (Import::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $eid])) {
+                unless (Rplus::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $eid])) {
                     say $item_url;
                     push(@url_list, {eid => $eid, url => $item_url, dt => $dt});
                 }
@@ -115,11 +110,11 @@ sub put_to_queue {
         my $eid = $item->{eid};
         my $dt = $item->{dt};
 
-        my $record = Import::Model::ImportTask->new(source_name => $MEDIA->code, source_url => $item_url)->save;
+        my $record = Rplus::Model::MediaImportTask->new(source_name => $MEDIA->code, source_url => $item_url)->save;
 
         # Сохраним историю
-        if (!Import::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $eid])) {
-            Import::Model::MediaImportHistory->new(media_id => $MEDIA->id, media_num => $eid, media_text => $site_url . $item_url, realty_id => $record->id)->save;
+        if (!Rplus::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $eid])) {
+            Rplus::Model::MediaImportHistory->new(media_id => $MEDIA->id, media_num => $eid, media_text => $site_url . $item_url, realty_id => $record->id)->save;
         }
     }
 }

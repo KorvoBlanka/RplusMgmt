@@ -9,8 +9,99 @@ use Rplus::Model::RealtyType::Manager;
 use Rplus::Model::MediaImportHistory;
 use Rplus::Model::MediaImportHistory::Manager;
 
-sub find_similar {
-    my $class = shift;
+use Rplus::Util::Geo;
+use Rplus::Util::Image;
+
+use Data::Dumper;
+
+use Exporter qw(import);
+
+our @EXPORT_OK = qw(put_object);
+
+my $parser = DateTime::Format::Strptime->new( pattern => '%FT%T' );
+my $parser_tz = DateTime::Format::Strptime->new( pattern => '%FT%T%z' );
+
+sub put_object {
+    my ($data, $config) = @_;
+    my $id;
+    eval {
+
+        if ($data->{'owner_phones'} && scalar @{$data->{'owner_phones'}} > 0) {
+            my $mediator = Rplus::Model::Mediator::Manager->get_objects(
+              query => [
+                  phone_num => [@{$data->{'owner_phones'}}],
+                  delete_date => undef,
+              ],
+              limit => 1,
+            )->[0];
+
+            next if ($mediator && $data->{offer_type_code} eq 'rent');
+        }
+
+
+        my @realtys = @{_find_similar(%$data, state_code => ['raw', 'work', 'suspended', 'deleted'])};
+        if (scalar @realtys > 0) {
+            foreach (@realtys) {
+                $id = $_->id;   # что если похожий объект не один? какой id возвращать?
+                my $o_realty = $_;
+                say "Found similar realty: $id";
+
+                # пропустим если объект в базе "новее"
+                my $o_dt = $parser->parse_datetime($o_realty->last_seen_date);
+                my $n_dt = $parser_tz->parse_datetime($data->{add_date});
+
+                say $o_realty->last_seen_date;
+                say $data->{add_date};
+
+                if ($o_dt >= $n_dt) {
+                    say 'newer!';
+                    next;
+                }
+
+                my @phones = ();
+                foreach (@{$o_realty->owner_phones}) {
+                    push @phones, $_;
+                }
+
+                $o_realty->owner_phones(Mojo::Collection->new(@phones)->compact->uniq);
+                $o_realty->last_seen_date($data->{add_date});
+                $o_realty->change_date('now()');
+
+                if ($data->{state_code} ne 'work') {
+                    my @fields = qw(type_code source_media_id source_url source_media_text locality address house_num owner_price ap_scheme_id rooms_offer_count rooms_count condition_id room_scheme_id house_type_id floors_count floor square_total square_living square_kitchen square_land square_land_type);
+                    foreach (@fields) {
+                        $o_realty->$_($data->{$_}) if $data->{$_};
+                    }
+                }
+
+                _update_location($o_realty);
+
+                $o_realty->save(changes_only => 1);
+                say "updated realty: $id";
+
+                _update_photos($id, $config->{storage}->{path}, $data->{photo_url});
+            }
+        } else {
+            my $realty = Rplus::Model::Realty->new((map { $_ => $data->{$_} } grep { $_ ne 'photo_url' && $_ ne 'id'} keys %$data), state_code => 'raw');
+            $realty->last_seen_date($data->{add_date});
+
+            _update_location($realty, $config);
+
+            $realty->save;
+            my $data_id = $data->{id};
+            $id = $realty->id;
+            say "Saved new realty: $id";
+
+            _update_photos($id, $config->{storage}->{path}, $data->{photo_url});
+        }
+    } or do {
+        say $@;
+    };
+
+    return $id;
+}
+
+sub _find_similar {
     my %data = @_;
 
     return unless %data;
@@ -43,20 +134,19 @@ sub find_similar {
         return $realty if scalar @{$realty} > 0;
 
         # Поиск в таблице истории импорта по тексту объявления
-        #my $mih = Rplus::Model::MediaImportHistory::Manager->get_objects(
-        #    select => 'id, realty_id',
-        #    query => [
-        #        media_text => $data{'source_media_text'},
-
-        #        'realty.type_code' => $data{'type_code'},
-        #        'realty.offer_type_code' => $data{'offer_type_code'},
-        #        'realty.state_code' => $data{'state_code'},
-        #        ($data{'id'} ? ('!realty_id' => $data{'id'}) : ()),
-        #    ],
-        #    require_objects => ['realty'],
-        #    limit => 1
-        #)->[0];
-        #return $mih->realty_id if $mih;
+        my $mih = Rplus::Model::MediaImportHistory::Manager->get_objects(
+            select => 'id, realty_id',
+            query => [
+                media_text => $data{'source_media_text'},
+                'realty.type_code' => $data{'type_code'},
+                'realty.offer_type_code' => $data{'offer_type_code'},
+                'realty.state_code' => $data{'state_code'},
+                ($data{'id'} ? ('!realty_id' => $data{'id'}) : ()),
+            ],
+            require_objects => ['realty'],
+            limit => 1
+        )->[0];
+        return $mih->realty_id if $mih;
     }
 
     #
@@ -71,7 +161,7 @@ sub find_similar {
 
                 type_code => $data{'type_code'},
                 offer_type_code => $data{'offer_type_code'},
-                locality => $data{'locality'}, address => $data{'address'}, house_num => $data{'house_num'},                
+                locality => $data{'locality'}, address => $data{'address'}, house_num => $data{'house_num'},
                 #state_code => $data{'state_code'},
 
                 ($data{'id'} ? ('!id' => $data{'id'}) : ()),
@@ -92,6 +182,40 @@ sub find_similar {
 
     # Недвижимость чистая
     return [];
+}
+
+sub _update_location {
+    my $realty = shift;
+    my $config = shift;
+    if ($realty->address) {
+        my %coords = Rplus::Util::Geo::get_coords_by_addr($realty->locality, $realty->address, $realty->house_num);
+
+        if (%coords) {
+
+            say 'yay, coords!';
+
+            $realty->latitude($coords{latitude});
+            $realty->longitude($coords{longitude});
+        }
+    }
+
+    if ($realty->latitude) {
+        my $res = Rplus::Util::Geo::get_location_metadata($realty->latitude, $realty->longitude, $config);
+
+        $realty->district(join ', ', @{$res->{district}});
+        $realty->pois($res->{pois});
+    }
+}
+
+sub _update_photos {
+    my ($realty_id, $storage_path, $photos) = @_;
+
+    Rplus::Util::Image::remove_images($realty_id);
+
+    for my $photo_url (@{$photos}) {
+        say 'loading ' . $photo_url;
+        Rplus::Util::Image::load_image_from_url($realty_id, $photo_url, $storage_path, 0);
+    }
 }
 
 1;

@@ -285,7 +285,7 @@ sub get_data {
     my $phones = $dom->find('span[class="phone"]')->first->text;
     my @owner_phones;
     for my $x (split /[.,;:]/, $phones) {
-        if (my $phone_num = Import::Util::PhoneNum->parse($x, $config->{default_phone_prefix})) {
+        if (my $phone_num = Import::Util::PhoneNum::parse($x, $config->{default_phone_prefix})) {
             push @owner_phones, $phone_num;
         }
     }

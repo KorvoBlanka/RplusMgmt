@@ -229,7 +229,7 @@ sub parse_adv {
                     say $phone_str;
                     $phone_str =~ s/\D//g;
                     if (length $phone_str > 0) {
-                        if (my $phone_num = Import::Util::PhoneNum->parse($phone_str, $config->{default_phone_prefix})) {
+                        if (my $phone_num = Import::Util::PhoneNum::parse($phone_str, $config->{default_phone_prefix})) {
                             say $phone_num;
                             push @owner_phones, $phone_num;
                         }
@@ -440,7 +440,7 @@ sub parse_adv {
             }
         }
     }
-	
+
 	# вытащим фото
 	$dom->find('div[class="bulletinImages"] img')->each ( sub {
 		my $img_url = $_->{'data-zoom-image'};

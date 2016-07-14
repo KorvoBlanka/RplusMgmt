@@ -597,7 +597,7 @@ sub save {
         'rent_type', 'lease_deposite_id', 'locality', 'address', 'house_num', 'district', 'poi'
     );
 
-    my @fields_array = ('owner_phones', 'export_media', 'pois');
+    my @fields_array = ('owner_phones', 'export_media');
 
     my @errors;
     if ($self->validation->has_error) {
@@ -653,8 +653,6 @@ sub save {
             }
         }
     }
-
-    $data{pois} = Mojo::Collection->new(@{$self->every_param('pois[]')})->uniq;
 
     # Export media
     my $export_media_ok = Rplus::DB->new_or_cached->dbh->selectall_hashref(q{SELECT M.id, M.name FROM media M WHERE M.type = 'export' AND M.delete_date IS NULL}, 'id');
@@ -1005,7 +1003,8 @@ sub update_location {
        my $res = Rplus::Util::Geo::get_location_metadata($realty->latitude, $realty->longitude, $self->config);
 
        $realty->district(join ', ', @{$res->{district}});
-       $realty->pois(Mojo::Collection->new($res->{pois})->uniq);
+       $realty->pois($res->{pois});
+       $realty->save(changes_only => 1);
     }
 
     if ($realty->latitude) {

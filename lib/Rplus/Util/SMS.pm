@@ -9,7 +9,7 @@ use Mojo::UserAgent;
 use JSON;
 
 sub send {
-    my ($class, $self, $config, $acc_id, $phone_num, $message_text) = @_;
+    my ($self, $config, $acc_id, $phone_num, $message_text) = @_;
 
     return 'not activated' unless $config->{active};
 
