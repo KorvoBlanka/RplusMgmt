@@ -1,134 +1,135 @@
 {
   default_lang => 'ru',
   roles => {
-             top => {
-                      landmarks => {
-                                     write => 1,
-                                     read => 1
-                                   },
-                      users => {
-                                 manage => 1
-                               },
-                      realty => {
-                                  write => {
-                                             nobody => 1,
-                                             others => 1
-                                           },
-                                  analyse => 1,
-                                  delete => {
-                                              others => 1,
-                                              nobody => 1
-                                            },
-                                  read => {
-                                            others => 1,
-                                            nobody => 1
-                                          },
-                                  export => 1
-                                },
-                      clients => {
-                                   subscribe => 1,
-                                   write => 1,
-                                   read => {
-                                             others => 1,
-                                             nobody => 1
-                                           }
-                                 },
-                      mediators => {
-                                     write => 1,
-                                     read => 1
-                                   },
-                      subscriptions => {
-                                         write => 1,
-                                         read => 1
-                                       }
-                    },
-             manager => {
-                          realty => {
-                                      read => {
-                                                others => 2,
-                                                nobody => 1
-                                              },
-                                      write => {
-                                                 others => 1,
-                                                 nobody => 1
-                                               },
-                                      analyse => 1,
-                                      delete => {
-                                                  nobody => 1,
-                                                  others => 1
-                                                }
-                                    },
-                          clients => {
-                                       write => 1,
-                                       subscribe => 1,
-                                       read => {
-                                                 others => 1,
-                                                 nobody => 1
-                                               }
-                                     },
-                          mediators => {
-                                         write => 1,
-                                         read => 1
-                                       },
-                          subscriptions => {
-                                             read => 1,
-                                             write => 1
-                                           }
-                        },
-             dispatcher => {
-                             subscriptions => {
-                                                write => 1,
-                                                read => 1
-                                              },
-                             clients => {
-                                          write => 1,
-                                          subscribe => 1,
-                                          read => {
-                                                    others => 1,
-                                                    nobody => 1
-                                                  }
-                                        },
-                             realty => {
-                                         write => {
-                                                    others => 0,
-                                                    nobody => 0
-                                                  },
-                                         read => {
-                                                   others => 2,
-                                                   nobody => 0
-                                                 }
-                                       }
-                           },
-             agent => {
-                            clients => {
-                                         read => {
-                                                   others => 0,
-                                                   nobody => 1
-                                                 },
-                                         write => 0
-                                       },
-                            realty => {
-                                        export => 0,
-                                        read => {
-                                                  others => 2,
-                                                  nobody => 1,
-                                                },
-                                        analyse => 1,
-                                        write => {
-                                                   nobody => 0,
-                                                   can_assign => 1,
-                                                   others => 0
-                                                 }
-                                      },
-                            subscriptions => {
-                                               write => 1,
-                                               read => 1
-                                             }
-                          },
-           },
+    top => {
+      landmarks => {
+        write => 1,
+        read => 1
+      },
+      users => {
+        manage => 1
+      },
+      realty => {
+        export => 1,
+        analyse => 1,
+        write => {
+          nobody => 1,
+          others => 1
+        },
+        read => {
+          others => 1,
+          nobody => 1
+        },
+        delete => {
+          others => 1,
+          nobody => 1
+        }
+      },
+      clients => {
+        subscribe => 1,
+        write => 1,
+        read => {
+          others => 1,
+          nobody => 1
+        }
+      },
+      mediators => {
+        write => 1,
+        read => 1
+      },
+      subscriptions => {
+        write => 1,
+        read => 1
+      }
+    },
+    manager => {
+      realty => {
+        analyse => 1,
+        read => {
+          others => 2,
+          nobody => 1
+        },
+        write => {
+          others => 1,
+          nobody => 1
+        },
+        delete => {
+          nobody => 1,
+          others => 1
+        }
+      },
+      clients => {
+        write => 1,
+        subscribe => 1,
+        read => {
+          others => 1,
+          nobody => 1
+        }
+      },
+      mediators => {
+        write => 1,
+        read => 1
+      },
+      subscriptions => {
+        read => 1,
+        write => 1
+      }
+    },
+    dispatcher => {
+      subscriptions => {
+        write => 1,
+        read => 1
+      },
+      clients => {
+        write => 1,
+        subscribe => 1,
+        read => {
+          others => 1,
+          nobody => 1
+        }
+      },
+      realty => {
+        write => {
+          others => 0,
+          nobody => 0
+        },
+        read => {
+          others => 2,
+          nobody => 0
+        }
+      }
+    },
+    agent => {
+      clients => {
+        read => {
+          others => 0,
+          nobody => 1
+        },
+        write => 0
+      },
+      realty => {
+        export => 0,
+        analyse => 1,
+        read => {
+          others => 2,
+          nobody => 1,
+        },
+        write => {
+          nobody => 0,
+          can_assign => 1,
+          others => 0
+        }
+      },
+      subscriptions => {
+        write => 1,
+        read => 1
+      }
+    },
+  },
   default_city_guid => 'a4859da8-9977-4b62-8436-4e1b98c5d13f',
   default_phone_prefix => 4212,
   location_id => 3,
+  timezone => '+0300',
 
   location => {
     lat => 55.754035,
@@ -136,38 +137,34 @@
   },
 
   hypnotoad => {
-                 proxy => 1,
-                 pid_file => 'hypnotoad.pid',
-                 listen => [
-                             'http://127.0.0.1:19099'
-                           ]
-               },
+    proxy => 1,
+    pid_file => 'hypnotoad.pid',
+    listen => [
+      'http://185.117.153.149:2999'
+    ]
+  },
   query_cache_lifetime => '3 days',
   assets => {
-              url => '/assets'
-            },
+    url => '/assets'
+  },
   realty => {
-              close_on_save => 1
-            },
+    close_on_save => 1
+  },
   secret => 'pelbHipE5pTQvKAAyhZxkhhXNTArcxiN',
   force_hide_nav => {
-                      dispatcher => [
-                                      'realty',
-                                      'clients'
-                                    ],
-                      agent => [
-                                 'search'
-                               ]
-                    },
+    dispatcher => [
+      'realty',
+      'clients'
+    ],
+    agent => [
+      'search'
+    ]
+  },
   account_type => 'dev',
   storage => {
-               url => '/storage_ln',
-               path => '/var/data/rplus/storage'
-             },
-  realty_buffer_url => 'http://185.117.153.149:3000',
-  export => {
-    city => 'Москва',
-    region => 'Московская обл.',
+    url => '/storage_ln',
+    path => '/var/data/rplus/storage_dev',
+    external => 'http://storagedev.rplusmgmt.com'
   },
   api_keys => {
     google => 'AIzaSyBw9CMGQ3BzbCopcUdLeaMsPEUEDWZbCWM',
@@ -178,5 +175,214 @@
     radius => '1000',
     places_radius => '50000'
   },
-  billing_url => 'tmpbilling.rplusmgmt.com'
+  billing_url => 'billing.rplusmgmt.com',
+  export => {
+    city => 'Москва',
+    region => 'Московская обл.',
+  },
+  import => {
+    bn => {
+      url => 'http://www.moskva.bn.ru',
+      host => 'www.moskva.bn.ru',
+      pause => 5,
+      depth => 1,
+
+      lock_file => '/var/tmp/bn_lock_dev',
+
+      source_list => [
+        {url => '/sale/city/flats/'},
+        {url => '/sale/city/rooms/'},
+        {url => '/sale/city/elite/'},
+        {url => '/sale/city/newflats/'},
+        {url => '/sale/city/houses/'},
+        {url => '/sale/city/cottages/'},
+        {url => '/sale/city/lands/'},
+        {url => '/sale/commerce/offices/'},
+        {url => '/sale/commerce/comm_new/'},
+        {url => '/sale/commerce/service/'},
+        {url => '/sale/commerce/different/'},
+        {url => '/sale/commerce/freestanding/'},
+        {url => '/sale/commerce/storage/'},
+        {url => '/sale/commerce/comm_lands/'},
+
+        {url => '/rent/city/flats/'},
+        {url => '/rent/city/rooms/'},
+        {url => '/rent/city/elite/'},
+        {url => '/rent/city/newflats/'},
+        {url => '/rent/city/houses/'},
+        {url => '/rent/city/cottages/'},
+        {url => '/rent/city/lands/'},
+        {url => '/rent/commerce/offices/'},
+        {url => '/rent/commerce/comm_new/'},
+        {url => '/rent/commerce/service/'},
+        {url => '/rent/commerce/different/'},
+        {url => '/rent/commerce/freestanding/'},
+        {url => '/rent/commerce/storage/'},
+        {url => '/rent/commerce/comm_lands/'},
+      ]
+    },
+    cian => {
+      url => 'http://cian.ru',
+      host => 'www.cian.ru',
+      pause => 5,
+      depth => 1,
+
+      lock_file => '/var/tmp/cian_lock_dev',
+
+      source_list => [
+        {url => '/kupit-1-komnatnuyu-kvartiru/'},
+        {url => '/kupit-2-komnatnuyu-kvartiru/'},
+        {url => '/kupit-3-komnatnuyu-kvartiru/'},
+        {url => '/kupit-kvartiru-svobodnoy-planirovki/'},
+        {url => '/kupit-kvartiru-studiu//'},
+        {url => '/kupit-komnatu/'},
+        {url => '/kupit-dom-moskovskaya-oblast/'},
+        {url => '/kupit-taunhaus-moskovskaya-oblast/'},
+        {url => '/kupit-zemelniy-uchastok-moskovskaya-oblast/'},
+
+        {url => '/snyat-1-komnatnuyu-kvartiru/'},
+        {url => '/snyat-2-komnatnuyu-kvartiru/'},
+        {url => '/snyat-3-komnatnuyu-kvartiru/'},
+        {url => '/snyat-kvartiru-studiu/'},
+        {url => '/snyat-komnatu/'},
+        {url => '/snyat-dom-moskovskaya-oblast/'},
+
+        {url => '/snyat-kvartiru-posutochno/'},
+        {url => '/snyat-dom-posutochno-moskovskaya-oblast/'},
+        {url => '/snyat-komnatu-posutochno/'},
+
+        {url => '/kupit-ofis/'},
+        {url => '/snyat-ofis/'},
+
+        {url => '/kupit-sklad/'},
+        {url => '/snyat-sklad/'},
+
+        {url => '/kupit-torgovuyu-ploshad/'},
+        {url => '/snyat-torgovuyu-ploshad/'},
+
+        {url => '/kupit-pomeshenie-pod-proizvodstvo/'},
+        {url => '/snyat-pomeshenie-pod-proizvodstvo/'},
+
+        {url => '/kupit-zdanie/'},
+        {url => '/snyat-zdanie/'},
+
+        {url => '/kupit-pomeshenie-svobodnogo-naznachenija/'},
+        {url => '/snyat-pomeshenie-svobodnogo-naznachenija/'},
+
+        {url => '/kupit-garazh/'},
+        {url => '/snyat-garazh/'}
+      ]
+    },
+    irru => {
+      url => 'http://irr.ru',
+      host => 'irr.ru',
+      pause => 5,
+      depth => 2,
+
+      lock_file => '/var/tmp/irr_lock_dev',
+
+      source_list => [
+        {url => '/real-estate/rooms-sale/', type => ''},
+        {url => '/real-estate/apartments-sale/'},
+        {url => '/real-estate/out-of-town/houses/'},
+        {url => '/real-estate/commercial-sale/offices/'},
+        {url => '/real-estate/commercial-sale/misc/'},
+        {url => '/real-estate/commercial-sale/production-warehouses/'},
+        {url => '/real-estate/commercial-sale/retail/'},
+        {url => '/real-estate/commercial-sale/eating/'},
+        {url => '/real-estate/commercial-sale/houses/'},
+        {url => '/real-estate/garage/'},
+
+        {url => '/real-estate/rooms-rent/'},
+        {url => '/real-estate/rent/'},
+        {url => '/real-estate/out-of-town-rent/'},
+        {url => '/real-estate/commercial/offices/'},
+        {url => '/real-estate/commercial/misc/'},
+        {url => '/real-estate/commercial/production-warehouses/'},
+        {url => '/real-estate/commercial/retail/'},
+        {url => '/real-estate/commercial/eating/'},
+        {url => '/real-estate/commercial/houses/'},
+        {url => '/real-estate/garage-rent/'},
+      ]
+    },
+    avito => {
+      url => 'http://www.avito.ru',
+      host => 'www.avito.ru',
+      pause_category => 120,
+      pause_item => 20,
+      depth => 1,
+
+      source_list => [
+        {url => '/moskva/kvartiry/prodam'},
+        {url => '/moskva/kvartiry/prodam'},
+        {url => '/moskva/kvartiry/prodam'},
+        {url => '/moskva/kvartiry/prodam'},
+        {url => '/moskva/kvartiry/prodam'},
+
+        {url => '/moskva/kvartiry/sdam'},
+        {url => '/moskva/komnaty/sdam'},
+        {url => '/moskva/doma_dachi_kottedzhi/sdam'},
+        {url => '/moskva/zemelnye_uchastki/sdam'},
+        {url => '/moskva/kommercheskaya_nedvizhimost/sdam'},
+      ],
+    },
+    farpost => {
+      pause => 5,
+      farpost_url => 'http://www.farpost.ru',
+      host => '',
+
+      source_list => [
+        {url => '/khabarovsk/realty/sell_flats/', pages => 2, type => 'apartment', offer_type => 'sale'},
+        {url => '/khabarovsk/realty/change_flats/', pages => 2, type => 'apartment', offer_type => 'sale'},
+        {url => '/khabarovsk/realty/sell_houses/', pages => 2, type => 'house', offer_type => 'sale'},
+        {url => '/khabarovsk/realty/change_houses/', pages => 2, type => 'house', offer_type => 'sale'},
+        {url => '/khabarovsk/realty/land/', pages => 2, type => 'land', offer_type => 'sale'},
+        {url => '/khabarovsk/realty/dacha/', pages => 2, type => 'land', offer_type => 'sale'},
+        {url => '/khabarovsk/realty/garage/', pages => 2, type => 'garage', offer_type => 'sale'},
+        {url => '/khabarovsk/realty/sell_business_realty/', pages => 2, type => 'other', offer_type => 'sale'},
+
+        {url => '/khabarovsk/realty/rent_flats/', pages => 2, type => 'apartment', offer_type => 'rent'},
+        {url => '/khabarovsk/realty/rent-apartment/', pages => 2, type => 'apartment', offer_type => 'rent'},
+        {url => '/khabarovsk/realty/rent_houses/', pages => 2, type => 'house', offer_type => 'rent'},
+        {url => '/khabarovsk/realty/land-rent/', pages => 2, type => 'land', offer_type => 'rent'},
+        {url => '/khabarovsk/realty/rent_business_realty/', pages => 2, type => 'other', offer_type => 'rent'},
+      ],
+    },
+    present_site => {
+      pause => 5,
+      main_url => 'http://present-dv.ru',
+      host => '',
+
+      source_list => [
+        {url => '/realty/sell_flats/', pages => 2, type => 'apartment', offer_type => 'sale'},
+        {url => '/realty/change_flats/', pages => 2, type => 'apartment', offer_type => 'sale'},
+        {url => '/realty/sell_houses/', pages => 2, type => 'house', offer_type => 'sale'},
+        {url => '/realty/change_houses/', pages => 2, type => 'house', offer_type => 'sale'},
+        {url => '/realty/land/', pages => 2, type => 'land', offer_type => 'sale'},
+        {url => '/realty/dacha/', pages => 2, type => 'land', offer_type => 'sale'},
+        {url => '/realty/garage/', pages => 2, type => 'other', offer_type => 'sale'},
+        {url => '/realty/sell_business_realty/', pages => 2, type => 'office', offer_type => 'sale'},
+
+        {url => '/realty/rent_flats/', pages => 2, type => 'apartment', offer_type => 'rent'},
+        {url => '/realty/rent_houses/', pages => 2, type => 'house', offer_type => 'rent'},
+        {url => '/realty/land-rent/', pages => 2, type => 'land', offer_type => 'rent'},
+        {url => '/realty/rent-apartment/', pages => 2, type => 'land', offer_type => 'rent'},
+        {url => '/realty/rent_business_realty/', pages => 2, type => 'office', offer_type => 'rent'},
+      ],
+
+      sell_apartment => '/present/notice/index/rubric/kvartiry-prodaja',
+      sell_apartment_small => '/present/notice/index/rubric/malosemeyki-prodaja',
+      sell_rooms => '/present/notice/index/rubric/komnaty-doli-prodaja',
+      sell_houses => '/present/notice/index/rubric/doma-v-habarovske-i-dalnevostochnom-regione',
+      sell_land => '/present/notice/index/rubric/1139',
+      sell_comm => '/present/notice/index/rubric/kommercheskaya-nedvijimost-prodaja',
+      sell_garage => '/present/notice/index/rubric/garaji-prodaja',
+
+      rent_short => '/present/notice/index/rubric/sdam-posutochno-jilaya-nedvijimost',
+      rent_apartments => '/present/notice/index/rubric/1219',
+      rent_apartments_small => '/present/notice/index/rubric/592',
+      rent_houses => '/present/notice/index/rubric/1223',
+      rent_comm => '/present/notice/index/rubric/sdam-kommercheskaya-nedvijimost',
+    }
+  }
 }
