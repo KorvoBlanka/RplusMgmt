@@ -1,0 +1,249 @@
+#!/usr/bin/env perl
+
+use FindBin;
+use lib "$FindBin::Bin/../../lib";
+
+use Import::Modern;
+
+
+use Import::Model::Media;
+use Import::Model::Media::Manager;
+use Import::Model::MediaImportHistory;
+use Import::Model::MediaImportHistory::Manager;
+use Import::Model::Variable;
+use Import::Model::Variable::Manager;
+use Import::Model::ImportTask;
+use Import::Model::ImportTask::Manager;
+
+use Import::Util::Config;
+
+use DateTime;
+use DateTime::Format::Strptime;
+use Text::Trim;
+use JSON;
+use Mojo::UserAgent;
+use Data::Dumper;
+
+no warnings 'experimental';
+
+
+my $config = Import::Util::Config::get_config();
+my $site_config = $config->{import}->{avito};
+
+my $site_url = $site_config->{url};
+my $host = $site_config->{host};
+my $source_list = $site_config->{source_list};
+
+my $pause_category = $site_config->{pause_category};
+my $pause_item = $site_config->{pause_item};
+my $depth = $site_config->{depth};
+
+my $parser = DateTime::Format::Strptime->new(pattern => '%Y-%m-%d %H:%M:%S');
+
+
+my $MEDIA = Import::Model::Media::Manager->get_objects(query => [type => 'import', code => 'avito', delete_date => undef])->[0];    # code => 'avito'
+exit unless $MEDIA;
+
+my $ua = Mojo::UserAgent->new;
+$ua->max_redirects(4);
+
+
+while (1) {
+    say 'cycle starts';
+    process_avito (1);
+    process_avito (2);
+}
+
+sub process_avito {
+    my $user = shift;   # avito user argument: 1 - частн. 2 - агенство
+    my @url_list;
+
+    foreach (@{$source_list}) {
+        @url_list = get_url_list($site_url . $_->{url}, $user, $depth);
+        put_to_queue(\@url_list);
+        sleep $pause_category;
+    }
+}
+
+sub get_url_list {
+    my ($main_page, $user, $page_count) = @_;
+    my @url_list;
+
+    for(my $i = 1; $i <= $page_count; $i ++) {
+        sleep 10;
+
+        my $res = get_res($main_page.'?p=' . $i . '&user=' . $user);
+        next unless $res;
+        my $dom = $res->dom;
+
+
+        $dom->find('div[class~="catalog-list"] div[class~="item"]')->each (sub {
+
+                my $do = $_->find('div[class="description"]')->first;
+
+                my $item_url = $do->at('h3 a')->{href};
+                my $item_id = substr $_->{id}, 1;
+
+                say $item_id;
+                say $item_url;
+
+                my $date_str = $do->find('div[class~="date"]')->first->all_text;
+
+                say $date_str;
+                my $dt = parse_date($date_str);
+                my $eid = make_eid($item_id, $dt);
+
+                say $dt;
+                say $eid;
+                unless (Import::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $eid])) {
+                    say $item_url;
+                    push(@url_list, {eid => $eid, url => $item_url, dt => $dt});
+                }
+
+        });
+    }
+
+    return reverse @url_list;
+}
+
+sub put_to_queue {
+    my ($list_ref) = @_;
+
+    for my $item (@$list_ref) {
+
+        my $item_url = $item->{url};
+        my $eid = $item->{eid};
+        my $dt = $item->{dt};
+
+        my $record = Import::Model::ImportTask->new(source_name => $MEDIA->code, source_url => $item_url)->save;
+
+        # Сохраним историю
+        if (!Import::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $eid])) {
+            Import::Model::MediaImportHistory->new(media_id => $MEDIA->id, media_num => $eid, media_text => $site_url . $item_url, realty_id => $record->id)->save;
+        }
+    }
+}
+
+sub get_res {
+    my ($url, $host, $referer, $accept) = @_;
+
+    say $url;
+
+    my $res;
+    my $retry = 15;
+
+    my @headers;
+    push @headers, 'Referer' => $referer if $referer;
+    push @headers, 'Accept' => $accept if $accept;
+    push @headers, 'Host' => $host if $host;
+    while ($retry > 0) {
+        $retry -= 1;
+        if ($retry < 5) {
+            say 'retry left ' . $retry;
+        }
+
+        my $t = $ua->get($url, {
+            @headers,
+            'Connection' => 'keep-alive',
+            'Cache-Control' => 'max-age=0',
+            'User-Agent' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.114 Safari/537.36',
+            'Accept-Encoding' => 'gzip,deflate,sdch',
+            'Accept-Language' => 'ru-RU,ru;q=0.8,en-US;q=0.6,en;q=0.4',
+        });
+
+        say 'code: ' . $t->res->code;
+
+        if ($t->res->code == 200) {
+            $res = $t->res;
+            last;
+        } elsif ($t->res->code == 404) {
+            last;
+        }
+
+        if ($retry > 15) {
+            sleep 3;
+        }
+    }
+
+    return $res;
+}
+
+sub make_eid {
+    my ($id, $date) = @_;
+    return $id . '_' . $date->strftime('%Y%m%d')
+}
+
+sub parse_date {
+    my $date = lc(shift);
+
+    my $res;
+    my $dt_now = DateTime->now(time_zone => "+0300");
+    my $year = $dt_now->year();
+    my $mon = $dt_now->month();
+    my $mday = $dt_now->mday();
+
+    if ($date =~ /сегодня (\d{1,2}):(\d{1,2})/) {
+        $res = $parser->parse_datetime("$year-$mon-$mday $1:$2:00");
+        if ($res > $dt_now) {
+            # substr 1 day
+            $res->subtract(days => 1);
+        }
+    } elsif ($date =~ /вчера (\d{1,2}):(\d{1,2})/) {
+        $res = $parser->parse_datetime("$year-$mon-$mday $1:$2:00");
+        # substr 1 day
+        $res->subtract(days => 1);
+    } elsif ($date =~ /(\d+) (\w+) (\d{1,2}):(\d{1,2})/) {
+        my $a_mon = month_num($2);
+        my $a_year = $year;
+        if ($a_mon > $mon) { $a_year -= 1; }
+        $res = $parser->parse_datetime("$a_year-$a_mon-$1 $3:$4:00");
+    } else {
+        $res = $dt_now;
+    }
+
+    return $res;
+}
+
+sub month_num {
+    my $month_str = lc(shift);
+
+    given ($month_str) {
+        when (/янв/) {
+            return 1;
+        }
+        when (/фев/) {
+            return 2;
+        }
+        when (/мар/) {
+            return 3;
+        }
+        when (/апр/) {
+            return 4;
+        }
+        when (/мая/) {
+            return 5;
+        }
+        when (/июн/) {
+            return 6;
+        }
+        when (/июл/) {
+            return 7;
+        }
+        when (/авг/) {
+            return 8;
+        }
+        when (/сен/) {
+            return 9;
+        }
+        when (/окт/) {
+            return 10;
+        }
+        when (/ноя/) {
+            return 11;
+        }
+        when (/дек/) {
+            return 12;
+        }
+    }
+    return 0;
+}

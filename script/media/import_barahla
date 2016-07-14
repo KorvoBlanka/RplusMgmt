@@ -1,0 +1,289 @@
+#!/usr/bin/env perl
+
+use FindBin;
+use lib "$FindBin::Bin/../../lib";
+
+use Import::Modern;
+
+use Import::Model::AddressObject;
+use Import::Model::AddressObject::Manager;
+use Import::Model::Media;
+use Import::Model::Media::Manager;
+use Import::Model::Mediator;
+use Import::Model::Mediator::Manager;
+use Import::Model::MediaImportHistory;
+use Import::Model::MediaImportHistory::Manager;
+use Import::Model::Realty;
+use Import::Model::Realty::Manager;
+use Import::Model::Variable;
+use Import::Model::Variable::Manager;
+
+use Import::Util::PhoneNum;
+use Import::Util::Realty;
+use Import::Util::Image;
+use Import::Util::Mediator qw(add_mediator);
+
+use Text::Trim;
+use JSON;
+use Mojo::UserAgent;
+use Data::Dumper;
+
+no warnings 'experimental';
+
+
+my $config = Import::Util::Config::get_config();
+my $media_config = $config->{import}->{barahlo};
+my $media_url = $media_config->{media_url};
+
+my $sell_flats_rooms_url = 'http://habarovsk.barahla.net/realty/217/1/'; #$media_url . $media_config->{sell_flats_rooms_url};
+#my $sell_flats_last_id = Import::Model::Variable::Manager->get_objects(query => [name => 'avito_sell_flats_last_id'])->[0];
+
+my $sell_houses_url = 'http://habarovsk.barahla.net/realty/208/1/'; #$media_url . $media_config->{sell_houses_url};
+#my $sell_houses_last_id = Import::Model::Variable::Manager->get_objects(query => [name => 'avito_sell_houses_last_id'])->[0];
+
+#my $sell_land_url = $media_url . $media_config->{sell_land_url};
+#my $sell_land_last_id = Import::Model::Variable::Manager->get_objects(query => [name => 'avito_sell_land_last_id'])->[0];
+
+
+my $rent_flats_url = 'http://habarovsk.barahla.net/realty/214/1/'; #$media_url . $media_config->{rent_flats_url};
+#my $rent_flats_last_id = Import::Model::Variable::Manager->get_objects(query => [name => 'avito_rent_flats_last_id'])->[0];
+
+my $rent_rooms_url =  'http://habarovsk.barahla.net/realty/514/1/'; #$media_url . $media_config->{rent_rooms_url};
+#my $rent_rooms_last_id = Import::Model::Variable::Manager->get_objects(query => [name => 'avito_rent_rooms_last_id'])->[0];
+
+my $rent_houses_url = 'http://habarovsk.barahla.net/realty/213/1/'; #$media_url . $media_config->{rent_houses_url};
+#my $rent_houses_last_id = Import::Model::Variable::Manager->get_objects(query => [name => 'avito_rent_houses_last_id'])->[0];
+
+
+my $MEDIA = Import::Model::Media::Manager->get_objects(query => [type => 'import', code => 'barahlo', delete_date => undef])->[0];
+exit unless $MEDIA;
+my $META = from_json($MEDIA->metadata);
+
+my $ua = Mojo::UserAgent->new;
+$ua->max_redirects(4);
+
+import_barahlo();
+
+sub import_barahlo {
+    my $url_list;
+
+    # sell flats
+    $url_list = get_url_list($sell_flats_rooms_url, 2);
+    process_url_list($url_list);
+
+    # sell houses
+    $url_list = get_url_list($sell_houses_url, 2);
+    process_url_list($url_list);
+
+    # sell land
+    #@url_list = get_url_list($sell_land_url, 2);
+    #process_url_list(\@url_list, 'land', 'sale');
+
+    # rent flats
+    $url_list = get_url_list($rent_flats_url, 2);
+    process_url_list($url_list);
+
+    # rent rooms
+    $url_list = get_url_list($rent_rooms_url, 2);
+    process_url_list($url_list);
+
+    # rent houses
+    $url_list = get_url_list($rent_houses_url, 2);
+    process_url_list($url_list);
+}
+
+sub get_url_list {
+    my ($main_page, $page_count) = @_;
+    my @url_list;
+
+    for(my $i = 1; $i <= $page_count; $i ++) {
+        sleep 2;
+        my $dom = $ua->get($main_page . '?page=' . $i)->res->dom;
+        $dom->find('a[class=" ads-title-link"]')->each (sub {
+
+            my $item_url = $_->{href};
+            if ($item_url =~ /\/(\d+).html/) {
+                $item_id = $1;
+            }
+            say $item_id;
+            unless (Import::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $item_id])) {
+                push @url_list, $item_url;
+            }
+        });
+    }
+    return \@url_list;
+}
+
+
+sub process_url_list {
+    my ($url_list_ref) = @_;
+
+    for my $item_url (reverse @$url_list_ref) {
+        say 'processing ' . $item_url;
+        sleep 2;
+        #eval {
+            my $item_id = 0;
+            if ($item_url =~ /\/(\d+).html/) {
+                $item_id = $1;
+            }
+            say $item_id;
+
+            if (Import::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $item_id])) {
+                say 'was processed already';
+                next;
+            }
+            # проверить, не обработано ли это объявление
+
+            my $data = {
+                source_media_id => $MEDIA->id,
+                work_info => $item_url,
+            };
+
+            my $dom = $ua->get($item_url)->res->dom;
+
+            my $adv_headers = $dom->find('div[id="page_header"] h1');
+            next if !$adv_headers || !$adv_headers->first;
+            my $adv_header = $adv_headers->first->all_text;
+
+            # разберем заголовок, определим тип предложения и недвижимости
+
+            if ($adv_header =~ /продам/i) {
+                $data->{'offer_type_code'} = 'sale';
+            } else {
+                $data->{'offer_type_code'} = 'rent';
+            }
+
+            my $realty_type = '';
+            given ($adv_header) {
+                when (/квартир/i) {
+                    $realty_type = 'apartment';
+                }
+                when (/комнат/i) {
+                    $realty_type = 'room';
+                }
+                when (/дом/i) {
+                    $realty_type = 'house';
+                }
+                when (/коттедж/i) {
+                    $realty_type = 'cottage';
+                }
+            }
+
+            next if $realty_type eq '';
+            $data->{'type_code'} = $realty_type;
+
+            # разберем остальные поля объявления
+
+            $adv_headers = $dom->find('td[class="td1"] p');
+            next unless $adv_headers;
+
+            $adv_headers->each( sub {
+                my ($row, $count) = @_;
+                #say $row->text;
+
+                if ($row->all_text =~ /cтоимость: (\d+) руб./i) {
+                    $data->{'owner_price'} = $1;
+                }
+
+                given ($row->text) {
+                    when (/^город/i) {
+                        $data->{'source_media_text'} = $adv_headers->[$count - 2]->all_text;
+                    }
+
+                    when (/^общая площадь/i) {  # кв.м - square_total, сот - sqare_land
+
+                        my $sqare = $row->strong->text;
+                        #if ($row->strong->text =~ /(\d+)/) {
+                        #    $data->{'square_total'} = $1;
+                        #}
+
+                        if ($sqare =~ /(\d+(?:,\d+)?)\s+кв\.\s*м/) {
+                            $data->{'square_total'} = $1;
+                        } elsif ($sqare =~ s/(\d+)\s+сот\.?//) {
+                            $data->{'square_land'} = $1;
+                            $data->{'square_land_type'} = 'ar';
+                        } elsif ($sqare =~ s/(\d(?:,\d+)?)\s+га//) {
+                            $data->{'square_land'} = $1 =~ s/,/./r;
+                            $data->{'square_land_type'} = 'hectare';
+                        }
+
+                    }
+                    when (/^кол-во комнат/i) {
+                        if ($row->strong->text =~ /(\d+)/) {
+                            $data->{'rooms_count'} = $1;
+                        }
+                    }
+                    when (/^район, адрес/i) {
+                        set_address($data, $row->strong->text);
+                    }
+                    when (/^телефон/i) {
+                        if ($row->span->a->{onclick} =~ /key: '(.*?)',/) {
+                            sleep 5;
+                            my $key = $1;
+                            my $phone_data = $ua->post('http://habarovsk.barahla.net/ajax/getPhones.php?rand=' . rand, {'Referer' => $item_url}, form => {key => $key, br => 'BR_TAG'},)->res->dom;
+                            say 'phone str ' . $phone_data->all_text;
+                            my @owner_phones;
+                            for my $x (split /[.,;:]/, $phone_data->all_text) {
+                                if (my $phone_num = Import::Util::PhoneNum->parse($x, $config->{default_phone_prefix})) {
+                                    push @owner_phones, $phone_num;
+                                }
+                            }
+                            $data->{'owner_phones'} = \@owner_phones;
+                        }
+                    }
+                }
+            });
+
+            print Dumper $data;
+
+            next unless $data->{'owner_phones'};
+            next unless scalar @{$data->{'owner_phones'}} > 0;
+
+            my $id;
+            {
+                #eval {
+                    my $realty = Import::Model::Realty->new((map { $_ => $data->{$_} } keys %$data), state_code => 'raw');
+                    $realty->save;
+                    $id = $realty->id;
+                    say "Saved new realty: $id";
+
+                    # вытащим фото
+                    $dom->find('script')->each(sub {
+                        my ($img_dir, @imgs);
+                        if ($_->all_text =~ /imagesDir = '(.+)';/) {
+                            $img_dir = $1;
+                        }
+                        if ($_->all_text =~ /imagesList = \[(.+)\];/) {
+                            @imgs = grep { $_ =~ /\d+/} split '\'', $1;
+                        }
+
+                        for my $img (@imgs) {
+                            my $img_url = 'http://habarovsk.barahla.net/' . $img_dir . 'big/' . $img . '.jpg';
+                            say 'loading image '.$img_url;
+                            my $image = $ua->get($img_url)->res->content->asset;
+                            Import::Util::Image::load_image($id, $image, , $config->{storage}->{path}, 0);
+                        }
+                    });
+
+                #} or do {
+                #    say $@;
+                #}
+            }
+
+            # Сохраним историю
+            if ($id && !Import::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $item_id])) {
+                say 'saving history for '.$item_id;
+                Import::Model::MediaImportHistory->new(media_id => $MEDIA->id, media_num => $item_id, media_text => $item_url, realty_id => $id)->save;
+            }
+        #} or do {
+
+        #}
+
+    }
+}
+
+sub set_address {
+    my ($data, $addr) = @_;
+
+    $data->{address} = $addr;
+}

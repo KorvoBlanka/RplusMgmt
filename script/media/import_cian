@@ -1,0 +1,473 @@
+#!/usr/bin/env perl
+
+use FindBin;
+use lib "$FindBin::Bin/../../lib";
+
+use Import::Modern;
+
+
+use Import::Model::Media;
+use Import::Model::Media::Manager;
+use Import::Model::MediaImportHistory;
+use Import::Model::MediaImportHistory::Manager;
+use Import::Model::Variable;
+use Import::Model::Variable::Manager;
+use Import::Model::ImportTask;
+use Import::Model::ImportTask::Manager;
+
+use Import::Util::PhoneNum;
+use Import::Util::Config;
+use Import::Util::Mediator qw(add_mediator);
+
+use DateTime;
+use DateTime::Format::Strptime;
+use Text::Trim;
+use JSON;
+use Mojo::UserAgent;
+use Data::Dumper;
+
+no warnings 'experimental';
+
+
+my $config = Import::Util::Config::get_config();
+my $site_config = $config->{import}->{cian};
+
+my $site_url = $site_config->{url};
+my $host = $site_config->{host};
+my $source_list = $site_config->{source_list};
+
+my $pause = $site_config->{pause};
+my $depth = $site_config->{depth};
+
+my $timezone = $site_config->{timezone};
+
+my $lock_file = $site_config->{lock_file};
+
+
+my $parser = DateTime::Format::Strptime->new(pattern => '%Y-%m-%d %H:%M:%S');
+
+
+my $MEDIA = Import::Model::Media::Manager->get_objects(query => [type => 'import', code => 'cian', delete_date => undef])->[0];    # code => 'avito'
+exit unless $MEDIA;
+
+my $ua = Mojo::UserAgent->new;
+$ua->max_redirects(4);
+
+
+while (1) {
+    say 'cycle starts';
+    process_cian ();
+}
+
+sub process_cian {
+    my $user = shift;   # avito user argument: 1 - частн. 2 - агенство
+
+    foreach (@{$source_list}) {
+      process_category($site_url . $_->{url}, 1);
+    }
+}
+
+sub process_category {
+    my ($category_page, $page_count) = @_;
+
+    for(my $i = 1; $i <= $page_count; $i ++) {
+        eval {
+            my $res = get_res($category_page, $host);
+            next unless $res;
+            my $dom = $res->dom;
+
+            my $offers;
+            $dom->find('script')->each (sub {
+              if ($_->all_text =~ 'window._offers = ({.+});') {
+                $offers =  from_json($1);
+              }
+            });
+            return [] unless $offers;
+
+            $dom->find('div[class~="serp-item"]')->each (sub {
+                eval {
+                    my $item_id = $_->attr('oid');
+                    my $item_url = $offers->{$item_id}->{link};
+                    my $date_str = $offers->{$item_id}->{added}->{strict};
+                    my $dt = parse_date($date_str);
+                    my $eid = make_eid($item_id, $dt);
+
+                    unless (Import::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $eid])) {
+                        my $t = get_res($site_url . $item_url, $host)->dom;
+                        my $data = process_item($t, $offers->{$item_id});
+
+
+                        my $id;
+                        {
+                            eval {
+                                my $realty = Import::Model::Realty->new((map { $_ => $data->{$_} } keys %$data), state_code => 'raw');
+                                $realty->save;
+                                $id = $realty->id;
+                                say "Saved new realty: $id";
+
+                            } or do {
+                                say $@;
+                            }
+                        }
+
+                        # Сохраним историю
+                        if ($id && !Import::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $eid])) {
+                            eval {
+                                Import::Model::MediaImportHistory->new(media_id => $MEDIA->id, media_num => $eid, media_text => $site_url . $item_url, realty_id => $id)->save;
+                            } or do {};
+                        }
+                    } else {
+                        say 'was processed already';
+                    }
+                } or do {
+                    say 'EXCEPTION!!!';
+                    say $@;
+                };
+                sleep $pause;
+            });
+        } or do {
+            say 'EXCEPTION!!!';
+            say $@;
+        };
+        sleep $pause;
+    }
+}
+
+sub process_item {
+    my ($dom, $obj) = @_;
+
+    my $item_url = $obj->{link};
+    my $date_str = $obj->{added}->{strict};
+    my $dt = parse_date($date_str);
+
+    my $data = {
+        source_media_id => $MEDIA->id,
+        source_url => $site_url . $item_url,
+        type_code => '',
+        offer_type_code => '',
+        add_date => $dt->datetime() . $timezone,
+    };
+
+    $data->{owner_phones} = [Import::Util::PhoneNum->parse($obj->{phone}, $config->{default_phone_prefix})];
+    $data->{price} = $obj->{price}->{rur} / 1000;
+
+    if ($item_url =~ /sale/) {
+      $data->{offer_type_code} = 'sale';
+    } else {
+      $data->{offer_type_code} = 'rent';
+    }
+
+    my @photo_url;
+    for my $photo (@{$obj->{photos}}) {
+      push @photo_url, $photo->{img};
+    }
+    $data->{photo_url} = \@photo_url;
+
+    my $t = $dom->at('div[class~="object_descr_title"]')->text;
+    say $t;
+
+    if ($t =~ /посуточно/) {
+      $data->{rent_type} = 'short';
+    } else {
+      $data->{rent_type} = 'long';
+    }
+    # rooms count and type_code
+    given($t) {
+      when (/(\d+)-комн. кв/i) {
+        $data->{type_code} = 'apartment';
+        $data->{rooms_count} = $1;
+      }
+
+      when (/студия/i) {
+        $data->{type_code} = 'apartment';
+      }
+
+      when (/свободная планировка/i) {
+        $data->{type_code} = 'apartment';
+      }
+
+      when (/таунхаус/i) {
+        $data->{type_code} = 'townhouse';
+      }
+
+      when (/комната/i) {
+        $data->{type_code} = 'room';
+      }
+
+      when (/дом/i) {
+        $data->{type_code} = 'house';
+      }
+
+      when (/участок/i) {
+        $data->{type_code} = 'land';
+      }
+
+      when (/гараж/i) {
+        $data->{type_code} = 'garage';
+      }
+
+      when (/склад/i) {
+        $data->{type_code} = 'warehouse_place';
+      }
+
+      when (/торговая площадь/i) {
+        $data->{type_code} = 'market_place';
+      }
+
+      when (/помещение под производство/i) {
+        $data->{type_code} = 'production_place';
+      }
+
+      when (/здание/i) {
+        $data->{type_code} = 'building';
+      }
+
+      when (/своб. назнач./i) {
+        $data->{type_code} = 'gpurpose_place';
+      }
+
+      when (/офис/i) {
+        $data->{type_code} = 'office_place';
+      }
+    }
+
+    $t = $dom->at('h1[class~="object_descr_addr"]');
+    if ($t) {
+      $data->{address} = $t->all_text;
+    }
+
+    $t = $dom->at('div[class~="object_descr_text"]');
+    if ($t) {
+      $data->{source_media_text} = $t->text;
+    }
+
+    $t = $dom->at('table[class~="object_descr_props"]');
+
+    $t->find('tr')->each(sub {
+      my $h = $_->at('th')->text;
+      return unless $_->at('td');
+      my $d = $_->at('td')->text;
+
+      #say $h . ' ' . $d;
+      given($h) {
+        when (/этаж/i) {
+          if ($d =~ /(\d+) \/ (\d+)/) {
+            $data->{floor} = $1;
+            $data->{floors_count} = $2;
+          }
+        }
+        when (/площадь дома/i) {
+          if ($d =~ /(\d{1,}).*?/) {
+            $data->{square_total} = $1;
+          }
+        }
+        when (/площадь участка/i) {
+          if ($d =~ /(\d{1,}).*?/) {
+            $data->{square_land} = $1;
+            $data->{square_land_type} = 'ar';
+          }
+        }
+        when (/общая площадь/i) {
+          if ($d =~ /(\d{1,}).*?/) {
+            $data->{square_total} = $1;
+          }
+        }
+        when (/площадь комнат/i) {
+          if ($d =~ /(\d{1,}).*?/) {
+            $data->{square_total} = $1;
+          }
+        }
+        when (/жилая площадь/i) {
+          if ($d =~ /(\d{1,}).*?/) {
+            $data->{square_living} = $1;
+          }
+        }
+        when (/площадь кухни/i) {
+          if ($d =~ /(\d{1,}).*?/) {
+            $data->{square_kitchen} = $1;
+          }
+        }
+        when (/площадь/i) {
+          if ($d =~ /(\d{1,}).*?/) {
+            $data->{square_total} = $1;
+          }
+        }
+        when (/количество этажей/i) {
+          if ($d =~ /(\d+)/) {
+            $data->{floors_count} = $1;
+          }
+        }
+        when (/санузел/i) {
+
+        }
+        when (/балкон/i) {
+
+        }
+        when (/ванная комната/i) {
+
+        }
+        when (/ремонт/i) {
+
+        }
+      }
+    });
+
+    #Этаж:	9 / 24
+    #Тип дома:	новостройка, монолитный
+    #Тип продажи:	свободная
+
+    #Площадь дома:	96,0 м2
+    #Площадь участка:	6 сот.
+    #Общая площадь:	35,9 м2
+    #Площадь комнат:	–
+    #Жилая площадь:	–
+    #Площадь кухни:	–
+
+    #Санузел:	1 совм.
+    #Балкон:	1 лодж.
+    #Ванная комната:	ванна
+
+    #Тип земли:	СНТ
+
+    #Материал дома:	деревянный
+    #Количество этажей:	2
+    #Количество спален:	2
+    #Охрана:	есть
+    #Водоснабжение:	есть
+    #Электричество:	есть
+
+    #Ремонт:	косметический
+
+    my $sn = $dom->at('h3[class="realtor-card__title"] a');
+    if ($sn) {
+      say 'company: ' . $sn->all_text;
+      foreach (@{$data->{'owner_phones'}}) {
+          say 'add mediator ' . $_;
+          add_mediator($sn->all_text, $_);
+      }
+    }
+
+    say Dumper $data;
+
+    return $data;
+}
+
+sub get_res {
+    my ($url, $host, $referer, $accept) = @_;
+
+    say $url;
+
+    my $res;
+    my $retry = 15;
+
+    my @headers;
+    push @headers, 'Referer' => $referer if $referer;
+    push @headers, 'Accept' => $accept if $accept;
+    push @headers, 'Host' => $host if $host;
+    while ($retry > 0) {
+        $retry -= 1;
+        if ($retry < 5) {
+            say 'retry left ' . $retry;
+        }
+        my $t = $ua->get($url, {
+            @headers,
+            'Connection' => 'keep-alive',
+            'User-Agent' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.114 Safari/537.36',
+            'Accept-Encoding' => 'gzip,deflate,sdch',
+            'Accept-Language' => 'ru-RU,ru;q=0.8,en-US;q=0.6,en;q=0.4',
+        });
+
+        say 'code: ' . $t->res->code;
+
+        if ($t->res->code == 200) {
+            $res = $t->res;
+            last;
+        } elsif ($t->res->code == 404) {
+            last;
+        }
+
+        sleep 5;
+    }
+
+    return $res;
+}
+
+sub make_eid {
+    my ($id, $date) = @_;
+    return $id . '_' . $date->strftime('%Y%m%d')
+}
+
+sub parse_date {
+    my $date = lc(shift);
+
+    my $res;
+    my $dt_now = DateTime->now(time_zone => "+0300");
+    my $year = $dt_now->year();
+    my $mon = $dt_now->month();
+    my $mday = $dt_now->mday();
+
+    if ($date =~ /сегодня, (\d{1,2}):(\d{1,2})/) {
+        $res = $parser->parse_datetime("$year-$mon-$mday $1:$2:00");
+        if ($res > $dt_now) {
+            # substr 1 day
+            $res->subtract(days => 1);
+        }
+    } elsif ($date =~ /вчера, (\d{1,2}):(\d{1,2})/) {
+        $res = $parser->parse_datetime("$year-$mon-$mday $1:$2:00");
+        # substr 1 day
+        $res->subtract(days => 1);
+    } elsif ($date =~ /(\d+) (\w+) (\d{1,2}):(\d{1,2})/) {
+        my $a_mon = month_num($2);
+        my $a_year = $year;
+        if ($a_mon > $mon) { $a_year -= 1; }
+        $res = $parser->parse_datetime("$a_year-$a_mon-$1 $3:$4:00");
+    } else {
+        $res = $dt_now;
+    }
+
+    return $res;
+}
+
+sub month_num {
+    my $month_str = lc(shift);
+
+    given ($month_str) {
+        when (/янв/) {
+            return 1;
+        }
+        when (/фев/) {
+            return 2;
+        }
+        when (/мар/) {
+            return 3;
+        }
+        when (/апр/) {
+            return 4;
+        }
+        when (/мая/) {
+            return 5;
+        }
+        when (/июн/) {
+            return 6;
+        }
+        when (/июл/) {
+            return 7;
+        }
+        when (/авг/) {
+            return 8;
+        }
+        when (/сен/) {
+            return 9;
+        }
+        when (/окт/) {
+            return 10;
+        }
+        when (/ноя/) {
+            return 11;
+        }
+        when (/дек/) {
+            return 12;
+        }
+    }
+    return 0;
+}

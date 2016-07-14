@@ -1,0 +1,336 @@
+#!/usr/bin/env perl
+
+use FindBin;
+use lib "$FindBin::Bin/../../lib";
+
+use Import::Modern;
+
+use Import::Model::AddressObject;
+use Import::Model::AddressObject::Manager;
+use Import::Model::Media;
+use Import::Model::Media::Manager;
+use Import::Model::Mediator;
+use Import::Model::Mediator::Manager;
+use Import::Model::MediaImportHistory;
+use Import::Model::MediaImportHistory::Manager;
+use Import::Model::Realty;
+use Import::Model::Realty::Manager;
+use Import::Model::Variable;
+use Import::Model::Variable::Manager;
+
+use Import::Util::PhoneNum;
+use Import::Util::Realty;
+use Import::Util::Image;
+use Import::Util::Geo;
+
+use Data::Dumper;
+use Encode;
+
+use File::Basename;
+use Text::Trim;
+use JSON;
+use Mojo::UserAgent;
+
+my $config = Import::Util::Config::get_config();
+
+my $main_url = 'http://komsomolsk.info';
+
+my $sell_apartment_url_1 = $main_url . '/obyavl/read/razd/%CD%E5%E4%E2%E8%E6%E8%EC%EE%F1%F2%FC%5C%CF%F0%EE%E4%E0%EC%5C1-%EA%EE%EC%ED.%5C';
+my $sell_apartment_url_2 = $main_url . '/obyavl/read/razd/%CD%E5%E4%E2%E8%E6%E8%EC%EE%F1%F2%FC%5C%CF%F0%EE%E4%E0%EC%5C2-%EA%EE%EC%ED.%5C';
+my $sell_apartment_url_3 = $main_url . '/obyavl/read/razd/%CD%E5%E4%E2%E8%E6%E8%EC%EE%F1%F2%FC%5C%CF%F0%EE%E4%E0%EC%5C3-%EA%EE%EC%ED.%5C';
+my $sell_apartment_url_4 = $main_url . '/obyavl/read/razd/%CD%E5%E4%E2%E8%E6%E8%EC%EE%F1%F2%FC%5C%CF%F0%EE%E4%E0%EC%5C4-%EA%EE%EC%ED.%5C';
+my $sell_room_url = $main_url . '/obyavl/read/razd/%CD%E5%E4%E2%E8%E6%E8%EC%EE%F1%F2%FC%5C%CF%F0%EE%E4%E0%EC%5C%CA%EE%EC%ED%E0%F2%FB%5C';
+
+my $sell_land_url = $main_url . '/obyavl/read/razd/%CD%E5%E4%E2%E8%E6%E8%EC%EE%F1%F2%FC%5C%CF%F0%EE%E4%E0%EC%5C%C4%EE%EC%E0%2C+%E4%E0%F7%E8%2C+%F3%F7%E0%F1%F2%EA%E8+%E2%ED%E5+%E3%EE%F0%EE%E4%E0%5C';
+my $sell_house_url = $main_url . '/obyavl/read/razd/%CD%E5%E4%E2%E8%E6%E8%EC%EE%F1%F2%FC%5C%CF%F0%EE%E4%E0%EC%5C%C4%EE%EC%E0%2C+%EA%EE%F2%F2%E5%E4%E6%E8%5C';
+my $sell_commercial_url = $main_url . '/obyavl/read/razd/%CD%E5%E4%E2%E8%E6%E8%EC%EE%F1%F2%FC%5C%CF%F0%EE%E4%E0%EC%5C%CA%EE%EC%EC%E5%F0%F7%E5%F1%EA%E0%FF+%ED%E5%E4%E2%E8%E6%E8%EC%EE%F1%F2%FC%5C';
+
+my $rent_apartment_url = $main_url . '/obyavl/read/razd/%CD%E5%E4%E2%E8%E6%E8%EC%EE%F1%F2%FC%5C%D1%E4%E0%EC+%E2+%E0%F0%E5%ED%E4%F3%5C%C6%E8%EB%FC%B8%5C';
+
+
+my $MEDIA = Import::Model::Media::Manager->get_objects(query => [type => 'import', code => 'kominfo', delete_date => undef])->[0];
+exit unless $MEDIA;
+my $META = from_json($MEDIA->metadata);
+
+my $ua = Mojo::UserAgent->new;
+$ua->max_redirects(4);
+
+say 'importing...';
+import_kominfo ();
+
+sub import_kominfo {
+    my @url_list;
+
+    process_url_list($rent_apartment_url, 'other', 'other', undef, 'rent');
+
+    process_url_list($sell_apartment_url_1, 'apartment', 'apartment', 1, 'sale');
+    process_url_list($sell_apartment_url_2, 'apartment', 'apartment', 2, 'sale');
+    process_url_list($sell_apartment_url_3, 'apartment', 'apartment', 3, 'sale');
+    process_url_list($sell_apartment_url_4, 'apartment', 'apartment', 4, 'sale');
+
+    process_url_list($sell_room_url, 'room', 'room', undef, 'sale');
+    process_url_list($sell_house_url, 'land', 'land', undef, 'sale');
+    process_url_list($sell_land_url, 'house', 'house', undef, 'sale');
+    process_url_list($sell_commercial_url, 'commercial', 'gpurpose_place', undef, 'sale');
+}
+
+sub process_url_list {
+    my ($list_url, $category_code, $type_code, $rooms_count, $offer_type) = @_;
+
+    say $list_url;
+
+    my $dom = $ua->get($list_url)->res->dom;
+    next unless defined $dom;
+
+    my $do = $dom->find('span[class="objavlt"]');
+
+    if($do->size > 0) {
+        $do->first->find('td[align="left"]')->each (sub {
+            
+            sleep 20;
+
+            my $data = {
+                source_media_id => $MEDIA->id,
+            };
+            $data->{'category_code'} = $category_code;
+            $data->{'type_code'} = $type_code;
+            $data->{'offer_type_code'} = $offer_type;
+            $data->{'rooms_count'} = $rooms_count;
+
+            my $text = decode('cp1251', $_->span->text);
+            my $item_id = decode('cp1251', $_->span->{id});
+
+            $data->{'source_media_text'} = $text;
+
+            # Пропустим уже обработанные объявления
+            if (Import::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $item_id])) {
+                say 'was processed already';
+                return;
+            }
+
+            say '-';
+
+            my $phone_str = '';
+            if($_->span->[1]->{onclick} =~ /load\('(.+),'\);/) {
+                my $phone_url = $main_url . $1;
+
+                my $t_str = decode('cp1251', $ua->get($phone_url)->res->content->asset->{content});
+                say $t_str;
+                if ($t_str =~ /<font color=green>(.+)<\/font>/) {
+                    $phone_str = $1;
+                }
+            }
+
+            my @owner_phones;
+            for my $x (split /[ .,]/, $phone_str) {
+                if (my $phone_num = Import::Util::PhoneNum->parse($x, $config->{default_phone_prefix})) {
+                    push @owner_phones, $phone_num;
+                }
+            }
+            $data->{'owner_phones'} = \@owner_phones;
+
+            say $item_id;
+
+
+            if(recognize_adv($text, $data)) {
+                say Dumper $data;
+
+                my $id;
+                {
+                    eval {
+                        my $realty = Import::Model::Realty->new((map { $_ => $data->{$_} } grep { $_ ne 'category_code' } keys %$data), state_code => 'raw');
+                        $realty->save;
+                        $id = $realty->{id};
+                        say 'Saved new realty: ' . $id;
+                    } or do {
+                        say $@;
+                    }
+                }
+                my $h = Import::Model::MediaImportHistory->new(media_id => $MEDIA->id, media_num => $item_id, media_text => '', realty_id => $id);
+                $h->save();
+            }
+        });
+    }
+}
+
+sub recognize_adv {
+    my ($text, $data) = @_;
+    my $text_lc = lc($text);
+
+    my %types_re = (
+        room => [
+            qr/дол(?:я|и)(?:\s+в\s+(\d)-комн\.)?/ => sub { return rooms_count => $_[0]; },
+            #qr/(?:комн\.?|секция)/ => sub {},
+        ],
+        apartment => [
+            qr/малосем\.?/ => sub { return type_code => 'apartment_small'; },
+            qr/(\d)\s*\-\s*комн\.?/ => sub { return rooms_count => $_[0]; },
+        ],
+        house => [
+            qr/коттедж/ => sub { return type_code => 'cottage'; },
+            qr/таунхаус/ => sub { return type_code => 'townhouse'; },
+            qr/дом/ => sub {},
+        ],
+        land => [
+            qr/(?:уч\-к|участок)/ => sub {},
+            qr/дача/ => sub { return type_code => 'dacha'; },
+            qr/(\d+)\s+(?:сот\.?|с\/с)/ => sub { return square_land => $_[0], square_land_type => 'ar'; },
+            qr/(\d(?:,\d+)?)\s+га/ => sub { return square_land => ($_[0] =~ s/,/./r), square_land_type => 'hectare'; },
+        ],
+        other => [
+            qr/(\d)\s*\-\s*комн\.?/ => sub { return type_code => 'apartment', rooms_count => $_[0]; },
+            qr/коттедж/ => sub { return type_code => 'cottage'; },
+            qr/малосем\.?/ => sub { return type_code => 'apartment_small'; },
+            qr/комн\.?/ => sub { return type_code => 'room'; },
+
+            qr/квартир\.?/ => sub { return type_code => 'apartment'; },
+            qr/дом\.?/ => sub { return type_code => 'house'; },
+            qr/коттедж/ => sub { return type_code => 'cottage'; },
+            qr/таунхаус/ => sub { return type_code => 'townhouse'; },
+            qr/участок\.?/ => sub { return type_code => 'land'; },
+            qr/дача/ => sub { return type_code => 'dacha'; },
+            qr/(\d+)\s+(?:сот\.?|с\/с)/ => sub { return square_land => $_[0], square_land_type => 'ar'; },
+            qr/(\d(?:,\d+)?)\s+га/ => sub { return square_land => ($_[0] =~ s/,/./r), square_land_type => 'hectare'; },
+
+            qr/посуточно\.?/ => sub { return rent_type => 'short'; },
+
+        ],
+        #commercial
+    );
+
+    my ($addr, $body);
+    my $cc = $data->{'category_code'};
+    if (exists $types_re{$cc}) {
+        for (my $i = 0; $i < @{$types_re{$cc}}; $i++) {
+            my ($re, $cb) = ($types_re{$cc}->[$i], $types_re{$cc}->[++$i]);
+            if (my @m = ($text_lc =~ /^(.*?)$re(.+)$/)) {
+                my %x = $cb->(@m[1..($#m-1)]);
+                @{$data}{keys %x} = values %x;
+                ($addr, $body) = ($m[0], $m[$#m]);
+                last;
+            }
+        }
+    }
+
+    if (!$body) {
+        if ($text_lc =~ /^(.+?)\(([^()]+)\)([^()]+)$/) {
+            $addr = $1;
+            $body = $2.$3;
+            if (scalar(grep { $_ && $_ ne '.' } split /[ ,()]/, $addr) > 5) {
+                $addr = undef;
+                $body = $text_lc;
+            }
+        } else {
+            $body = $text_lc;
+        }
+    }
+
+    ($addr, $body) = split ',', $text, 2;
+
+    $addr = trim $addr;
+    $body = trim $body;
+    return unless $body;
+
+    my $price;
+    {
+        my $price_ml = ($2 =~ s/,/./r) if $body =~ s/((\d+(,\d+)?)\s*млн\.)//;
+        my $price_th = $2 if $body =~ s/((\d+)\s*тыс\.)//;
+        $price = ($price_ml || 0)*1000 + ($price_th || 0);
+    }
+    $data->{'owner_price'} = $price if $price;
+
+    # Распознавание адреса
+    say $addr;
+    if ($addr) {
+        my @sadr = split(/,/, $addr);
+        my @t;
+        for my $ap (@sadr) {
+            if($ap !~ /^.*?р-н.*?/ && $ap !~ /^ост.*?/ && $ap !~ /^[г|Г]\..*?/) {
+                $ap =~ s/\(.*?\)//g;
+                $ap =~ s/[д|Д]ом//g;
+                $ap =~ s/[д|Д]\.//g;
+                push(@t, $ap);
+            }
+        }
+        $addr = join(', ', @t);
+        my $ts_query = join(' | ', grep { $_ && length($_) > 1 } split(/\W/, $addr));
+        if ($ts_query) {
+            $ts_query =~ s/'/''/g;
+            my $addrobj = Import::Model::AddressObject::Manager->get_objects(
+                query => [
+                    # english - чтобы не отбрасывались окончания
+                    \("t1.fts @@ to_tsquery('russian', '$ts_query')"),
+                    parent_guid => $config->{default_city_guid},
+                    curr_status => 0,
+                    level => 7,
+                ],
+                sort_by => "ts_rank(t1.fts2, to_tsquery('russian', '$ts_query')) desc, case when short_type = 'ул' then 0 else 1 end",
+                limit => 1,
+            )->[0];
+            if ($addrobj) {
+                #if ($addr =~ /,\s+(\d+(?:\w)?)/) {
+                my $idx = rindex($addr, ' ');
+                my $hn = substr($addr, $idx);
+                $hn =~ s/\D//g;
+                say $hn;
+                if (length $hn < 3) {
+                    $data->{'house_num'} = $hn;
+                    # Запросим координаты объекта
+                    my %coords = Import::Util::Geo::get_coords_by_addr($addrobj, $hn);
+                    if (%coords) {
+                        # say "Fetched coords: ".$coords{'latitude'}.", ".$coords{'longitude'};
+                        @{$data}{keys %coords} = values %coords;
+                    }
+                }
+                $data->{'address_object_id'} = $addrobj->id;
+            }
+        }
+    }
+
+    # Площадь
+    if ($body =~ s/(\d+(?:,\d+)?)\/(\d+(?:,\d+)?)\/(\d+(?:,\d+)?)//) {
+        my ($total, $living, $kitchen) = map { s/,/./r } ($1, $2, $3);
+        if ($total > $living && $total > $kitchen) {
+            $data->{'square_total'} = $total;
+            $data->{'square_living'} = $living;
+            $data->{'square_kitchen'} = $kitchen;
+        }
+    } elsif ($body =~ s/(\d+(?:,\d+)?)\s+кв\.\s*м//) {
+        $data->{'square_total'} = $1 =~ s/,/./r;
+    }
+    if ($body =~ s/(\d+)\s+сот\.?//) {
+        $data->{'square_land'} = $1;
+        $data->{'square_land_type'} = 'ar';
+    }
+
+    # Разделим остальную часть обявления на части и попытаемся вычленить полезную информацию
+    my @bp = grep { $_ && length($_) > 1 } trim(split /[,()]/, $body);
+    for my $el (@bp) {
+        # Этаж/этажность
+        if ($el =~ /^(\d{1,2})\/(\d{1,2})$/) {
+            if ($2 > $1) {
+                $data->{'floor'} = $1;
+                $data->{'floors_count'} = $2;
+            }
+            next;
+        }
+
+        for my $k (keys %{$META->{'params'}->{'dict'}}) {
+            my %dict = %{$META->{'params'}->{'dict'}->{$k}};
+            my $field = delete $dict{'__field__'};
+            for my $re (keys %dict) {
+                if ($el =~ /$re/i) {
+                    $data->{$field} = $dict{$re};
+                    last;
+                }
+            }
+        }
+    }
+
+    # Этаж#2
+    if (!$data->{'floor'} && $body =~ /(\d{1,2})\s+эт\.?/) {
+        $data->{'floor'} = $1;
+    }
+
+    return $data;
+};

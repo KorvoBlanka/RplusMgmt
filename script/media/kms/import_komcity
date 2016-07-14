@@ -1,0 +1,567 @@
+#!/usr/bin/env perl
+
+use FindBin;
+use lib "$FindBin::Bin/../../lib";
+
+use Import::Modern;
+
+use Import::Model::AddressObject;
+use Import::Model::AddressObject::Manager;
+use Import::Model::Media;
+use Import::Model::Media::Manager;
+use Import::Model::Mediator;
+use Import::Model::Mediator::Manager;
+use Import::Model::MediaImportHistory;
+use Import::Model::MediaImportHistory::Manager;
+use Import::Model::Realty;
+use Import::Model::Realty::Manager;
+use Import::Model::Variable;
+use Import::Model::Variable::Manager;
+
+use Import::Util::PhoneNum;
+use Import::Util::Realty;
+use Import::Util::Image;
+use Import::Util::Geo;
+
+use Data::Dumper;
+use Encode;
+
+use File::Basename;
+use Text::Trim;
+use JSON;
+use Mojo::UserAgent;
+
+my $config = Import::Util::Config::get_config();
+#my $present_site_config = $config->{import}->{present_site};
+#my $main_url = $present_site_config->{main_url};
+
+my $main_url = 'http://www.komcity.ru/';
+
+my $sell_rooms_url_1 = 'http://www.komcity.ru/board/main/getPubAdverts/?id=230&h=null';   # центральный
+my $sell_rooms_url_2 = 'http://www.komcity.ru/board/main/getPubAdverts/?id=231&h=null';
+my $sell_rooms_url_3 = 'http://www.komcity.ru/board/main/getPubAdverts/?id=265&h=null';
+my $sell_rooms_url_4 = 'http://www.komcity.ru/board/main/getPubAdverts/?id=266&h=null';
+my $sell_rooms_url_5 = 'http://www.komcity.ru/board/main/getPubAdverts/?id=267&h=null';
+
+my $sell_apartment_small_url_1 = 'http://www.komcity.ru/board/main/getPubAdverts/?id=232&h=null';
+my $sell_apartment_small_url_2 = 'http://www.komcity.ru/board/main/getPubAdverts/?id=234&h=null';
+my $sell_apartment_small_url_3 = 'http://www.komcity.ru/board/main/getPubAdverts/?id=269&h=null';
+my $sell_apartment_small_url_4 = 'http://www.komcity.ru/board/main/getPubAdverts/?id=270&h=null';
+my $sell_apartment_small_url_5 = 'http://www.komcity.ru/board/main/getPubAdverts/?id=271&h=null';
+
+my $sell_apartment1_url_1 = 'http://www.komcity.ru/board/main/getPubAdverts/?id=235&h=null';
+my $sell_apartment1_url_2 = 'http://www.komcity.ru/board/main/getPubAdverts/?id=236&h=null';
+my $sell_apartment1_url_3 = 'http://www.komcity.ru/board/main/getPubAdverts/?id=273&h=null';
+my $sell_apartment1_url_4 = 'http://www.komcity.ru/board/main/getPubAdverts/?id=274&h=null';
+my $sell_apartment1_url_5 = 'http://www.komcity.ru/board/main/getPubAdverts/?id=275&h=null';
+
+my $sell_apartment2_url_1 = 'http://www.komcity.ru/board/main/getPubAdverts/?id=237&h=null';
+my $sell_apartment2_url_2 = 'http://www.komcity.ru/board/main/getPubAdverts/?id=238&h=null';
+my $sell_apartment2_url_3 = 'http://www.komcity.ru/board/main/getPubAdverts/?id=277&h=null';
+my $sell_apartment2_url_4 = 'http://www.komcity.ru/board/main/getPubAdverts/?id=278&h=null';
+my $sell_apartment2_url_5 = 'http://www.komcity.ru/board/main/getPubAdverts/?id=279&h=null';
+
+my $sell_apartment3_url_1 = 'http://www.komcity.ru/board/main/getPubAdverts/?id=239&h=null';
+my $sell_apartment3_url_2 = 'http://www.komcity.ru/board/main/getPubAdverts/?id=240&h=null';
+my $sell_apartment3_url_3 = 'http://www.komcity.ru/board/main/getPubAdverts/?id=281&h=null';
+my $sell_apartment3_url_4 = 'http://www.komcity.ru/board/main/getPubAdverts/?id=282&h=null';
+my $sell_apartment3_url_5 = 'http://www.komcity.ru/board/main/getPubAdverts/?id=283&h=null';
+
+my $sell_houses_1 = 'http://www.komcity.ru/board/main/getPubAdverts/?id=11&h=null';
+
+
+#my $sell_apartment_small_url = $main_url . $present_site_config->{sell_apartment_small};
+#my $sell_apartment_small_last_id = Import::Model::Variable::Manager->get_objects(query => [name => 'present_sell_apartment_small_last_id'])->[0];
+
+#my $sell_rooms_url = $main_url . $present_site_config->{sell_rooms};
+#my $sell_rooms_last_id = Import::Model::Variable::Manager->get_objects(query => [name => 'present_sell_rooms_last_id'])->[0];
+
+#my $sell_houses_url = $main_url . $present_site_config->{sell_houses};
+#my $sell_houses_last_id = Import::Model::Variable::Manager->get_objects(query => [name => 'present_sell_houses_last_id'])->[0];
+
+#my $sell_land_url = $main_url . $present_site_config->{sell_land};
+#my $sell_land_last_id = Import::Model::Variable::Manager->get_objects(query => [name => 'present_sell_land_last_id'])->[0];
+
+
+#my $rent_apartments_url = $main_url . $present_site_config->{rent_apartments};
+#my $rent_apartments_last_id = Import::Model::Variable::Manager->get_objects(query => [name => 'present_rent_apartments_last_id'])->[0];
+
+#my $rent_apartments_small_url = $main_url . $present_site_config->{rent_apartments_small};
+#my $rent_apartments_small_last_id = Import::Model::Variable::Manager->get_objects(query => [name => 'present_rent_apartments_small_last_id'])->[0];
+
+#my $rent_houses_url = $main_url . $present_site_config->{rent_houses};
+#my $rent_houses_last_id = 0;
+
+
+my $MEDIA = Import::Model::Media::Manager->get_objects(query => [type => 'import', code => 'komcity', delete_date => undef])->[0];
+exit unless $MEDIA;
+my $META = from_json($MEDIA->metadata);
+
+my $ua = Mojo::UserAgent->new;
+$ua->max_redirects(4);
+
+my $cat = 0;
+my $idx = 0;
+
+say 'importing...';
+import_komcity ();
+
+sub getPhone {
+    my $id = shift;
+    my $s = 8;
+    my $vals = '';
+
+    for(my $i = 1; $i < 4; $i++) {
+        my $img_rq = 'res http://www.komcity.ru/boardplugs/kap_image/kap_image.php?im=' . $i . '&rand=' . $s;
+        my $cap_img = $ua->get($img_rq)->res->content->asset;
+        $cap_img->move_to('cap.jpg');
+        $cap_img->move_to('cap' . $i . '.jpg');
+        my $cap_val = `python cap_kom.py cap.jpg`;
+        $cap_val =~ s/\D//g;
+        $vals .= $cap_val;
+        $vals .= '%2C';
+    }
+
+    my $rq = 'http://www.komcity.ru/board/main/GetContact/?id=' . $id . '&h=&vals=' . $vals . '&s=' . $s;    
+    my $str = decode('utf-8', $ua->post($rq)->res->text);
+    my $b = rindex($str, ':');
+    my $e = rindex($str, '.');
+    
+    my $phone = substr $str, $b + 1, $e - $b;
+    $phone = trim $phone;
+    
+    return $phone;
+}
+
+sub rndStr{ join'', @_[ map{ rand @_ } 1 .. shift ] };
+
+sub getFakePhone {
+    my $idx = shift;
+
+    my @phones = qw(
+        (914)187-69-51
+        (924)410-44-64
+        (924)386-84-17
+        (963)823-02-01
+        (909)848-71-58
+        (914)187-30-00
+        (914)775-70-00
+        (909)861-79-79
+        (968)170-05-22
+        (914)163-44-81
+        (929)406-10-01
+        (909)866-06-90
+        (962)288-08-57
+        (914)408-38-68
+        (914)187-30-00
+        (914)411-89-17
+        (914)217-17-39
+        (924)229-32-05
+        (924)226-08-08
+        (909)886-69-13
+        (963)820-09-04
+        (909)886-69-13
+        (914)187-30-00
+        (909)848-66-59
+        (909)829-25-23
+        (914)414-51-35
+        (914)174-20-01
+        (909)887-90-00
+        (963)820-09-07
+        (914)175-33-83
+        (914)774-35-55
+        (909)861-41-96
+        (909)846-24-24
+        (914)412-91-51
+        (963)820-72-02
+        (914)210-59-59
+        (914)176-55-77
+        (963)829-18-40
+        (914)405-53-40
+        (929)403-51-48
+        (924)410-44-64
+        (914)411-51-68
+        (909)829-25-23
+        (929)403-51-92
+        (924)115-07-14
+        (962)296-09-20
+        (963)820-03-20
+        (968)171-21-48
+        (914)419-02-58
+        (924)302-50-97
+        (963)820-09-02
+        (924)410-44-64
+        (909)899-47-64
+        (914)210-59-59
+        (914)412-91-51
+        (924)227-00-27
+        (914)770-52-16
+        (924)226-23-10
+        (914)410-17-40
+        (963)827-55-15
+        (914)770-52-16
+        (909)866-03-38
+        (962)297-21-00
+        (962)297-21-00
+        (909)849-07-58
+        (909)864-38-99
+        (962)287-11-60
+        (968)171-21-48
+        (914)778-36-11
+        (914)210-59-59
+        (963)820-09-12
+        (909)866-86-69
+        (914)189-84-41
+        (962)297-42-85
+        (963)827-55-15
+        (924)227-23-32
+        (914)184-07-16
+        (909)886-69-13
+        (924)413-18-84
+        (963)820-09-04
+        (914)163-56-02
+        (914)187-30-00
+        (914)412-00-16
+        (962)296-09-20
+        (914)774-35-55
+        (924)102-00-18
+        (924)413-18-84
+        (914)186-47-48
+        (929)408-05-00
+        (924)210-43-32
+        (909)898-02-76
+        (963)829-39-34
+        (909)849-02-90
+        (962)286-32-91
+        (914)410-17-40
+        (909)889-61-63
+        (963)820-09-05
+        (963)823-02-01
+        (963)820-09-06
+        (963)829-18-40
+        (914)411-51-68
+        (963)841-38-77
+        (909)887-58-44
+        (914)177-63-96
+        (962)287-14-17
+        (929)403-51-48
+        (984)172-54-94
+        (914)155-11-70
+        (963)823-26-69
+        (963)823-26-69
+        (909)887-62-29
+        (924)229-32-05
+        (963)820-09-07
+        (924)229-32-05
+        (914)211-39-93
+        (924)413-18-84
+        (909)898-02-76
+        (909)889-53-93
+        (924)115-29-24
+        (909)869-60-60
+        (909)889-61-63
+        (914)175-12-21
+        (924)229-32-05
+        (924)210-43-32
+        (914)409-48-54
+        (963)823-26-69
+        (963)824-24-85
+        (909)899-97-83
+        (909)889-53-93
+        (924)413-18-84
+        (909)869-39-72
+        (914)412-91-51
+        (909)898-10-98
+        (914)409-19-66
+        (924)210-43-32
+        (924)229-32-05
+        (963)820-09-10
+        (914)160-67-47
+        (924)229-32-05
+        (963)820-72-02
+        (914)375-41-53
+        (929)403-51-92
+        (914)208-06-61
+        (963)820-09-02
+        (909)888-89-57
+        (909)888-89-57
+        (909)889-53-93
+        (962)297-21-00
+        (962)297-21-00
+        (909)886-69-13
+        (914)772-10-35
+        (909)861-46-71
+        (914)210-59-59
+        (924)114-55-55
+        (914)204-09-17
+        (914)163-56-02
+        (962)298-25-36
+        (924)226-10-75
+        (963)820-09-04
+        (914)411-51-68
+        (914)213-72-55
+        (924)411-44-44
+        (914)549-07-33
+        (924)316-35-45
+        (914)187-30-00
+        (929)412-34-56
+        (914)153-30-00
+        (909)848-67-26
+        (914)217-97-83
+        (962)298-57-62
+        (909)898-02-76
+        (963)820-09-15
+        (909)861-41-39
+        (963)823-26-69
+        (963)823-26-69
+        (924)227-23-32
+        (984)170-95-86
+        (914)210-55-51
+        (914)179-20-25
+        (914)178-70-74
+        (929)403-51-40
+        (909)866-05-93);
+
+    return $phones[$idx];
+}
+
+sub import_komcity {
+    #process_url_list($sell_rooms_url_1, 'room', 'room', 1, 'sale');
+    #process_url_list($sell_rooms_url_2, 'room', 'room', 1, 'sale');
+    #process_url_list($sell_rooms_url_3, 'room', 'room', 1, 'sale');
+    #process_url_list($sell_rooms_url_4, 'room', 'room', 1, 'sale');
+    #process_url_list($sell_rooms_url_5, 'room', 'room', 1, 'sale');
+
+    #process_url_list($sell_apartment_small_url_1, 'apartment', 'apartment', 1, 'sale');
+    #process_url_list($sell_apartment_small_url_2, 'apartment', 'apartment', 1, 'sale');
+    #process_url_list($sell_apartment_small_url_3, 'apartment', 'apartment', 1, 'sale');
+    #process_url_list($sell_apartment_small_url_4, 'apartment', 'apartment', 1, 'sale');
+    #process_url_list($sell_apartment_small_url_5, 'apartment', 'apartment', 1, 'sale');  
+  
+    process_url_list($sell_apartment1_url_1, 'apartment', 'apartment', 1, 'sale');
+    #process_url_list($sell_apartment1_url_2, 'apartment', 'apartment', 1, 'sale');
+    #process_url_list($sell_apartment1_url_3, 'apartment', 'apartment', 1, 'sale');
+    #process_url_list($sell_apartment1_url_4, 'apartment', 'apartment', 1, 'sale');
+    #process_url_list($sell_apartment1_url_5, 'apartment', 'apartment', 1, 'sale');
+    
+    #process_url_list($sell_apartment2_url_1, 'apartment', 'apartment', 2, 'sale');
+    #process_url_list($sell_apartment2_url_2, 'apartment', 'apartment', 2, 'sale');
+    #process_url_list($sell_apartment2_url_3, 'apartment', 'apartment', 2, 'sale');
+    #process_url_list($sell_apartment2_url_4, 'apartment', 'apartment', 2, 'sale');
+    #process_url_list($sell_apartment2_url_5, 'apartment', 'apartment', 2, 'sale');
+    
+    #process_url_list($sell_apartment3_url_1, 'apartment', 'apartment', 3, 'sale');
+    #process_url_list($sell_apartment3_url_2, 'apartment', 'apartment', 3, 'sale');
+    #process_url_list($sell_apartment3_url_3, 'apartment', 'apartment', 3, 'sale');
+    #process_url_list($sell_apartment3_url_4, 'apartment', 'apartment', 3, 'sale');
+    #process_url_list($sell_apartment3_url_5, 'apartment', 'apartment', 3, 'sale');    
+}
+
+sub process_url_list {
+    my ($list_url, $category_code, $type_code, $rooms_count, $offer_type) = @_;
+
+    my $dom = $ua->get($list_url)->res->dom;
+      next unless defined $dom;
+
+    {
+        $dom->find('a')->each (sub {
+
+            sleep 20;
+          
+            my $data = {
+                source_media_id => $MEDIA->id,
+            };
+            $data->{'category_code'} = $category_code;
+            $data->{'type_code'} = $type_code;
+            $data->{'offer_type_code'} = $offer_type;
+            $data->{'rooms_count'} = $rooms_count;
+
+            my $text = decode('utf-8', $_->text);
+            my $phone_num = '';
+            if (decode('utf-8', $_->{onclick}) =~ m/(\d+)/) {
+                #$phone_num = getPhone($1);
+            }
+            $phone_num = Import::Util::PhoneNum->parse(getFakePhone($idx), $config->{default_phone_prefix});
+            $idx ++;
+            say $phone_num;
+            $data->{'owner_phones'} = [$phone_num, ];
+
+            if(recognize_adv($text, $data)) {
+                say Dumper $data;
+
+                # Пропустим уже обработанные объявления
+                my $media_num =  '_komcity';
+                #if (Import::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $media_num, media_text => $text])) {
+                #    say 'was processed already';
+                #    next;
+                #}
+                $data->{'source_media_text'} = $text;
+                my $id;
+                eval {
+                    my $realty = Import::Model::Realty->new((map { $_ => $data->{$_} } grep { $_ ne 'category_code' } keys %$data), state_code => 'raw');
+                    $realty->save;
+                    say 'Saved new realty: ' . $realty->{id};
+                } or do {
+                    say $@;
+                };
+                # Сохраним историю
+                if ($id && !Import::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $media_num, realty_id => $id])) {
+                    Import::Model::MediaImportHistory->new(media_id => $MEDIA->id, media_num => $media_num, media_text => $data->{'source_media_text'}, realty_id => $id)->save;
+                }
+            }            
+        });
+    }
+    
+
+}
+
+sub recognize_adv {
+    my ($text, $data) = @_;
+    my $text_lc = lc($text);
+
+    my %types_re = (
+        room => [
+            qr/дол(?:я|и)(?:\s+в\s+(\d)-комн\.)?/ => sub { return rooms_count => $_[0]; },
+            qr/(?:комн\.?|секция)/ => sub {},
+        ],
+        apartment => [
+            qr/малосем\.?/ => sub { return type_code => 'apartment_small'; },
+            qr/(\d)\s*\-\s*комн\.?/ => sub { return rooms_count => $_[0]; },
+        ],
+        house => [
+            qr/коттедж/ => sub { return type_code => 'cottage'; },
+            qr/таунхаус/ => sub { return type_code => 'townhouse'; },
+            qr/дом/ => sub {},
+        ],
+        land => [
+            qr/(?:уч\-к|участок)/ => sub {},
+            qr/дача/ => sub { return type_code => 'dacha'; },
+            qr/(\d+)\s+(?:сот\.?|с\/с)/ => sub { return square_land => $_[0], square_land_type => 'ar'; },
+            qr/(\d(?:,\d+)?)\s+га/ => sub { return square_land => ($_[0] =~ s/,/./r), square_land_type => 'hectare'; },
+        ],
+        other => [
+            qr/(\d)\s*\-\s*комн\.?/ => sub { return type_code => 'apartment', rooms_count => $_[0]; },
+            qr/коттедж/ => sub { return type_code => 'cottage'; },
+            qr/малосем\.?/ => sub { return type_code => 'apartment_small'; },
+            qr/комн\.?/ => sub { return type_code => 'room'; },
+        ],
+    );
+
+    my ($addr, $body);
+    my $cc = $data->{'category_code'};
+    if (exists $types_re{$cc}) {
+        for (my $i = 0; $i < @{$types_re{$cc}}; $i++) {
+            my ($re, $cb) = ($types_re{$cc}->[$i], $types_re{$cc}->[++$i]);
+            if (my @m = ($text_lc =~ /^(.*?)$re(.+)$/)) {
+                my %x = $cb->(@m[1..($#m-1)]);
+                @{$data}{keys %x} = values %x;
+                ($addr, $body) = ($m[0], $m[$#m]);
+                last;
+            }
+        }
+    }
+
+    my @t = split ',', $text;
+    
+    $addr = $t[0] . ' ' . $t[1];
+    splice @t, 0, 2;
+    $body = join ',', @t;
+
+    say $addr;
+    say $body;
+    
+    $addr = trim $addr;
+    $body = trim $body;
+    return unless $body;
+
+    # Распознавание цены и контактных телефонов
+    {
+        my $price;
+        {
+            my $price_ml = ($2 =~ s/,/./r) if $body =~ s/((\d+(,\d+)?)\s*млн\.)//;
+            my $price_th = $2 if $body =~ s/((\d+)\s*т\.р)//;
+            $price = ($price_ml || 0)*1000 + ($price_th || 0);
+        }
+        $data->{'owner_price'} = $price if $price;
+    }
+
+    # Распознавание адреса
+    if ($addr) {
+        my $ts_query = join(' | ', grep { $_ && length($_) > 1 } split(/\W/, $addr));
+        if ($ts_query) {
+            $ts_query =~ s/'/''/g;
+            my $addrobj = Import::Model::AddressObject::Manager->get_objects(
+                query => [
+                    # english - чтобы не отбрасывались окончания
+                    \("t1.fts @@ to_tsquery('russian', '$ts_query')"),
+                    parent_guid => $config->{default_city_guid},
+                    curr_status => 0,
+                    level => 7,
+                ],
+                sort_by => "ts_rank(t1.fts2, to_tsquery('russian', '$ts_query')) desc, case when short_type = 'ул' then 0 else 1 end",
+                limit => 1,
+            )->[0];
+            if ($addrobj) {
+                #if ($addr =~ /,\s+(\d+(?:\w)?)/) {
+                my $idx = rindex($addr, ' ');
+                my $hn = substr($addr, $idx);
+                $hn =~ s/\D//g;
+                if (length $hn < 3) {
+                    $data->{'house_num'} = $hn;
+                    # Запросим координаты объекта
+                    my %coords = Import::Util::Geo::get_coords_by_addr($addrobj, $hn);
+                    if (%coords) {
+                        # say "Fetched coords: ".$coords{'latitude'}.", ".$coords{'longitude'};
+                        @{$data}{keys %coords} = values %coords;
+                    }
+                }
+                $data->{'address_object_id'} = $addrobj->id;
+            }
+        }
+    }
+
+    # Площадь
+    if ($body =~ s/(\d+(?:[,\.]\d+)?)\/(\d+(?:[,\.]\d+)?)\/(\d+(?:[,\.]\d+)?)//) {
+        my ($total, $living, $kitchen) = map { s/,/./r } ($1, $2, $3);
+        if ($total > $living && $total > $kitchen) {
+            $data->{'square_total'} = $total;
+            $data->{'square_living'} = $living;
+            $data->{'square_kitchen'} = $kitchen;
+        }
+    } elsif ($body =~ s/(\d+(?:[,\.]\d+)?)\s+кв\.\s*м//) {
+        $data->{'square_total'} = $1 =~ s/,/./r;
+    }
+    if ($body =~ s/(\d+(?:[,\.]\d+)?)\s+сот\.?//) {
+        $data->{'square_land'} = $1;
+        $data->{'square_land_type'} = 'ar';
+    }
+
+    # Разделим остальную часть обявления на части и попытаемся вычленить полезную информацию
+    my @bp = grep { $_ && length($_) > 1 } trim(split /[,()]/, $body);
+    for my $el (@bp) {
+        # Этаж/этажность
+        if ($el =~ /^(\d{1,2})\/(\d{1,2}) эт.$/) {
+            $data->{'floor'} = $1;
+            $data->{'floors_count'} = $2;
+            next;
+        }
+
+        for my $k (keys %{$META->{'params'}->{'dict'}}) {
+            my %dict = %{$META->{'params'}->{'dict'}->{$k}};
+            my $field = delete $dict{'__field__'};
+            for my $re (keys %dict) {
+                if ($el =~ /$re/i) {
+                    $data->{$field} = $dict{$re};
+                    last;
+                }
+            }
+        }
+    }
+
+    # Этаж#2
+    if (!$data->{'floor'} && $body =~ /(\d{1,2})\s+эт\.?/) {
+        $data->{'floor'} = $1;
+    }
+
+    return $data;
+};
