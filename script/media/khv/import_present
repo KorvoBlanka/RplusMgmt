@@ -3,22 +3,15 @@
 use FindBin;
 use lib "$FindBin::Bin/../../../lib";
 
-use Import::Modern;
+use Rplus::Modern;
 
-use Import::Model::AddressObject;
-use Import::Model::AddressObject::Manager;
-use Import::Model::Media;
-use Import::Model::Media::Manager;
-use Import::Model::Mediator;
-use Import::Model::Mediator::Manager;
-use Import::Model::MediaImportHistory;
-use Import::Model::MediaImportHistory::Manager;
-use Import::Model::Realty;
-use Import::Model::Realty::Manager;
+use Rplus::Model::Media::Manager;
+use Rplus::Model::MediaImportHistory::Manager;
+use Rplus::Model::Realty::Manager;
 
-use Import::Util::PhoneNum;
-use Import::Util::Realty;
-use Import::Util::Config;
+use Rplus::Util::PhoneNum;
+use Rplus::Util::Realty;
+use Rplus::Util::Config;
 
 use LWP::UserAgent;
 use File::Temp qw(tempdir);
@@ -27,8 +20,8 @@ use Text::Trim;
 use JSON;
 use POSIX qw(strftime);
 
-my $config = Import::Util::Config::get_config();
-my $MEDIA = Import::Model::Media::Manager->get_objects(query => [type => 'import', code => 'present', delete_date => undef])->[0];
+my $config = Rplus::Util::Config::get_config();
+my $MEDIA = Rplus::Model::Media::Manager->get_objects(query => [type => 'import', code => 'present', delete_date => undef])->[0];
 exit unless $MEDIA;
 my $META = from_json($MEDIA->metadata);
 
@@ -247,13 +240,13 @@ sub import_present {
             my @owner_phones;
             for my $x (split /[ .,]/, $body) {
                 if ($x =~ /^\s*([\d-]{6,})\s*$/) {
-                    if (my $phone_num = Import::Util::PhoneNum::parse($1, $config->{default_phone_prefix})) {
+                    if (my $phone_num = Rplus::Util::PhoneNum::parse($1, $config->{default_phone_prefix})) {
                         push @owner_phones, $phone_num;
                     }
                     $body =~ s/$x//;
                 }
                 if ($x =~ /^\s*8\(\d{3,4}\)([\d-]{6,})\s*$/) {
-                    if (my $phone_num = Import::Util::PhoneNum::parse($1, $config->{default_phone_prefix})) {
+                    if (my $phone_num = Rplus::Util::PhoneNum::parse($1, $config->{default_phone_prefix})) {
                         push @owner_phones, $phone_num;
                     }
                     $body =~ s/$x//;
@@ -355,7 +348,7 @@ sub import_present {
                 my $id;
 
                 eval {
-                    my $realty = Import::Model::Realty->new((map { $_ => $data->{$_} } grep { $_ ne 'category_code' } keys %$data), state_code => 'raw');
+                    my $realty = Rplus::Model::Realty->new((map { $_ => $data->{$_} } grep { $_ ne 'category_code' } keys %$data), state_code => 'raw');
                     $realty->save;
                     $id = $realty->id;
                     say "Saved new realty: $id";
@@ -364,46 +357,7 @@ sub import_present {
                     say $@;
                 };
 
-                # Сохраним историю
-            #    if ($id && !Import::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $media_num, realty_id => $id])) {
-            #        eval {
-            #            Import::Model::MediaImportHistory->new(media_id => $MEDIA->id, media_num => $media_num, media_text => $data->{'source_media_text'}, realty_id => $id)->save;
-            #        } or do {};
-            #    }
-
-                #push @{$REALTY{'list'}}, $data;
-                #for my $phone_num (@{$data->{'owner_phones'}}) {
-                #    #push @{$REALTY{'by_phone_num'}->{$phone_num}}, $data;
-                #}
             }
         }
     }
-
-    # Сохранение недвижимости в базе
-    #for my $data (@{$REALTY{'list'}}) {
-    #    my $id;
-
-        # Поиск повторов
-        #if ($id = Import::Util::Realty->find_similar(%$data, state_code => ['raw', 'work', 'suspended'])) {
-        #    say "Found similar realty: $id";
-        #} else {
-    #    {
-    #        eval {
-    #            my $realty = Import::Model::Realty->new((map { $_ => $data->{$_} } grep { $_ ne 'category_code' } keys %$data), state_code => 'raw');
-    #            $realty->save;
-    #            $id = $realty->id;
-    #            say "Saved new realty: $id";
-    #            1;
-    #        } or do {
-    #            say $@;
-    #        };
-    #    }
-
-        # Сохраним историю
-    #    if ($id && !Import::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $media_num, realty_id => $id])) {
-    #        eval {
-    #            Import::Model::MediaImportHistory->new(media_id => $MEDIA->id, media_num => $media_num, media_text => $data->{'source_media_text'}, realty_id => $id)->save;
-    #        } or do {};
-    #    }
-    #}
 }

@@ -3,25 +3,16 @@
 use FindBin;
 use lib "$FindBin::Bin/../../../lib";
 
-use Import::Modern;
+use Rplus::Modern;
 
-use Import::Model::AddressObject;
-use Import::Model::AddressObject::Manager;
-use Import::Model::Media;
-use Import::Model::Media::Manager;
-use Import::Model::Mediator;
-use Import::Model::Mediator::Manager;
-use Import::Model::MediaImportHistory;
-use Import::Model::MediaImportHistory::Manager;
-use Import::Model::Realty;
-use Import::Model::Realty::Manager;
-use Import::Model::Variable;
-use Import::Model::Variable::Manager;
+use Rplus::Model::Media::Manager;
+use Rplus::Model::MediaImportHistory::Manager;
+use Rplus::Model::Realty::Manager;
 
-use Import::Util::Config;
-use Import::Util::PhoneNum;
-use Import::Util::Realty;
-use Import::Util::Mediator qw(add_mediator);
+use Rplus::Util::Config;
+use Rplus::Util::PhoneNum;
+use Rplus::Util::Realty;
+use Rplus::Util::Mediator qw(add_mediator);
 
 use File::Basename;
 use Text::Trim;
@@ -32,7 +23,7 @@ use DateTime::Format::Strptime;
 use File::Touch;
 use Data::Dumper;
 
-my $config = Import::Util::Config::get_config();
+my $config = Rplus::Util::Config::get_config();
 my $present_site_config = $config->{import}->{present_site};
 my $main_url = $present_site_config->{main_url};
 
@@ -70,7 +61,7 @@ my $rent_gpurpose_url = $main_url . '/present/notice/index/rubric/pomeshcheniya-
 
 my $lock_file = '/var/tmp/present_s_lock';
 
-my $MEDIA = Import::Model::Media::Manager->get_objects(query => [type => 'import', code => 'present_site', delete_date => undef])->[0];	# code => 'avito'
+my $MEDIA = Rplus::Model::Media::Manager->get_objects(query => [type => 'import', code => 'present_site', delete_date => undef])->[0];	# code => 'avito'
 exit unless $MEDIA;
 my $META = from_json($MEDIA->metadata);
 
@@ -222,7 +213,7 @@ sub get_url_list {
             $date_map{$item_id} = $dt;
             my $eid = make_eid($item_id, $dt);
 
-            if (Import::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $eid])) {
+            if (Rplus::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $eid])) {
                 say 'was processed already';
             } else {
                 say $item_url;
@@ -244,7 +235,7 @@ sub get_url_list {
             $date_map{$item_id} = $dt;
             my $eid = make_eid($item_id, $dt);
 
-            if (Import::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $eid])) {
+            if (Rplus::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $eid])) {
                 say 'was processed already';
             } else {
                 say $item_url;
@@ -295,7 +286,7 @@ sub process_url_list {
             my $id;
             {
                 eval {
-                    my $realty = Import::Model::Realty->new((map { $_ => $data->{$_} } grep { $_ ne 'category_code' } keys %$data), state_code => 'raw');
+                    my $realty = Rplus::Model::Realty->new((map { $_ => $data->{$_} } grep { $_ ne 'category_code' } keys %$data), state_code => 'raw');
                     $realty->save;
                     $id = $realty->id;
                     say "Saved new realty: $id";
@@ -304,8 +295,8 @@ sub process_url_list {
                 }
             }
             # Сохраним историю
-            if ($id && !Import::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $eid])) {
-                Import::Model::MediaImportHistory->new(media_id => $MEDIA->id, media_num => $eid, media_text => $main_url . $item_url, realty_id => $id)->save;
+            if ($id && !Rplus::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $eid])) {
+                Rplus::Model::MediaImportHistory->new(media_id => $MEDIA->id, media_num => $eid, media_text => $main_url . $item_url, realty_id => $id)->save;
             }
 
         } or do {
@@ -394,12 +385,12 @@ sub parse_adv {
         for my $x (split /[ .,]/, $body) {
             if ($x =~ /^\s*([\d-]{6,})\s*$/) {
                 say $1;
-                if (my $phone_num = Import::Util::PhoneNum::parse($1, $config->{default_phone_prefix})) {
+                if (my $phone_num = Rplus::Util::PhoneNum::parse($1, $config->{default_phone_prefix})) {
                     push @owner_phones, $phone_num;
                 }
                 $body =~ s/$x//;
             } elsif ($x =~ /(7|8)(\(\d{3,4}\)[\d-]{6,})/) {
-                if (my $phone_num = Import::Util::PhoneNum::parse($2, $config->{default_phone_prefix})) {
+                if (my $phone_num = Rplus::Util::PhoneNum::parse($2, $config->{default_phone_prefix})) {
                     push @owner_phones, $phone_num;
                 }
                 $x =~ s/\+//;
