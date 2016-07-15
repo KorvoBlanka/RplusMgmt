@@ -456,7 +456,7 @@ sub startup {
         $r2b->route('/export')->to(namespace => 'RplusMgmt::Controller::Export')->post('/:controller')->to(action => 'index');
 
         # Other controllers
-        #$r2b->get('/:controller/:action')->to(action => 'index');
+        $r2b->get('/:controller/:action')->to(action => 'index');
     }
 }
 
