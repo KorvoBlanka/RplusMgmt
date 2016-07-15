@@ -67,7 +67,7 @@ sub put_object {
                 $o_realty->last_seen_date($data->{add_date});
                 $o_realty->change_date('now()');
 
-                if ($data->{state_code} ne 'work') {
+                if ($o_realty->state_code ne 'work') {
                     my @fields = qw(type_code source_media_id source_url source_media_text locality address house_num owner_price ap_scheme_id rooms_offer_count rooms_count condition_id room_scheme_id house_type_id floors_count floor square_total square_living square_kitchen square_land square_land_type);
                     foreach (@fields) {
                         $o_realty->$_($data->{$_}) if $data->{$_};
