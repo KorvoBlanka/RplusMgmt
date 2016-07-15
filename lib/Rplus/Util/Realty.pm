@@ -35,7 +35,7 @@ sub put_object {
               limit => 1,
             )->[0];
 
-            next if ($mediator && $data->{offer_type_code} eq 'rent');
+            return undef if ($mediator && $data->{offer_type_code} eq 'rent');
         }
 
 
