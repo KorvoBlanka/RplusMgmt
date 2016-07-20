@@ -1101,7 +1101,6 @@ a:focus {
         .done(function (data, textStatus, jqXHR) {
           supressAjaxIndicator(0);
           if (data.count > 0) {
-            console.log('!');
             drawEvents(data.list);
             Rplus.Functions.getTodaysTasksCount();
           }

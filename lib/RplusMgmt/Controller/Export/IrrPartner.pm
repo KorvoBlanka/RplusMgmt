@@ -469,18 +469,20 @@ sub index {
                 $xml_writer->startTag('fotos');
                 my $photo_iter = Rplus::Model::Photo::Manager->get_objects_iterator(query => [realty_id => $realty->id, delete_date => undef], sort_by => 'id', limit => 10);
                 while (my $photo = $photo_iter->next) {
+                    if ($photo->filename !~ /^http/) {
+                        my $path = $config->{storage}->{path} . '/photos/';
+                        my $img_filename = $path . $photo->filename;
 
-                    my $img_filename = $config->{storage}->{path} . '/photos/' . $photo->filename;
-
-                    if (open(my $img_fh, "<", $img_filename)) {
-                        my $ctx = Digest::MD5->new;
-                        $ctx->addfile($img_fh);
-                        $xml_writer->emptyTag(
-                            'foto-remote',
-                            url => $config->{storage}->{external} . '/photos/' . $photo->filename,
-                            md5 => $ctx->hexdigest,
-                        );
-                        close $img_fh;
+                        if (open(my $img_fh, "<", $img_filename)) {
+                            my $ctx = Digest::MD5->new;
+                            $ctx->addfile($img_fh);
+                            $xml_writer->emptyTag(
+                                'foto-remote',
+                                url => $config->{storage}->{external} . '/photos/' . $photo->filename,
+                                md5 => $ctx->hexdigest,
+                            );
+                            close $img_fh;
+                        }
                     }
                 }
                 $xml_writer->endTag('fotos');

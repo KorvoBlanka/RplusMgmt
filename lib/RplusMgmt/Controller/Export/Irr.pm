@@ -182,7 +182,13 @@ my %templates_hash = (
             "Фото" => sub {
                     my $d = shift;
                     my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $d->id, delete_date => undef], sort_by => 'id ASC', limit => 2)};
-                    return join ", ", map {$_->filename} @photos;
+                    my @t;
+                    foreach (@photos) {
+                        if ($_->filename !~ /^http/) {
+                            push @t, $_->filename;
+                        }
+                    }
+                    return join ", ", @t;
                 },
             "Контактное лицо" => sub {
                     my $d = shift;
@@ -316,7 +322,13 @@ my %templates_hash = (
             "Фото" => sub {
                     my $d = shift;
                     my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $d->id, delete_date => undef], sort_by => 'id ASC', limit => 2)};
-                    return join ", ", map {$_->filename} @photos;
+                    my @t;
+                    foreach (@photos) {
+                        if ($_->filename !~ /^http/) {
+                            push @t, $_->filename;
+                        }
+                    }
+                    return join ", ", @t;
                 },
             "e-mail" => sub {
                     return $contact_email;
@@ -454,7 +466,13 @@ my %templates_hash = (
             "Фото" => sub {
                     my $d = shift;
                     my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $d->id, delete_date => undef], sort_by => 'id ASC', limit => 2)};
-                    return join ", ", map {$_->filename} @photos;
+                    my @t;
+                    foreach (@photos) {
+                        if ($_->filename !~ /^http/) {
+                            push @t, $_->filename;
+                        }
+                    }
+                    return join ", ", @t;
                 },
             "e-mail" => sub {
                     return $contact_email;
@@ -585,7 +603,13 @@ my %templates_hash = (
             "Фото" => sub {
                     my $d = shift;
                     my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $d->id, delete_date => undef], sort_by => 'id ASC', limit => 2)};
-                    return join ", ", map {$_->filename} @photos;
+                    my @t;
+                    foreach (@photos) {
+                        if ($_->filename !~ /^http/) {
+                            push @t, $_->filename;
+                        }
+                    }
+                    return join ", ", @t;
                 },
             "www-адрес" => sub {
                     return $site_url;
@@ -742,7 +766,13 @@ my %templates_hash = (
             "Фото" => sub {
                     my $d = shift;
                     my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $d->id, delete_date => undef], sort_by => 'id ASC', limit => 2)};
-                    return join ", ", map {$_->filename} @photos;
+                    my @t;
+                    foreach (@photos) {
+                        if ($_->filename !~ /^http/) {
+                            push @t, $_->filename;
+                        }
+                    }
+                    return join ", ", @t;
                 },
             "e-mail" => sub {
                     return $contact_email;
@@ -885,7 +915,13 @@ my %templates_hash = (
             "Фото" => sub {
                     my $d = shift;
                     my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $d->id, delete_date => undef], sort_by => 'id ASC', limit => 2)};
-                    return join ", ", map {$_->filename} @photos;
+                    my @t;
+                    foreach (@photos) {
+                        if ($_->filename !~ /^http/) {
+                            push @t, $_->filename;
+                        }
+                    }
+                    return join ", ", @t;
                 },
             "e-mail" => sub {
                     return $contact_email;
@@ -1037,7 +1073,13 @@ my %templates_hash = (
             "Фото" => sub {
                     my $d = shift;
                     my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $d->id, delete_date => undef], sort_by => 'id ASC', limit => 2)};
-                    return join ", ", map {$_->filename} @photos;
+                    my @t;
+                    foreach (@photos) {
+                        if ($_->filename !~ /^http/) {
+                            push @t, $_->filename;
+                        }
+                    }
+                    return join ", ", @t;
                 },
             "e-mail" => sub {
                     return $contact_email;
@@ -1175,7 +1217,13 @@ my %templates_hash = (
             "Фото" => sub {
                     my $d = shift;
                     my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $d->id, delete_date => undef], sort_by => 'id ASC', limit => 2)};
-                    return join ", ", map {$_->filename} @photos;
+                    my @t;
+                    foreach (@photos) {
+                        if ($_->filename !~ /^http/) {
+                            push @t, $_->filename;
+                        }
+                    }
+                    return join ", ", @t;
                 },
             "www-адрес" => sub {
                     return $site_url;
@@ -1270,15 +1318,17 @@ sub index {
             my @photos = @{Rplus::Model::Photo::Manager->get_objects(query => [realty_id => $realty->id, delete_date => undef], sort_by => 'id ASC', limit => 2)};
 
             foreach (@photos) {
-                my $img_realty_id = (URI->new($_->filename)->path_segments)[-2];
-                my $img_name = $_->filename;
-                my $img_zipname = $img_name;
-                my $img_path = '';
+                if ($_->filename !~ /^http/) {
+                    my $img_realty_id = (URI->new($_->filename)->path_segments)[-2];
+                    my $img_name = $_->filename;
+                    my $img_zipname = $img_name;
+                    my $img_path = '';
 
-                $img_path = $self->config->{'storage'}->{'path'} . '/photos/' . $img_name;
-                if (-e $img_path) {
-                    my $member = $zip->addFile($img_path, $img_zipname);
-                    $member->desiredCompressionLevel(COMPRESSION_LEVEL_NONE);
+                    $img_path = $self->config->{'storage'}->{'path'} . '/photos/' . $img_name;
+                    if (-e $img_path) {
+                        my $member = $zip->addFile($img_path, $img_zipname);
+                        $member->desiredCompressionLevel(COMPRESSION_LEVEL_NONE);
+                    }
                 }
             }
         }

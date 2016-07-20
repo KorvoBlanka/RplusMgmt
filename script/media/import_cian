@@ -149,7 +149,9 @@ sub process_item {
 
     my @photo_url;
     for my $photo (@{$obj->{photos}}) {
-      push @photo_url, $photo->{img};
+      my $img_url = $photo->{img};
+      $img_url =~ s/-2.jpg/-1.jpg/;
+      push @photo_url, $img_url;
     }
     $data->{photo_url} = \@photo_url;
 

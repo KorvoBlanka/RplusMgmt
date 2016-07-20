@@ -311,7 +311,6 @@
             }
           })
           .fail(function (jqXHR, textStatus, errorThrown) {
-            console.log(jqXHR);
             console.log(textStatus);
             console.log(errorThrown);
           })
@@ -450,7 +449,6 @@
 
     $('#googleSyncCb').change(function () {
       var user_id = $("#userCard_userForm_userId").val();
-      console.log(user_id);
       var val = 'no';
       if ($(this).is(':checked')) {
         val = 'ask';

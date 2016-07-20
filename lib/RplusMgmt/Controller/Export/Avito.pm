@@ -350,7 +350,11 @@ my %fields_sub = (
         my @photos;
         my $photo_iter = Rplus::Model::Photo::Manager->get_objects_iterator(query => [realty_id => $r->id, delete_date => undef], sort_by => 'id');
         while (my $photo = $photo_iter->next) {
-            push @photos, $config->{storage}->{external} . '/photos/' . $photo->filename;
+            my $url = '';
+            if ($_ !~ /^http/) {
+                $url = $config->{storage}->{external} . '/photos/';
+            }
+            push @photos, $url . $photo->filename;
         }
         return \@photos;
     },
@@ -392,7 +396,7 @@ sub index {
         $contact_phone = $e_opt->{'avito-phone'} ? trim($e_opt->{'avito-phone'}) : '';
         $agent_phone = 1 if $e_opt->{'avito-agent-phone'};
         $contact_name = '';
-        $contact_email = $e_opt->{'irr-email'} ? $e_opt->{'irr-email'} : '';
+        $contact_email = $e_opt->{'avito-email'} ? $e_opt->{'avito-email'} : '';
     }
 
     unlink($meta->{'prev_file'}) if $meta->{'prev_file'};

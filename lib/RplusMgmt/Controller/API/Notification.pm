@@ -287,7 +287,11 @@ sub get_digest {
 
     $message .= '<div style="width: 65%; padding: 10px; display: inline-block; float: left;">';
     foreach(@$photos) {
-        $message .= "<img style=\"\" width=\"100%\" src=\"" . $c->config->{storage}->{external} . '/photos/' . "$_\">";
+        my $url = '';
+        if ($_ !~ /^http/) {
+            $url = $c->config->{storage}->{external} . '/photos/';
+        }
+        $message .= "<img style=\"\" width=\"100%\" src=\"" . $url . "$_\">";
     }
     unless (scalar @$photos) {
         $message .= "<img style=\"\" width=\"100%\" src=\"$no_photo_big_url\">";

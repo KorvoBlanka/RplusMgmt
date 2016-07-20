@@ -329,7 +329,11 @@ sub process_item {
 
     my @photos;
     $dom->find('div[class="wrap"] img')->each(sub {
-       push @photos, $_->attr("src")
+        my $img_url = $_->attr("src");
+
+        $img_url =~ s/s.jpg/b.jpg/;
+
+        push @photos, $img_url;
     });
     $data->{photo_url} = \@photos;
 

@@ -138,7 +138,6 @@
       $(".group-checkbox").change(function(e) {
         var name = $(this).attr('id');
         var val = $('input', $(this)).is(':checked');
-        console.log(name);
         if (name == "sale-all") {
             var opt_hash = {};
             % for my $c (@{Rplus::Model::RealtyType::Manager->get_objects(query => [], sort_by => 'id')}) {

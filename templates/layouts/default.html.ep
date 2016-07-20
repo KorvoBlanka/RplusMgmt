@@ -1218,11 +1218,9 @@
         var events = new EventSource('/events');
 
         events.addEventListener('open', function(e) {
-            console.log(e);
         }, false);
 
         events.addEventListener('error', function(e) {
-            console.log(e);
         }, false);
 
         events.addEventListener('heartbeat', function(e) {
@@ -1231,8 +1229,6 @@
 
         events.addEventListener('chat_message', function(e) {
             var edata = e.data;
-            console.log('msg');
-            console.log(edata);
             message_alarm.play();
             updateMessages();
             updateContactList();
@@ -2037,7 +2033,6 @@
       }
 
       function phoneSetup() {
-        console.log('phone setup');
         var call_time = 0;
         var call_timer_id;
 

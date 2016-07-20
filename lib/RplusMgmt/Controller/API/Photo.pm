@@ -26,11 +26,14 @@ sub list {
 
     my $photo_iter = Rplus::Model::Photo::Manager->get_objects_iterator(query => [realty_id => $realty_id, delete_date => undef], sort_by => 'id');
     while (my $photo = $photo_iter->next) {
-      my $url = $self->config->{storage}->{url} . '/photos';
+      my $url = '';
+      if ($photo->filename !~ /^http/) {
+          $url = $self->config->{storage}->{url} . '/photos/';
+      }
       my $x = {
         id => $photo->id,
-        photo_url => $url . '/' . $photo->filename,
-        thumbnail_url => $url . '/' . $photo->thumbnail_filename,
+        photo_url => $url . $photo->filename,
+        thumbnail_url => $url . $photo->thumbnail_filename,
         is_main => $photo->is_main ? \1 : \0,
       };
       push @{$res->{list}}, $x;

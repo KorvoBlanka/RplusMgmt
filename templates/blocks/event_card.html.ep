@@ -163,8 +163,6 @@
       data.summary = $('#taskSummaryInput').val();
       //var description = $('#taskDescriptionInput').html();
 
-      console.log(data);
-
       if ($.isFunction(events.saved)) {
         events.saved(data);
       }

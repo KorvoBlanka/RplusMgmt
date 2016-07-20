@@ -29,6 +29,11 @@
       })
         .done(function (data, textStatus, jqXHR) {
 
+          $('#formExportYandex [name="company"]:input').val(data.options['yandex-company']);
+          $('#formExportYandex [name="phone"]:input').val(data.options['yandex-phone']);
+          $('#formExportYandex [name="agent-phone"]:input').attr('checked', (data.options['yandex-agent-phone'] == 'true' || data.options['yandex-agent-phone'] == '1') ? true : false);
+          $('#formExportYandex [name="email"]:input').val(data.options['yandex-email']);
+
           $('#formExportZipal [name="company"]:input').val(data.options['zipal-company']);
           $('#formExportZipal [name="phone"]:input').val(data.options['zipal-phone']);
           $('#formExportZipal [name="agent-phone"]:input').attr('checked', (data.options['zipal-agent-phone'] == 'true' || data.options['zipal-agent-phone'] == '1') ? true : false);
@@ -88,6 +93,19 @@
 
         var t;
         var opt_hash = {};
+
+        t = $('#formExportYandex [name="company"]:input').val();
+        opt_hash['yandex-company'] = t;
+
+        t = $('#formExportYandex [name="phone"]:input').val();
+        opt_hash['yandex-phone'] = t;
+
+        t = $('#formExportYandex [name="agent-phone"]:input').is(':checked');
+        opt_hash['yandex-agent-phone'] = t;
+
+        t = $('#formExportYandex [name="email"]:input').val();
+        opt_hash['yandex-email'] = t;
+
 
         t = $('#formExportZipal [name="company"]:input').val();
         opt_hash['zipal-company'] = t;
@@ -187,16 +205,17 @@
     <li><a href="#export-farpost" data-toggle="tab">Farpost</a></li>
     <li><a href="#export-present" data-toggle="tab">Презент</a></li>
     <li><a href="#export-vnh" data-toggle="tab">ВНХ</a></li>
+    <li><a href="#export-yandex" data-toggle="tab">Yandex</a></li>
     % } elsif ($loc_id == 2) {
     <li class="active"><a href="#export-avito" data-toggle="tab">Avito</a></li>
     <li><a href="#export-irr" data-toggle="tab">Из рук в руки</a></li>
     <li><a href="#export-farpost" data-toggle="tab">Farpost</a></li>
-    <li class="hidden"><a href="#export-vnh" data-toggle="tab">ВНХ</a></li>
-    <li class="hidden"><a href="#export-present" data-toggle="tab">Презент</a></li>
+    <li><a href="#export-yandex" data-toggle="tab">Yandex</a></li>
     % } elsif ($loc_id == 3) {
     <li class="active"><a href="#export-zipal" data-toggle="tab">Zipal</a></li>
-    <li class=""><a href="#export-avito" data-toggle="tab">Avito</a></li>
+    <li><a href="#export-avito" data-toggle="tab">Avito</a></li>
     <li><a href="#export-irr" data-toggle="tab">Из рук в руки</a></li>
+    <li><a href="#export-yandex" data-toggle="tab">Yandex</a></li>
     % }
 
   </ul>
@@ -205,7 +224,39 @@
   <!-- Tab panes -->
   <div class="tab-content">
 
-    <div class="tab-pane active" id="export-zipal">
+    <div class="tab-pane active" id="export-yandex">
+      <form class="" role="form" id="formExportYandex">
+        <div class="row" style="padding-top: 15px;">
+          <label class="col-lg-2 control-label">Название компании</label>
+          <div class="col-lg-5">
+            <input type="text" class="form-control" name="company" placeholder="Название компании">
+          </div>
+        </div>
+        <div class="row" style="padding-top: 15px;">
+          <label class="col-lg-2 control-label">Контактный телефон</label>
+          <div class="col-lg-5">
+            <input type="text" class="form-control" name="phone" placeholder="телефон">
+          </div>
+        </div>
+        <div class="row" style="padding-top: 15px;">
+          <label class="col-lg-2 control-label">Телефон агента</label>
+          <div class="col-lg-5">
+            <input type="checkbox" name="agent-phone">
+          </div>
+        </div>
+        <div class="row" style="padding-top: 15px;">
+          <label class="col-lg-2 control-label">e-mail</label>
+          <div class="col-lg-5">
+            <input type="text" class="form-control" name="email" placeholder="somemail@mail.com">
+          </div>
+        </div>
+      </form>
+      <div class="form-group">
+        <button type="" class="btn btn-primary btn-save" style="margin-top: 15px">Сохранить</button>
+      </div>
+    </div>
+
+    <div class="tab-pane" id="export-zipal">
       <form class="" role="form" id="formExportZipal">
         <div class="row" style="padding-top: 15px;">
           <label class="col-lg-2 control-label">Название компании</label>

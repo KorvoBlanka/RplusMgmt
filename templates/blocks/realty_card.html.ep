@@ -362,7 +362,6 @@
 
     function setRealtyView(realty) {
       var digest_dict = Rplus.Realty.getDigestDict(realty);
-      console.log(digest_dict);
       for (var f in digest_dict) {
         var v = digest_dict[f];
         var el = $('span[data-name="' + f + '"]', $realty_modal);
@@ -1069,9 +1068,6 @@
           rq_fields = required['any'];
         }
 
-        console.log(realty_type);
-        console.log(exclude_fields);
-
         for (var idx = 0; idx < fields.length; ++idx) {
             var field = fields[idx];
             var el = $('[name="' + field + '"]:input', $('#realtyCard_modal'));
@@ -1656,6 +1652,13 @@
             </div>
             <div class="col-md-4 col-lg-4">
             % for my $x (@{Rplus::Model::Media::Manager->get_objects(query => [type => 'export', delete_date => undef], page => 2, per_page => 3)}) {
+              <div class="checkbox">
+                <input type="checkbox" name="export_media" value="<%= $x->id %>" form="realty-form"> <small><%= $x->name %></small>
+              </div>
+            % }
+            </div>
+            <div class="col-md-4 col-lg-4">
+            % for my $x (@{Rplus::Model::Media::Manager->get_objects(query => [type => 'export', delete_date => undef], page => 3, per_page => 3)}) {
               <div class="checkbox">
                 <input type="checkbox" name="export_media" value="<%= $x->id %>" form="realty-form"> <small><%= $x->name %></small>
               </div>

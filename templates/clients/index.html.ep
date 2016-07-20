@@ -1674,7 +1674,6 @@
 
         if (e.isDefaultPrevented()) return;
         e.preventDefault();
-        console.log(this);
 
         var agentId = $(this).data('val');
         var $selected = $('#realtyTable > tbody > tr.selected');
@@ -1767,7 +1766,6 @@
 
         if (e.isDefaultPrevented()) return;
         e.preventDefault();
-        console.log(this);
 
         var agent_id = $(this).data('val');
         var $selected = $('.tree > tbody > tr.cselected');

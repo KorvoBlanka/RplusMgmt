@@ -717,7 +717,6 @@
       free_draw.options.multiplePolygons = false;
 
       free_draw.on('mode', function modeReceived(eventData) {
-          console.log('free_draw mode: ' + eventData.mode);
       });
 
       free_draw.on('markers', function getMarkers(eventData) {

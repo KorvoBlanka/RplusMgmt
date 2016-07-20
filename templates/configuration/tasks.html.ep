@@ -48,7 +48,7 @@
     $('#taskTypeModal')
       .modal({show: false, backdrop: true, keyboard: false})
       .on('show.bs.modal', function () {
-        
+
       })
       .on('shown.bs.modal', function () {
 
@@ -85,7 +85,7 @@
           'FFEDB3',
           'FBC193',
           'FD8F7F',
-          'D63758',          
+          'D63758',
           'EFC8FD',
           'AF8AB6',
           'AD4A9A',
@@ -95,8 +95,6 @@
     });
 
     $('.simpleColorDisplay').click(function() {
-
-      console.log('!');
 
       var off_1 = $(this).offset();
       var off_2 = $('.modal-dialog').offset();
@@ -132,7 +130,7 @@
             var t = data.list[i];
             $('[data-id=' + t.id + ']').data('obj', t);
           }
-        });      
+        });
     }
 
     function createTaskType() {
@@ -174,7 +172,6 @@
         data: {id: id, name: name, category: category, color: color}
       })
         .done(function (data, textStatus, jqXHR) {
-          console.log(data);
 
           if (data.status == 'success') {
 
@@ -215,7 +212,7 @@
         .fail(function (jqXHR, textStatus, errorThrown) {
           alert('При удалении задачи произошла ошибка');
         })
-      ;      
+      ;
     }
 
     $('#taskTypesList').on('click', 'a', function (e) {
@@ -334,4 +331,3 @@
     </ul>
   </div>
 </nav>
-

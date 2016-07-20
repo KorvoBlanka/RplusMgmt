@@ -32,6 +32,19 @@ sub load_image_from_url {
   load_image($realty_id, $image, $storage_path, $crop);
 }
 
+sub put_external_image {
+  my ($realty_id, $img_url, $thumbnail_url) = @_;
+
+  my $photo = Rplus::Model::Photo->new;
+  $photo->realty_id($realty_id);
+  $photo->filename($img_url);
+  $photo->thumbnail_filename($thumbnail_url);
+
+  $photo->save;
+
+  return $photo;
+}
+
 sub load_image {
     my ($realty_id, $file, $storage_path, $crop) = @_;
 

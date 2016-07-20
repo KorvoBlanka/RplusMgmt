@@ -48,7 +48,6 @@ my $META = from_json($MEDIA->metadata);
 my $ua = Mojo::UserAgent->new;
 $ua->max_redirects(4);
 
-
 say 'importing...';
 
 unless (_import_in_progress()) {

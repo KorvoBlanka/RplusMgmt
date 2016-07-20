@@ -742,7 +742,13 @@ sub index {
                 my @photos;
                 my $photo_iter = Rplus::Model::Photo::Manager->get_objects_iterator(query => [realty_id => $realty->id, delete_date => undef], sort_by => 'id');
                 while (my $photo = $photo_iter->next) {
-                  my $t = $config->{storage}->{external} . '/photos/' . $photo->filename;
+
+                  my $url = '';
+                  if ($photo->filename !~ /^http/) {
+                      $url = $config->{storage}->{external} . '/photos/';
+                  }
+
+                  my $t = $url . $photo->filename;
                   $xml_writer->startTag('photos', url => $t, description => '');
                   $xml_writer->endTag();
                 }

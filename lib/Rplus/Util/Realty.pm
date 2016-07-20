@@ -214,7 +214,8 @@ sub _update_photos {
 
     for my $photo_url (@{$photos}) {
         say 'loading ' . $photo_url;
-        Rplus::Util::Image::load_image_from_url($realty_id, $photo_url, $storage_path, 0);
+        #Rplus::Util::Image::load_image_from_url($realty_id, $photo_url, $storage_path, 0);
+        Rplus::Util::Image::put_external_image($realty_id, $photo_url, $photo_url)
     }
 }
 
