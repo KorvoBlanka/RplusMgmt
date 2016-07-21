@@ -198,24 +198,20 @@
 <div class="row">
   <h3 class="page-header">Реклама объектов</h3>
   <ul class="nav nav-tabs">
+    <li class="active"><a href="#export-avito" data-toggle="tab">Avito</a></li>
+    <li><a href="#export-yandex" data-toggle="tab">Yandex</a></li>
+    <li><a href="#export-irr" data-toggle="tab">Из рук в руки</a></li>
     % my $loc_id = $self->config->{location_id};
     % if ($loc_id == 1) {
-    <li class="active"><a href="#export-avito" data-toggle="tab">Avito</a></li>
-    <li><a href="#export-irr" data-toggle="tab">Из рук в руки</a></li>
     <li><a href="#export-farpost" data-toggle="tab">Farpost</a></li>
     <li><a href="#export-present" data-toggle="tab">Презент</a></li>
     <li><a href="#export-vnh" data-toggle="tab">ВНХ</a></li>
-    <li><a href="#export-yandex" data-toggle="tab">Yandex</a></li>
     % } elsif ($loc_id == 2) {
-    <li class="active"><a href="#export-avito" data-toggle="tab">Avito</a></li>
-    <li><a href="#export-irr" data-toggle="tab">Из рук в руки</a></li>
     <li><a href="#export-farpost" data-toggle="tab">Farpost</a></li>
-    <li><a href="#export-yandex" data-toggle="tab">Yandex</a></li>
     % } elsif ($loc_id == 3) {
-    <li class="active"><a href="#export-zipal" data-toggle="tab">Zipal</a></li>
-    <li><a href="#export-avito" data-toggle="tab">Avito</a></li>
-    <li><a href="#export-irr" data-toggle="tab">Из рук в руки</a></li>
-    <li><a href="#export-yandex" data-toggle="tab">Yandex</a></li>
+    <li><a href="#export-zipal" data-toggle="tab">Zipal</a></li>
+    % } elsif ($loc_id == 3) {
+    <li><a href="#export-zipal" data-toggle="tab">Zipal</a></li>
     % }
 
   </ul>
