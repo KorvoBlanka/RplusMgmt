@@ -37,12 +37,6 @@ my $timezone = '';
 my %realty_types = ();
 
 
-# в категории other 'гаражи'' и 'other'. сделать категорию 'гараж'
-my %realty_offer_type = (
-    sale => 'продажа',
-    rent => 'аренда'
-);
-
 my %object_type = (
 
     room => 'room',
@@ -121,47 +115,61 @@ my %fields_sub = (
 # общие элементы
     'type' => sub { # продажа/аренда
         my ($r, $xw) = @_;
-
-        $xw->characters($realty_offer_type{$r->offer_type_code});
+        $xw->startTag('type');
+        $xw->characters($r->offer_type->name);
+        $xw->endTag();
     },
 
     'property-type' => sub {  # жилая/коммерческая
         my ($r, $xw) = @_;
+        $xw->startTag('property-type');
         if ($r->type->category_code eq 'commercial') {
             $xw->characters('коммерческая');
         } else {
             $xw->characters('жилая');
         }
-
+        $xw->endTag();
     },
 
     'category' => sub {   # «комната»/«room», «квартира»/«flat», «таунхаус»/«townhouse», «дом»/«house», «часть дома», «участок»/«lot», «земельный участок», «дом с участком»/«house with lot», «дача»/«cottage», «коммерческая»/«commercial»
         my ($r, $xw) = @_;
+        $xw->startTag('property-type');
         $xw->characters($object_type{$r->type_code});
+        $xw->endTag();
     },
 
     'commercial-type' => sub {
         my ($r, $xw) = @_;
+        $xw->startTag('commercial-type');
         $xw->characters($object_commercial_type{$r->type_code});
+        $xw->endTag();
     },
 
     'url' => sub {
         my ($r, $xw) = @_;
-        $xw->characters('url');
+        #$xw->startTag('url');
+        #$xw->characters('');
+        #$xw->endTag();
     },
 
     'creation-date' => sub {
         my ($r, $xw) = @_;
-        $xw->characters($r->add_date);
+        $xw->startTag('creation-date');
+        $xw->characters($r->add_date . $timezone);
+        $xw->endTag();
     },
 
     'last-update-date' => sub {
         my ($r, $xw) = @_;
-        $xw->characters($r->last_seen_date);
+        $xw->startTag('last-update-date');
+        $xw->characters($r->change_date . $timezone);
+        $xw->endTag();
     },
 
     'location' => sub {
         my ($r, $xw) = @_;
+
+        $xw->startTag('location');
 
         $xw->startTag('country');
         $xw->characters('Россия');
@@ -180,7 +188,7 @@ my %fields_sub = (
         $xw->endTag();
 
         $xw->startTag('address');
-        $xw->characters($r->address);
+        $xw->characters($r->address . ', ' . ($r->house_num ? $r->house_num : ''));
         $xw->endTag();
 
         $xw->startTag('latitude');
@@ -190,10 +198,14 @@ my %fields_sub = (
         $xw->startTag('longitude');
         $xw->characters($r->longitude);
         $xw->endTag();
+
+        $xw->endTag();
     },
 
     'sales-agent' => sub {
         my ($r, $xw) = @_;
+
+        $xw->startTag('sales-agent');
 
         if ($r->agent && $r->agent->public_name) {
             $xw->startTag('name');
@@ -226,10 +238,15 @@ my %fields_sub = (
         #$xw->startTag('photo');
         #$xw->characters('');
         #$xw->endTag();
+
+        $xw->endTag();
     },
 
     'price' => sub {
         my ($r, $xw) = @_;
+
+        $xw->startTag('price');
+
         $xw->startTag('value');
         $xw->characters($r->owner_price * 1000);
         $xw->endTag();
@@ -242,110 +259,173 @@ my %fields_sub = (
         #$xw->characters();
         #$xw->endTag();
 
-        $xw->startTag('period');
-        my $p;
-        if ($r->rent_type eq 'long') {
-            $xw->characters('месяц');
-        } else {
-            $xw->characters('день');
+        if ($r->offer_type_code eq 'rent') {
+            $xw->startTag('period');
+            my $p;
+            if ($r->rent_type eq 'long') {
+                $xw->characters('месяц');
+            } else {
+                $xw->characters('день');
+            }
+            $xw->endTag();
         }
+
         $xw->endTag();
     },
 
     'agent-fee' => sub {
         my ($r, $xw) = @_;
+
+        #$xw->startTag('agent-fee');
+        #$xw->endTag();
     },
 
     'commission' => sub {
         my ($r, $xw) = @_;
+
+        #$xw->startTag('commission');
+        #$xw->endTag();
     },
 
     'deal-status' => sub {
         my ($r, $xw) = @_;
+
+        $xw->startTag('deal-status');
+
         if ($r->offer_type_code eq 'rent') {
             $xw->characters('direct rent');
         } else {
             $xw->characters('sale');
         }
+
+        $xw->endTag();
     },
 
     'area' => sub {
         my ($r, $xw) = @_;
 
-        $xw->startTag('value');
-        $xw->characters($r->square_total);
-        $xw->endTag();
+        if ($r->square_total) {
+            $xw->startTag('area');
 
-        $xw->startTag('unit');
-        $xw->characters('sq. m');
-        $xw->endTag();
+            $xw->startTag('value');
+            $xw->characters($r->square_total);
+            $xw->endTag();
+
+            $xw->startTag('unit');
+            $xw->characters('sq. m');
+            $xw->endTag();
+
+            $xw->endTag();
+        }
     },
 
     'living-space' => sub {
         my ($r, $xw) = @_;
 
-        $xw->startTag('value');
-        $xw->characters($r->square_living);
-        $xw->endTag();
+        if ($r->square_living) {
+            $xw->startTag('living-space');
 
-        $xw->startTag('unit');
-        $xw->characters('sq. m');
-        $xw->endTag();
+            $xw->startTag('value');
+            $xw->characters($r->square_living);
+            $xw->endTag();
+
+            $xw->startTag('unit');
+            $xw->characters('sq. m');
+            $xw->endTag();
+
+            $xw->endTag();
+        }
     },
 
     'kitchen-space' => sub {
         my ($r, $xw) = @_;
 
-        $xw->startTag('value');
-        $xw->characters($r->square_kitchen);
-        $xw->endTag();
+        if ($r->square_living) {
+            $xw->startTag('kitchen-space');
 
-        $xw->startTag('unit');
-        $xw->characters('sq. m');
-        $xw->endTag();
+            $xw->startTag('value');
+            $xw->characters($r->square_kitchen);
+            $xw->endTag();
+
+            $xw->startTag('unit');
+            $xw->characters('sq. m');
+            $xw->endTag();
+
+            $xw->endTag();
+        }
     },
 
     'lot-area' => sub {
         my ($r, $xw) = @_;
 
-        $xw->startTag('value');
-        $xw->characters($r->square_land);
-        $xw->endTag();
+        if ($r->square_land) {
+            $xw->startTag('property-type');
 
-        $xw->startTag('unit');
-        $xw->characters($r->square_land_type);
-        $xw->endTag();
+            $xw->startTag('value');
+            $xw->characters($r->square_land);
+            $xw->endTag();
+
+            $xw->startTag('unit');
+            $xw->characters($r->square_land_type);
+            $xw->endTag();
+
+            $xw->endTag();
+        }
     },
 
     'renovation' => sub {
         my ($r, $xw) = @_;
+
         if ($r->condition) {
+            $xw->startTag('renovation');
             $xw->characters($r->condition->name);
+            $xw->endTag();
         }
     },
 
     'quality' => sub {
         my ($r, $xw) = @_;
+
+        #$xw->startTag('quality');
+        #$xw->endTag();
     },
 
     'description' => sub {
         my ($r, $xw) = @_;
+
+        $xw->startTag('description');
         $xw->characters($r->description);
+        $xw->endTag();
     },
 
     'rooms' => sub {
         my ($r, $xw) = @_;
-        $xw->characters($r->rooms_count);
+
+        if ($r->rooms_count) {
+            $xw->startTag('rooms');
+            $xw->characters($r->rooms_count);
+            $xw->endTag();
+        }
     },
 
     'rooms-offered' => sub {
         my ($r, $xw) = @_;
-        $xw->characters($r->rooms_offer_count);
+
+        if ($r->rooms_offer_count) {
+            $xw->startTag('rooms-offered');
+            $xw->characters($r->rooms_offer_count);
+            $xw->endTag();
+        }
     },
 
     'floor' => sub {
         my ($r, $xw) = @_;
-        $xw->characters($r->floors_count);
+
+        if ($r->floor) {
+            $xw->startTag('floor');
+            $xw->characters($r->floor);
+            $xw->endTag();
+        }
     },
 
     'open-plan' => sub {
@@ -359,7 +439,9 @@ my %fields_sub = (
     'rooms-type' => sub {
         my ($r, $xw) = @_;
         if ($r->room_scheme) {
+            $xw->startTag('rooms-type');
             $xw->characters($r->room_scheme->name);
+            $xw->endTag();
         }
     },
 
@@ -402,14 +484,18 @@ my %fields_sub = (
     'balcony' => sub {
         my ($r, $xw) = @_;
         if ($r->balcony) {
+            $xw->startTag('balcony');
             $xw->characters($r->balcony->name);
+            $xw->endTag();
         }
     },
 
     'bathroom-unit' => sub {
         my ($r, $xw) = @_;
         if ($r->bathroom) {
+            $xw->startTag('bathroom-unit');
             $xw->characters($r->bathroom->name);
+            $xw->endTag();
         }
     },
 
@@ -418,6 +504,281 @@ my %fields_sub = (
     },
 
     'window-view' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'entrance-type' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'phone-lines' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'adding-phone-on-request' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'internet' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'self-selection-telecom' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'room-furniture' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'air-conditioner' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'ventilation' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'fire-alarm' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'heating-supply' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'water-supply' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'sewerage-supply' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'electricity-supply' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'electric-capacity' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'gas-supply' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'floor-covering' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'window-type' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'floors-total' => sub {
+        my ($r, $xw) = @_;
+        if ($r->floors_count) {
+            $xw->startTag('floors-total');
+            $xw->characters($r->floors_count);
+            $xw->endTag();
+        }
+    },
+
+    'building-name' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'yandex-building-id' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'office-class' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'building-type' => sub {
+        my ($r, $xw) = @_;
+        if ($r->house_type) {
+            $xw->startTag('building-type');
+            $xw->characters($r->house_type->name);
+            $xw->endTag();
+        }
+    },
+
+    'building-series' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'building-phase' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'building-section' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'built-year' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'ready-quarter' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'building-state' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'guarded-building' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'access-control-system' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'twenty-four-seven' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'lift' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'rubbish-chute' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'is-elite' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'parking' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'parking-places' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'parking-place-price' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'parking-guest' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'parking-guest-places' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'alarm' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'flat-alarm' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'security' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'ceiling-height' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'eating-facilities' => sub {
+        my ($r, $xw) = @_;
+    },
+
+
+    'responsible-storage' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'pallet-price' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'freight-elevator' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'truck-entrance' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'ramp' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'railway' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'office-warehouse' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'open-area' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'service-three-pl' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'temperature-comment' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'pmg' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'water-supply' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'sewerage-supply' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'heating-supply' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'electricity-supply' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'gas-supply' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'kitchen' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'toilet' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'shower' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'pool' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'sauna' => sub {
+        my ($r, $xw) = @_;
+    },
+
+    'billiard' => sub {
         my ($r, $xw) = @_;
     }
 );
@@ -431,6 +792,8 @@ sub index {
     $region = $config->{export}->{region};
     $city = $config->{export}->{city};
     $timezone = $config->{timezone};
+
+    $timezone = (substr $timezone, 0, 3) . ':00';
 
     my $media = Rplus::Model::Media::Manager->get_objects(query => [code => 'yandex', type => 'export', delete_date => undef])->[0];
     return $self->render_not_found unless $media;
@@ -475,14 +838,6 @@ sub index {
     while (my ($offer_type, $value) = each $realty_types) {
         for my $realty_type (@$value) {
 
-            my @fields = @common_fields;
-            push (@fields, @description_fields);
-
-            my $ya_type = 'living';
-
-            my @t_a = @{$fields_by_type{$ya_type}};
-            push (@fields, @t_a);
-
             my $realty_category = {};
             my @tc;
             if ($realty_type =~ /apartments/) {
@@ -520,12 +875,32 @@ sub index {
             );
 
             while(my $realty = $realty_iter->next) {
+
+                my @fields = @common_fields;
+                push (@fields, @description_fields);
+
+                my $ya_type = 'non_living';
+
+                if ($realty->type_code =~ /apartment/ || $realty->type_code eq 'townhouse' || $realty->type_code eq 'room') {
+                    $ya_type = 'living';
+                }
+
+                if ($realty->type_code =~ /house/ || $realty->type_code =~ /cottage/) {
+                    $ya_type = 'residential';
+                }
+
+                my @t_a = @{$fields_by_type{$ya_type}};
+                push (@fields, @t_a);
+
+                if ($ya_type ne 'residential') {
+                    @t_a = @{$fields_by_type{'building'}};
+                    push (@fields, @t_a);
+                }
+
                 $xml_writer->startTag('offer', 'internal-id' => $realty->id);
                 foreach (@fields) {
-                    $xml_writer->startTag($_);
                     say $_;
                     $fields_sub{$_}->($realty, $xml_writer);
-                    $xml_writer->endTag();
                 }
                 $xml_writer->endTag();
             }
