@@ -8,7 +8,6 @@ use Rplus::Model::MediatorCompany::Manager;
 use Rplus::Model::Mediator::Manager;
 use Rplus::Model::Media::Manager;
 use Rplus::Model::Photo::Manager;
-use Rplus::Model::RealtyColorTag::Manager;
 use Rplus::Model::SubscriptionRealty::Manager;
 use Rplus::Model::Option::Manager;
 
@@ -43,6 +42,54 @@ my $accounts_iter = Rplus::Model::Account::Manager->get_objects_iterator(query =
 while (my $x = $accounts_iter->next) {
     $accounts_hash{$x->id} = $x->company_name ? $x->company_name : $x->name;
 }
+
+
+#
+my @mls_fields_apartment = (
+    'address', 'house_num', 'house_type_id', 'ap_scheme_id',
+    'rooms_count', 'room_scheme_id',
+    'floor', 'floors_count', 'condition_id', 'balcony_id', 'bathroom_id',
+    'square_total',
+    'description', 'owner_price', 'mls_price',
+);
+
+#
+my @mls_fields_rooms = (
+    'address', 'house_num', 'house_type_id', 'ap_scheme_id',
+    'rooms_count', 'rooms_offer_count', 'room_scheme_id',
+    'floor', 'floors_count', 'condition_id', 'balcony_id', 'bathroom_id',
+    'square_total',
+    'description', 'owner_price', 'mls_price',
+);
+
+my @mls_fields_house = (
+    'address', 'house_num', 'house_type_id',
+    'rooms_count', 'rooms_offer_count',
+    'condition_id', 'bathroom_id',
+    'square_total',
+    'description', 'owner_price', 'mls_price',
+);
+
+#
+my @mls_fields_land = (
+    'square_land', 'square_land_type',
+    'description', 'owner_price',
+    'mls_price',
+);
+
+#
+my @mls_fields_office = (
+    'address', 'house_num',
+    'square_total',
+    'description', 'owner_price',
+    'mls_price',
+);
+
+#
+my @mls_fields_other = (
+    'description', 'owner_price',
+    'mls_price',
+);
 
 
 my $required_export_str = q|{
@@ -173,22 +220,6 @@ my $_make_copy = sub {
             db => $db
         );
 
-        my $color_tag = Rplus::Model::RealtyColorTag::Manager->get_objects(query => [realty_id => $realty->id])->[0];
-        if ($color_tag) {
-            Rplus::Model::RealtyColorTag->new (
-                realty_id => $new_record->id,
-                tag0 => [$color_tag->tag0],
-                tag1 => [$color_tag->tag1],
-                tag2 => [$color_tag->tag2],
-                tag3 => [$color_tag->tag3],
-                tag4 => [$color_tag->tag4],
-                tag5 => [$color_tag->tag5],
-                tag6 => [$color_tag->tag6],
-                tag7 => [$color_tag->tag7],
-                db => $db
-            )->save;
-        }
-
         my $hidden_for = Mojo::Collection->new(@{$realty->hidden_for});
         push @$hidden_for, ($acc_id);
         $realty->hidden_for($hidden_for->compact->uniq);
@@ -209,6 +240,7 @@ my $_serialize = sub {
     my %params = @_;
 
     my $acc_id = $self->session('account')->{id};
+    my $user_id = $self->stash('user')->{id};
 
     my @exclude_fields = qw(ap_num source_media_id source_media_text owner_phones work_info reference source_url);
 
@@ -247,14 +279,15 @@ my $_serialize = sub {
             source_url => $realty->source_url,
         };
 
-        if ($realty->realty_color_tag) {
-            for (my $i = 0; $i <= 7; $i ++) {
-                my $tag_name = 'tag' . $i;
-                if ($self->stash('user')->{id} ~~ @{$realty->realty_color_tag->$tag_name}) {
-                    $x->{color_tag_id} = $i;
-                    last;
-                }
-            }
+        if ($realty->color_tag) {
+            my $ct = Mojo::Collection->new(@{$realty->color_tag});
+            my $tag_prefix = $user_id . '_';
+            $ct = $ct->grep(sub {
+                $_ =~ /$tag_prefix/;
+            });
+            my $t = $ct->first;
+            $t =~ s/^\d+?_//;
+            $x->{color_tag_id} = $t;
         }
 
         # Exclude fields for read permission "2"
@@ -326,7 +359,7 @@ sub list {
 
     my $rq_id = $self->param("rq_id") || 42;
     my $acc_id = $self->session('account')->{id};
-
+    my $user_id = $self->stash('user')->{id};
 
     my $multy = 0;
     if ($state_code eq 'multy') {
@@ -378,8 +411,8 @@ sub list {
         }
 
         if ($color_tag_id ne 'any') {
-            my $uid = $self->stash('user')->{id};
-            push @query, \("t2.tag$color_tag_id && '{$uid}'");
+            my $tag = $user_id . '_' . $color_tag_id;
+            push @query, \("t1.color_tag && '{$tag}'");
         }
 
         if ($state_code ne 'any') { push @query, state_code => $state_code } else { push @query, '!state_code' => 'deleted' };
@@ -482,7 +515,7 @@ sub list {
                 @query,
                 delete_date => undef
             ],
-            with_objects => ['realty_color_tag', @with_objects]
+            with_objects => [@with_objects]
         ),
         list => [],
         page => $page,
@@ -516,7 +549,7 @@ sub list {
         sort_by => [@sort_by, 'realty.last_seen_date desc'],
         page => $page,
         per_page => $per_page,
-        with_objects => ['realty_color_tag', @with_objects],
+        with_objects => [@with_objects],
     );
 
     $res->{list} = [$_serialize->($self, $realty_objs)];
@@ -557,6 +590,7 @@ sub save {
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => 'write');
 
     my $acc_id = $self->session('account')->{id};
+    my $user_id = $self->stash('user')->{id};
 
     # Input validation
     $self->validation->required('type_code'); # TODO: check value
@@ -627,7 +661,7 @@ sub save {
         $realty = Rplus::Model::Realty::Manager->get_objects(query => [id => $id, or => [account_id => undef, account_id => $acc_id], \("NOT hidden_for && '{".$acc_id."}'"), delete_date => undef])->[0];
     } else {
         $realty = Rplus::Model::Realty->new(
-            creator_id => $self->stash('user')->{id},
+            creator_id => $user_id,
             agent_id => scalar $self->param('agent_id'),
             account_id => $acc_id,
         );
@@ -662,6 +696,25 @@ sub save {
         $realty->export_media(Mojo::Collection->new());
     }
 
+    # Color tag
+    my $ct = Mojo::Collection->new();
+    if ($realty->color_tag) {
+        $ct = Mojo::Collection->new(@{$realty->color_tag});
+    }
+    my $tag_prefix = $user_id . '_';
+    if ($color_tag_id) {    # add tag
+        $ct = $ct->grep(sub {   # remove all user tags
+            $_ !~ /$tag_prefix/;
+        });
+        my $tag = $user_id . '_' . $color_tag_id;
+        push @$ct, $tag;        # add new
+    } else {                # remove tag
+        $ct = $ct->grep(sub {
+            $_ !~ /$tag_prefix/;
+        });
+    }
+    $realty->color_tag($ct->uniq);
+
     unless ($realty->account_id) {
         $realty = $_make_copy->($self, $realty);
         return $self->render(json => {error => 'Unable to make a copy'}, status => 404) unless $realty;
@@ -676,52 +729,7 @@ sub save {
         $realty->change_date('now()');
     }
 
-    #
-    my @mls_fields_apartment = (
-        'address', 'house_num', 'house_type_id', 'ap_scheme_id',
-        'rooms_count', 'room_scheme_id',
-        'floor', 'floors_count', 'condition_id', 'balcony_id', 'bathroom_id',
-        'square_total',
-        'description', 'owner_price', 'mls_price',
-    );
 
-    #
-    my @mls_fields_rooms = (
-        'address', 'house_num', 'house_type_id', 'ap_scheme_id',
-        'rooms_count', 'rooms_offer_count', 'room_scheme_id',
-        'floor', 'floors_count', 'condition_id', 'balcony_id', 'bathroom_id',
-        'square_total',
-        'description', 'owner_price', 'mls_price',
-    );
-
-    my @mls_fields_house = (
-        'address', 'house_num', 'house_type_id',
-        'rooms_count', 'rooms_offer_count',
-        'condition_id', 'bathroom_id',
-        'square_total',
-        'description', 'owner_price', 'mls_price',
-    );
-
-    #
-    my @mls_fields_land = (
-        'square_land', 'square_land_type',
-        'description', 'owner_price',
-        'mls_price',
-    );
-
-    #
-    my @mls_fields_office = (
-        'address', 'house_num',
-        'square_total',
-        'description', 'owner_price',
-        'mls_price',
-    );
-
-    #
-    my @mls_fields_other = (
-        'description', 'owner_price',
-        'mls_price',
-    );
 
     my @mls_fields;
 
@@ -786,29 +794,25 @@ sub set_color_tag_multiple {
             return;
         }
 
-        my $realty_tag = Rplus::Model::RealtyColorTag::Manager->get_objects(query => [realty_id => $id],)->[0];
-        if (!$realty_tag) {
-            $realty_tag = Rplus::Model::RealtyColorTag->new(realty_id => $id);
+        my $ct = Mojo::Collection->new();
+        if ($realty->color_tag) {
+            $ct = Mojo::Collection->new(@{$realty->color_tag});
         }
-
-        for (my $i = 0; $i <= 7; $i ++) {
-            my $tag_name = 'tag' . $i;
-            if ($i == $color_tag_id) {
-                if ($self->stash('user')->{id} ~~ @{$realty_tag->$tag_name}) {
-                    my $t_tags = Mojo::Collection->new(grep { $_ != $self->stash('user')->{id} } @{$realty_tag->$tag_name});
-                    $realty_tag->$tag_name($t_tags->compact->uniq);
-                } else {
-                    my $t_tags = Mojo::Collection->new(@{$realty_tag->$tag_name});
-                    push @$t_tags, ($user_id);
-                    $realty_tag->$tag_name($t_tags->compact->uniq);
-                }
-            } else {
-                my $t_tags = Mojo::Collection->new(grep { $_ != $self->stash('user')->{id} } @{$realty_tag->$tag_name});
-                $realty_tag->$tag_name($t_tags->compact->uniq);
-            }
+        my $tag_prefix = $user_id . '_';
+        my $tag = $tag_prefix . $color_tag_id;
+        if ($ct->first(qr/$tag/)) {   # remove tag
+            $ct = $ct->grep(sub {
+                $_ !~ /$tag/;
+            });
+        } else {                       # add tag
+            $ct = $ct->grep(sub {
+                $_ !~ /$tag_prefix/;
+            });
+            push @$ct, $tag;
         }
+        $realty->color_tag($ct->uniq);
+        $realty->save(changes_only => 1);
 
-        $realty_tag->save(changes_only => 1);
         $realtys{$realty->id} = $_serialize->($self, $realty);
     });
 

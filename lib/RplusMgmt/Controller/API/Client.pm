@@ -2,19 +2,11 @@ package RplusMgmt::Controller::API::Client;
 
 use Mojo::Base 'Mojolicious::Controller';
 
-use Rplus::Model::Client;
 use Rplus::Model::Client::Manager;
-use Rplus::Model::ClientColorTag::Manager;
-use Rplus::Model::Client::Manager;
-use Rplus::Model::Subscription;
 use Rplus::Model::Subscription::Manager;
-use Rplus::Model::SubscriptionRealty;
 use Rplus::Model::SubscriptionRealty::Manager;
-use Rplus::Model::Realty;
 use Rplus::Model::Realty::Manager;
-use Rplus::Model::SmsMessage;
 use Rplus::Model::SmsMessage::Manager;
-use Rplus::Model::Option;
 use Rplus::Model::Option::Manager;
 
 use Rplus::Util::Query;
@@ -26,6 +18,86 @@ use Mojo::Collection;
 use Time::Piece;
 
 use Data::Dumper;
+
+my $_serialize = sub {
+    my $self = shift;
+    my ($client, $with_subscriptions, $subscription_offer_type, $subscription_rent_type) = @_;
+
+    my $acc_id = $self->session('account')->{id};
+    my $user_id = $self->stash('user')->{id};
+
+    my $phone_num = '';
+    if (($client->agent_id && $client->agent_id == $user_id) ||
+          ($client->agent_id && $self->has_permission(clients => 'read')->{others}) ||
+              (!$client->agent_id && $self->has_permission(clients => 'read')->{nobody})) {
+        $phone_num = $client->phone_num;
+    }
+    my $res = {
+        id => $client->id,
+        name => $client->name,
+        phone_num => $phone_num,
+        email => $client->email,
+        skype => $client->skype,
+        add_date => $self->format_datetime($client->add_date),
+        change_date => $self->format_datetime($client->change_date),
+        description => $client->description,
+        send_owner_phone => $client->send_owner_phone,
+        color_tag_id => 0,
+        agent_id => $client->agent_id,
+    };
+
+    if ($client->color_tag) {
+        my $ct = Mojo::Collection->new(@{$client->color_tag});
+        my $tag_prefix = $user_id . '_';
+        $ct = $ct->grep(sub {
+            $_ =~ /$tag_prefix/;
+        });
+        my $t = $ct->first;
+        $t =~ s/^\d+?_//;
+        $res->{color_tag_id} = $t;
+    }
+
+    if ($with_subscriptions) {
+        # Load subscription data
+        $res->{subscriptions} = [];
+
+        my @query;
+        if ($subscription_offer_type && $subscription_offer_type ne 'any') {
+            push @query, 'offer_type_code' => $subscription_offer_type;
+            if ($subscription_rent_type && $subscription_rent_type ne 'any') {
+                push @query, 'rent_type' => $subscription_rent_type;
+            }
+        }
+        my $subscription_iter = Rplus::Model::Subscription::Manager->get_objects_iterator(
+            query => [
+                @query,
+                client_id => $client->id,
+                delete_date => undef,
+                #'!end_date' => undef,
+                #'subscription_realty.delete_date' => undef,
+            ],
+            sort_by => 'id',
+        );
+
+        my %realty_h;
+        while (my $subscription = $subscription_iter->next) {
+            my $x = {
+                id => $subscription->id,
+                offer_type_code => $subscription->offer_type_code,
+                rent_type => $subscription->rent_type,
+                queries => scalar $subscription->queries,
+                search_area => $subscription->search_area,
+                add_date => $self->format_datetime($subscription->add_date),
+                end_date => $self->format_datetime($subscription->end_date),
+                #realty_count => scalar @{$subscription->subscription_realty},
+                realty_limit => $subscription->realty_limit,
+                send_owner_phone => $subscription->send_owner_phone ? \1 : \0,
+            };
+            push @{$res->{subscriptions}}, $x;
+        }
+    }
+    return $res;
+};
 
 sub list {
     my $self = shift;
@@ -44,7 +116,7 @@ sub list {
     }
 
     # Input params
-    my $subscription_offer_types = $self->param("subscription_offer_types") || 'any';
+    my $subscription_offer_type = $self->param("subscription_offer_types") || 'any';
     my $subscription_rent_type = $self->param("subscription_rent_type") || 'any';
     my $color_tag_id = $self->param("color_tag_id") || 'any';
     my $agent_id = $self->param("agent_id") || 'any';
@@ -52,12 +124,7 @@ sub list {
     my $per_page = $self->param("per_page") || 30;
 
     my $acc_id = $self->session('account')->{id};
-
-    my $res = {
-        count => 0,#Rplus::Model::Client::Manager->get_objects_count(query => [account_id => $acc_id, delete_date => undef]),
-        list => [],
-        page => $page,
-    };
+    my $user_id = $self->stash('user')->{id};
 
     my @query;
     {
@@ -71,8 +138,11 @@ sub list {
             }
         }
         if ($color_tag_id ne 'any') {
-            push @query, 'client_color_tags.color_tag_id' => $color_tag_id;
-            push @query, 'client_color_tags.user_id' => $self->stash('user')->{id};
+            my $tag = $user_id . '_' . $color_tag_id;
+            push @query, \("color_tag && '{$tag}'");
+        }
+        if ($subscription_offer_type ne 'any') {
+            push @query, 'subscriptions.offer_type_code' => $subscription_offer_type;
         }
         if ($subscription_rent_type ne 'any') {
             push @query, 'subscriptions.rent_type' => $subscription_rent_type;
@@ -84,82 +154,24 @@ sub list {
             'clients.*',
         ],
         query => [
-            account_id => $acc_id,
-            'subscriptions.offer_type_code' => $subscription_offer_types,
-            #or => [
-            #    subscription_offer_types => $subscription_offer_types,
-            #    subscription_offer_types => 'both',
-            #],
             @query,
+            account_id => $acc_id,
             delete_date => undef,
         ],
-        with_objects => ['client_color_tags', 'subscriptions'],
+        with_objects => ['subscriptions'],
         sort_by => 'change_date desc',
         page => $page,
         per_page => $per_page,
     );
 
+    my $res = {
+        count => 0,#Rplus::Model::Client::Manager->get_objects_count(query => [account_id => $acc_id, delete_date => undef]),
+        list => [],
+        page => $page,
+    };
+
     while (my $client = $clients_iter->next) {
-        my $phone_num = ' ';
-        if (($client->agent_id && $client->agent_id == $self->stash('user')->{id}) || ($client->agent_id && $self->has_permission(clients => 'read')->{others}) || (!$client->agent_id && $self->has_permission(clients => 'read')->{nobody})) {
-            $phone_num = $client->phone_num;
-        }
-        my $x = {
-            id => $client->id,
-            add_date => $self->format_datetime($client->add_date),
-            change_date => $self->format_datetime($client->change_date),
-            name => $client->name,
-            phone_num => $phone_num,
-            email => $client->email,
-            skype => $client->skype,
-            description => $client->description,
-            subscriptions => [],
-            color_tag_id => 0,
-            agent_id => $client->agent_id,
-        };
-
-        if($client->client_color_tags) {
-            foreach ($client->client_color_tags) {
-                if ($_->user_id == $self->stash('user')->{id}) {
-                    $x->{color_tag_id} = $_->{color_tag_id};
-                    last;
-                }
-            }
-        }
-
-        my @query;
-        {
-            if ($subscription_rent_type ne 'any') {
-                push @query, 'rent_type' => $subscription_rent_type;
-            }
-        }
-        my $subscription_iter = Rplus::Model::Subscription::Manager->get_objects_iterator(
-            query => [
-                @query,
-                client_id => $client->id,
-                offer_type_code => $subscription_offer_types,
-                delete_date => undef,
-                #'!end_date' => undef,
-                #'subscription_realty.delete_date' => undef,
-            ],
-        );
-
-        while (my $subscription = $subscription_iter->next) {
-            my $sub = {
-                id => $subscription->id,
-                queries => scalar $subscription->queries,
-                search_area => $subscription->search_area,
-                offer_type_code => $subscription->offer_type_code,
-                rent_type => $subscription->rent_type,
-                add_date => $self->format_datetime($subscription->add_date),
-                end_date => $self->format_datetime($subscription->end_date),
-                realty_count => scalar @{$subscription->subscription_realty},
-                realty_limit => $subscription->realty_limit,
-                send_owner_phone => $subscription->send_owner_phone ? \1 : \0,
-            };
-            push @{$x->{subscriptions}}, $sub;
-        }
-        push @{$res->{list}}, $x;
+        push @{$res->{list}}, $_serialize->($self, $client, 1, $subscription_offer_type, $subscription_rent_type);
     }
 
     return $self->render(json => $res);
@@ -172,72 +184,18 @@ sub get {
 
     # Retrieve client (by id or phone_num)
     my $acc_id = $self->session('account')->{id};
+    my $user_id = $self->stash('user')->{id};
+    my $with_subscriptions = $self->param_b('with_subscriptions');
 
     my $client;
     if (my $id = $self->param('id')) {
-        $client = Rplus::Model::Client::Manager->get_objects(query => [account_id => $acc_id, id => $id, delete_date => undef], with_objects => ['client_color_tags'],)->[0];
+        $client = Rplus::Model::Client::Manager->get_objects(query => [account_id => $acc_id, id => $id, delete_date => undef],)->[0];
     } elsif (my $phone_num = $self->parse_phone_num(scalar $self->param('phone_num'))) {
-        $client = Rplus::Model::Client::Manager->get_objects(query => [account_id => $acc_id, phone_num => $phone_num, delete_date => undef], with_objects => ['client_color_tags'],)->[0];
+        $client = Rplus::Model::Client::Manager->get_objects(query => [account_id => $acc_id, phone_num => $phone_num, delete_date => undef],)->[0];
     }
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $client;
 
-    my $phone_num = '';
-    if (($client->agent_id && $client->agent_id == $self->stash('user')->{id}) || ($client->agent_id && $self->has_permission(clients => 'read')->{others}) || (!$client->agent_id && $self->has_permission(clients => 'read')->{nobody})) {
-        $phone_num = $client->phone_num;
-    }
-    my $res = {
-        id => $client->id,
-        name => $client->name,
-        phone_num => $phone_num,
-        email => $client->email,
-        skype => $client->skype,
-        add_date => $self->format_datetime($client->add_date),
-        change_date => $self->format_datetime($client->change_date),
-        description => $client->description,
-        send_owner_phone => $client->send_owner_phone,
-        color_tag_id => 0,
-        agent_id => $client->agent_id,
-    };
-
-    if($client->client_color_tags) {
-        foreach ($client->client_color_tags) {
-            if ($_->user_id == $self->stash('user')->{id}) {
-                $res->{color_tag_id} = $_->{color_tag_id};
-                last;
-            }
-        }
-    }
-
-    if ($self->param_b('with_subscriptions')) {
-        # Load subscription data
-        $res->{subscriptions} = [];
-        my $subscription_iter = Rplus::Model::Subscription::Manager->get_objects_iterator(
-            query => [
-                client_id => $client->id,
-                delete_date => undef,
-                #'!end_date' => undef,
-            ],
-            #require_objects => ['client'],
-            #with_objects => ['subscription_realty'],
-            sort_by => 'id',
-        );
-        my %realty_h;
-        while (my $subscription = $subscription_iter->next) {
-            my $x = {
-                id => $subscription->id,
-                offer_type_code => $subscription->offer_type_code,
-                rent_type => $subscription->rent_type,
-                queries => scalar $subscription->queries,
-                search_area => $subscription->search_area,
-                add_date => $self->format_datetime($subscription->add_date),
-                end_date => $self->format_datetime($subscription->end_date),
-                #realty_count => scalar @{$subscription->subscription_realty},
-                realty_limit => $subscription->realty_limit,
-                send_owner_phone => $subscription->send_owner_phone ? \1 : \0,
-            };
-            push @{$res->{subscriptions}}, $x;
-        }
-    }
+    my $res = $_serialize->($self, $client, $with_subscriptions);
 
     return $self->render(json => $res);
 }
@@ -248,15 +206,19 @@ sub save {
     # Retrieve client
     my $client;
     my $acc_id = $self->session('account')->{id};
+    my $user_id = $self->stash('user')->{id};
+
     if (my $id = $self->param('id')) {
         $client = Rplus::Model::Client::Manager->get_objects(query => [account_id => $acc_id, id => $id, delete_date => undef])->[0];
     } else {
         $client = Rplus::Model::Client->new;
     }
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $client;
-    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(clients => 'write' => $client->agent_id) ||
-                                                                                                        $client->agent_id == $self->stash('user')->{id} ||
-                                                                                                        !$client->id && $self->param('agent_id') == $self->stash('user')->{id};
+    return $self->render(json => {error => 'Forbidden'}, status => 403)
+        unless
+            $self->has_permission(clients => 'write' => $client->agent_id) ||
+            $client->agent_id == $user_id ||
+            !$client->id && $self->param('agent_id') == $user_id;
 
     # Validation
     $self->validation->required('phone_num')->is_phone_num;
@@ -298,6 +260,25 @@ sub save {
         $client->agent_id(undef);
     }
 
+    # Color tag
+    my $ct = Mojo::Collection->new();
+    if ($client->color_tag) {
+        $ct = Mojo::Collection->new(@{$client->color_tag});
+    }
+    my $tag_prefix = $user_id . '_';
+    if ($color_tag_id) {
+        $ct = $ct->grep(sub {   # remove all user tags
+            $_ !~ /$tag_prefix/;
+        });
+        my $tag = $tag_prefix . $color_tag_id;
+        push @$ct, $tag;        # add new
+    } else {
+        $ct = $ct->grep(sub {
+            $_ !~ /$tag_prefix/;
+        });
+    }
+    $client->color_tag($ct);
+
     $client->change_date('now()');
 
     eval {
@@ -305,24 +286,6 @@ sub save {
     } or do {
         return $self->render(json => {error => $@}, status => 500);
     };
-
-    my $user_id = $self->stash('user')->{id};
-    my $color_tag = Rplus::Model::ClientColorTag::Manager->get_objects(query => [client_id => $client->id, user_id => $user_id,])->[0];
-    if ($color_tag) {
-        if ($color_tag_id != $color_tag->color_tag_id) {
-          $color_tag->color_tag_id($color_tag_id);
-        } else {
-          #$color_tag->color_tag_id(undef);
-        }
-        $color_tag->save(changes_only => 1);
-    } else {
-        $color_tag = Rplus::Model::ClientColorTag->new(
-            client_id => $client->id,
-            user_id => $user_id,
-            color_tag_id => $color_tag_id,
-        );
-        $color_tag->save(insert => 1);
-    }
 
     return $self->render(json => {status => 'success', id => $client->id});
 }
@@ -339,6 +302,8 @@ sub update {
 
 
     my $acc_id = $self->session('account')->{id};
+    my $user_id = $self->stash('user')->{id};
+
     my $client = Rplus::Model::Client::Manager->get_objects(query => [account_id => $acc_id, id => $id, delete_date => undef])->[0];
 
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $client;
@@ -356,24 +321,25 @@ sub update {
     }
     if (defined $color_tag_id) {
         $permission_granted = 1;
-        my $color_tag_id = $self->param('color_tag_id');
-        my $user_id = $self->stash('user')->{id};
-        my $color_tag = Rplus::Model::ClientColorTag::Manager->get_objects(query => [client_id => $client->id, user_id => $user_id,])->[0];
-        if ($color_tag) {
-            if ($color_tag_id != $color_tag->color_tag_id) {
-              $color_tag->color_tag_id($color_tag_id);
-            } else {
-              #$color_tag->color_tag_id(undef);
-            }
-            $color_tag->save(changes_only => 1);
-        } else {
-            $color_tag = Rplus::Model::ClientColorTag->new(
-                client_id => $client->id,
-                user_id => $user_id,
-                color_tag_id => $color_tag_id,
-            );
-            $color_tag->save(insert => 1);
+
+        my $ct = Mojo::Collection->new();
+        if ($client->color_tag) {
+            $ct = Mojo::Collection->new(@{$client->color_tag});
         }
+        my $tag_prefix = $user_id . '_';
+        my $tag = $tag_prefix . $color_tag_id;
+        if ($ct->first(qr/$tag/)) {   # remove tag
+            $ct = $ct->grep(sub {
+                $_ !~ /$tag/;
+            });
+        } else {                       # add tag
+            $ct = $ct->grep(sub {
+                $_ !~ /$tag_prefix/;
+            });
+            push @$ct, $tag;
+        }
+        $client->color_tag($ct->uniq);
+
     }
 
     # Check that we can rewrite
@@ -428,6 +394,7 @@ sub subscribe {
     }
 
     my $acc_id = $self->session('account')->{id};
+    my $user_id = $self->stash('user')->{id};
 
     # Input params
     my $phone_num = $self->parse_phone_num(scalar $self->param('phone_num'));
@@ -445,7 +412,7 @@ sub subscribe {
         $client = Rplus::Model::Client->new(account_id => $acc_id, phone_num => $phone_num);
     }
 
-    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(clients => 'subscribe') || $client->agent_id == $self->stash('user')->{id};
+    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(clients => 'subscribe') || $client->agent_id == $user_id;
 
     $client->change_date('now()');
     $client->save;
@@ -453,7 +420,7 @@ sub subscribe {
     # Add subscription
     my $subscription = Rplus::Model::Subscription->new(
         client_id => $client->id,
-        user_id => $self->stash('user')->{id},
+        user_id => $user_id,
         queries => [$q],
         search_area => $search_area,
         offer_type_code => $offer_type_code,
@@ -521,6 +488,7 @@ sub get_active_count {
     my $self = shift;
 
     my $acc_id = $self->session('account')->{id};
+    my $user_id = $self->stash('user')->{id};
 
     my $offer_type_code = $self->param('offer_type_code');
     my $rent_type = $self->param('rent_type') || 'any';
@@ -531,10 +499,10 @@ sub get_active_count {
     if ($self->stash('user')) {
         if ($self->stash('user')->{role} eq 'manger') {
             my $t = $self->stash('user')->{subordinate};
-            push @{$t}, $self->stash('user')->{id};
+            push @{$t}, $user_id;
             push @query, agent_id => $t;
         } elsif ($self->stash('user')->{role} eq 'agent' || $self->stash('user')->{role} eq 'agent_plus') {
-            push @query, agent_id => $self->stash('user')->{id};
+            push @query, agent_id => $user_id;
         }
 
         if ($rent_type ne 'any') {

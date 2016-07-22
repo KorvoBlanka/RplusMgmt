@@ -1,0 +1,68 @@
+#!/usr/bin/env perl
+
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+
+use Rplus::Modern;
+
+use Rplus::Model::Realty::Manager;
+use Rplus::Model::Client::Manager;
+use Rplus::Model::RealtyColorTag::Manager;
+use Rplus::Model::ClientColorTag::Manager;
+
+use Rplus::DB;
+
+my $dbh = Rplus::DB->new_or_cached->dbh;
+
+if (1) {
+    $dbh->do(q{ALTER TABLE realty ADD COLUMN color_tag varchar[];});
+    $dbh->do(q{ALTER TABLE clients ADD COLUMN color_tag varchar[];});
+}
+
+if (1) {
+    my $count = 0;
+
+    my $tag_iter = Rplus::Model::RealtyColorTag::Manager->get_objects_iterator();
+    while (my $tag = $tag_iter->next) {
+
+        for my $i (1..7) {
+            my $tag_name = 'tag' . $i;
+            my $ar = $tag->$tag_name;
+            for my $u_id (@$ar) {
+                my $new_tag = $u_id . '_1';
+                my $realty = Rplus::Model::Realty::Manager->get_objects(id => $tag->realty_id)->[0];
+                my $ct = $realty->color_tag;
+                push @$ct, $new_tag;
+                $realty->color_tag($ct);
+                $realty->save(changes_only => 1);
+                $count ++;
+            }
+        }
+    }
+    say $count;
+}
+
+if (1) {
+    my $count = 0;
+    my $tag_iter = Rplus::Model::ClientColorTag::Manager->get_objects_iterator();
+    while (my $tag = $tag_iter->next) {
+        if ($tag->color_tag_id) {
+            my $u_id = $tag->user_id;
+            my $new_tag = $u_id . '_' . $tag->color_tag_id;
+            my $client = Rplus::Model::Realty::Manager->get_objects(id => $tag->client_id)->[0];
+            my $ct = $client->color_tag;
+            push @$ct, $new_tag;
+            $client->color_tag($ct);
+            $client->save(changes_only => 1);
+            $count ++;
+        }
+    }
+    say $count;
+}
+
+if (1) {
+    #$dbh->do(q{DROP TABLE realty_color_tags;});
+    #$dbh->do(q{DROP TABLE client_color_tags;});
+}
+
+1;

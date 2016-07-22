@@ -78,6 +78,7 @@ __PACKAGE__->meta->setup(
         pois                => { type => 'array' },
         address             => { type => 'varchar' },
         locality            => { type => 'varchar' },
+        color_tag           => { type => 'array' },
     ],
 
     primary_key_columns => [ 'id' ],

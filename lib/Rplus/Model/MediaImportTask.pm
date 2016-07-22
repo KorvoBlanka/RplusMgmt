@@ -12,7 +12,7 @@ __PACKAGE__->meta->setup(
         source_name => { type => 'varchar', not_null => 1 },
         source_url  => { type => 'varchar', not_null => 1 },
         add_date    => { type => 'timestamp with time zone', default => 'now()', not_null => 1 },
-        delete_date => { type => 'date' },
+        delete_date => { type => 'timestamp with time zone' },
     ],
 
     primary_key_columns => [ 'id' ],
