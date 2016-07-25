@@ -290,8 +290,8 @@
 
         var $delete_e = $("#el_delete");
 
-        var $control_els = $(".control_els");     // state, agent, media_export
-        var $menu_els = $(".menu_els");           // state, agent, media_export
+        var $control_els = $(".control_els");
+        var $menu_els = $(".menu_els");
 
         var context_cb = function(e){
 
@@ -326,9 +326,8 @@
 
               var s_id = Rplus.Table['users'][obj.agent_id] ? Rplus.Table['users'][obj.agent_id].superior : null;
 
-              var media_export_row = obj.export_media;
-              for (var id_key in media_export_row) {
-                var val = media_export_row[id_key];
+              for (var id_key in obj.export_media) {
+                var val = obj.export_media[id_key];
                 if (ids[val] === undefined) {
                   ids[val] = 1;
                 } else {
@@ -336,43 +335,43 @@
                 }
               }
 
-                for (var id_key in ids) {
-                    if (ids[id_key] == $selected.length) {
-                        $(".export-check" + id_key).removeClass("export-check-hidden").removeClass("export-check-grayed").addClass("export-check-visible");
-                    } else {
-                        $(".export-check" + id_key).removeClass("export-check-hidden").removeClass("export-check-visible").addClass("export-check-grayed");
-                    }
-                }
-                //
+              for (var id_key in ids) {
+                  if (ids[id_key] == $selected.length) {
+                      $(".export-check" + id_key).removeClass("export-check-hidden").removeClass("export-check-grayed").addClass("export-check-visible");
+                  } else {
+                      $(".export-check" + id_key).removeClass("export-check-hidden").removeClass("export-check-visible").addClass("export-check-grayed");
+                  }
+              }
+              //
 
-                if (role == 'top' || role == 'manager' && (!obj.agent_id || s_id == "<%= $self->stash('user')->{id} %>")) {
+              if (role == 'top' || role == 'manager' && (!obj.agent_id || s_id == "<%= $self->stash('user')->{id} %>")) {
 
-                } else {
-                    if (obj.agent_id == null) {
-                        $("#el_assign").removeClass('disabled');
+              } else {
+                  if (obj.agent_id == null) {
+                      $("#el_assign").removeClass('disabled');
 
-                        $menu_export.addClass('disabled');
-                        $menu_states.addClass('disabled');
-                        $("#el_delete").addClass('disabled');
-                    } else {
-                        $("#el_assign").addClass('disabled');
-                        $("#el_agents").addClass('disabled');
-                        if (obj.agent_id != <%= $self->stash('user')->{id} %>) {
-                            $menu_export.addClass('disabled');
-                            $menu_states.addClass('disabled');
-                            $("#el_delete").addClass('disabled');
-                        }
-                    }
-                }
-            });
+                      $menu_export.addClass('disabled');
+                      $menu_states.addClass('disabled');
+                      $("#el_delete").addClass('disabled');
+                  } else {
+                      $("#el_assign").addClass('disabled');
+                      $("#el_agents").addClass('disabled');
+                      if (obj.agent_id != <%= $self->stash('user')->{id} %>) {
+                          $menu_export.addClass('disabled');
+                          $menu_states.addClass('disabled');
+                          $("#el_delete").addClass('disabled');
+                      }
+                  }
+              }
+          });
 
-            var state_code = $('[data-filter="state_code"]').data('val');
-            if (state_code == 'multy') {
-                $menu_export.addClass('disabled');
-                $menu_states.addClass('disabled');
-                $("#el_delete").addClass('disabled');
-                $("#el_agents").addClass('disabled');
-            }
+          var state_code = $('[data-filter="state_code"]').data('val');
+          if (state_code == 'multy') {
+              $menu_export.addClass('disabled');
+              $menu_states.addClass('disabled');
+              $("#el_delete").addClass('disabled');
+              $("#el_agents").addClass('disabled');
+          }
         };
 
       context.init({preventDoubleContext: true, compress: true, above: 'auto',}, context_cb);

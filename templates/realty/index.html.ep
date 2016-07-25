@@ -522,8 +522,8 @@
 
         var $delete_e = $("#el_delete");
 
-        var $control_els = $(".control_els");     // state, agent, media_export
-        var $menu_els = $(".menu_els");           // state, agent, media_export
+        var $control_els = $(".control_els");
+        var $menu_els = $(".menu_els");
 
         var context_cb = function(e){
 
@@ -556,10 +556,9 @@
                 var id = $this.data('id');
                 var obj = $this.data('obj');
 
-                var s_id = Rplus.Table['users'][obj.agent_id] ? Rplus.Table['users'][obj.agent_id].superior : null;
-
-                for (var idx in obj.media_export) {
-                    var val = obj.media_export[idx];
+                console.log(obj);
+                for (var idx in obj.export_media) {
+                    var val = obj.export_media[idx];
                     if (ids[val] === undefined) {
                         ids[val] = 1;
                     } else {
@@ -575,6 +574,7 @@
                 }
                 //
 
+                var s_id = Rplus.Table['users'][obj.agent_id] ? Rplus.Table['users'][obj.agent_id].superior : null;
                 if (role == 'top' || role == 'manager' && (!obj.agent_id || s_id == "<%= $self->stash('user')->{id} %>")) {
 
                 } else {
