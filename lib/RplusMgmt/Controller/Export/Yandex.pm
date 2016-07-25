@@ -133,7 +133,7 @@ my %fields_sub = (
 
     'category' => sub {   # «комната»/«room», «квартира»/«flat», «таунхаус»/«townhouse», «дом»/«house», «часть дома», «участок»/«lot», «земельный участок», «дом с участком»/«house with lot», «дача»/«cottage», «коммерческая»/«commercial»
         my ($r, $xw) = @_;
-        $xw->startTag('property-type');
+        $xw->startTag('category');
         $xw->characters($object_type{$r->type_code});
         $xw->endTag();
     },
@@ -359,7 +359,7 @@ my %fields_sub = (
         my ($r, $xw) = @_;
 
         if ($r->square_land) {
-            $xw->startTag('property-type');
+            $xw->startTag('lot-area');
 
             $xw->startTag('value');
             $xw->characters($r->square_land);
