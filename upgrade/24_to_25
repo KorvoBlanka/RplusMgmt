@@ -23,14 +23,17 @@ if (1) {
     my $count = 0;
 
     my $tag_iter = Rplus::Model::RealtyColorTag::Manager->get_objects_iterator();
-    while (my $tag = $tag_iter->next) {
 
+    while (my $tag = $tag_iter->next) {
+        say $tag->realty_id;
         for my $i (1..7) {
             my $tag_name = 'tag' . $i;
+            say $tag_name;
             my $ar = $tag->$tag_name;
             for my $u_id (@$ar) {
-                my $new_tag = $u_id . '_1';
-                my $realty = Rplus::Model::Realty::Manager->get_objects(id => $tag->realty_id)->[0];
+                my $new_tag = $u_id . '_' . $i;
+                say $new_tag;
+                my $realty = Rplus::Model::Realty::Manager->get_objects(query => [id => $tag->realty_id])->[0];
                 my $ct = $realty->color_tag;
                 push @$ct, $new_tag;
                 $realty->color_tag($ct);
