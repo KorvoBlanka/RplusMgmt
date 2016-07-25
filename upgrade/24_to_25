@@ -14,7 +14,7 @@ use Rplus::DB;
 
 my $dbh = Rplus::DB->new_or_cached->dbh;
 
-if (1) {
+if (0) {
     $dbh->do(q{ALTER TABLE realty ADD COLUMN color_tag varchar[];});
     $dbh->do(q{ALTER TABLE clients ADD COLUMN color_tag varchar[];});
 }
@@ -52,7 +52,8 @@ if (1) {
         if ($tag->color_tag_id) {
             my $u_id = $tag->user_id;
             my $new_tag = $u_id . '_' . $tag->color_tag_id;
-            my $client = Rplus::Model::Realty::Manager->get_objects(id => $tag->client_id)->[0];
+            say $tag->client_id . ' ' . $new_tag;
+            my $client = Rplus::Model::Client::Manager->get_objects(query => [id => $tag->client_id])->[0];
             my $ct = $client->color_tag;
             push @$ct, $new_tag;
             $client->color_tag($ct);
@@ -63,9 +64,9 @@ if (1) {
     say $count;
 }
 
-if (1) {
-    #$dbh->do(q{DROP TABLE realty_color_tags;});
-    #$dbh->do(q{DROP TABLE client_color_tags;});
+if (0) {
+    $dbh->do(q{DROP TABLE realty_color_tags;});
+    $dbh->do(q{DROP TABLE client_color_tags;});
 }
 
 1;
