@@ -43,6 +43,7 @@ my $_serialize = sub {
     my @exclude_fields = qw(ap_num source_media_id source_media_text owner_phones work_info reference);
 
     my $acc_id = $self->session('account')->{id};
+    my $user_id = $self->stash('user')->{id};
 
     my (@serialized, %realty_h);
     for my $realty (@realty_objs) {
@@ -79,14 +80,15 @@ my $_serialize = sub {
             sr_offered => $realty->{sr_offered},
         };
 
-        if ($realty->realty_color_tag) {
-            for (my $i = 0; $i <= 7; $i ++) {
-                my $tag_name = 'tag' . $i;
-                if ($self->stash('user')->{id} ~~ @{$realty->realty_color_tag->$tag_name}) {
-                    $x->{color_tag_id} = $i;
-                    last;
-                }
-            }
+        if ($realty->color_tag) {
+            my $ct = Mojo::Collection->new(@{$realty->color_tag});
+            my $tag_prefix = $user_id . '_';
+            $ct = $ct->grep(sub {
+                $_ =~ /$tag_prefix/;
+            });
+            my $t = $ct->first;
+            $t =~ s/^\d+?_//;
+            $x->{color_tag_id} = $t;
         }
 
         # Exclude fields for read permission "2"
@@ -289,6 +291,7 @@ sub realty_list {
     my $sr_offered = $self->param("sr_offered") || 'any';
 
     my $acc_id = $self->session('account')->{id};
+    my $user_id = $self->stash('user')->{id};
 
     my $ff = '';
 
@@ -339,11 +342,12 @@ sub realty_list {
 
 
         }
+
         if ($color_tag_id ne 'any') {
-            push @query, and => [
-                'realty_color_tag.tag' . $color_tag_id  => $self->stash('user')->{id},
-            ];
+            my $tag = $user_id . '_' . $color_tag_id;
+            push @query, \("t2.color_tag && '{$tag}'");
         }
+
         if ($state_code ne 'any') {
             push @query, 'realty.state_code' => $state_code;
         } else {
@@ -366,7 +370,6 @@ sub realty_list {
             '!state_code' => 'del',
         ],
         require_objects => ['realty'],
-        with_objects => ['realty_color_tag'],
     );
 
     my $realty_iter = Rplus::Model::SubscriptionRealty::Manager->get_objects_iterator(
@@ -375,7 +378,7 @@ sub realty_list {
             @query,
             '!state_code' => 'del',
         ],
-        with_objects => ['realty', 'realty_color_tag'],
+        with_objects => ['realty'],
         sort_by => 'subscription_realty.state_code ASC',
         page => $page,
         per_page => $per_page,
