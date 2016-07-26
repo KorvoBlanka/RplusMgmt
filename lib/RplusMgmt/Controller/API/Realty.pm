@@ -431,11 +431,11 @@ sub list {
         } elsif ($agent_id eq 'not_med') {
             push @query, agent_id => undef;
             push @query,
-                [\"NOT EXISTS (SELECT 1 FROM mediators WHERE mediators.phone_num = ANY (t1.owner_phones) AND mediators.delete_date IS NULL AND ((mediators.account_id IS NULL AND NOT mediators.hidden_for_aid && '{$acc_id}') OR mediators.account_id = $acc_id) LIMIT 1)"];
+                [\"NOT EXISTS (SELECT 1 FROM mediators WHERE mediators.phone_num = ANY (t1.owner_phones) AND mediators.delete_date IS NULL AND (NOT mediators.hidden_for_aid && '{$acc_id}' AND (mediators.account_id IS NULL OR mediators.account_id = $acc_id)) LIMIT 1)"];
             $agent_ok = 1;
         } elsif ($agent_id eq 'med') {
             push @query,
-                [\"EXISTS (SELECT 1 FROM mediators WHERE mediators.phone_num = ANY (t1.owner_phones) AND mediators.delete_date IS NULL AND ((mediators.account_id IS NULL AND NOT mediators.hidden_for_aid && '{$acc_id}') OR mediators.account_id = $acc_id) LIMIT 1)"];
+                [\"EXISTS (SELECT 1 FROM mediators WHERE mediators.phone_num = ANY (t1.owner_phones) AND mediators.delete_date IS NULL AND (NOT mediators.hidden_for_aid && '{$acc_id}' AND (mediators.account_id IS NULL OR mediators.account_id = $acc_id)) LIMIT 1)"];
             $agent_ok = 1;
         } elsif ($agent_id =~ /^a(\d+)$/) {
             my $manager = Rplus::Model::User::Manager->get_objects(query => [id => $1, delete_date => undef])->[0];
