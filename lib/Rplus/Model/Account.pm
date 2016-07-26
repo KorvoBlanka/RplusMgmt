@@ -17,7 +17,7 @@ __PACKAGE__->meta->setup(
         reg_code     => { type => 'varchar', length => 64 },
         reg_date     => { type => 'timestamp with time zone', default => 'now()', not_null => 1 },
         del_date     => { type => 'timestamp with time zone' },
-        name         => { type => 'varchar', length => 16, not_null => 1 },
+        name         => { type => 'varchar', length => 64, not_null => 1 },
         location_id  => { type => 'integer', default => 1, not_null => 1 },
         company_name => { type => 'varchar', length => 128 },
     ],
