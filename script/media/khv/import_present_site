@@ -68,7 +68,7 @@ my $META = from_json($MEDIA->metadata);
 my $ua = Mojo::UserAgent->new;
 $ua->max_redirects(4);
 
-$ua->proxy->http('http://185.5.250.133:19888');
+#$ua->proxy->http('http://185.5.250.133:19888');
 
 
 my %date_map = ();

@@ -10,8 +10,8 @@ use Rplus::Model::MediaImportHistory::Manager;
 use Rplus::Model::Realty::Manager;
 
 use Rplus::Util::PhoneNum;
-use Rplus::Util::Realty;
 use Rplus::Util::Config;
+use Rplus::Util::Realty qw(put_object);
 
 use LWP::UserAgent;
 use File::Temp qw(tempdir);
@@ -40,7 +40,7 @@ sub import_present {
         # Выясним, какой архив актуален
         my $ua = LWP::UserAgent->new;
 
-        $ua->proxy(['http', 'ftp'], 'http://185.5.250.133:19888');
+        #$ua->proxy(['http', 'ftp'], 'http://185.5.250.133:19888');
 
         #http://old.present-dv.ru/archive/?y=2014&n=39
         #http://present-dv.ru/upload/present/archive/archive/2014085.zip
@@ -348,9 +348,10 @@ sub import_present {
                 my $id;
 
                 eval {
-                    my $realty = Rplus::Model::Realty->new((map { $_ => $data->{$_} } grep { $_ ne 'category_code' } keys %$data), state_code => 'raw');
-                    $realty->save;
-                    $id = $realty->id;
+                    #my $realty = Rplus::Model::Realty->new((map { $_ => $data->{$_} } grep { $_ ne 'category_code' } keys %$data), state_code => 'raw');
+                    #$realty->save;
+                    #my $id = put_object($data, $config);
+                    $id = put_object($data, $config);
                     say "Saved new realty: $id";
                     1;
                 } or do {

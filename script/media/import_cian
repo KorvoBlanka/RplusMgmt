@@ -46,7 +46,9 @@ my $MEDIA = Rplus::Model::Media::Manager->get_objects(query => [type => 'import'
 exit unless $MEDIA;
 
 my $ua = Mojo::UserAgent->new;
-$ua->max_redirects(4);
+if ($site_config->{follow_redirects}) {
+    $ua->max_redirects(4);
+}
 
 
 while (1) {
@@ -87,8 +89,17 @@ sub process_category {
                     my $dt = parse_date($date_str);
                     my $eid = make_eid($item_id, $dt);
 
+                    if ($site_config->{filter}) {
+                        if ($item_url !~ /^$site_url/) {
+                            say $item_url;
+                            #say 'skipping';
+                            #return;
+                        }
+                    }
+
                     unless (Rplus::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $eid])) {
                         my $t = get_res($site_url . $item_url, $host)->dom;
+                        return unless $t;
                         my $data = process_item($t, $offers->{$item_id});
 
                         my $id;
@@ -374,7 +385,7 @@ sub get_res {
         if ($t->res->code == 200) {
             $res = $t->res;
             last;
-        } elsif ($t->res->code == 404) {
+        } elsif ($t->res->code == 404 || $t->res->code == 301) {    # не хотим редирект
             last;
         }
 
