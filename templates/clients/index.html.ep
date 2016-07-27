@@ -1951,8 +1951,11 @@
           })
           .on('shown.bs.modal', function () {
             if (!geoMap) {
+
+              var c_lat = <%= $self->config->{location}->{lat} %>;
+              var c_lng = <%= $self->config->{location}->{lng} %>;
               geoMap = L.map('realtyGeoMap', {
-                center: [48.480232846617845, 135.07203340530396],
+                center: [c_lat, c_lng],
                 zoom: 15,
               });
 
