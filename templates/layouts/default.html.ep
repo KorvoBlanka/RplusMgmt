@@ -865,6 +865,27 @@
           border-left: 1px solid #E0E0E0;
         }
 
+        .blink {
+          animation: blink-animation 1s steps(5, start) infinite;
+          -webkit-animation: blink-animation 1s steps(5, start) infinite;
+        }
+        @keyframes blink-animation {
+          0% {
+            visibility: visible;
+          }
+          35%, 100% {
+            visibility: hidden;
+          }
+        }
+        @-webkit-keyframes blink-animation {
+          0% {
+            visibility: visible;
+          }
+          35%, 100% {
+            visibility: hidden;
+          }
+        }
+
     </style>
 
     <%= content_for 'header' %>
@@ -1158,6 +1179,7 @@
             <a href="javascript: " class="chat-show" data-action="chat-show" style="position: relative; margin-right: 20px; text-decoration: none;">
                 <span class="glyphicon glyphicon-comment"></span>
                 <span id="message-count-notifier" class="badge badge-default quick-notifier hidden" style="position: absolute; right: -12px; top: 4px;"></span>
+                <span id="message-blink-notifier" class="badge badge-default quick-notifier hidden" style="position: absolute; right: -12px; top: 4px;">&nbsp;!&nbsp;</span>
             </a>
             <a href="/signout" class="navbar-link hide-if-small">[<%= $user->{'name'} %>]</a>
             <a class="divider-vertical hide-if-big" style="padding-top: 12px; padding-bottom: 12px; border-right-color: #797979; border-left-color: #111111;"></a>
@@ -1230,6 +1252,12 @@
         events.addEventListener('chat_message', function(e) {
             var edata = e.data;
             message_alarm.play();
+
+            $('#message-blink-notifier').removeClass('hidden').addClass('blink');
+            setTimeout(function () {
+              $('#message-blink-notifier').addClass('hidden').removeClass('blink');
+            }, 5000);
+
             if ($('.chat-bg').hasClass('hidden')) {
               getUnreadMessageCount();
             } else {
