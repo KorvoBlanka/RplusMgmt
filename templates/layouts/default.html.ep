@@ -1230,8 +1230,12 @@
         events.addEventListener('chat_message', function(e) {
             var edata = e.data;
             message_alarm.play();
-            updateMessages();
-            updateContactList();
+            if ($('.chat-bg').hasClass('hidden')) {
+              getUnreadMessageCount();
+            } else {
+              updateContactList();
+              updateMessages();
+            }
         }, false);
 
         var p_x = -1;
@@ -1273,7 +1277,9 @@
         });
 
         $('[data-action="chat-show"]').click(function () {
-            showChat()
+            updateContactList();
+            updateMessages();
+            showChat();
         });
 
         function showChat() {
@@ -1750,7 +1756,6 @@
                             $('#chatMessageList').prepend(xhtml);
                             $('#chatMessageList').data('last-id', list[0].id);
                         }
-                        Rplus.Functions.getUnreadMessageCount();
                     }
                 });
         }

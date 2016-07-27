@@ -170,7 +170,7 @@ sub list_contacts {
           role => ' ',
           role_loc => '&nbsp;',
           photo_url => undef,
-          direct_photo_url => $self->config->{'assets'}->{'url'} . '/tech_support.png',
+          direct_photo_url => $self->config->{'assets'}->{'url'} . '/img/tech_support.png',
           account_id => '',
           unread_count => $unread_count * 1,
           company_name => '&nbsp;',

@@ -1511,18 +1511,22 @@
           var client_id = $this.data('id');
           var $realtys = $('#realtyTable > tbody > tr.selected');
           $realtys.each(function () {
+            var r = $(this).data('obj');
             $.ajax({
               type: "POST",
               url: "/api/notification/by_sms",
               data: {
                 client_id: client_id,
-                realty_id: $(this).data('id'),
+                realty_id: r.id,
               },
             })
             .done(function (data, textStatus, jqXHR) {
                 if(data.status != 'success') {
                     alert('не удалось отправить sms');
-                } else {}
+                } else {
+                    r.sr_offered = 1;
+                    updateRealtyRow(r.id, r);
+                }
             })
             .fail(function (jqXHR, textStatus, errorThrown) {
                 alert('не удалось отправить СМС, проверьте настройки');
