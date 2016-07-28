@@ -37,29 +37,29 @@ my $timezone = '';
 my %realty_types = ();
 
 
-my %object_type = (
+my %object_category = (
 
-    room => 'room',
+    room => 'комната',
 
-    apartment => 'flat',
-    apartment_new => 'flat',
-    apartment_small => '',
+    apartment => 'квартира',
+    apartment_new => 'квартира',
+    apartment_small => 'квартира',
 
-    house => 'house',
-    dacha => 'house with lot',
-    cottage => 'house',
-    townhouse => 'townhouse',
+    house => 'дом',
+    dacha => 'дача',
+    cottage => 'дом',
+    townhouse => 'таунхаус',
 
-    land => 'lot',
+    land => 'участок',
 
-    building => 'commercial',
-    office_place => 'commercial',
-    service_place => 'commercial',
-    gpurpose_place => 'commercial',
-    production_place => 'commercial',
-    autoservice_place => 'commercial',
-    warehouse_place => 'commercial',
-    market_place => 'commercial',
+    building => 'коммерческая',
+    office_place => 'коммерческая',
+    service_place => 'коммерческая',
+    gpurpose_place => 'коммерческая',
+    production_place => 'коммерческая',
+    autoservice_place => 'коммерческая',
+    warehouse_place => 'коммерческая',
+    market_place => 'коммерческая',
 );
 
 my %object_commercial_type = (
@@ -71,7 +71,6 @@ my %object_commercial_type = (
     warehouse_place => 'warehouse',
     market_place => 'retail',
 );
-
 
 
 my @common_fields = qw(type property-type category url creation-date last-update-date location sales-agent price deal-status);
@@ -134,7 +133,7 @@ my %fields_sub = (
     'category' => sub {   # «комната»/«room», «квартира»/«flat», «таунхаус»/«townhouse», «дом»/«house», «часть дома», «участок»/«lot», «земельный участок», «дом с участком»/«house with lot», «дача»/«cottage», «коммерческая»/«commercial»
         my ($r, $xw) = @_;
         $xw->startTag('category');
-        $xw->characters($object_type{$r->type_code});
+        $xw->characters($object_category{$r->type_code});
         $xw->endTag();
     },
 
@@ -899,7 +898,6 @@ sub index {
 
                 $xml_writer->startTag('offer', 'internal-id' => $realty->id);
                 foreach (@fields) {
-                    say $_;
                     $fields_sub{$_}->($realty, $xml_writer);
                 }
                 $xml_writer->endTag();

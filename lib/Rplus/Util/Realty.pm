@@ -2,9 +2,8 @@ package Rplus::Util::Realty;
 
 use Rplus::Modern;
 
-use Rplus::Model::Realty;
 use Rplus::Model::Realty::Manager;
-use Rplus::Model::RealtyType;
+use Rplus::Model::Mediator::Manager;
 use Rplus::Model::RealtyType::Manager;
 use Rplus::Model::MediaImportHistory;
 use Rplus::Model::MediaImportHistory::Manager;
@@ -46,16 +45,15 @@ sub put_object {
                 my $o_realty = $_;
                 say "Found similar realty: $id";
 
-                # пропустим если объект в базе "новее"
-                my $o_dt = $parser->parse_datetime($o_realty->last_seen_date);
-                my $n_dt = $parser_tz->parse_datetime($data->{add_date});
+                if ($data->{add_date}) {
+                    # пропустим если объект в базе "новее"
+                    my $o_dt = $parser->parse_datetime($o_realty->last_seen_date);
+                    my $n_dt = $parser_tz->parse_datetime($data->{add_date});
 
-                say $o_realty->last_seen_date;
-                say $data->{add_date};
-
-                if ($o_dt >= $n_dt) {
-                    say 'newer!';
-                    next;
+                    if ($o_dt >= $n_dt) {
+                        say 'newer!';
+                        next;
+                    }
                 }
 
                 my @phones = ();
@@ -82,7 +80,7 @@ sub put_object {
                 _update_photos($id, $config->{storage}->{path}, $data->{photo_url});
             }
         } else {
-            my $realty = Rplus::Model::Realty->new((map { $_ => $data->{$_} } grep { $_ ne 'photo_url' && $_ ne 'id'} keys %$data), state_code => 'raw');
+            my $realty = Rplus::Model::Realty->new((map { $_ => $data->{$_} } grep { $_ ne 'photo_url' && $_ ne 'id' && $_ ne 'category_code'} keys %$data), state_code => 'raw');
             $realty->last_seen_date($data->{add_date});
 
             _update_location($realty, $config);
