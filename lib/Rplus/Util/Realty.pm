@@ -81,7 +81,11 @@ sub put_object {
             }
         } else {
             my $realty = Rplus::Model::Realty->new((map { $_ => $data->{$_} } grep { $_ ne 'photo_url' && $_ ne 'id' && $_ ne 'category_code'} keys %$data), state_code => 'raw');
-            $realty->last_seen_date($data->{add_date});
+            if ($data->{add_date}) {
+                $realty->last_seen_date($data->{add_date});
+            } else {
+                $realty->last_seen_date('now()');
+            }
 
             _update_location($realty, $config);
 
