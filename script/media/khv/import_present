@@ -352,7 +352,11 @@ sub import_present {
                     #$realty->save;
                     #my $id = put_object($data, $config);
                     $id = put_object($data, $config);
-                    say "Saved new realty: $id";
+                    if ($id) {
+                        say "Saved new realty: $id";
+                    } else {
+                        say 'skipped';
+                    }
                     1;
                 } or do {
                     say $@;
