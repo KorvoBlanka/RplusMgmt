@@ -59,6 +59,9 @@ sub upload_result {
     my $addr = $data->{addr};
 
     my $mediator_company = $data->{mediator_company};
+    if ($data->{mediator_company}) {
+        delete $data->{mediator_company};
+    }
 
     if ($mediator_company) {
         say 'mediator: ' . $mediator_company;

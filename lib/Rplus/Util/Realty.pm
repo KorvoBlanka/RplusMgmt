@@ -34,7 +34,7 @@ sub put_object {
               limit => 1,
             )->[0];
 
-            return undef if ($mediator && $data->{offer_type_code} eq 'rent');
+            #return undef if ($mediator && $data->{offer_type_code} eq 'rent');
         }
 
 
@@ -45,12 +45,16 @@ sub put_object {
                 my $o_realty = $_;
                 say "Found similar realty: $id";
 
-                if ($data->{add_date}) {
+                if ($data->{add_date} && $o_realty->last_seen_date) {
                     # пропустим если объект в базе "новее"
+
+                    say $data->{add_date};
+                    say $o_realty->last_seen_date;
+
                     my $o_dt = $parser->parse_datetime($o_realty->last_seen_date);
                     my $n_dt = $parser_tz->parse_datetime($data->{add_date});
 
-                    if ($o_dt >= $n_dt) {
+                    if ($o_dt && $n_dt && ($o_dt >= $n_dt)) {
                         say 'newer!';
                         next;
                     }
