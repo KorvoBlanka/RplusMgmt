@@ -25,7 +25,7 @@ sub put_object {
     my $id;
     eval {
 
-        if ($data->{'owner_phones'} && scalar @{$data->{'owner_phones'}} > 0) {
+        if (0 && $data->{'owner_phones'} && scalar @{$data->{'owner_phones'}} > 0) {
             my $mediator = Rplus::Model::Mediator::Manager->get_objects(
               query => [
                   phone_num => [@{$data->{'owner_phones'}}],
@@ -34,9 +34,20 @@ sub put_object {
               limit => 1,
             )->[0];
 
-            #return undef if ($mediator && $data->{offer_type_code} eq 'rent');
+            return undef if ($mediator && $data->{offer_type_code} eq 'rent');
         }
 
+        # check add_date
+        if ($data->{add_date}) {
+            my $now_dt = DateTime->now(time_zone => 'local');
+            say $data->{add_date};
+            my $d_dt = $parser_tz->parse_datetime($data->{add_date});
+            say $d_dt;
+            if ($d_dt > $now_dt) {
+                say "wtf? obj from future";
+                $data->{add_date} = undef;
+            }
+        }
 
         my @realtys = @{_find_similar(%$data, state_code => ['raw', 'work', 'suspended', 'deleted'])};
         if (scalar @realtys > 0) {
@@ -66,7 +77,11 @@ sub put_object {
                 }
 
                 $o_realty->owner_phones(Mojo::Collection->new(@phones)->compact->uniq);
-                $o_realty->last_seen_date($data->{add_date});
+                if ($data->{add_date}) {
+                    $o_realty->last_seen_date($data->{add_date});
+                } else {
+                    $o_realty->last_seen_date('now()');
+                }
                 $o_realty->change_date('now()');
 
                 if ($o_realty->state_code ne 'work') {

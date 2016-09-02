@@ -24,8 +24,9 @@ use Data::Dumper;
 no warnings 'experimental';
 
 
-my $config = Rplus::Util::Config::get_config();
-my $site_config = $config->{import}->{avito};
+my $app_config = Rplus::Util::Config::get_config();
+my $config = Rplus::Util::Config::get_config('import.conf');
+my $site_config = $config->{avito};
 
 my $site_url = $site_config->{url};
 my $host = $site_config->{host};
@@ -34,10 +35,10 @@ my $source_list = $site_config->{source_list};
 my $pause_category = $site_config->{pause_category};
 my $pause_item = $site_config->{pause_item};
 my $depth = $site_config->{depth};
-
-my $timezone = $config->{timezone};
-
 my $lock_file = $site_config->{lock_file};
+
+my $timezone = $app_config->{timezone};
+
 
 
 my $MEDIA = Rplus::Model::Media::Manager->get_objects(query => [type => 'import', code => 'avito', delete_date => undef])->[0];	# code => 'avito'
@@ -144,7 +145,7 @@ sub process_url_list {
             }
 
             say Dumper $data;
-            my $id = put_object($data, $config);
+            my $id = put_object($data, $app_config);
 
             # Сохраним историю
             if ($id && !Rplus::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $eid])) {
@@ -365,7 +366,7 @@ sub parse_adv {
     if ($mr && $mr->json) {
          my $phone_str = $mr->json->{phone};
         for my $x (split /[.,;:]/, $phone_str) {
-            if (my $phone_num = Rplus::Util::PhoneNum::parse($x, $config->{default_phone_prefix})) {
+            if (my $phone_num = Rplus::Util::PhoneNum::parse($x, $app_config->{default_phone_prefix})) {
                 push @owner_phones, $phone_num;
                 say $phone_num;
             }

@@ -24,8 +24,9 @@ use Data::Dumper;
 no warnings 'experimental';
 
 
-my $config = Rplus::Util::Config::get_config();
-my $site_config = $config->{import}->{cian};
+my $app_config = Rplus::Util::Config::get_config();
+my $config = Rplus::Util::Config::get_config('import.conf');
+my $site_config = $config->{cian};
 
 my $site_url = $site_config->{url};
 my $host = $site_config->{host};
@@ -34,7 +35,7 @@ my $source_list = $site_config->{source_list};
 my $pause = $site_config->{pause};
 my $depth = $site_config->{depth};
 
-my $timezone = $config->{timezone};
+my $timezone = $app_config->{timezone};
 
 my $lock_file = $site_config->{lock_file};
 
@@ -105,7 +106,7 @@ sub process_category {
                         my $id;
                         {
                             eval {
-                                $id = put_object($data, $config);
+                                $id = put_object($data, $app_config);
                             } or do {
                                 say $@;
                             }

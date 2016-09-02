@@ -23,7 +23,9 @@ use DateTime::Format::Strptime;
 use File::Touch;
 use Data::Dumper;
 
-my $config = Rplus::Util::Config::get_config();
+
+my $app_config = Rplus::Util::Config::get_config();
+my $config = Rplus::Util::Config::get_config('import.conf');
 my $present_site_config = $config->{import}->{present_site};
 my $main_url = $present_site_config->{main_url};
 
@@ -385,12 +387,12 @@ sub parse_adv {
         for my $x (split /[ .,]/, $body) {
             if ($x =~ /^\s*([\d-]{6,})\s*$/) {
                 say $1;
-                if (my $phone_num = Rplus::Util::PhoneNum::parse($1, $config->{default_phone_prefix})) {
+                if (my $phone_num = Rplus::Util::PhoneNum::parse($1, $app_config->{default_phone_prefix})) {
                     push @owner_phones, $phone_num;
                 }
                 $body =~ s/$x//;
             } elsif ($x =~ /(7|8)(\(\d{3,4}\)[\d-]{6,})/) {
-                if (my $phone_num = Rplus::Util::PhoneNum::parse($2, $config->{default_phone_prefix})) {
+                if (my $phone_num = Rplus::Util::PhoneNum::parse($2, $app_config->{default_phone_prefix})) {
                     push @owner_phones, $phone_num;
                 }
                 $x =~ s/\+//;

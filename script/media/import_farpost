@@ -3,25 +3,17 @@
 use FindBin;
 use lib "$FindBin::Bin/../../lib";
 
-use Import::Modern;
+use Rplus::Modern;
 
-use Import::Model::AddressObject;
-use Import::Model::AddressObject::Manager;
-use Import::Model::Media;
-use Import::Model::Media::Manager;
-use Import::Model::Mediator;
-use Import::Model::Mediator::Manager;
-use Import::Model::MediaImportHistory;
-use Import::Model::MediaImportHistory::Manager;
-use Import::Model::Realty;
-use Import::Model::Realty::Manager;
-use Import::Model::Variable;
-use Import::Model::Variable::Manager;
+use Rplus::Model::Media::Manager;
+use Rplus::Model::Mediator::Manager;
+use Rplus::Model::MediaImportHistory::Manager;
+use Rplus::Model::Realty::Manager;
 
-use Import::Util::Mediator qw(add_mediator);
-use Import::Util::PhoneNum;
-use Import::Util::Realty;
-use Import::Util::Image;
+use Rplus::Util::Config;
+use Rplus::Util::Realty qw(put_object);
+use Rplus::Util::Mediator qw(add_mediator);
+use Rplus::Util::PhoneNum;
 
 use Text::Trim;
 use JSON;
@@ -32,14 +24,24 @@ use DateTime::Format::Strptime;
 use File::Touch;
 use Data::Dumper;
 
-my $config = Import::Util::Config::get_config();
-my $farpost_config = $config->{import}->{farpost};
-my $farpost_url = $farpost_config->{farpost_url};
-my $sources_list = $farpost_config->{source_list};
 
-my $lock_file = '/var/tmp/farpost_lock';
+my $app_config = Rplus::Util::Config::get_config();
+my $config = Rplus::Util::Config::get_config('import.conf');
+my $site_config = $config->{farpost};
 
-my $MEDIA = Import::Model::Media::Manager->get_objects(query => [type => 'import', code => 'farpost', delete_date => undef])->[0];	# code => 'farpost'
+my $site_url = $site_config->{url};
+my $host = $site_config->{host};
+my $source_list = $site_config->{source_list};
+
+my $pause = $site_config->{pause};
+my $depth = $site_config->{depth};
+my $lock_file = $site_config->{lock_file};
+my $locality = $site_config->{locality};
+
+my $time_zone = $app_config->{timezone};
+
+
+my $MEDIA = Rplus::Model::Media::Manager->get_objects(query => [type => 'import', code => 'farpost', delete_date => undef])->[0];	# code => 'farpost'
 exit unless $MEDIA;
 my $META = from_json($MEDIA->metadata);
 
@@ -80,8 +82,8 @@ sub _import_in_progress {
 sub import_farpost {
     my @url_list;
 
-    foreach (@{$sources_list}) {
-        @url_list = get_url_list($farpost_url . $_->{url}, 2);
+    foreach (@{$source_list}) {
+        @url_list = get_url_list($site_url . $_->{url}, $depth);
         process_url_list(\@url_list, $_->{type}, $_->{offer_type});
     }
 }
@@ -113,7 +115,7 @@ sub get_url_list {
             my $dt = parse_date($date_str);
             my $eid = make_eid($item_id, $dt);
 
-            if (Import::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $eid])) {
+            if (Rplus::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $eid])) {
                 say 'was processed already';
             } else {
                 say $eid;
@@ -130,48 +132,52 @@ sub process_url_list {
     my ($url_list_ref, $category_code, $offer_type) = @_;
 
     for my $item (@$url_list_ref) {
-        my $item_url = $farpost_url . $item->{url};
-        my $eid = $item->{eid};
-        my $dt = $item->{dt};
+        eval {
+            my $item_url = $site_url . $item->{url};
+            my $eid = $item->{eid};
+            my $dt = $item->{dt};
 
-        say 'processing ' . $item_url;
-        say $eid;
+            say 'processing ' . $item_url;
+            say $eid;
 
-        my $data = {
-            source_media_id => $MEDIA->id,
-            source_url => $item_url,
-            category_code => $category_code,
-            type_code => $category_code,
-            offer_type_code => $offer_type,
-            add_date => $dt->datetime() . '+10',  # fix it!
-            retry => 15,
-        };
+            my $data = {
+                source_media_id => $MEDIA->id,
+                source_url => $item_url,
+                category_code => $category_code,
+                type_code => $category_code,
+                offer_type_code => $offer_type,
+                add_date => $dt->datetime() . $time_zone,  # fix it!
+                retry => 15,
+            };
 
-        my $dom;
-        while ($data->{retry} > 0) {
-            sleep 5;
-            my $res = get_res($item_url, []);
-            if ($res) {
-                $dom = $res->dom;
+            my $dom;
+            while ($data->{retry} > 0) {
+                sleep 5;
+                my $res = get_res($item_url, []);
+                if ($res) {
+                    $dom = $res->dom;
+                    eval {
+                        parse_adv($dom, $data);
+
+                    } or do {
+                        say $@;
+                    }
+                }
+            }
+
+            my $id;
+            {
                 eval {
-                    parse_adv($dom, $data);
-
+                    delete $data->{retry};
+                    $id = put_object($data, $app_config);
                 } or do {
                     say $@;
                 }
             }
-        }
-
-        eval {
-            my $id;
-            my $realty = Import::Model::Realty->new((map { $_ => $data->{$_} } grep { $_ ne 'category_code' && $_ ne 'retry' } keys %$data), state_code => 'raw');
-            $realty->save;
-            $id = $realty->id;
-            say "Saved new realty: $id";
 
             # Сохраним историю
-            if ($id && !Import::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $eid])) {
-                Import::Model::MediaImportHistory->new(media_id => $MEDIA->id, media_num => $eid, media_text => $item_url, realty_id => $id)->save;
+            if ($id && !Rplus::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $eid])) {
+                Rplus::Model::MediaImportHistory->new(media_id => $MEDIA->id, media_num => $eid, media_text => $item_url, realty_id => $id)->save;
             }
         } or do {
             say $@;
@@ -198,11 +204,11 @@ sub parse_adv {
         sleep 5;
 
         my $contacts = $dom->find('div[class="contacts"]')->first;
-        my $c_ref = $contacts->find('a[class="bigbutton viewAjaxContacts"]')->first->{href};
+        my $c_ref = $contacts->find('a[class~="viewAjaxContacts"]')->first->{href};
 
-        my $c_res = get_res($farpost_url . $c_ref . '?ajax=1', [
+        my $c_res = get_res($site_url . $c_ref . '?ajax=1', [
                 'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-                'Host' => 'khabarovsk.farpost.ru',
+                'Host' => $host,
             ]);
 
         if ($c_res) {
@@ -229,7 +235,7 @@ sub parse_adv {
                     say $phone_str;
                     $phone_str =~ s/\D//g;
                     if (length $phone_str > 0) {
-                        if (my $phone_num = Import::Util::PhoneNum::parse($phone_str, $config->{default_phone_prefix})) {
+                        if (my $phone_num = Rplus::Util::PhoneNum::parse($phone_str, $config->{default_phone_prefix})) {
                             say $phone_num;
                             push @owner_phones, $phone_num;
                         }
@@ -411,12 +417,8 @@ sub parse_adv {
         $data->{'address'} = $addr;
     }
 
-    # Распознавание адреса
-    if ($addr) {
-        $data->{'locality'} = 'Хабаровск';
+    $data->{'locality'} = $locality;
 
-
-    }
 
     # Разделим остальную часть обявления на части и попытаемся вычленить полезную информацию
     my @bp = grep { $_ && length($_) > 1 } trim(split /[,()]/, $dsk);
@@ -456,31 +458,6 @@ sub parse_adv {
     }
 }
 
-sub get_res_ex {
-    my ($url) = @_;
-
-    say $url;
-
-    my $res;
-    my $code = 0;
-    my $retry = 15;
-
-    while ($code != 200 && $retry > 0) {
-        $retry -= 1;
-        if ($retry < 5) {
-            say 'retry left ' . $retry;
-        }
-        $res = $ua->get($url)->res;
-
-        $code = $res->code unless $res->error;
-    }
-
-    if ($retry == 0) {
-        undef $res;
-    }
-
-    return $res;
-}
 
 sub get_res {
     my ($url, $headers) = @_;
@@ -499,7 +476,7 @@ sub get_res {
             say 'retry left ' . $retry;
         }
         $res = $ua->get($url, {
-            'Host' => 'www.farpost.ru',
+            'Host' => $host,
             'Connection' => 'keep-alive',
             'Cache-Control' => 'max-age=0',
             'User-Agent' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.114 Safari/537.36',

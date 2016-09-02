@@ -6,20 +6,27 @@ use lib "$FindBin::Bin/../../lib";
 use Rplus::Modern;
 
 use Rplus::Model::Media::Manager;
-use Rplus::Model::Realty::Manager;
 use Rplus::Model::MediaImportHistory::Manager;
+use Rplus::Model::Realty::Manager;
 use Rplus::Model::MediaImportTask::Manager;
 
 use Rplus::Util::Config;
+use Rplus::Util::Realty qw(put_object);
+use Rplus::Util::Mediator qw(add_mediator);
+use Rplus::Util::PhoneNum;
 
+use Text::Trim;
+use JSON;
 use Mojo::UserAgent;
+use DateTime;
+use DateTime::Format::Strptime;
 
+use File::Touch;
 use Data::Dumper;
 
-no warnings 'experimental';
 
 my $config = Rplus::Util::Config::get_config('import.conf');
-my $site_config = $config->{irru};
+my $site_config = $config->{farpost};
 
 my $site_url = $site_config->{url};
 my $host = $site_config->{host};
@@ -28,26 +35,26 @@ my $source_list = $site_config->{source_list};
 my $pause = $site_config->{pause};
 my $depth = $site_config->{depth};
 
-my $postfix = 'search/list=list/sort/date_sort:desc/';
+my $lock_file = $site_config->{lock_file};
 
 
-my $MEDIA = Rplus::Model::Media::Manager->get_objects(query => [type => 'import', code => 'irr', delete_date => undef])->[0];
+my $MEDIA = Rplus::Model::Media::Manager->get_objects(query => [type => 'import', code => 'farpost', delete_date => undef])->[0];	# code => 'farpost'
 exit unless $MEDIA;
+my $META = from_json($MEDIA->metadata);
 
 my $ua = Mojo::UserAgent->new;
 $ua->max_redirects(4);
-$ua->proxy->http('http://80.240.100.17:8000');
+$ua->max_connections(0);
 
-my $parser = DateTime::Format::Strptime->new( pattern => '%Y-%m-%d %H:%M' );
+my $parser = DateTime::Format::Strptime->new(pattern => '%Y-%m-%d %H:%M:%S');
 
 
 while (1) {
-    say 'cycle starts';
-    process_irru();
-    sleep 1;
+    process_farpost();
 }
 
-sub process_irru {
+
+sub process_farpost {
     my @url_list;
 
     foreach (@{$source_list}) {
@@ -60,43 +67,37 @@ sub get_url_list {
     my ($main_page, $page_count) = @_;
     my @url_list;
 
-    my $quit = 0;
-
     for(my $i = 1; $i <= $page_count; $i ++) {
-
-        eval {
-            my $page_url = $i == 1 ? $main_page : $main_page . "page$i/";
-            my $dom = get_res($page_url, $host, [])->dom;
-
-            $quit = 1;
-            $dom->find('div[class~="listing"] a[class~="listing__item"][class~="js-productBlock"]')->each( sub {
-
-                my $date_str = $_->find('span[class~="listing__itemDate"]')->first->text;
-                my $item_url = $_->attr('href');
-                my $item_id = '0';
-
-                if ($item_url =~ /advert(\d+).html/) {
-                    $item_id = $1;
-                }
-
-                my $dt = parse_date($date_str);
-                my $eid = make_eid($item_id, $dt);
-
-                if (Rplus::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $eid])) {
-                    say 'was processed already';
-                } else {
-                    say $item_url;
-                    $quit = 0;
-                    push(@url_list, {url => $item_url, eid => $eid, dt => $dt});
-                }
-            });
-
-            last if $quit;
-        } or do {
-            say 'EXCEPTION!!!';
-            say $@;
-        };
         sleep $pause;
+        my $postfx = ($i == 0) ? '' : "?page=$i";
+
+        my $res = get_res($main_page . $postfx, []);
+        next unless $res;
+        my $dom = $res->dom;
+
+        $dom->find('table[class~="viewdirBulletinTable"] > tbody > tr')->each (sub {
+            my $a = $_->find('a[class~="bulletinLink"]')->first;
+            return unless $a;
+
+            my $item_url = $a->{href};
+            my $item_id = $a->{name};
+
+            my $td = $_->find('td[class="dateCell"]')->first;
+            my $date_str = $td->text;
+
+            say $date_str;
+
+            my $dt = parse_date($date_str);
+            my $eid = make_eid($item_id, $dt);
+
+            if (Rplus::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $eid])) {
+                say 'was processed already';
+            } else {
+                say $eid;
+                say $item_url;
+                push(@url_list,  {url => $item_url, eid => $eid, dt => $dt});
+            }
+        });
     }
 
     return reverse @url_list;
@@ -111,56 +112,43 @@ sub put_to_queue {
         my $eid = $item->{eid};
         my $dt = $item->{dt};
 
-
-        say $site_url . $item_url;
         my $record = Rplus::Model::MediaImportTask->new(source_name => $MEDIA->code, source_url => $item_url)->save;
 
         # Сохраним историю
         if (!Rplus::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $eid])) {
-            Rplus::Model::MediaImportHistory->new(media_id => $MEDIA->id, media_num => $eid, media_text => $item_url, realty_id => $record->id)->save;
+            Rplus::Model::MediaImportHistory->new(media_id => $MEDIA->id, media_num => $eid, media_text => $site_url . $item_url, realty_id => $record->id)->save;
         }
     }
 }
 
+
 sub get_res {
-    my ($url, $host, $headers) = @_;
+    my ($url, $headers) = @_;
 
     say $url;
 
     my $res;
+    my $code = 0;
     my $retry = 15;
 
-    my @headers;
     #push @headers, 'Referer' => $referer if $referer;
     #push @headers, 'Accept' => $accept if $accept;
-    push @headers, 'Host' => $host if $host;
-    while ($retry > 0) {
+    while ($code != 200 && $retry > 0) {
         $retry -= 1;
         if ($retry < 5) {
             say 'retry left ' . $retry;
         }
-
-        my $t = $ua->get($url, {
-            @$headers,
+        $res = $ua->get($url, {
+            'Host' => $host,
             'Connection' => 'keep-alive',
             'Cache-Control' => 'max-age=0',
             'User-Agent' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.114 Safari/537.36',
             'Accept-Encoding' => 'gzip,deflate,sdch',
             'Accept-Language' => 'ru-RU,ru;q=0.8,en-US;q=0.6,en;q=0.4',
-        });
+            @$headers,
+        })->res;
 
-        say 'code: ' . $t->res->code;
-
-        if ($t->res->code == 200) {
-            $res = $t->res;
-            last;
-        } elsif ($t->res->code == 404) {
-            last;
-        }
-
-        if ($retry > 0) {
-            sleep 3;
-        }
+        $code = $res->code unless $res->error;
     }
 
     if ($retry == 0) {
@@ -172,14 +160,11 @@ sub get_res {
 
 sub make_eid {
     my ($id, $date) = @_;
-
     return $id . '_' . $date->strftime('%Y%m%d')
 }
 
 sub parse_date {
     my $date = lc(shift);
-
-    say $date;
 
     my $res;
     my $dt_now = DateTime->now(time_zone => "+1000");
@@ -187,21 +172,25 @@ sub parse_date {
     my $mon = $dt_now->month();
     my $mday = $dt_now->mday();
 
-    if ($date =~ /сегодня, (\d{1,2}):(\d{1,2})/) {
-        $res = $parser->parse_datetime("$year-$mon-$mday $1:$2");
+    if ($date =~ /(\d{1,2}):(\d{1,2}), сегодня/) {
+        $res = $parser->parse_datetime("$year-$mon-$mday $1:$2:00");
         if ($res > $dt_now) {
             # substr 1 day
             $res->subtract(days => 1);
         }
-    } elsif ($date =~ /(\d+) (\w+)/) {
+    } elsif ($date =~ /(\d{1,2}):(\d{1,2}), вчера/) {
+        $res = $parser->parse_datetime("$year-$mon-$mday $1:$2:00");
+        # substr 1 day
+        $res->subtract(days => 1);
+    } elsif ($date =~ /(\d{1,2}):(\d{1,2}), (\d+) (\w+)/) {
+        my $a_mon = month_num($4);
+        $res = $parser->parse_datetime("$year-$a_mon-$3 $1:$2:00");
+    } elsif ($date =~ /(\d+) (\w+) (\d+)/) {
         my $a_mon = month_num($2);
-        say $a_mon;
-        $res = $parser->parse_datetime("$year-$a_mon-$1 12:00");
+        $res = $parser->parse_datetime("$3-$a_mon-$1 12:00:00");
     } else {
         $res = $dt_now;
     }
-
-    say $res;
 
     return $res;
 }

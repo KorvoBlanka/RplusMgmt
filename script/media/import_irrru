@@ -24,8 +24,9 @@ use Data::Dumper;
 no warnings 'experimental';
 
 
-my $config = Rplus::Util::Config::get_config();
-my $site_config = $config->{import}->{irru};
+my $app_config = Rplus::Util::Config::get_config();
+my $config = Rplus::Util::Config::get_config('import.conf');
+my $site_config = $config->{irru};
 
 my $site_url = $site_config->{url};
 my $host = $site_config->{host};
@@ -34,9 +35,10 @@ my $source_list = $site_config->{source_list};
 my $pause = $site_config->{pause};
 my $depth = $site_config->{depth};
 
-my $timezone = $config->{timezone};
-
 my $lock_file = $site_config->{lock_file};
+
+my $timezone = $app_config->{timezone};
+
 my $postfix = 'search/list=list/sort/date_sort:desc/';
 my $parser = DateTime::Format::Strptime->new( pattern => '%Y-%m-%d %H:%M' );
 
@@ -179,7 +181,7 @@ sub process_url_list {
 
             say Dumper $data;
 
-            my $id = put_object($data, $config);
+            my $id = put_object($data, $app_config);
 
             # Сохраним историю
             if ($id && !Rplus::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $eid])) {

@@ -22,8 +22,8 @@ use Data::Dumper;
 no warnings 'experimental';
 
 
-my $config = Rplus::Util::Config::get_config();
-my $site_config = $config->{import}->{avito};
+my $config = Rplus::Util::Config::get_config('import.conf');
+my $site_config = $config->{avito};
 
 my $site_url = $site_config->{url};
 my $host = $site_config->{host};
