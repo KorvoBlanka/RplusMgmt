@@ -24,9 +24,9 @@ my $site_config = $config->{irru};
 my $site_url = $site_config->{url};
 my $host = $site_config->{host};
 my $source_list = $site_config->{source_list};
-
 my $pause = $site_config->{pause};
 my $depth = $site_config->{depth};
+my $proxy = $site_config->{proxy};
 
 my $postfix = 'search/list=list/sort/date_sort:desc/';
 
@@ -36,7 +36,9 @@ exit unless $MEDIA;
 
 my $ua = Mojo::UserAgent->new;
 $ua->max_redirects(4);
-$ua->proxy->http('http://80.240.100.17:8000');
+if ($proxy) {
+    $ua->proxy->http($proxy);
+}
 
 my $parser = DateTime::Format::Strptime->new( pattern => '%Y-%m-%d %H:%M' );
 
@@ -44,7 +46,7 @@ my $parser = DateTime::Format::Strptime->new( pattern => '%Y-%m-%d %H:%M' );
 while (1) {
     say 'cycle starts';
     process_irru();
-    sleep 1;
+    sleep $pause;
 }
 
 sub process_irru {
