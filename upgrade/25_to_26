@@ -16,6 +16,10 @@ if (1) {
 }
 
 if (1) {
+    $dbh->do(q{ALTER TABLE realty ADD COLUMN like_it int4;});
+}
+
+if (1) {
     $dbh->do(q{DROP TABLE IF EXISTS "public"."history_records";});
     $dbh->do(q{
       CREATE TABLE "public"."history_records" (
