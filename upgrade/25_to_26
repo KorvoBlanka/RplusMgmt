@@ -1,0 +1,35 @@
+#!/usr/bin/env perl
+
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+
+use Rplus::Modern;
+
+use Rplus::DB;
+
+my $dbh = Rplus::DB->new_or_cached->dbh;
+
+if (1) {
+    $dbh->do(q{DROP TABLE IF EXISTS realty_color_tags;});
+    $dbh->do(q{DROP TABLE IF EXISTS client_color_tags;});
+    $dbh->do(q{DROP TABLE IF EXISTS color_tags;});
+}
+
+if (1) {
+    $dbh->do(q{DROP TABLE IF EXISTS "public"."history_records";});
+    $dbh->do(q{
+      CREATE TABLE "public"."history_records" (
+      	"id" SERIAL PRIMARY KEY,
+      	"date" timestamp(6) WITH TIME ZONE NOT NULL DEFAULT now(),
+      	"type" varchar NOT NULL,
+      	"object_type" varchar,
+      	"object_id" int4,
+      	"record" varchar,
+      	"user_id" int4,
+      	"metadata" json NOT NULL DEFAULT '{}'::json,
+      	"account_id" int4
+      );
+    });
+}
+
+1;
