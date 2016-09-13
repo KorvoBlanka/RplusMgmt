@@ -1,4 +1,5 @@
 app.conf
+import.conf
 lib/Rplus/DB.pm
 log/
 hypnotoad.pid
