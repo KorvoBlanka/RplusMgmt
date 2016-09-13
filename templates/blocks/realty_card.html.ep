@@ -390,9 +390,9 @@
         $('#unlock-btn').addClass('hidden');
       }
 
-	  if (realty.account_id != null && account_id != realty.account_id) {
-		$('#unlock-btn').addClass('hidden');
-	  }
+      if (realty.account_id != null && account_id != realty.account_id) {
+        $('#unlock-btn').addClass('hidden');
+      }
 
       if (realty.owner_phones && realty.owner_phones.length > 0) {
         $('#dg_p_contacts_label', $realty_modal).removeClass('hidden');
@@ -463,8 +463,8 @@
           var el = $('[name="' + x.name + '"]:input', $realty_modal);
           el.val('');
         }
-
       }
+      $('#likeIt', $realty_modal).html(realty.like_it);
 
       $('#attachmentsContainer', $realty_modal).html('');
 
@@ -750,6 +750,24 @@
 
       $realty_modal.on('click', '[data-action="realty-close"]', function (e) {
         close();
+      });
+
+      $realty_modal.on('click', '[data-action="realty-like"]', function (e) {
+        console.log('like!');
+        $.ajax({
+          type: 'POST',
+          url: '/api/realty/like_it',
+          data: {id: realty.id}
+        })
+          .done(function (data) {
+            if (data.status == 'success') {
+              realty.like_it += 1;
+              $('#likeIt', $realty_modal).html(realty.like_it);
+            }
+          })
+          .fail(function (jqXHR, textStatus, errorThrown) {
+            alert('Error');
+          });
       });
 
       $realty_modal.on('click', '[data-action="photo-delete"]', function (e) {
@@ -1170,6 +1188,10 @@
       <div class="modal-header" id="realty-card-header">
         <a href="#" class="ctrl-button smode-btn" data-action="realty-close">Закрыть</a>
         <a href="#" class="ctrl-button emode-btn hidden" data-action="realty-cancel">Отменить</a>
+
+        <span name="like_it" id="likeIt"></span>
+        <a href="#" class="ctrl-button" data-action="realty-like">+</a>
+
         <a href="#" id="unlock-btn" class="ctrl-button pull-right smode-btn" data-action="realty-unlock">Изменить</a>
         <a href="#" class="ctrl-button pull-right emode-btn hidden" data-action="realty-save">Готово</a>
       </div>

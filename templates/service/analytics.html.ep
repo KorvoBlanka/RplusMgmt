@@ -29,7 +29,7 @@
 <script type="text/javascript">
 	$(function() {
 
-      google.charts.load('current', {'packages':['scatter', 'bar', 'corechart'], 'language': 'ru'});
+      google.charts.load('current', {'packages':['scatter', 'bar', 'corechart', 'line'], 'language': 'ru'});
       google.charts.setOnLoadCallback(drawEmpty);
 
       $('.date-picker').datepicker();
@@ -292,10 +292,139 @@
         var $display = $filter.data('val', $(this).data('val')).find('> a [role="display"]');
         if ($(this).data('type') == 'text') { $display.text($(this).text()) } else { $display.html($(this).html()) };
       });
+
+      // -----------------------------------------------------------------------
+
+      $('#objIdInput').change(function() {
+        drawX();
+      });
+
+      function drawX() {
+        var id = $('#objIdInput').val();
+
+        $.ajax({
+          type: "POST",
+          url: "/api/statistics/get_obj_price_data",
+          data: {id: id},
+          complete: function () { }
+        })
+          .done(function (data, textStatus, jqXHR) {
+
+            console.log(data);
+            var max_count = 0;
+            var max_price = 0;
+
+            var pdata = new google.visualization.DataTable();
+            pdata.addColumn('date', 'дата');
+            pdata.addColumn('number', 'цена');
+            var price_data = [];
+            for (let e of data.list) {
+              if (e.price_pair) {
+                if (e.price_pair[0]) {
+                  price_data.push([new Date(e.date), e.price_pair[0] * 1]);
+                  if (max_price < e.price_pair[0] * 1) {
+                    max_price = e.price_pair[0] * 1;
+                  }
+                }
+                if (e.price_pair[1]) {
+                  price_data.push([new Date(e.date), e.price_pair[1] * 1]);
+                  if (max_price < e.price_pair[1] * 1) {
+                    max_price = e.price_pair[1] * 1;
+                  }
+                }
+              }
+            }
+            pdata.addRows(price_data);
+
+            var ldata = new google.visualization.DataTable();
+            ldata.addColumn('date', 'дата');
+            ldata.addColumn('number', 'спрос');
+            var like_data = [];
+            for (let e of data.like_list) {
+              like_data.push([new Date(e.date), e.count * 1]);
+              if (max_count < e.count * 1) {
+                max_count = e.count * 1;
+              }
+            }
+            ldata.addRows(like_data);
+
+            var tdata = new google.visualization.DataTable();
+            tdata.addColumn('date', 'дата');
+            tdata.addColumn('number', 'задачи');
+            var task_data = [];
+            for (let e of data.task_list) {
+              task_data.push([new Date(e.date), e.count * 1]);
+              if (max_count < e.count * 1) {
+                max_count = e.count * 1;
+              }
+            }
+            tdata.addRows(task_data);
+
+            var tData = google.visualization.data.join(pdata, ldata, 'full', [[0, 0]], [1], [1]);
+            var joinedData = google.visualization.data.join(tData, tdata, 'full', [[0, 0]], [1, 2], [1]);
+
+            if (max_count < 4) {
+                max_count = 4;
+            }
+
+            var options = {
+              width: 1200,
+              height: 500,
+              explorer: {},
+              chart: {
+                title: '',
+                subtitle: ''
+              },
+              interpolateNulls: true,
+              //hAxis: {title: 'дата'}, //format: 'dd/MM/yyyy HH:mm'
+              //vAxis: {title: 'цена'},
+
+              series: {
+                // Gives each series an axis name that matches the Y-axis below.
+                0: {targetAxisIndex: 0},
+                1: {targetAxisIndex: 1},
+                2: {targetAxisIndex: 1},
+              },
+              vAxes: {
+                // Adds labels to each axis; they don't have to match the axis names.
+                0: {label: 'тыс. руб', format: 'currency', viewWindow:{max: max_price + 2, min: 0}},
+                1: {label: 'шт.', format: 'short', viewWindow:{max: max_count + 1, min: 0}}
+              },
+              hAxis: {
+               "gridlines": {
+                 "count": "-1",
+                 "units": {
+                   "minutes": {
+                     "format": [
+                       "HH:mm"
+                     ]
+                   },
+                   "hours": {
+                     "format": [
+                       "MM/dd HH",
+                       "HH"
+                     ]
+                   },
+                   "days": {
+                     "format": [
+                       "yyyy/MM/dd"
+                     ]
+                   }
+              }}}
+            };
+
+            var chart = new google.visualization.LineChart(document.getElementById('testPlot'));
+
+            chart.draw(joinedData, options);
+
+
+          });
+
+      }
+
 	});
 </script>
 % end
-
 
 <div class="row">
   <h3>Анализ цен</h3>

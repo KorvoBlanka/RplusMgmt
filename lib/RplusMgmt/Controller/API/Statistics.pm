@@ -22,12 +22,124 @@ use Rplus::Util::Geo;
 use File::Path qw(make_path);
 use POSIX qw(strftime);
 
+use Data::Dumper;
 use JSON;
 use Mojo::Collection;
 use Time::Piece;
+use DateTime;
 
 
 no warnings 'experimental::smartmatch';
+
+sub get_obj_price_data {
+    my $self = shift;
+
+    my $obj_id = $self->param('id');
+
+    my $res = {
+      list => [],
+      like_list => [],
+      task_list => []
+    };
+
+    # текущая цена
+    my $obj = Rplus::Model::Realty::Manager->get_objects(query => [
+        id => $obj_id,
+    ])->[0];
+
+    my $log_iter = Rplus::Model::HistoryRecord::Manager->get_objects_iterator(query => [
+        object_type => 'realty',
+        type => ['update', 'update_media'],
+        object_id => $obj_id,
+      ],
+      sort_by => 'date'
+    );
+
+    # стартовая цена
+    my $log_first = Rplus::Model::HistoryRecord::Manager->get_objects(query => [
+        object_type => 'realty',
+        type => ['add', 'add_media'],
+        object_id => $obj_id,
+    ])->[0];
+
+    if ($log_first) {
+        my $x = {
+            mark => 's',
+            date => $log_first->date,
+            price_pair => [undef, from_json($log_first->metadata)->{owner_price}]
+        };
+        push @{$res->{list}}, $x;
+    }
+
+    while (my $rec = $log_iter->next) {
+        my $x = {
+            date => $rec->date,
+            price_pair => from_json($rec->metadata)->{owner_price},
+        };
+        push @{$res->{list}}, $x;
+    }
+
+    if ($obj) {
+        my $x = {
+            mark => 'e',
+            date => DateTime->now(time_zone=>'local')->iso8601(),
+            price_pair => [$obj->owner_price, undef],
+        };
+        push @{$res->{list}}, $x;
+    }
+
+    my $t = Rplus::DB->new_or_cached->dbh->selectall_hashref(
+        q{
+        SELECT d.date, count(hr.id) FROM (
+            SELECT to_char(date_trunc('day', (current_date - offs)), 'YYYY-MM-DD')
+            AS date
+            FROM generate_series(0, 7, 1)
+            AS offs
+            ) d
+        LEFT OUTER JOIN (
+            SELECT date, id
+            FROM history_records
+            WHERE type = 'like_it' AND object_id = } . $obj_id . q{
+            ) hr
+        ON (d.date = to_char(date_trunc('day', hr.date), 'YYYY-MM-DD'))
+        GROUP BY d.date}, 'date');
+
+    for (sort keys %{$t}) {
+        my $rec = $t->{$_};
+        my $x = {
+            date => $rec->{date},
+            count => $rec->{count},
+        };
+        push @{$res->{like_list}}, $x;
+    }
+
+    $t = Rplus::DB->new_or_cached->dbh->selectall_hashref(
+        q{
+          SELECT d.date, count(tsk.id) FROM (
+              SELECT to_char(date_trunc('day', (current_date - offs)), 'YYYY-MM-DD')
+              AS date
+              FROM generate_series(0, 7, 1)
+              AS offs
+              ) d
+          LEFT OUTER JOIN (
+              SELECT completion_date, id
+              FROM tasks
+              WHERE task_type_id = 64 AND completion_date IS NOT NULL AND realty_id = } . $obj_id . q{
+              ) tsk
+          ON (d.date = to_char(date_trunc('day', tsk.completion_date), 'YYYY-MM-DD'))
+          GROUP BY d.date}, 'date');
+
+    for (sort keys %{$t}) {
+        my $rec = $t->{$_};
+        my $x = {
+            date => $rec->{date},
+            count => $rec->{count},
+        };
+        push @{$res->{task_list}}, $x;
+    }
+
+    return $self->render(json => $res);
+}
 
 sub get_price_data {
     my $self = shift;

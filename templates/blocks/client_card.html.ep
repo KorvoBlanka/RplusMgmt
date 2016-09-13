@@ -1,4 +1,3 @@
-% use Rplus::Model::ColorTag::Manager;
 % use Rplus::Model::DictColorTag::Manager;
 
 % content_for header => begin

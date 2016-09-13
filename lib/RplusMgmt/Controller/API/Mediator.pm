@@ -9,7 +9,7 @@ use Rplus::Model::Mediator::Manager;
 use Rplus::Model::Realty;
 use Rplus::Model::Realty::Manager;
 use Rplus::Util::Mediator qw(add_mediator);
-
+use Rplus::Util::History qw(mediator_record);
 
 use Mojo::Collection;
 
@@ -80,6 +80,7 @@ sub get {
 sub save {
     my $self = shift;
     my $acc_id = $self->session('account')->{id};
+    my $user_id = $self->stash('user')->{id};
 
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(mediators => 'write');
 
@@ -113,6 +114,13 @@ sub save {
     my $db = $self->db;
     $db->begin_work;
 
+    if ($mediator->id) {
+        mediator_record($user_id, 'update', $mediator, {
+            name => $name,
+            phone_num => $phone_num
+        });
+    }
+
     $mediator->db($db);
     $mediator->name($name);
     $mediator->phone_num($phone_num);
@@ -127,12 +135,19 @@ sub save {
                 $company = Rplus::Model::MediatorCompany->new(name => $company_name, db => $db);
                 $company->account_id($acc_id);
                 $company->save;
+                mediator_record($user_id, 'add_company', $company, undef);
                 $reload_company_list = 1;
             }
             $mediator->company($company);
         }
 
-        $mediator->save;
+        unless ($mediator->id) {
+            $mediator->save(insert => 1);
+            mediator_record($user_id, 'add', $mediator, undef);
+        } else {
+            $mediator->save(changes_only => 1);
+        }
+
 
         # Search for additional mediator phones
         my $found_phones = Mojo::Collection->new();
@@ -179,6 +194,7 @@ sub get_obj_count {
 sub delete {
     my $self = shift;
     my $acc_id = $self->session('account')->{id};
+    my $user_id = $self->stash('user')->{id};
 
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(mediators => 'write');
 
@@ -219,6 +235,8 @@ sub delete {
 
     #    }
     #}
+
+    mediator_record($user_id, 'delete', $mediator, undef);
 
     $self->render(json => {status => 'success'});
 }

@@ -41,12 +41,6 @@ __PACKAGE__->meta->setup(
     ],
 
     relationships => [
-        client_color_tags => {
-            class      => 'Rplus::Model::ClientColorTag',
-            column_map => { id => 'client_id' },
-            type       => 'one to many',
-        },
-
         realty => {
             class      => 'Rplus::Model::Realty',
             column_map => { id => 'buyer_id' },

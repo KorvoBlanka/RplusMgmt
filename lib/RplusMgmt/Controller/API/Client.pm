@@ -11,6 +11,8 @@ use Rplus::Model::Option::Manager;
 
 use Rplus::Util::Query;
 use Rplus::Util::Task;
+use Rplus::Util::History qw(client_record notification_record);
+use Rplus::Util::SMS qw(prepare_sms_text enqueue send_sms);
 
 use JSON;
 use Mojo::Util qw(trim);
@@ -239,6 +241,17 @@ sub save {
     my $color_tag_id = $self->param('color_tag_id');
     my $agent_id = $self->param('agent_id');
 
+    my $rec_type = 'add';
+    $rec_type = 'update' if $client->id;
+    client_record($acc_id, $user_id, $rec_type, $client, {
+        name => $name,
+        phone_num => $phone_num,
+        email => $email,
+        skype => $skype,
+        description => $description,
+        agent_id => $agent_id,
+    });
+
     # Save
     $client->name($name);
     $client->phone_num($phone_num);
@@ -247,10 +260,6 @@ sub save {
     $client->description($description);
     $client->send_owner_phone($send_owner_phone);
     $client->account_id($acc_id);
-
-    unless ($self->has_permission(clients => 'write' => $client->agent_id)) {
-        #$agent_id = $self->stash('user')->{id};
-    }
 
     if ($agent_id) {
         if ($client->agent_id != $agent_id) {
@@ -311,6 +320,9 @@ sub update {
     my $permission_granted = $self->has_permission(clients => 'write');
 
     if (defined $agent_id) {
+        client_record($acc_id, $user_id, 'update', $client, {
+            agent_id => $agent_id,
+        });
         if ($agent_id) {
             if ($client->agent_id != $agent_id) {
                 $client->agent_id($agent_id);
@@ -356,19 +368,21 @@ sub delete {
 
     my $id = $self->param('id');
     my $acc_id = $self->session('account')->{id};
+    my $user_id = $self->stash('user')->{id};
 
+    my $client = Rplus::Model::Client::Manager->get_objects(query => [account_id => $acc_id, id => $id, delete_date => undef])->[0];
+    return $self->render(json => {error => 'Not Found'}, status => 404) unless $client;
     # Удалим подписки
     my $num_rows_updated = Rplus::Model::Subscription::Manager->update_objects(
         set => {delete_date => \'now()'},
-        where => [client_id => $id, delete_date => undef],
+        where => [client_id => $client->id],
     );
 
     # Удалим клиента
-    $num_rows_updated = Rplus::Model::Client::Manager->update_objects(
-        set => {delete_date => \'now()'},
-        where => [account_id => $acc_id, id => $id, delete_date => undef],
-    );
-    return $self->render(json => {error => 'Not Found'}, status => 404) unless $num_rows_updated;
+    $client->delete_date('now()');
+    $client->save;
+
+    client_record($acc_id, $user_id, 'delete', $client, undef);
 
     # Не удаляем недвижимость на этой подписке?
 
@@ -377,6 +391,9 @@ sub delete {
 
 sub subscribe {
     my $self = shift;
+
+    my $acc_id = $self->session('account')->{id};
+    my $user_id = $self->stash('user')->{id};
 
     # Validation
     $self->validation->required('phone_num')->is_phone_num;
@@ -392,9 +409,6 @@ sub subscribe {
         push @errors, {end_date => 'Invalid value'} if $self->validation->has_error('end_date');
         return $self->render(json => {errors => \@errors}, status => 400);
     }
-
-    my $acc_id = $self->session('account')->{id};
-    my $user_id = $self->stash('user')->{id};
 
     # Input params
     my $phone_num = $self->parse_phone_num(scalar $self->param('phone_num'));
@@ -429,6 +443,8 @@ sub subscribe {
     );
     $subscription->save;
 
+    client_record($acc_id, $user_id, 'add', $subscription, undef);
+
     my $options = Rplus::Model::Option->new(account_id => $acc_id)->load();
     my $contact_info = '';
     if ($options) {
@@ -438,45 +454,24 @@ sub subscribe {
     # Add realty to subscription & generate SMS
     for my $realty_id (@$realty_ids) {
         my $realty = Rplus::Model::Realty::Manager->get_objects(
-            query => [id => $realty_id, state_code => ['work',], offer_type_code => $offer_type_code],
+            query => [id => $realty_id],
             with_objects => ['agent', 'type'],
         )->[0];
         if ($realty) {
             Rplus::Model::SubscriptionRealty->new(subscription_id => $subscription->id, realty_id => $realty->id, offered => 'true')->save;
 
             # Prepare SMS for client
-            if ($phone_num =~ /^9\d{9}$/) {
-                # TODO: Add template settings
-                my @parts;
-                {
-                    push @parts, $realty->type->name;
-                    push @parts, $realty->rooms_count.'к' if $realty->rooms_count;
-                    push @parts, $realty->locality.', '.$realty->address if $realty->address && $realty->locality;
-                    push @parts, $realty->district if $realty->district;
-                    push @parts, ($realty->floor || '?').'/'.($realty->floors_count || '?').' эт.' if $realty->floor || $realty->floors_count;
-                    push @parts, $realty->price.' тыс. руб.' if $realty->price;
-                    push @parts, $realty->agent->public_name || $realty->agent->name if $realty->agent;
-                    push @parts, $realty->agent->public_phone_num || $realty->agent->phone_num if $realty->agent;
-                }
-                my $sms_body = join(', ', @parts);
-                my $sms_text = 'Вы интересовались: '.$sms_body.($sms_body =~ /\.$/ ? '' : '.').$contact_info;
-                Rplus::Model::SmsMessage->new(phone_num => $phone_num, text => $sms_text, account_id => $acc_id)->save;
+            if ($client->phone_num =~ /^9\d{9}$/) {
+                my $sms_text = prepare_sms_text($realty, 'CLIENT', $client, $acc_id);
+                my $sms = enqueue($client->phone_num, $sms_text, $acc_id);
+                notification_record($acc_id, $user_id, 'sms_enqueued', $sms);
             }
 
-            if ($realty->agent) {
-                if (($realty->agent->phone_num || '') =~ /^9\d{9}$/) {
-                    # TODO: Add template settings
-                    my @parts;
-                    {
-                        push @parts, $realty->type->name;
-                        push @parts, $realty->rooms_count.'к' if $realty->rooms_count;
-                        push @parts, $realty->locality.', '.$realty->address.' '.($realty->house_num ? ', '.$realty->house_num : '') if $realty->address && $realty->locality;
-                        push @parts, $realty->price.' тыс. руб.' if $realty->price;
-                        push @parts, 'Клиент: '.$self->format_phone_num($phone_num);
-                    }
-                    my $sms_text = join(', ', @parts);
-                    Rplus::Model::SmsMessage->new(phone_num => $realty->agent->phone_num, text => $sms_text, account_id => $acc_id)->save;
-                }
+            # Prepare SMS for agent
+            if ($realty->agent && ($realty->agent->phone_num || '') =~ /^9\d{9}$/) {
+                my $sms_text = prepare_sms_text($realty, 'AGENT', $client, $acc_id);
+                my $sms = enqueue($realty->agent->phone_num, $sms_text, $acc_id);
+                notification_record($acc_id, $user_id, 'sms_enqueued', $sms);
             }
         }
     }

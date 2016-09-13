@@ -9,6 +9,8 @@ use Rplus::Model::User::Manager;
 
 use Rplus::Util::GoogleCalendar;
 
+use Rplus::Util::History qw(task_record);
+
 use Mojo::Collection;
 
 use JSON;
@@ -200,6 +202,8 @@ sub update {
     my $self = shift;
 
     my $id = $self->param('id');
+    my $acc_id = $self->session('account')->{id};
+    my $user_id = $self->stash('user')->{id};
 
     my $task = Rplus::Model::Task::Manager->get_objects(query => [id => $id, delete_date => undef])->[0];
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $task;
@@ -211,6 +215,11 @@ sub update {
     my $end_date = $self->param('end_date');
 
     if ($status) {
+
+        task_record($acc_id, $user_id, 'update', $task, {
+            status => $status,
+        });
+
         $task->status($status);
 
         if ($task->google_id) {
@@ -235,6 +244,11 @@ sub update {
 
 
     if ($start_date && $end_date) {
+        task_record($acc_id, $user_id, 'update', $task, {
+            start_date => $start_date,
+            end_date => $end_date
+        });
+
         $task->start_date($start_date);
         $task->end_date($end_date);
 
@@ -251,6 +265,7 @@ sub save {
     my $self = shift;
 
     my $acc_id = $self->session('account')->{id};
+    my $user_id = $self->stash('user')->{id};
 
     #return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(subscriptions => 'write');
     my $task_type_id = $self->param('task_type_id');
@@ -271,6 +286,17 @@ sub save {
         $task->realty_id($realty_id);
     }
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $task;
+
+    if ($task->id) {
+        task_record($acc_id, $user_id, 'update', $task, {
+            task_type_id => $task_type_id,
+            assigned_user_id => $assigned_user_id,
+            start_date => $start_date,
+            end_date => $end_date,
+            summary => $summary,
+            description => $description,
+        });
+    }
 
     my $assigned_user = Rplus::Model::User::Manager->get_objects(query => [id => $assigned_user_id, account_id => $acc_id, delete_date => undef])->[0];
     # если пытаемся назначить задачу пользователю другого агенства, то назначим ее себе
@@ -321,7 +347,13 @@ sub save {
 
     $task->task_type_id($task_type_id);
     $task->assigned_user_id($assigned_user_id);
-    $task->save(changes_only => 1);
+    if ($task->id) {
+        $task->save(changes_only => 1);
+    } else {
+        $task->save(insert => 1);
+        task_record($acc_id, $user_id, 'add', $task, undef);
+    }
+
 
     return $self->render(json => {status => 'success', id => $task->id, google_id => $task->google_id});
 }

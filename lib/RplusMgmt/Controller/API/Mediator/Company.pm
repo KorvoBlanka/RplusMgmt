@@ -6,7 +6,7 @@ use Rplus::Model::MediatorCompany;
 use Rplus::Model::MediatorCompany::Manager;
 use Rplus::Model::Mediator;
 use Rplus::Model::Mediator::Manager;
-
+use Rplus::Util::History qw(mediator_record);
 
 use Mojo::Util qw(trim);
 
@@ -91,6 +91,9 @@ sub get {
 sub save {
     my $self = shift;
 
+    my $acc_id = $self->session('account')->{id};
+    my $user_id = $self->stash('user')->{id};
+
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(mediators => 'write');
 
     # Retrieve company
@@ -114,6 +117,10 @@ sub save {
 
     # Prepare data
     my $name = $self->param_n('name');
+
+    mediator_record($acc_id, $user_id, 'update_company', $company, {
+        name => $name
+    });
 
     # Try to find existing company with the same name
     my $company_dst = Rplus::Model::MediatorCompany::Manager->get_objects(query => [[\'lower(t1.name) LIKE ?' => lc($name)], delete_date => undef])->[0];
@@ -156,6 +163,7 @@ sub delete {
     my $self = shift;
 
     my $acc_id = $self->session('account')->{id};
+    my $user_id = $self->stash('user')->{id};
 
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(mediators => 'write');
 
@@ -201,6 +209,8 @@ sub delete {
     #    set => {delete_date => \'now()'},
     #    where => [company_id => $id, delete_date => undef],
     #);
+
+    mediator_record($acc_id, $user_id, 'delete_company', $company, undef);
 
     return $self->render(json => {status => 'success'});
 }

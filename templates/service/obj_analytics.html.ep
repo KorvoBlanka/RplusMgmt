@@ -1,0 +1,500 @@
+% layout 'default';
+
+% use Rplus::Model::RealtyOfferType::Manager;
+% use Rplus::Model::DictColorTag::Manager;
+
+% use JSON;
+
+% content_for header => begin
+%= css_once "$assets_url/typeahead.js/$typeaheadjs_ver/css/typeahead.js-bootstrap.css";
+%= css_once "$assets_url/bootstrap-datepicker/css/datepicker3.css";
+<style type="text/css">
+
+  #realtyTable > tbody > tr {
+    border: 1px solid #e5e5e5;
+  }
+
+  #realtyTable > tbody > tr.selected > td {
+    background-color: #00669C !important;
+    color: #fff;
+  }
+
+  #realtyTable > tbody > tr.selected:hover > td {
+    background-color: #006096 !important;
+    color: #fff;
+  }
+
+  #realtyTable > tbody > tr.selected > td > a {
+    color: #fff;
+  }
+
+  .tt-hint {
+    height: 30px;
+    padding: 5px 10px;
+    font-size: 12px;
+    line-height: 1.5;
+    border-radius: 3px;
+    color: #c0c0c0;
+  }
+
+  .tag-button {
+    height: 10px;
+    width: 10px;
+    border-radius: 5px;
+    margin-top: 5px;
+  }
+
+  .round-button {
+    height: 14px;
+    width: 14px;
+    border-radius: 14px;
+    margin-right: 5px;
+  }
+
+  .round-button:hover {
+    box-shadow: 0px 0px 5px #888888;
+  }
+
+  .cmenu-tag-group {
+    height: 22px;
+    display: block;
+  }
+
+  % for my $x (@{Rplus::Model::DictColorTag::Manager->get_objects(query => [delete_date => undef], sort_by => 'id')}) {
+  .color-tag-<%= $x->id %> {
+    background: #<%= $x->color %>;
+    border: 1px solid #<%= $x->border_color %>;
+  }
+  % }
+
+</style>
+% end
+
+% content_for after_bootstrap => begin
+%= js_once "$assets_url/typeahead.js/$typeaheadjs_ver/js/typeahead.js";
+%= js_once "$assets_url/bootstrap-datepicker/js/bootstrap-datepicker.js";
+%= js_once "https://www.gstatic.com/charts/loader.js";
+
+% end
+
+% content_for javascript => begin
+<script type="text/javascript">
+	$(function() {
+
+    google.charts.load('current', {'packages':['scatter', 'bar', 'corechart', 'line'], 'language': 'ru'});
+    google.charts.setOnLoadCallback(function () {});
+
+    $('.date-picker').datepicker();
+
+    function drawX(id) {
+
+      $.ajax({
+        type: "POST",
+        url: "/api/statistics/get_obj_price_data",
+        data: {id: id},
+        complete: function () { }
+      })
+        .done(function (data, textStatus, jqXHR) {
+
+          console.log(data);
+          var max_count = 0;
+          var max_price = 0;
+
+          var pdata = new google.visualization.DataTable();
+          pdata.addColumn('date', 'дата');
+          pdata.addColumn('number', 'цена');
+          var price_data = [];
+          for (let e of data.list) {
+            if (e.price_pair) {
+              if (e.price_pair[0]) {
+                price_data.push([new Date(e.date), e.price_pair[0] * 1]);
+                if (max_price < e.price_pair[0] * 1) {
+                  max_price = e.price_pair[0] * 1;
+                }
+              }
+              if (e.price_pair[1]) {
+                price_data.push([new Date(e.date), e.price_pair[1] * 1]);
+                if (max_price < e.price_pair[1] * 1) {
+                  max_price = e.price_pair[1] * 1;
+                }
+              }
+            }
+          }
+          pdata.addRows(price_data);
+
+          var ldata = new google.visualization.DataTable();
+          ldata.addColumn('date', 'дата');
+          ldata.addColumn('number', 'спрос');
+          var like_data = [];
+          for (let e of data.like_list) {
+            like_data.push([new Date(e.date), e.count * 1]);
+            if (max_count < e.count * 1) {
+              max_count = e.count * 1;
+            }
+          }
+          ldata.addRows(like_data);
+
+          var tdata = new google.visualization.DataTable();
+          tdata.addColumn('date', 'дата');
+          tdata.addColumn('number', 'задачи');
+          var task_data = [];
+          for (let e of data.task_list) {
+            task_data.push([new Date(e.date), e.count * 1]);
+            if (max_count < e.count * 1) {
+              max_count = e.count * 1;
+            }
+          }
+          tdata.addRows(task_data);
+
+          var tData = google.visualization.data.join(pdata, ldata, 'full', [[0, 0]], [1], [1]);
+          var joinedData = google.visualization.data.join(tData, tdata, 'full', [[0, 0]], [1, 2], [1]);
+
+          if (max_count < 4) {
+              max_count = 4;
+          }
+
+          var options = {
+            width: 850,
+            height: 500,
+            explorer: {},
+            chart: {
+              title: '',
+              subtitle: ''
+            },
+            interpolateNulls: true,
+            //hAxis: {title: 'дата'}, //format: 'dd/MM/yyyy HH:mm'
+            //vAxis: {title: 'цена'},
+
+            series: {
+              // Gives each series an axis name that matches the Y-axis below.
+              0: {targetAxisIndex: 0},
+              1: {targetAxisIndex: 1},
+              2: {targetAxisIndex: 1},
+            },
+            vAxes: {
+              // Adds labels to each axis; they don't have to match the axis names.
+              0: {label: 'тыс. руб', format: 'currency', viewWindow:{max: max_price + 2, min: 0}},
+              1: {label: 'шт.', format: 'short', viewWindow:{max: max_count + 1, min: 0}}
+            },
+            hAxis: {
+              gridlines: {
+                count: "-1",
+                units: {
+                  minutes: {
+                    format: [
+                     "HH:mm"
+                    ]
+                  },
+                  hours: {
+                    format: [
+                      "MM/dd HH",
+                      "HH"
+                    ]
+                  },
+                  days: {
+                    format: [
+                      "yyyy/MM/dd"
+                    ]
+                  }
+                }
+              }
+            }
+          };
+
+          var chart = new google.visualization.LineChart(document.getElementById('testPlot'));
+          chart.draw(joinedData, options);
+        });
+
+    }
+
+    function makeid() {
+        var id = "";
+        var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        for( var i=0; i < 5; i++ )
+            id += possible.charAt(Math.floor(Math.random() * possible.length));
+        return id;
+    }
+
+    function getOfferType() {
+      var offer_filter = $('[data-filter="offer_type_code"]').data('val')
+      if (offer_filter.match(/sale/)) return 'sale';
+      return 'rent';
+    }
+    function getRentType() {
+      var offer_filter = $('[data-filter="offer_type_code"]').data('val')
+      if (offer_filter.match(/short/)) return 'short';
+      if (offer_filter.match(/long/)) return 'long';
+      return '';
+    }
+
+    function buildHtmlForRealty(realty, page) {
+      var r = realty;
+      var tag = r.color_tag_id ? '<span style="margin: 6px 0px 6px 4px;" class="tag-button color-tag-' + r.color_tag_id + ' pull-left"></span>' : '';
+
+      var xhtml = '<tr class="" data-id="' + r.id + '" data-page="' + page + '" data-lat="' + r.latitude + '" data-lng="' + r.longitude + '">';
+      xhtml += '<td style="width: 28px;">' + tag + '</td>';
+      xhtml += '<td>' + Rplus.Realty.getDigestEx(r, false) + '</td>';
+      xhtml += '<td style="padding-top: 0px;padding-bottom: 10px;"><span style="font-size: 10px;">' + moment(r.last_seen_date).format("DD.MM.YY HH:mm") + '</span><br>&nbsp;</td>';
+      xhtml += '</tr>';
+
+      return xhtml;
+    }
+
+    var realtyLastPage = 1;
+    function listRealty(page) {
+      var realtyLastPage = page;
+      var q = '';
+      var geoSearchText = '';
+      var stateCode = $('[data-filter="state_code"]').data('val');
+
+      var offerTypeCode = getOfferType();
+      var rentType = getRentType();
+
+
+      var agentId = $('[data-filter="agent_id"]').data('val');
+      var depth = $('[data-filter="depth"]').data('val');
+
+      var sortBy = $('#realtyTable').data('sort');
+      var colorTagId = $('[data-filter="color_tag_id"]').data('val');
+
+      _listRealty_started = true;
+
+      //clearTimeout(_tid);
+      //_tid = setTimeout(function(){updateRealty()}, 180000);
+      rq_id = makeid();
+      $.ajax({
+        type: "POST",
+        cache: false,
+        url: "/api/realty/list",
+        data: {q: q, search_area: geoSearchText, depth: depth, state_code: stateCode, offer_type_code: offerTypeCode, rent_type: rentType, agent_id: agentId, color_tag_id: colorTagId, sort_by: sortBy, page: page, per_page: 34, rq_id: rq_id},
+        complete: function () { _listRealty_started = false; }
+      })
+        .done(function (data, textStatus, jqXHR) {
+          console.log(data);
+          if (page == 1) {
+            $('#realtyTableWrapper').scrollTop(0);
+            $('#realtyTable > tbody').html('');
+            $('#objectsCount').text(data.count);
+          }
+
+          for (var i = 0; i < data.list.length; i++) {
+            $('#realtyTable > tbody').append(buildHtmlForRealty(data.list[i], data.page));
+          }
+        });
+    }
+
+    // Filters
+    $('[data-filter] > ul a').click(function (e) {
+      var $filter = $(this).closest('[data-filter]');
+      var $display = $filter.data('val', $(this).data('val')).find('> a [role="display"]');
+      if ($(this).data('type') == 'text') { $display.text($(this).text()) } else { $display.html($(this).html()) };
+      listRealty(1);
+
+      if($filter[0].id == 'offer-type-filter') {
+        $.ajax({
+          type: "POST",
+          url: "/api/user/set_offer_mode",
+          data: {id: <%= $self->stash('user')->{id} %>, offer_mode: $('#offer-type-filter').data('val')},
+        })
+          .done(function (data, textStatus, jqXHR) {
+            Rplus.Variables['User'].offer_mode = $('#offer-type-filter').data('val');
+            Rplus.Functions.getActiveSubCount();
+          });
+      }
+    });
+
+    $('#realtyTable > tbody').on('mousedown', 'tr', function (e) {
+      //if (hasTouch()) return;
+      var $this = $(this);
+      var id = $this.data('id');
+      drawX(id);
+      switch (event.which) {
+          case 1:   // lmb
+            var sel_idx = $this.index();
+            // select/deselect cliked
+            if (!$this.hasClass('opened')) {
+              //clearHistorySelected();
+              var $selected = $('#realtyTable > tbody > tr.selected');
+              $selected.each(function () {
+                var $this = $(this);
+                var id = $this.data('id');
+                $this.removeClass('selected');
+                //putToHistory(id, "selected", 0);
+              });
+              $this.addClass('selected');
+              //putToHistory(id, "selected", 1);
+            }
+            break;
+          case 2:    // mmb
+            break;
+          case 3:    // rmb
+            if (!$this.hasClass('selected')) {
+              //clearHistorySelected();
+              var $selected = $('#realtyTable > tbody > tr.selected');
+              $selected.each(function () {
+                var $this = $(this);
+                var id = $this.data('id');
+                $this.removeClass('selected');
+                //putToHistory(id, "selected", 0);
+              });
+            }
+            $this.addClass('selected');
+            //putToHistory(id, "selected", 1);
+            break;
+          default:
+      }
+    });
+
+    // Infinite scrolling
+    $('#realtyTableWrapper').scroll(function (e) {
+      if ($(this).scrollTop() + $(this).innerHeight() >= $(this)[0].scrollHeight - 1) {
+        listRealty(realtyLastPage + 1);
+      }
+    });
+
+    $('#realtyTableWrapper').height($(window).height() - $('#realtyTable').get(0).getBoundingClientRect().top - 50/*$('.navbar-fixed-bottom').height()*/);
+
+    listRealty(1);
+	});
+</script>
+% end
+
+
+<div class="row">
+  <h3>ТЕСТ</h3>
+</div>
+
+<div class="row">
+  <div class="col-lg-4 col-md-4">
+    <div class="table-responsive" id="realtyTableWrapper" style="height: 539px;">
+      <table class="table table-condensed table-striped table-hover" id="realtyTable">
+        <tbody>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="col-lg-8 col-md-8">
+    <ul class="nav nav-tabs">
+      <li class="active"><a href="#price-demand" data-toggle="tab">Цена-спрос</a></li>
+      <li class=""><a href="#history" data-toggle="tab">История</a></li>
+      <li class=""><a href="#3" data-toggle="tab">3</a></li>
+    </ul>
+    <div class="tab-content">
+      <div class="tab-pane active" id="price-demand">
+        <div id="testPlot" style="width: 850px; height: 500px;"></div>
+      </div>
+      <div class="tab-pane" id="history">history</div>
+      <div class="tab-pane" id="3">
+    </div>
+  </div>
+</div>
+
+
+<nav class="navbar navbar-default navbar-fixed-bottom">
+  <div class="container" id="nav-0">
+    <ul class="nav navbar-nav">
+
+    </ul>
+
+    <div class="navbar-right">
+      <ul class="nav navbar-nav">
+
+        <!-- Color tag filter -->
+        <li class="dropdown" data-filter="color_tag_id" data-val="">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span role="display"><span class="glyphicon glyphicon-tags"></span>&nbsp&nbspВсе</span> <b class="caret"></b></a>
+          <ul class="dropdown-menu">
+            <li><a href="#" data-val=""><span class="glyphicon glyphicon-tags"></span>&nbsp&nbspВсе</a></li>
+            % for my $x (@{Rplus::Model::DictColorTag::Manager->get_objects(query => [delete_date => undef], sort_by => 'id')}) {
+              <li><a href="#" data-val="<%= $x->id %>"><span class="tag-button color-tag-<%= $x->id %> pull-left"></span>&nbsp<%= $x->name %></a></li>
+            % }
+          </ul>
+        </li>
+
+        <!-- Agent filter -->
+        <li class="dropdown" data-filter="agent_id" data-val="">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-user"></span><span role="display"> Все объекты</span> <b class="caret"></b></a>
+          <ul class="dropdown-menu">
+            % if (has_permission(realty => 'read')->{nobody} || has_permission(realty => 'read')->{others}) {
+            <li><a href="#" data-val="" data-type="text"><strong> Все объекты</strong></a></li>
+            % }
+            % if (has_permission(realty => 'read')->{others}) {
+            <li><a href="#" data-val="all" data-type="text"><strong><%= ucfloc 'all agents' %></strong></a></li>
+            <li><a href="#" data-val="med" data-type="text"><strong> Посредник</strong></a></li>
+            <li><a href="#" data-val="not_med" data-type="text"><strong> Собственник</strong></a></li>
+            <li><a href="#" data-val="<%= $self->stash('user')->{id} %>" data-type="text"><strong> Мои объекты</strong></a></li>
+            % }
+            % if ($self->stash('user')->{role} eq 'top') {
+            %   my @owned = ();
+            %   for my $m (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('account')->{id}, role => ['manager'], delete_date => undef], sort_by => 'name')}) {
+                  <li class="dropdown-submenu"><a href="#" data-val="<%= $m->id %>" data-type="text"><%= $m->name %></a><ul class="dropdown-menu dropdown-context dropdown-context-sub compressed-context" style="bottom: auto;">
+                    <li><a href="#" data-val="a<%= $m->id %>" data-type="text"> Все агенты</a></li>
+            %     if (scalar (@{$m->subordinate})) {
+            %       push @owned, @{$m->subordinate};
+            %       for my $a (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('account')->{id}, id => [$m->subordinate], delete_date => undef], sort_by => 'name')}) {
+                      <li><a href="#" data-val="<%= $a->id %>" data-type="text"><%= $a->name %></a></li>
+            %       }
+            %     }
+                  </ul></li>
+            %   }
+            % } elsif ($self->stash('user')->{role} eq 'manager') {
+            <li><a href="#" data-val="a<%= $self->stash('user')->{id} %>" data-type="text"><strong> Мои агенты</strong></a></li>
+            %   if (scalar (@{$self->stash('user')->{subordinate}})) {
+            %     for my $a (@{Rplus::Model::User::Manager->get_objects(query => [account_id => $self->session('account')->{id}, id => $self->stash('user')->{subordinate}, delete_date => undef], sort_by => 'name')}) {
+                    <li><a href="#" data-val="<%= $a->id %>" data-type="text"><%= $a->name %></a></li>
+            %     }
+            %   }
+            % }
+          </ul>
+        </li>
+
+        <!-- Offer type filter -->
+        <li class="dropdown" id="offer-type-filter" data-filter="offer_type_code" data-val="sale">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span role="display"></span> Продажа<b class="caret"></b></a>
+          <ul class="dropdown-menu">
+            <li><a href="#" data-val="sale"> Продажа</a></li>
+            <li><a href="#" data-val="rent"> Аренда</a></li>
+            <li><a href="#" data-val="rent-short" data-type="text">&nbsp;&nbsp;&nbsp;&nbsp;Краткосрочная</a></li>
+            <li><a href="#" data-val="rent-long" data-type="text">&nbsp;&nbsp;&nbsp;&nbsp;Долгосрочная</a></li>
+          </ul>
+        </li>
+
+        <!-- State filter -->
+        <li class="dropdown" data-filter="state_code" data-val="">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span role="display"><span class="glyphicon glyphicon-th-large"></span> <%= ucfloc 'any' %></span> <b class="caret"></b></a>
+          <ul class="dropdown-menu">
+            <li><a href="#" data-val=""><span class="glyphicon glyphicon-th-large"></span> Любой</a></li>
+            <li><a href="#" data-val="multy"><span class="glyphicon glyphicon-file"></span> Мультилистинг</a></li>
+
+            % for my $x (@{Rplus::Model::RealtyState::Manager->get_objects(sort_by => 'sort_idx')}) {
+            % my $metadata = from_json($x->metadata);
+              <li><a href="#" data-val="<%= $x->code %>"><span class="glyphicon <%= $metadata->{'icon-class'} %>"></span>&nbsp<%= $x->name %></a></li>
+            % }
+
+          </ul>
+        </li>
+
+        <!-- depth selector -->
+        <li class="dropdown" data-filter="depth" data-val="90">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span role="display"><span class="glyphicon glyphicon-calendar"></span> 3 Месяца</span> <b class="caret"></b></a>
+          <ul class="dropdown-menu">
+              <li><a href="#" data-val="1"> 1 день</a></li>
+              <li><a href="#" data-val="2"> 2 дня</a></li>
+              <li><a href="#" data-val="3"> 3 дня</a></li>
+              <li><a href="#" data-val="7"> Неделя</a></li>
+              <li><a href="#" data-val="14"> 2 недели</a></li>
+              <li><a href="#" data-val="30"> Месяц</a></li>
+              <li><a href="#" data-val="90"> 3 Месяца</a></li>
+              <li><a href="#" data-val="full"> Вся</a></li>
+          </ul>
+        </li>
+      </ul>
+
+      <p class="navbar-text" style="margin-right: 1px;">
+        <span class="text-primary hide-if-small"><%= ucfloc 'found' %></span> <span class="text-primary" id="objectsCount">0</span>
+      </p>
+      <p class="navbar-text" style="margin-right: 1px; margin-left: 1px;">
+        <span class="text-primary hide-if-small"> / <span class="text-primary" id="selectedCount">0</span></span>
+      </p>
+    </div>
+  </div>
+</nav> <!-- /.navbar -->

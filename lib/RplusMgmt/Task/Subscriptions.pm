@@ -17,6 +17,8 @@ use Rplus::Model::Realty::Manager;
 use Rplus::Model::Option;
 use Rplus::Model::Option::Manager;
 
+use Rplus::Util::History qw(subscription_record notification_record);
+use Rplus::Util::SMS qw(prepare_sms_text enqueue send_sms);
 use Rplus::Util::Query;
 use JSON;
 
@@ -53,7 +55,12 @@ sub run {
             );
             while (my $subscr = $subscription_iter->next) {
                 my $realty_count = Rplus::Model::SubscriptionRealty::Manager->get_objects_count(query => [subscription_id => $subscr->id, offered => 1]);
-                next if ($subscr->realty_limit > 0 && $realty_count >= $subscr->realty_limit);      # Check realty limit
+                if ($subscr->realty_limit > 0 && $realty_count >= $subscr->realty_limit) {      # Check realty limit
+                    subscription_record($acc_id, undef, 'processing', $subscr, undef, 'превышен лимит');
+                    next;
+                }
+
+                subscription_record($acc_id, undef, 'processing', $subscr, undef, 'превышен лимит');
 
                 for my $q (@{$subscr->queries}) {
 
@@ -91,41 +98,18 @@ sub run {
 
                         # Prepare SMS for client
                         if ($client->phone_num =~ /^9\d{9}$/) {
-                            # TODO: Add template settings
-                            my @parts;
-                            {
-                                push @parts, $realty->type->name;
-                                push @parts, $realty->rooms_count.'к' if $realty->rooms_count;
-                                push @parts, $realty->address if $realty->address;
-                                push @parts, $realty->district if $realty->district;
-                                push @parts, ($realty->floor || '?').'/'.($realty->floors_count || '?').' эт.' if $realty->floor || $realty->floors_count;
-                                push @parts, $realty->price.' тыс. руб.' if $realty->price;
-                                if ($subscr->client->send_owner_phone) {
-                                    push @parts, "Собственник: ".join(', ', $realty->owner_phones);
-                                } elsif ($realty->agent) {
-                                    push @parts, "Агент: ".($realty->agent->public_name || $realty->agent->name);
-                                    push @parts, $realty->agent->public_phone_num || $realty->agent->phone_num;
-                                }
-                            }
-                            my $sms_body = join(', ', @parts);
-                            my $sms_text = 'По вашему запросу поступило: '.$sms_body.($sms_body =~ /\.$/ ? '' : '.') . ' ' . $contact_info;
-                            Rplus::Model::SmsMessage->new(phone_num => $client->phone_num, text => $sms_text, account_id => $acc_id)->save;
+                            my $sms_text = prepare_sms_text($realty, 'CLIENT', $client, $acc_id, $subscr->client->send_owner_phone);
+                            my $sms = enqueue($client->phone_num, $sms_text, $acc_id);
+                            notification_record($acc_id, undef, 'sms_enqueued', $sms);
                         }
 
                         # Prepare SMS for agent
-                        if (!$subscr->client->send_owner_phone && $realty->agent && ($realty->agent->phone_num || '') =~ /^9\d{9}$/) {
-                            # TODO: Add template settings
-                            my @parts;
-                            {
-                                push @parts, $realty->type->name;
-                                push @parts, $realty->rooms_count.'к' if $realty->rooms_count;
-                                push @parts, $realty->address.($realty->district ? ' ('.$realty->district.')' : '') if $realty->address;
-                                push @parts, $realty->price.' тыс. руб.' if $realty->price;
-                                push @parts, 'Клиент: '.$c->format_phone_num($client->phone_num);
-                            }
-                            my $sms_text = 'Подобрано: '.join(', ', @parts);
-                            Rplus::Model::SmsMessage->new(phone_num => $realty->agent->phone_num, text => $sms_text, account_id => $acc_id)->save;
+                        if ($realty->agent && ($realty->agent->phone_num || '') =~ /^9\d{9}$/) {
+                            my $sms_text = prepare_sms_text($realty, 'AGENT', $client, $acc_id);
+                            my $sms = enqueue($realty->agent->phone_num, $sms_text, $acc_id);
+                            notification_record($acc_id, undef, 'sms_enqueued', $sms);
                         }
+
                     }
                 }
                 $subscr->last_check_date('now()');

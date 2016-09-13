@@ -10,6 +10,7 @@ use Rplus::Model::MediaImportHistory::Manager;
 
 use Rplus::Util::Geo;
 use Rplus::Util::Image;
+use Rplus::Util::History qw(realty_record);
 
 use Data::Dumper;
 
@@ -76,6 +77,8 @@ sub put_object {
                     push @phones, $_;
                 }
 
+                realty_record(undef, undef, 'update_media', $o_realty, $data);
+
                 $o_realty->owner_phones(Mojo::Collection->new(@phones)->compact->uniq);
                 if ($data->{add_date}) {
                     $o_realty->last_seen_date($data->{add_date});
@@ -109,6 +112,8 @@ sub put_object {
             _update_location($realty, $config);
 
             $realty->save;
+            realty_record(undef, undef, 'add_media', $realty, undef);
+
             my $data_id = $data->{id};
             $id = $realty->id;
             say "Saved new realty: $id";

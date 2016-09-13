@@ -18,6 +18,7 @@ use Rplus::Util::Mediator qw(add_mediator);
 use Rplus::Util::Task;
 use Rplus::Util::Geo;
 use Rplus::Util::Misc;
+use Rplus::Util::History qw(realty_record get_object_changes);
 
 use File::Path qw(make_path);
 use POSIX qw(strftime);
@@ -42,55 +43,6 @@ my $accounts_iter = Rplus::Model::Account::Manager->get_objects_iterator(query =
 while (my $x = $accounts_iter->next) {
     $accounts_hash{$x->id} = $x->company_name ? $x->company_name : $x->name;
 }
-
-
-#
-my @mls_fields_apartment = (
-    'address', 'house_num', 'house_type_id', 'ap_scheme_id',
-    'rooms_count', 'room_scheme_id',
-    'floor', 'floors_count', 'condition_id', 'balcony_id', 'bathroom_id',
-    'square_total',
-    'description', 'owner_price', 'mls_price',
-);
-
-#
-my @mls_fields_rooms = (
-    'address', 'house_num', 'house_type_id', 'ap_scheme_id',
-    'rooms_count', 'rooms_offer_count', 'room_scheme_id',
-    'floor', 'floors_count', 'condition_id', 'balcony_id', 'bathroom_id',
-    'square_total',
-    'description', 'owner_price', 'mls_price',
-);
-
-my @mls_fields_house = (
-    'address', 'house_num', 'house_type_id',
-    'rooms_count', 'rooms_offer_count',
-    'condition_id', 'bathroom_id',
-    'square_total',
-    'description', 'owner_price', 'mls_price',
-);
-
-#
-my @mls_fields_land = (
-    'square_land', 'square_land_type',
-    'description', 'owner_price',
-    'mls_price',
-);
-
-#
-my @mls_fields_office = (
-    'address', 'house_num',
-    'square_total',
-    'description', 'owner_price',
-    'mls_price',
-);
-
-#
-my @mls_fields_other = (
-    'description', 'owner_price',
-    'mls_price',
-);
-
 
 my $required_export_str = q|{
     "apartment": [
@@ -286,8 +238,10 @@ my $_serialize = sub {
                 $_ =~ /$tag_prefix/;
             });
             my $t = $ct->first;
-            $t =~ s/^\d+?_//;
-            $x->{color_tag_id} = $t;
+            if ($t) {
+                $t =~ s/^\d+?_//;
+                $x->{color_tag_id} = $t;
+            }
         }
 
         # Exclude fields for read permission "2"
@@ -672,29 +626,9 @@ sub save {
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => write => $realty->agent_id);
     return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => write => $self->param_n('agent_id'));
 
-    my $changed = 0;
-    foreach (keys %data) {
-        if ($data{$_} && $realty->$_ ne $data{$_}) {
-            $changed = 1;
-            last;
-        }
-    }
-    my $aref = $realty->owner_phones;
-    if ($aref && $data{owner_phones}->size == scalar @$aref) {
-        for (my $i = 0; $i < $data{owner_phones}->size; $i++) {
-            if ($data{owner_phones}[$i] ne $realty->owner_phones->[$i]) {
-                $changed = 1;
-            }
-        }
-    }
-
     # Export media
     my $export_media_ok = Rplus::DB->new_or_cached->dbh->selectall_hashref(q{SELECT M.id, M.name FROM media M WHERE M.type = 'export' AND M.delete_date IS NULL}, 'id');
     $data{export_media} = Mojo::Collection->new(@{$self->every_param('export_media[]')})->grep(sub { exists $export_media_ok->{$_} })->uniq;
-
-    if (!$realty->agent_id) {
-        $realty->export_media(Mojo::Collection->new());
-    }
 
     # Color tag
     my $ct = Mojo::Collection->new();
@@ -702,13 +636,13 @@ sub save {
         $ct = Mojo::Collection->new(@{$realty->color_tag});
     }
     my $tag_prefix = $user_id . '_';
-    if ($color_tag_id) {    # add tag
+    if ($color_tag_id) {        # add tag
         $ct = $ct->grep(sub {   # remove all user tags
             $_ !~ /$tag_prefix/;
         });
         my $tag = $user_id . '_' . $color_tag_id;
         push @$ct, $tag;        # add new
-    } else {                # remove tag
+    } else {                    # remove tag
         $ct = $ct->grep(sub {
             $_ !~ /$tag_prefix/;
         });
@@ -723,39 +657,23 @@ sub save {
     # if agent_id changed - set 'assign_date'
     $realty->assign_date('now()') if $realty->agent_id != $data{agent_id};
 
-    # Save data
-    $realty->$_($data{$_}) for keys %data;
-    if ($changed) {
-        $realty->change_date('now()');
-    }
-
-
-
-    my @mls_fields;
-
-    if ($realty->type_code eq 'room') {
-        @mls_fields = @mls_fields_rooms;
-    } elsif ($realty->type_code eq 'apartment' || $realty->type_code eq 'apartment_small' || $realty->type_code eq 'apartment_new' || $realty->type_code eq 'townhouse') {
-        @mls_fields = @mls_fields_apartment;
-    } elsif ($realty->type_code eq 'house' || $realty->type_code eq 'cottage' || $realty->type_code eq 'dacha') {
-        @mls_fields = @mls_fields_house;
-    } elsif ($realty->type_code eq 'land') {
-        @mls_fields = @mls_fields_land;
-    } elsif ($realty->type_code eq 'office') {
-        @mls_fields = @mls_fields_office;
-    } elsif ($realty->type_code eq 'other') {
-        @mls_fields = @mls_fields_other;
-    }
-
-    for (@mls_fields) {
-        unless ($realty->$_) {
-            $realty->multylisting(0);
-            last;
+    if ($realty->id) {
+        realty_record($acc_id, $user_id, 'update', $realty, \%data);
+        if (get_object_changes($realty, \%data)) {    # something changed
+            $realty->change_date('now()');
         }
     }
 
+    # Save data
+    $realty->$_($data{$_}) for keys %data;
+
     eval {
-        $realty->save($realty->id ? (changes_only => 1) : (insert => 1));
+        if ($realty->id) {
+            $realty->save(changes_only => 1);
+        } else {
+            $realty->save(insert => 1);
+            realty_record($acc_id, $user_id, 'add', $realty, undef);
+        }
         1;
     } or do {
         return $self->render(json => {error => $@}, status => 500) unless $realty;
@@ -871,17 +789,19 @@ sub update_multiple {
                 }
             }
 
-            unless ($agent_id) {
-                $realty->agent_id(undef);
+            if ($agent_id == 10000) {
+                add_mediator('ПОСРЕДНИК В НЕДВИЖИМОСТИ', $realty->owner_phones->[0], 'user_' . $user_id, $acc_id);
             } else {
-                if ($agent_id == 10000) {
-                    add_mediator('ПОСРЕДНИК В НЕДВИЖИМОСТИ', $realty->owner_phones->[0], 'user_' . $user_id, $acc_id);
-                } else {
+                realty_record($acc_id, $user_id, 'update', $realty, {
+                    agent_id => $agent_id
+                });
+                if ($agent_id) {
                     $realty->agent_id($agent_id);
+                } else {
+                    $realty->agent_id(undef);
                 }
+                $realty->assign_date('now()');
             }
-            $realty->assign_date('now()');
-            $realty->change_date('now()');
         }
 
         if ($export_media) {
@@ -910,14 +830,18 @@ sub update_multiple {
                 }
             }
 
+            my $new_export_media;
             if ($export_media_id ~~ @{$realty->export_media}) {
-                my $new_export_media = Mojo::Collection->new(grep { $_ != $export_media_id } @{$realty->export_media});
-                $realty->export_media($new_export_media->compact->uniq);
+                $new_export_media = Mojo::Collection->new(grep { $_ != $export_media_id } @{$realty->export_media});
             } else {
-                my $new_export_media = Mojo::Collection->new(@{$realty->export_media});
+                $new_export_media = Mojo::Collection->new(@{$realty->export_media});
                 push @$new_export_media, ($export_media_id);
-                $realty->export_media($new_export_media->compact->uniq);
             }
+
+            realty_record($acc_id, $user_id, 'update', $realty, {
+                export_media => $new_export_media
+            });
+            $realty->export_media($new_export_media->compact->uniq);
         }
 
         if ($state_code) {
@@ -925,13 +849,16 @@ sub update_multiple {
                 push @errors, $id;
                 return;
             }
-
-            $realty->state_code(scalar $self->param('state_code'));
-            $realty->change_date('now()');
+            my $new_state_code = $self->param('state_code');
+            realty_record($acc_id, $user_id, 'update', $realty, {
+                state_code => $new_state_code
+            });
+            $realty->state_code($new_state_code);
         }
 
         # Save data
         eval {
+            $realty->change_date('now()');
             $realty->save(changes_only => 1);
             1;
         } or do {
@@ -953,6 +880,27 @@ sub update_multiple {
     };
 
     return $self->render(json => $res);
+}
+
+sub like_it {
+    my $self = shift;
+
+    return $self->render(json => {error => 'Forbidden'}, status => 403) unless $self->has_permission(realty => 'write');
+
+    my $acc_id = $self->session('account')->{id};
+    my $user_id = $self->stash('user')->{id};
+
+    my $id = $self->param('id');
+
+    my $realty = Rplus::Model::Realty::Manager->get_objects(query => [id => $id, or => [account_id => undef, account_id => $acc_id], \("NOT hidden_for && '{".$acc_id."}'"), delete_date => undef])->[0];
+    return $self->render(json => {error => 'Not found'}, status => 404) unless $realty;
+
+    realty_record($acc_id, $user_id, 'like_it', $realty, undef);
+
+    $realty->like_it($realty->like_it + 1);
+    $realty->save(changes_only => 1);
+
+    return $self->render(json => {status => 'success'});
 }
 
 sub get_location {

@@ -1,0 +1,35 @@
+% layout 'default';
+
+% use Rplus::Model::HistoryRecord::Manager;
+
+% content_for header => begin
+<style type="text/css">
+
+</style>
+% end
+
+% content_for after_bootstrap => begin
+% end
+
+% content_for javascript => begin
+<script type="text/javascript">
+
+</script>
+% end
+
+
+<table class="table table-bordered table-condensed table-striped table-hover">
+  <tbody>
+% for my $x (@{Rplus::Model::HistoryRecord::Manager->get_objects(sort_by => 'id DESC')}) {
+    <tr>
+      <td><%= $x->id %></td>
+      <td><%= $x->date %></td>
+      <td><%= $x->user_id %></td>
+      <td><%= $x->type %></td>
+      <td><%= $x->object_type %></td>
+      <td><%= $x->object_id %></td>
+      <td><%= $x->record %></td>
+    </tr>
+% }
+  <tbody>
+</table>

@@ -4,7 +4,6 @@
 % use Rplus::Model::RealtyOfferType::Manager;
 % use Rplus::Model::User::Manager;
 % use Rplus::Model::Media::Manager;
-% use Rplus::Model::ColorTag::Manager;
 % use Rplus::Model::DictColorTag::Manager;
 % use Rplus::Model::DictTaskType::Manager;
 
@@ -97,17 +96,9 @@
   }
 
   #realtyTable > tbody > tr {
-    border-right-width: 2px;
-    border-right-style: solid;
-    border-right-color: #e5e5e5;
-
-    border-left-width: 1px;
-    border-left-style: solid;
-    border-left-color: #e5e5e5;
-
-    border-bottom-width: 2px ! important;
-    border-bottom-style: solid;
-    border-bottom-color: #e5e5e5;
+    border-right: 2px solid #e5e5e5;
+    border-left: 1px solid #e5e5e5;
+    border-bottom: 2px solid #e5e5e5 ! important;
   }
 
   .tree > tbody > tr.cselected > td {

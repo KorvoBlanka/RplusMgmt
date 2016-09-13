@@ -79,6 +79,7 @@ __PACKAGE__->meta->setup(
         address             => { type => 'varchar' },
         locality            => { type => 'varchar' },
         color_tag           => { type => 'array' },
+        like_it             => { type => 'integer' },
     ],
 
     primary_key_columns => [ 'id' ],
@@ -173,23 +174,10 @@ __PACKAGE__->meta->setup(
     ],
 
     relationships => [
-        color_tags => {
-            class      => 'Rplus::Model::ColorTag',
-            column_map => { id => 'realty_id' },
-            type       => 'one to many',
-        },
-
         photos => {
             class      => 'Rplus::Model::Photo',
             column_map => { id => 'realty_id' },
             type       => 'one to many',
-        },
-
-        realty_color_tag => {
-            class                => 'Rplus::Model::RealtyColorTag',
-            column_map           => { id => 'realty_id' },
-            type                 => 'one to one',
-            with_column_triggers => '0',
         },
 
         subscription_realty => {

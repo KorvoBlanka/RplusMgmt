@@ -1147,6 +1147,8 @@
               % if(has_permission(realty => 'analyse')) {
                 <li><a href="/service/analytics"><span class="glyphicon glyphicon-list-alt"></span> <%= ucfloc q{analytics} %></a></li>
               % }
+                <li><a href="/service/obj_analytics"><span class="glyphicon glyphicon-list-alt"></span> Аналитика для объекта</a></li>
+                <li class="hidden"><a href="/service/history"><span class="glyphicon glyphicon-list"></span> Лог</a></li>
               </ul>
             </li>
           % }

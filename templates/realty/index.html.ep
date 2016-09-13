@@ -4,7 +4,6 @@
 % use Rplus::Model::RealtyOfferType::Manager;
 % use Rplus::Model::User::Manager;
 % use Rplus::Model::Media::Manager;
-% use Rplus::Model::ColorTag::Manager;
 % use Rplus::Model::DictColorTag::Manager;
 % use Rplus::Model::DictTaskType::Manager;
 
