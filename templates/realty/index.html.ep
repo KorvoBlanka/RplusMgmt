@@ -305,6 +305,10 @@
           return Rplus.Table['realty_states'][r.state_code].name;
         }},
 
+        {id: "like_it", name: "Спрос", menuName: "Спрос", sortName: "like_it", visible: false, val: function (r) {
+          return r.like_it;
+        }},
+
         {id: "type", name: "<%= ucfloc 'type' %>", sortName: "type.name", visible: true, val: function (r) {
           var text1 = '', text2 = '';
           if (r.source_media_text) {

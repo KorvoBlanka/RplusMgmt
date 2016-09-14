@@ -37,9 +37,6 @@ my $pause_item = $site_config->{pause_item};
 my $depth = $site_config->{depth};
 my $lock_file = $site_config->{lock_file};
 
-my $timezone = $app_config->{timezone};
-
-
 
 my $MEDIA = Rplus::Model::Media::Manager->get_objects(query => [type => 'import', code => 'avito', delete_date => undef])->[0];	# code => 'avito'
 exit unless $MEDIA;
@@ -121,7 +118,7 @@ sub process_url_list {
             source_url => $site_url . $item_url,
             type_code => 'other',
             offer_type_code => 'sale',
-            add_date => $dt->datetime() . $timezone,  # fix it!
+            add_date => $dt->datetime(),
         };
 
         eval {
@@ -452,7 +449,7 @@ sub parse_date {
     my $date = lc(shift);
 
     my $res;
-    my $dt_now = DateTime->now(time_zone => $timezone);
+    my $dt_now = DateTime->now();
     my $year = $dt_now->year();
     my $mon = $dt_now->month();
     my $mday = $dt_now->mday();

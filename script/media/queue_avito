@@ -172,7 +172,7 @@ sub parse_date {
     my $date = lc(shift);
 
     my $res;
-    my $dt_now = DateTime->now(time_zone => "+0300");
+    my $dt_now = DateTime->now();
     my $year = $dt_now->year();
     my $mon = $dt_now->month();
     my $mday = $dt_now->mday();

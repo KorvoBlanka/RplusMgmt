@@ -42,7 +42,7 @@ sub put_object {
         if ($data->{add_date}) {
             my $now_dt = DateTime->now(time_zone => 'local');
             say $data->{add_date};
-            my $d_dt = $parser_tz->parse_datetime($data->{add_date});
+            my $d_dt = $parser->parse_datetime($data->{add_date});
             say $d_dt;
             if ($d_dt > $now_dt) {
                 say "wtf? obj from future";
@@ -64,7 +64,7 @@ sub put_object {
                     say $o_realty->last_seen_date;
 
                     my $o_dt = $parser->parse_datetime($o_realty->last_seen_date);
-                    my $n_dt = $parser_tz->parse_datetime($data->{add_date});
+                    my $n_dt = $parser->parse_datetime($data->{add_date});
 
                     if ($o_dt && $n_dt && ($o_dt >= $n_dt)) {
                         say 'newer!';

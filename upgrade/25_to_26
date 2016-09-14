@@ -16,7 +16,7 @@ if (1) {
 }
 
 if (1) {
-    $dbh->do(q{ALTER TABLE realty ADD COLUMN like_it int4;});
+    $dbh->do(q{ALTER TABLE realty ADD COLUMN like_it int4 NOT NULL DEFAULT 0;});
 }
 
 if (1) {

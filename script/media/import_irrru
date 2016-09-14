@@ -36,8 +36,6 @@ my $depth = $site_config->{depth};
 my $lock_file = $site_config->{lock_file};
 my $proxy = $site_config->{proxy};
 
-my $timezone = $app_config->{timezone};
-
 my $postfix = 'search/list=list/sort/date_sort:desc/';
 my $parser = DateTime::Format::Strptime->new( pattern => '%Y-%m-%d %H:%M' );
 
@@ -203,7 +201,7 @@ sub parse_adv {
     # дата размещения
     my $date_str = $dom->find('div[class~="productPage__createDate"]')->first->text;
     my $dt = parse_date($date_str);
-    $data->{'add_date'} = $dt->datetime() . $timezone;
+    $data->{'add_date'} = $dt->datetime();
     say $data->{'add_date'};
 
     # тип недвижимости и тип предложения
@@ -507,7 +505,7 @@ sub parse_date {
     my $date = lc(shift);
 
     my $res;
-    my $dt_now = DateTime->now(time_zone => "+1000");
+    my $dt_now = DateTime->now();
     my $year = $dt_now->year();
     my $mon = $dt_now->month();
     my $mday = $dt_now->mday();

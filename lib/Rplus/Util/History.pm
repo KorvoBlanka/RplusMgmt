@@ -24,6 +24,8 @@ our @EXPORT_OK = qw(realty_record client_record subscription_record task_record 
 
 use Data::Dumper;
 
+no warnings 'experimental::smartmatch';
+
 my $field_dict = {
     type_code => 'тип',
     offer_type_code => 'тип предложения',

@@ -36,8 +36,6 @@ my $pause = $site_config->{pause};
 my $depth = $site_config->{depth};
 my $lock_file = $site_config->{lock_file};
 
-my $timezone = $app_config->{timezone};
-
 
 my $parser = DateTime::Format::Strptime->new(pattern => '%Y-%m-%d %H:%M:%S');
 
@@ -104,12 +102,14 @@ sub process_category {
                     } else {
                         say 'was processed already';
                     }
+                    1;
                 } or do {
                     say 'EXCEPTION!!!';
                     say $@;
                 };
                 sleep $pause;
             });
+            1;
         } or do {
             say 'EXCEPTION!!!';
             say $@;
@@ -132,7 +132,7 @@ sub process_item {
         source_url => $site_url . $item_url,
         type_code => 'other',
         offer_type_code => 'sale',
-        add_date => DateTime->now() . $timezone,
+        add_date => DateTime->now(),
     };
 
     my $title = $dom->at('section[class="round_gr detail"]')->at('h1')->text;
@@ -391,7 +391,7 @@ sub parse_date {
     my $date = lc(shift);
 
     my $res;
-    my $dt_now = DateTime->now(time_zone => "+0300");
+    my $dt_now = DateTime->now();
     my $year = $dt_now->year();
     my $mon = $dt_now->month();
     my $mday = $dt_now->mday();

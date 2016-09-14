@@ -549,7 +549,7 @@ sub parse_date {
     say $date;
 
     my $res;
-    my $dt_now = DateTime->now(time_zone => "+1000");
+    my $dt_now = DateTime->now();
     my $year = $dt_now->year();
     my $mon = $dt_now->month();
     my $mday = $dt_now->mday();

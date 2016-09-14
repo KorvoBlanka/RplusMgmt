@@ -44,7 +44,6 @@
     host => 'krasnoyarsk.cian.ru',
     pause => 5,
     depth => 1,
-    timezone => '+0300',
     follow_redirects => 1,
 
     lock_file => '/var/tmp/cian_lock_dev',

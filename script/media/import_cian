@@ -35,8 +35,6 @@ my $source_list = $site_config->{source_list};
 my $pause = $site_config->{pause};
 my $depth = $site_config->{depth};
 
-my $timezone = $app_config->{timezone};
-
 my $lock_file = $site_config->{lock_file};
 
 
@@ -147,7 +145,7 @@ sub process_item {
         source_url => $site_url . $item_url,
         type_code => '',
         offer_type_code => '',
-        add_date => $dt->datetime() . $timezone,
+        add_date => $dt->datetime()
     };
 
     $data->{owner_phones} = [Rplus::Util::PhoneNum::parse($obj->{phone}, $config->{default_phone_prefix})];
@@ -405,7 +403,7 @@ sub parse_date {
     my $date = lc(shift);
 
     my $res;
-    my $dt_now = DateTime->now(time_zone => "+0300");
+    my $dt_now = DateTime->now();
     my $year = $dt_now->year();
     my $mon = $dt_now->month();
     my $mday = $dt_now->mday();

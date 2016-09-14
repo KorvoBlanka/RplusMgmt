@@ -136,7 +136,7 @@
 
           var tdata = new google.visualization.DataTable();
           tdata.addColumn('date', 'дата');
-          tdata.addColumn('number', 'задачи');
+          tdata.addColumn('number', 'выполненные показы');
           var task_data = [];
           for (let e of data.task_list) {
             task_data.push([new Date(e.date), e.count * 1]);
@@ -361,7 +361,7 @@
 
 
 <div class="row">
-  <h3>ТЕСТ</h3>
+  <h3></h3>
 </div>
 
 <div class="row">

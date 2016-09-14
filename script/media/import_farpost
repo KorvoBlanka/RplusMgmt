@@ -38,8 +38,6 @@ my $depth = $site_config->{depth};
 my $lock_file = $site_config->{lock_file};
 my $locality = $site_config->{locality};
 
-my $time_zone = $app_config->{timezone};
-
 
 my $MEDIA = Rplus::Model::Media::Manager->get_objects(query => [type => 'import', code => 'farpost', delete_date => undef])->[0];	# code => 'farpost'
 exit unless $MEDIA;
@@ -146,7 +144,7 @@ sub process_url_list {
                 category_code => $category_code,
                 type_code => $category_code,
                 offer_type_code => $offer_type,
-                add_date => $dt->datetime() . $time_zone,  # fix it!
+                add_date => $dt->datetime(),
                 retry => 15,
             };
 
@@ -504,7 +502,7 @@ sub parse_date {
     my $date = lc(shift);
 
     my $res;
-    my $dt_now = DateTime->now(time_zone => "+1000");
+    my $dt_now = DateTime->now();
     my $year = $dt_now->year();
     my $mon = $dt_now->month();
     my $mday = $dt_now->mday();
