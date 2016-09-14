@@ -242,7 +242,7 @@
 
     var realtyLastPage = 1;
     function listRealty(page) {
-      var realtyLastPage = page;
+      realtyLastPage = page;
       var q = '';
       var geoSearchText = '';
       var stateCode = $('[data-filter="state_code"]').data('val');

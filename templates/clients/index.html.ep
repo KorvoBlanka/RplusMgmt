@@ -607,10 +607,13 @@
       var color_tag_id = $('[data-filter-realty="color_tag_id"]').data('val');
       var agent_id = $('[data-filter-realty="agent_id"]').data('val');
       var state_code = $('[data-filter-realty="state_code"]').data('val');
+      var depth = $('[data-filter-realty="depth"]').data('val');
+
       $.ajax({
         type: "POST",
         url: "/api/subscription/realty_list",
         data: {
+          depth: depth,
           subscription_id: subscription_id,
           state_code: state_code,
           color_tag_id: color_tag_id,
@@ -653,6 +656,7 @@
 
       var offerTypeCode = getOfferType();
       var rentType = getRentType();
+      var depth = $('[data-filter-realty="depth"]').data('val');
 
       var stateCode = $('[data-filter-realty="state_code"]').data('val');
       var agentId = $('[data-filter-realty="agent_id"]').data('val');
@@ -662,7 +666,17 @@
       $.ajax({
         type: "POST",
         url: "/api/realty/list",
-        data: {q: q, state_code: stateCode, offer_type_code: offerTypeCode, rent_type: rentType, agent_id: agentId, color_tag_id: colorTagId, page: page, per_page: 34},
+        data: {
+          q: q,
+          depth: depth,
+          state_code: stateCode,
+          offer_type_code: offerTypeCode,
+          rent_type: rentType,
+          agent_id: agentId,
+          color_tag_id: colorTagId,
+          page: page,
+          per_page: 34
+        },
         complete: function () { _listRealty_started = false; }
       })
         .done(function (data, textStatus, jqXHR) {
@@ -2328,32 +2342,49 @@
         % if ($self->stash('user')->{role} eq 'top') {
         <li><a href="#" data-action="client-delete"><span class="glyphicon glyphicon-trash"></span><span class="hide-if-small"> <%= ucfloc 'delete' %></span></a></li>
         % }
+
+        <!-- Offer type filter -->
+        <li class="dropdown" id="offer-type-filter" data-filter="offer_type_code" data-val="">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span role="display"></span><b class="caret"></b></a>
+          <ul class="dropdown-menu">
+            <li><a href="#" data-val="sale"> Продажа</a></li>
+            <li class="dropdown-submenu">
+              <a href="#" data-val="rent"> Аренда</a>
+              <ul class="dropdown-menu dropdown-context dropdown-context-sub compressed-context" style="bottom: auto;">
+                <li><a href="#" data-val="rent-short" data-type="text"> Краткосрочная</a></li>
+                <li><a href="#" data-val="rent-long" data-type="text"> Долгосрочная</a></li>
+              </ul>
+            </li>
+          </ul>
+        </li>
+
         <li class="divider-vertical pull-right"></li>
       </ul>
 
       <div class="navbar-right" style="width: 64%;">
         <ul class="nav navbar-nav" style="width: 100%;">
 
-          <!-- Offer type filter -->
-          <li class="dropdown" id="offer-type-filter" data-filter="offer_type_code" data-val="" style="float: left;">
-            <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span role="display"></span><b class="caret"></b></a>
-            <ul class="dropdown-menu">
-              <li><a href="#" data-val="sale"> Продажа</a></li>
-              <li class="dropdown-submenu">
-                <a href="#" data-val="rent"> Аренда</a>
-                <ul class="dropdown-menu dropdown-context dropdown-context-sub compressed-context" style="bottom: auto;">
-                  <li><a href="#" data-val="rent-short" data-type="text"> Краткосрочная</a></li>
-                  <li><a href="#" data-val="rent-long" data-type="text"> Долгосрочная</a></li>
-                </ul>
-              </li>
-            </ul>
-          </li>
-
+          <li class="hide-if-small"><a href="#" data-action="realty-geo"><span class="glyphicon glyphicon-globe"></span> <%= ucfloc 'geo' %></a></li>
 
           <li style="float: right;">
             <p class="navbar-text" style="float: right;">
               <span class="text-primary hide-if-small"><%= ucfloc 'found' %></span> <span class="text-primary" id="objectsCount">0</span>
             </p>
+          </li>
+
+          <!-- depth selector -->
+          <li class="dropdown" data-filter-realty="depth" data-val="90" style="float: right;">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span role="display"><span class="glyphicon glyphicon-calendar"></span> 3 Месяца</span> <b class="caret"></b></a>
+            <ul class="dropdown-menu">
+                <li><a href="#" data-val="1"> 1 день</a></li>
+                <li><a href="#" data-val="2"> 2 дня</a></li>
+                <li><a href="#" data-val="3"> 3 дня</a></li>
+                <li><a href="#" data-val="7"> Неделя</a></li>
+                <li><a href="#" data-val="14"> 2 недели</a></li>
+                <li><a href="#" data-val="30"> Месяц</a></li>
+                <li><a href="#" data-val="90"> 3 Месяца</a></li>
+                <li><a href="#" data-val="full"> Вся</a></li>
+            </ul>
           </li>
 
           <!-- State filter -->
@@ -2415,9 +2446,6 @@
               % }
             </ul>
           </li>
-
-          <li class="hide-if-small" style="float: right;"><a href="#" data-action="realty-geo"><span class="glyphicon glyphicon-globe"></span> <%= ucfloc 'geo' %></a></li>
-
         </ul>
       </div>
     </div>

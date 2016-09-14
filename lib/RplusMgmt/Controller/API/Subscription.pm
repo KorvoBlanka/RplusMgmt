@@ -270,6 +270,8 @@ sub realty_clear_list {
 
 sub realty_list {
     my $self = shift;
+
+    my $depth = $self->param('depth') || 'full';
     my $page = $self->param('page');
     my $per_page = $self->param('per_page');
     my $subscription_id = $self->param('subscription_id');
@@ -294,6 +296,11 @@ sub realty_list {
     my @query;
     {
         push @query, 'subscription_id' => $subscription->id;
+
+        if ($depth ne 'full') {
+            push @query, \("t2.last_seen_date > now() - interval '$depth days'");
+        }
+
         if ($sr_state_code ne 'any') {
             push @query, 'state_code' => $sr_state_code;
         }

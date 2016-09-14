@@ -55,8 +55,10 @@ my $_serialize = sub {
             $_ =~ /$tag_prefix/;
         });
         my $t = $ct->first;
-        $t =~ s/^\d+?_//;
-        $res->{color_tag_id} = $t;
+        if ($t) {
+            $t =~ s/^\d+?_//;
+            $res->{color_tag_id} = $t;
+        }
     }
 
     if ($with_subscriptions) {
