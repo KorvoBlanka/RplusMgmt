@@ -285,6 +285,10 @@ sub changeset_to_string {
             my $v1 = $ta->[0];
             my $v2 = $ta->[1];
 
+            say $key;
+            say $v1;
+            say $v2;
+
             $v1 = $val_dict->{$key}->{$v1} if $val_dict->{$key}->{$v1};
             $v2 = $val_dict->{$key}->{$v2} if $val_dict->{$key}->{$v2};
 
@@ -300,22 +304,27 @@ sub get_object_changes {
     my $changes = {};
 
     foreach (keys %{$data}) {
-        if (ref($object->$_) eq 'ARRAY') {
+        eval {
+            if (ref($object->$_) eq 'ARRAY') {
 
-            my $l_ch = list_changes(\@{$object->$_}, $data->{$_});
-            unless ($l_ch->{empty}) {
-                $changes->{$_} = $l_ch;
+                my $l_ch = list_changes(\@{$object->$_}, $data->{$_});
+                unless ($l_ch->{empty}) {
+                    $changes->{$_} = $l_ch;
+                }
+            } elsif ($_ eq 'multylisting') {    # костыль, надо что-то сделать с типом поля
+                $data->{$_} = 0 unless defined $data->{$_};
+                if ($object->$_ != $data->{$_}) {
+                    $changes->{$_} = [$object->$_, $data->{$_}];
+                }
+            } else {
+                if ($object->$_ ne $data->{$_}) {
+                    $changes->{$_} = [$object->$_ . '', $data->{$_} . ''];
+                }
             }
-        } elsif ($_ eq 'multylisting') {    # костыль, надо что-то сделать с типом поля
-            $data->{$_} = 0 unless defined $data->{$_};
-            if ($object->$_ != $data->{$_}) {
-                $changes->{$_} = [$object->$_, $data->{$_}];
-            }
-        } else {
-            if ($object->$_ ne $data->{$_}) {
-                $changes->{$_} = [$object->$_, $data->{$_}];
-            }
-        }
+            1;
+        } or do {
+            say 'oops';
+        };
     }
 
     say Dumper $changes;

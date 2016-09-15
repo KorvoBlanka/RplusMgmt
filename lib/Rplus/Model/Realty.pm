@@ -79,7 +79,7 @@ __PACKAGE__->meta->setup(
         address             => { type => 'varchar' },
         locality            => { type => 'varchar' },
         color_tag           => { type => 'array' },
-        like_it             => { type => 'integer' },
+        like_it             => { type => 'integer', default => '0' },
     ],
 
     primary_key_columns => [ 'id' ],
