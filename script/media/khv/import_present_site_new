@@ -25,6 +25,8 @@ use DateTime::Format::Strptime;
 use File::Touch;
 use Data::Dumper;
 
+no warnings 'experimental';
+
 my $app_config = Rplus::Util::Config::get_config();
 my $config = Rplus::Util::Config::get_config('import.conf');
 my $present_site_config = $config->{present_site};
@@ -43,6 +45,7 @@ my $META = from_json($MEDIA->metadata);
 my $ua = Mojo::UserAgent->new; # создание нового HTTP соединения
 $ua->max_redirects(4); # максимальное кол0во перенаправлений
 
+#$ua->proxy->http('http://185.5.250.133:19888');
 
 my %date_map = ();
 my $parser = DateTime::Format::Strptime->new( pattern => '%Y-%m-%d %H:%M' ); #Шаблон времени Год-месяц-день Часы:минуты
@@ -54,7 +57,6 @@ my $stat_count = { count_all_ad => 0,  #найдённых объявлений
       #кол-во найденных объявлений не является суммой остальных переменных, т.к.
       #при проверке на обновление может возникнуть такое, что объявление уже обновляли несколько раз
 say 'importing...';
-
 unless (_import_in_progress()) { #Если импортирование не в процессе
     _lock();
     import_present_site ();
@@ -76,7 +78,7 @@ sub _import_in_progress {
         my $current_time = time; #получение текущего времени
         my $diff = $current_time - $mtime; #вычисление разницы между текущим и временем изменения файла
         if ($diff < 6 * 60 * 60) { #если разница меньше 21600 секунд (6 часов)
-            return 1; #возвращаем true
+            return 0; #возвращаем true
         }
     }
     #return 1 if -e $lock_file;
@@ -212,156 +214,148 @@ sub process_url_list {
 sub parse_adv {
     my ($dom, $data) = @_;
 
-    my $text = $dom->find('div[class="notice-card"] div[class="text"]')->first->text; #парсим текст объявления
+    #парсим текст объявления
+    $data->{source_media_text} = $dom->find('div[class="notice-card"] div[class="text"]')->first->text;
 
-    $data->{source_media_text} = $text; #Сохраняем текст объявления под новым тегом "source_media_text"
-    my $text_lc = lc($text); # преобразование текста в нижний регистр
+    #найдём поля с данными о недвижимости
+    $dom->find('div[class="notice-card"] div[class="fields"]')->first->children->each (sub {
 
-    my %types_re = (
-        apartment => [
-            qr/малосем\.?/ => sub { return type_code => 'apartment_small'; },
-            qr/(\d)\s*\-\s*комн\.?/ => sub { return type_code => 'apartment', rooms_count => $_[0]; },
-            qr/дол(?:я|и)(?:\s+в\s+(\d)-комн\.)?/ => sub { return type_code => 'room', rooms_count => $_[0]; },
-            qr/(?:комн\.?|секция)/ => sub { return type_code => 'room',  },
-        ],
-        house => [
-            qr/коттедж/ => sub { return type_code => 'cottage'; },
-            qr/таунхаус/ => sub { return type_code => 'townhouse'; },
-            qr/дом/ => sub {},
-        ],
-        land => [
-            qr/(?:уч\-к|участок)/ => sub {},
-            qr/дача/ => sub { return type_code => 'dacha'; },
-            qr/(\d+)\s+(?:сот\.?|с\/с)/ => sub { return type_code => 'land', square_land => $_[0], square_land_type => 'ar'; },
-            qr/(\d(?:,\d+)?)\s+га/ => sub { return type_code => 'land', square_land => ($_[0] =~ s/,/./r), square_land_type => 'hectare'; },
-        ],
-        other => [
-            qr/(\d)\s*\-\s*комн\.?/ => sub { return type_code => 'apartment', rooms_count => $_[0]; },
-            qr/коттедж/ => sub { return type_code => 'cottage'; },
-            qr/малосем\.?/ => sub { return type_code => 'apartment_small'; },
-            qr/комн\.?/ => sub { return type_code => 'room'; },
-        ],
-        commercial => [
-            qr/.+?/ => sub { return type_code => 'office'; },
-        ],
-    );
+      #извлечение цены
+      if($_->at('strong')->text =~ /Цена:/){
+          my $price = $_->at('span')->text;
+          $price =~ s/\D//g;
+          $data->{owner_price} = 0 + $price/1000 if $price > 0;
+      }
 
-    my ($addr, $body);
-    my $cc = $data->{type_code}; #категорию объекта
+      #извлечение арендной платы
+      elsif ($_->at('strong')->text =~/Арендная плата/){
+            $data->{owner_price} = 0 + $_->at('span')->text;
+      }
 
-    if (exists $types_re{$cc}) { #если в хеш-массиве %types_re присутствует ключ с категорией $cc
-        for (my $i = 0; $i < @{$types_re{$cc}}; $i++) {
-            my ($re, $cb) = ($types_re{$cc}->[$i], $types_re{$cc}->[++$i]);
-            if (my @m = ($text_lc =~ /^(.*?)$re(.+)$/)) {
-                my %x = $cb->(@m[1..($#m-1)]);
-                @{$data}{keys %x} = values %x;
-                ($addr, $body) = ($m[0], $m[$#m]);
-                last;
-            }
+      #определяем новостройку
+      elsif($_->at('strong')->text =~ /Вторичный рынок:/){
+          $data->{type_code} = 'apartment_new' if($_->at('span')->text =~ /да/i);
+      }
+
+      #парсинг адреса
+      if($_->at('strong')->text =~ /Улица\/переулок:/){
+          $data->{address}= $_->at('span')->text;
+      }
+
+      #парсинг города
+      if($_->at('strong')->text =~ /Населенный пункт:/){
+          $data->{locality}= $_->at('span')->text;
+      }
+
+      #парсинг количества комнат
+      elsif ($_->at('strong')->text =~/Количество комнат:/){
+          if($_->at('span')->text =~/2-уровневая/){
+              $data->{levels_count} = 2;
+          } else{
+            $data->{rooms_count} =  0 + $_->at('span')->text;
+          }
+      }
+
+      #парсинг количества комнат аренды
+      elsif ($_->at('strong')->text =~/Объект аренды/){
+        if($_->at('span')->text=~ /(\d).+комн/){
+          $data->{rooms_count} =  0 + $1;
         }
+        elsif($_->at('span')->text=~ /Малосем/){
+          $data->{type_code} =  'apartment_small';
+        }
+      }
+
+      #парсинг планировка
+      elsif ($_->at('strong')->text =~/Планировка:/){
+          $data->{ap_scheme_id} =  get_scheme_house($_->at('span')->text);
+      }
+
+      #парсинг этажа
+      elsif ($_->at('strong')->text =~/Этаж:/){
+          $data->{floor} = 0 + $_->at('span')->text if ($_->at('span')->text =~ /\d{1,3}/);
+      }
+
+      #парсинг этажности
+      elsif ($_->at('strong')->text =~/Этажность/){
+          $data->{floors_count} = 0 + $_->at('span')->text if ($_->at('span')->text =~ /\d{1,3}/);
+      }
+
+      #парсинг типа здания
+      elsif ($_->at('strong')->text =~/Материал стен:/){
+          $data->{house_type_id} = get_house_type ($_->at('span')->text);
+      }
+
+      #определение состояния
+      elsif ($_->at('strong')->text =~/Состояние:/){
+          $data->{condition_id} = get_condition_type($_->at('span')->text);
+      }
+
+      #парсинг общей площади
+      elsif ($_->at('strong')->text =~/Площадь (общая)|(\(кв\. м\))/){
+         my $sq =  $_->at('span')->text;
+         if($_->at('span')->text =~ /\d{1,5}/){
+           $sq=~s/,/\./;
+           $data->{square_total} = 0 + $sq;
+         }
+      }
+
+      #парсинг площади дома
+      elsif ($_->at('strong')->text =~/Площадь дома/){
+        my $sq =  $_->at('span')->text;
+        if($_->at('span')->text =~ /\d{1,5}/){
+          $sq=~s/,/\./;
+          $data->{square_total} = 0 + $sq;
+        }
+      }
+
+      #парсинг жилой площади
+      elsif ($_->at('strong')->text =~/Площадь жилая/){
+        my $sq =  $_->at('span')->text;
+        if($_->at('span')->text =~ /\d{1,5}/){
+          $sq=~s/,/\./;
+          $data->{square_living} = 0 + $sq;
+        }
+      }
+
+      #парсинг площади кухни
+      elsif ($_->at('strong')->text =~/Площадь кухни/){
+        my $sq =  $_->at('span')->text;
+        if($_->at('span')->text =~ /\d{1,5}/){
+          $sq=~s/,/\./;
+          $data->{square_kitchen} = 0 + $sq;
+        }
+      }
+
+      #парсинг участка
+      elsif ($_->at('strong')->text =~/Площадь (участка)|(\(сотки\))/){
+        my $sq =  $_->at('span')->text;
+        if($_->at('span')->text =~ /\d{1,5}/){
+          $sq=~s/,/\./;
+          $data->{square_land} = 0 + $sq;
+          $data->{square_land_type} = 'ar';
+        }
+      }
+
+      #определение балконов/лоджий
+      elsif ($_->at('strong')->text =~/Балкон\/лоджия/){
+          $data->{balcony_id} = get_balcon_type($_->at('span')->text);
+      }
+    });
+
+    #парсим телефон
+    my $phone_text=$dom->find('div[class="notice-card"] div[class="phone"]')->first;
+    my @phone=();
+    if($phone_text){
+        push @phone, Rplus::Util::PhoneNum::parse($phone_text->text, $app_config->{default_phone_prefix});
     }
+    $data->{owner_phones}=\@phone;
 
-    if (!$body) {
-        if ($text_lc =~ /^(.+?)\(([^()]+)\)([^()]+)$/) {
-            $addr = $1;
-            $body = $2.$3;
-            if (scalar(grep { $_ && $_ ne '.' } split /[ ,()]/, $addr) > 5) {
-                $addr = undef;
-                $body = $text_lc;
-            }
-        } else {
-            $body = $text_lc;
-        }
-    }
-
-    $addr = trim $addr;
-    $body = trim $body;
-
-    if ($body) {
-        # Распознавание цены и контактных телефонов
-        my $price;
-        {
-            my $price_ml = ($2 =~ s/,/./r) if $body =~ s/((\d+(,\d+)?)\s*млн\.)//;
-            my $price_th = $2 if $body =~ s/((\d+)\s*тыс\.)//;
-            $price = ($price_ml || 0)*1000 + ($price_th || 0);
-        }
-        say $price;
-        $data->{'owner_price'} = $price if $price > 0;
-
-        my @owner_phones = ();
-        for my $x (split /[ .,]/, $body) {
-            if ($x =~ /^\s*([\d-]{6,})\s*$/) {
-                say $1;
-                if (my $phone_num = Rplus::Util::PhoneNum::parse($1, $app_config->{default_phone_prefix})) {
-                    push @owner_phones, $phone_num;
-                }
-                $body =~ s/$x//;
-            } elsif ($x =~ /(7|8)(\(\d{3,4}\)[\d-]{6,})/) {
-                if (my $phone_num = Rplus::Util::PhoneNum::parse($2, $app_config->{default_phone_prefix})) {
-                    push @owner_phones, $phone_num;
-                }
-                $x =~ s/\+//;
-                $body =~ s/$x//;
-            }
-        }
-        $data->{owner_phones} = \@owner_phones;
-
-        # Площадь
-        if ($body =~ s/(\d+(?:,\d+)?)\/(\d+(?:,\d+)?)\/(\d+(?:,\d+)?)//) {
-            my ($total, $living, $kitchen) = map { s/,/./r } ($1, $2, $3);
-            if ($total > 0 && $living > 0 && $kitchen > 0 && $total > $living && $total > $kitchen) {
-                $data->{square_total} = $total;
-                $data->{square_living} = $living;
-                $data->{square_kitchen} = $kitchen;
-            }
-        } elsif ($body =~ s/(\d+(?:,\d+)?)\s+кв\.\s*м//) {
-            my $t = $1 =~ s/,/./r;
-            $data->{square_total} = $t if $t > 0;
-        }
-        if ($body =~ s/(\d+)\s+сот\.?//) {
-            $data->{square_land} = $1 if $1 > 0;
-            $data->{square_land_type} = 'ar';
-        }
-
-        # Разделим остальную часть обявления на части и попытаемся вычленить полезную информацию
-        my @bp = grep { $_ && length($_) > 1 } trim(split /[,()]/, $body);
-        for my $el (@bp) {
-            # Этаж/этажность
-            if ($el =~ /^(\d{1,2})\/(\d{1,2})$/) {
-                if ($1 > 0 && $2 > 0 && $2 > $1) {
-                    $data->{'floor'} = $1;
-                    $data->{'floors_count'} = $2;
-                }
-                next;
-            }
-
-            for my $k (keys %{$META->{'params'}->{'dict'}}) {
-                my %dict = %{$META->{'params'}->{'dict'}->{$k}};
-                my $field = delete $dict{'__field__'};
-                for my $re (keys %dict) {
-                    if ($el =~ /$re/i) {
-                        $data->{$field} = $dict{$re};
-                        last;
-                    }
-                }
-            }
-        }
-
-        # Этаж#2
-        if (!$data->{'floor'} && $body =~ /(\d{1,2})\s+эт\.?/) {
-            $data->{'floor'} = $1 if $1 > 0;;
-        }
-    }
-
-	my $do = $dom->find('div[class="lightbox images"]');
-	$do->first->find('a[target="_blank"]')->each ( sub {
-		my $img_url = $main_url . $_->{'href'};
-		push @{$data->{photo_url}}, $img_url;
+	  my $do = $dom->find('div[class="lightbox images"]');
+	  $do->first->find('a[target="_blank"]')->each ( sub {
+		    my $img_url = $main_url . $_->{'href'};
+		      push @{$data->{photo_url}}, $img_url;
 	});
-
-    if ($addr) {
-        $data->{'address'} = $addr;
-    }
 
     return $data;
 };
@@ -480,4 +474,146 @@ sub month_num {
         }
     }
     return 0;
+}
+
+sub parse_type_realty {
+    my $text = lc(shift);
+    my $type;
+    my $sub_type;
+    if($text=~/.+estate=(\d)&purpose=(\d{0,2}).+/){
+        $type=$1;
+        $sub_type=$2;
+    }
+    return 'land' if($type==1);
+    return 'apartment' if($type==2);
+    return 'room' if($type==3);
+    return 'garage' if($type==4);
+    return 'house' if($type==5);
+    if($type==6){
+      return 'market_place' if($sub_type==1);
+      return 'gpurpose_place' if($sub_type==2 || $sub_type==3 || $sub_type==7);
+      return 'office_place' if($sub_type==4);
+      return 'warehouse_place' if($sub_type==5 || $sub_type==6);
+      return 'production_place' if($sub_type==8);
+    }
+    return undef;
+}
+
+sub get_house_type {
+  my $text = lc(shift);
+  given ($text) {
+      when (/монолитно-кирпич/) {
+        return 7;
+      }
+      when (/монолит/) {
+          return 2;
+      }
+      when (/кирпич/) {
+        return 1;
+      }
+      when (/панель/) {
+          return 3;
+      }
+      when (/дерев/) {
+          return 4;
+      }
+      when (/брус/) {
+          return 5;
+      }
+  }
+  return undef;
+}
+
+sub get_room_type {
+  my $text = shift;
+  given ($text) {
+      when (/смеж(.+)раздельн/) {
+          return 6;
+      }
+      when (/смежн/) {
+          return 4;
+      }
+      when (/раздельн/) {
+          return 3;
+      }
+      when (/студ/) {
+          return 1;
+      }
+      when (/икарус/) {
+          return 5;
+      }
+  }
+  return undef;
+}
+
+sub get_balcon_type {
+  my $text = lc(shift);
+  given ($text) {
+      when (/балкон \+ лоджия/) {
+        return 4;
+      }
+      when (/лоджия/) {
+          return 3;
+      }
+      when (/балкон/) {
+          return 2;
+      }
+      when (/без/) {
+          return 1;
+      }
+  }
+  return undef;
+}
+
+sub get_condition_type {
+  my $text = lc(shift);
+  given ($text) {
+      when (/евроремонт/) {
+          return 4;
+      }
+      when (/удовлетворит/) {
+          return 9;
+      }
+      when (/хорошее/) {
+          return 11;
+      }
+      when (/отличное/) {
+          return 12;
+      }
+      when (/(требуется капитальный ремонт)/) {
+          return 6;
+      }
+      when (/(требуется косметический ремонт)/) {
+          return 7;
+      }
+      when (/(после строителей)/) {
+          return 1;
+      }
+      when (/(социальный)/) {
+          return 2;
+      }
+  }
+  return undef;
+}
+
+sub get_scheme_house {
+  my $text = lc(shift);
+  given ($text) {
+      when (/хрущевка/) {
+          return 2;
+      }
+      when (/брежневка/ || /улучшен/) {
+          return 3;
+      }
+      when (/сталинка/) {
+          return 1;
+      }
+      when (/новая/) {
+          return 4;
+      }
+      when (/индивид/) {
+          return 5;
+      }
+  }
+  return undef;
 }

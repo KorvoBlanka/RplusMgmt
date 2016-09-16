@@ -3,6 +3,8 @@
 use FindBin;
 use lib "$FindBin::Bin/../../lib";
 
+say "$FindBin::Bin/../../lib";
+
 use Import::Modern;
 
 use Import::Model::AddressObject;
