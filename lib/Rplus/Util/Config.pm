@@ -1,5 +1,7 @@
 package Rplus::Util::Config;
 
+use utf8;
+
 use Cwd qw/abs_path/;
 use Mojo::Asset::File;
 

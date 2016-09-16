@@ -168,6 +168,7 @@ sub process_url_list {
             {
                 eval {
                     delete $data->{retry};
+                    say Dumper $data;
                     $id = put_object($data, $app_config);
                 } or do {
                     say $@;
@@ -261,14 +262,14 @@ sub parse_adv {
 
     my $addr_o = $dom->find('span[data-field="street-district"]');
     if ($addr_o->size > 0) {
-        $addr = $addr_o->first->text;
+        $addr = trim($addr_o->first->text);
     } else {
         my $nb = $dom->find('span[data-field="street-buildingId"]');
         my $ns = $dom->find('span[data-field="street"]');
         if ($nb->size > 0) {
-            $addr = $nb->first->all_text;
+            $addr = trim($nb->first->all_text);
         } elsif ($ns->size > 0) {
-            $addr = $ns->first->all_text;
+            $addr = trim($ns->first->all_text);
         }
     }
 
@@ -276,6 +277,7 @@ sub parse_adv {
         $data->{'address'} = trim($addr);
     }
 
+    say $locality;
     $data->{'locality'} = $locality;
 
     my $t;
@@ -283,7 +285,7 @@ sub parse_adv {
         when ('other') {
             my $n = $dom->find('span[data-field="subject"]');
             if ($n->size > 0) {
-                $t = $n->first->text;
+                $t = trim($n->first->text);
                 if ($t =~ /офис/i) {
                     $data->{'type_code'} = 'office_place';
                 }
@@ -327,12 +329,15 @@ sub parse_adv {
             # количество комнат
             my $n = $dom->find('span[data-field="flatType"]');
             if ($n->size) {
-                $t = $n->first->text;
+                $t = trim($n->first->text);
                 # d-к квратира.
+
+                say $t;
+
                 if ($t eq 'Комната') {
                     $data->{'category_code'} = 'room';
                     $data->{'type_code'} = 'room';
-                } elsif ($t =~ /^(\d{1,}).*?$/) {
+                } elsif ($t =~ /(\d{1,}).*?$/) {
                     $data->{'rooms_count'} = $1;
                 }
             }
@@ -340,9 +345,12 @@ sub parse_adv {
             # площадь
             $n = $dom->find('span[data-field="areaTotal"]');
             if ($n->size > 0) {
-                $t = $n->first->text;
+                $t = trim($n->first->text);
                 # d м2.
-                if ($t =~ /^(\d{1,}).*?$/) {
+
+                say $t;
+
+                if ($t =~ /(\d{1,}).*?$/) {
                     $data->{'square_total'} = $1;
                 }
             }
@@ -351,7 +359,7 @@ sub parse_adv {
             # дом или коттедж
             my $n = $dom->find('span[data-field="subject"]');
             if ($n->size > 0) {
-                $t = $n->first->text;
+                $t = trim($n->first->text);
                 if ($t =~ /коттедж/i) {
                     $data->{'type_code'} = 'cottage';
                 }
@@ -360,7 +368,7 @@ sub parse_adv {
             # жилая площадь
             $n = $dom->find('span[data-field="areaLiving"]');
             if ($n->size > 0) {
-                $t = $n->first->text;
+                $t = trim($n->first->text);
                 # d м2.
                 if ($t =~ /^(\d{1,}).*?$/) {
                     $data->{'square_total'} = $1;
@@ -370,7 +378,7 @@ sub parse_adv {
             # площадь участка
             $n = $dom->find('span[data-field="areaTotal"]');
             if ($n->size > 0) {
-                $t = $n->first->text;
+                $t = trim($n->first->text);
                 if ($t =~ /(\d+(?:,\d+)?)\s+кв\.\s*м/) {
                     $t =~ s/\s//;
                     if ($t =~ /^(\d{1,}).*?$/) {
@@ -390,7 +398,7 @@ sub parse_adv {
             # площадь участка
             my $n = $dom->find('span[data-field="areaTotal"]');
             if ($n->size > 0) {
-                $t = $n->first->text;
+                $t = trim($n->first->text);
                 if ($t =~ /(\d+(?:,\d+)?)\s+кв\.\s*м/) {
                     $t =~ s/\s//;
                     if ($t =~ /^(\d{1,}).*?$/) {
@@ -411,7 +419,7 @@ sub parse_adv {
     # цена в рублях, переведем в тыс.
     my $n = $dom->find('span[data-field="price"]');
     if ($n->size > 0) {
-        $t = $n->first->all_text;
+        $t = trim($n->first->all_text);
         $t =~s/\s//g;
         if ($t =~ /^(\d{1,}).*?$/) {
             $data->{'owner_price'} = $1 / 1000;
