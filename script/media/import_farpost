@@ -15,6 +15,7 @@ use Rplus::Util::Realty qw(put_object);
 use Rplus::Util::Mediator qw(add_mediator);
 use Rplus::Util::PhoneNum;
 
+use String::Util qw(trim);
 use Text::Trim;
 use JSON;
 use Mojo::UserAgent;
@@ -192,7 +193,7 @@ sub parse_adv {
     my $dsk = '';
     if ($dom->find('p[data-field="text"]')->size > 0) {
         $dsk = $dom->find('p[data-field="text"]')->first->text;
-        $data->{'source_media_text'} = $dsk;
+        $data->{'source_media_text'} = trim($dsk);
     }
 
     # найдем телефон
@@ -250,7 +251,7 @@ sub parse_adv {
             say 'mediator ' . $seller;
             foreach (@{$data->{'owner_phones'}}) {
                 say 'add mediator ' . $_;
-                add_mediator($seller, $_);
+                add_mediator(trim($seller), $_);
             }
         }
     });
@@ -270,6 +271,12 @@ sub parse_adv {
             $addr = $ns->first->all_text;
         }
     }
+
+    if ($addr) {
+        $data->{'address'} = trim($addr);
+    }
+
+    $data->{'locality'} = $locality;
 
     my $t;
     given($data->{'type_code'}) {
@@ -410,12 +417,6 @@ sub parse_adv {
             $data->{'owner_price'} = $1 / 1000;
         }
     }
-
-    if ($addr) {
-        $data->{'address'} = $addr;
-    }
-
-    $data->{'locality'} = $locality;
 
 
     # Разделим остальную часть обявления на части и попытаемся вычленить полезную информацию

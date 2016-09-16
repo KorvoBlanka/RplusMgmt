@@ -18,7 +18,9 @@ use JSON;
 use MIME::Base64;
 use Mojo::UserAgent;
 
+use String::Util qw(trim);
 use File::Touch;
+
 use Data::Dumper;
 
 no warnings 'experimental';
@@ -173,7 +175,7 @@ sub process_url_list {
                     if ($offer_count > 3) {
                         foreach (@{$data->{'owner_phones'}}) {
                             say 'add mediator ' . $_;
-                            add_mediator($seller, $_);
+                            add_mediator(trim($seller), $_);
                         }
                     }
                 }
@@ -281,7 +283,7 @@ sub parse_adv {
     $n = $dom->find('p[class~="js-productPageDescription"]')->first;
     if ($n) {
         $text = $n->all_text;
-        $data->{'source_media_text'} = $text;
+        $data->{'source_media_text'} = trim($text);
     }
 
     my $addr;
@@ -292,7 +294,7 @@ sub parse_adv {
 
     if ($addr) {
 
-        $data->{'address'} = $addr;
+        $data->{'address'} = trim($addr);
 
     }
 
