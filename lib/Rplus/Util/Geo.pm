@@ -86,11 +86,11 @@ sub get_coords_by_addr {
       }
 
       if ($address) {
-        $q .= $address;
+        $q .= ' ' . $address;
       }
 
       if ($house_num) {
-        $q .= $house_num;
+        $q .= ' ' . $house_num;
       }
     }
 
