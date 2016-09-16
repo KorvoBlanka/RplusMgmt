@@ -418,6 +418,9 @@ sub parse_adv {
 
     # цена в рублях, переведем в тыс.
     my $n = $dom->find('span[data-field="price"]');
+    unless ($n->size) {
+        $n = $dom->find('span[data-field="price-agencySupportCommission"]');
+    }
     if ($n->size > 0) {
         $t = trim($n->first->all_text);
         $t =~s/\s//g;
