@@ -298,6 +298,48 @@ sub parse_adv {
 
     }
 
+    $dom->find('div[class="productPage__characteristicsItem"]')->each(sub {
+
+        #my $tfield = lc $_->text;
+        my $tkey = $_->at('span[class~="productPage__characteristicsItemTitle"]')->all_text;
+        my $tval = $_->at('span[class~="productPage__characteristicsItemValue"]')->all_text;
+
+        say $tkey . ' - ' . $tval;
+
+        given ($tkey) {
+            when ("этаж") {
+                if($tval =~ /(\d+) из (\d+)/) {
+                    $data->{'floor'} = $1;
+                    $data->{'floors_count'} = $2;
+                } else {
+                    $data->{'floor'} = $tval;
+                }
+
+            }
+            when ("комнаты") {
+                $data->{'rooms_count'} = $tval;
+            }
+            when ("общая площадь") {
+                my $tnum;
+                if($tval =~ /(\d+(?:,\d+)?)/) {
+                    $tnum = $1;
+                } else {
+                    $tnum =~ s/\D//g;
+                }
+                $data->{'square_total'} = $tnum;
+            }
+            when ("жилая площадь") {
+                my $tnum;
+                if($tval =~ /(\d+(?:,\d+)?)/) {
+                    $tnum = $1;
+                } else {
+                    $tnum =~ s/\D//g;
+                }
+                $data->{'square_living'} = $tnum;
+            }
+        }
+    });
+
     $dom->find('li[class~="productPage__infoColumnBlockText"]')->each(sub {
 
         my $tfield = lc $_->text;
