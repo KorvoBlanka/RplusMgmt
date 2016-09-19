@@ -30,7 +30,7 @@
     </style>
   </head>
   <body>
-
+    <div class="hidden"><%= $self->config->{location_id} %></div>
     <div class="container">
       <div class="panel panel-default center-block">
         <div class="panel-body">

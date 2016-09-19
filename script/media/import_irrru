@@ -201,7 +201,7 @@ sub parse_adv {
     my ($dom, $data) = @_;
 
     # дата размещения
-    my $date_str = $dom->find('div[class~="productPage__createDate"]')->first->text;
+    my $date_str = trim($dom->find('div[class~="updateProduct"]')->first->text);
     my $dt = parse_date($date_str);
     $data->{'add_date'} = $dt->datetime();
     say $data->{'add_date'};
@@ -270,9 +270,9 @@ sub parse_adv {
 
     $data->{'owner_phones'} = \@owner_phones;
 
-    my $n = $dom->find('div[class~="productPagePrice"]')->first;
+    my $n = $dom->find('div[class~="productPage__price"]')->first;
     if ($n) {
-        my $cost = $n->all_text;
+        my $cost = trim($n->all_text);
         if ($cost) {
             $cost =~ s/\D//g;
             $data->{'owner_price'} = $cost / 1000;
@@ -294,17 +294,23 @@ sub parse_adv {
 
     if ($addr) {
 
-        $data->{'address'} = trim($addr);
+        my $t = trim($addr);
+        my @ap = split /,/, $t;
+        $data->{'locality'} = $ap[0];
+        splice(@ap, 0, 1);
+        $data->{'address'} = join(', ', @ap);
 
     }
 
     $dom->find('div[class="productPage__characteristicsItem"]')->each(sub {
 
         #my $tfield = lc $_->text;
-        my $tkey = $_->at('span[class~="productPage__characteristicsItemTitle"]')->all_text;
-        my $tval = $_->at('span[class~="productPage__characteristicsItemValue"]')->all_text;
+        my $tkey = trim($_->at('span[class~="productPage__characteristicsItemTitle"]')->all_text);
+        my $tval = trim($_->at('span[class~="productPage__characteristicsItemValue"]')->all_text);
 
-        say $tkey . ' - ' . $tval;
+        $tval =~ s/[\h\v]+/ /g;
+
+        say $tkey . ' <-> ' . $tval;
 
         given ($tkey) {
             when ("этаж") {

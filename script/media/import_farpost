@@ -146,12 +146,13 @@ sub process_url_list {
                 type_code => $category_code,
                 offer_type_code => $offer_type,
                 add_date => $dt->datetime(),
-                retry => 15,
+                retry => 5,
             };
 
             my $dom;
             while ($data->{retry} > 0) {
                 sleep 5;
+                $data->{'retry'} -= 1;
                 my $res = get_res($item_url, []);
                 if ($res) {
                     $dom = $res->dom;
@@ -215,8 +216,6 @@ sub parse_adv {
             my $c_dom = $c_res->dom;
             if ($c_dom->find('form')->size > 0) {
                 say 'capcha, retry';
-
-                $data->{'retry'} -= 1;
 
                 undef $ua;
                 sleep 30;
@@ -416,8 +415,52 @@ sub parse_adv {
         default {}
     }
 
+    my $n = $dom->find('span[data-field="wallMaterial"]');
+
+    if ($n->size > 0) {
+        $t = trim($n->first->text);
+
+        given ($t) {
+            when (/кирпичный/) {
+                $data->{'house_type_id'} = 1;
+            }
+            when (/панельный/) {
+                $data->{'house_type_id'} = 3;
+            }
+            when (/монолитный/) {
+                $data->{'house_type_id'} = 2;
+            }
+            when (/деревянный/) {
+                $data->{'house_type_id'} = 4;
+            }
+            when (/шлакобетон/) {
+                $data->{'house_type_id'} = 8;
+            }
+        }
+    }
+
+
+    $n = $dom->find('span[data-field="floor-floorCount"]');
+
+    if ($n->size > 0) {
+        $t = trim($n->first->find('strong')->[1]->text);
+        $data->{'floors_count'} = $t;
+    }
+
+
+    $n = $dom->find('span[data-field="rentPeriod"]');
+
+    if ($n->size > 0) {
+        $t = trim($n->first->text);
+        if ($t =~ /долгосрочная/i) {
+            $data->{'rent_type'} = 'long';
+        } else {
+            $data->{'rent_type'} = 'short';
+        }
+    }
+
     # цена в рублях, переведем в тыс.
-    my $n = $dom->find('span[data-field="price"]');
+    $n = $dom->find('span[data-field="price"]');
     unless ($n->size) {
         $n = $dom->find('span[data-field="price-agencySupportCommission"]');
     }
