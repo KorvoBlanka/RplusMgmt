@@ -55,7 +55,7 @@ while (1) {
 
 sub process_bn {
     foreach (@{$source_list}) {
-       my $list = get_url_list($site_url . $_->{url}, 1);
+       my $list = get_url_list($site_url . $_->{url}, $depth);
        process_list($list);
     }
 }
@@ -236,13 +236,13 @@ sub get_item {
                     $data->{'house_type_id'} = 8;
                 }
                 when (/брежневский/i) {
-                    $data->{'app_sceme_id'} = 4;
+                    $data->{'app_scheme_id'} = 4;
                 }
                 when (/деревянный/i) {
                     $data->{'house_type_id'} = 4;
                 }
                 when (/индивидуальный/i) {
-                    $data->{'app_sceme_id'} = 5;
+                    $data->{'app_scheme_id'} = 5;
                 }
                 when (/кирпично-монолитный/i) {
                     $data->{'house_type_id'} = 7;
@@ -262,10 +262,10 @@ sub get_item {
                     $data->{'house_type_id'} = 3;
                 }
                 when (/сталинский/i) {
-                    $data->{'app_sceme_id'} = 1;
+                    $data->{'app_scheme_id'} = 1;
                 }
                 when (/хрущевский/i) {
-                    $data->{'app_sceme_id'} = 2;
+                    $data->{'app_scheme_id'} = 2;
                 }
             }
         } elsif ($n->text =~ /^санузел:/i) {
