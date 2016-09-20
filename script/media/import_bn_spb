@@ -125,7 +125,7 @@ sub get_item {
 
     my $title = $dom->at('h1[class="head_obj"]');
     my @tp = split /,/, $title;
-    my $r_type = $tp[0];;
+    my $r_type = $tp[0];
 
     if ($r_type =~ /квартира/i) {
         $data->{'type_code'} = 'apartment';
@@ -225,9 +225,17 @@ sub get_item {
             }
         } elsif ($n->text =~ /^жилая пл/i) {
             my $tnum = $nn->all_text;
-            if ($tnum =~ /(\d+(?:.\d+)?)/) {
-                $data->{'square_living'} = $1;
+
+            my @sq_p = split /\+/, $tnum;
+            my $sq_summ = 0;
+            for my $sq_v (@sq_p) {
+                if ($sq_v =~ /(\d+(?:.\d+)?)/) {
+                    $sq_summ += $1;
+                }
             }
+
+            $data->{'square_living'} = $sq_summ;
+
         } elsif ($n->text =~ /^тип дома:/i) {
             my $tval = $nn->all_text;
             given ($tval) {
