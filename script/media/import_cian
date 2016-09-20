@@ -235,7 +235,12 @@ sub process_item {
 
     $t = $dom->at('h1[class~="object_descr_addr"]');
     if ($t) {
-      $data->{address} = $t->all_text;
+      my $t = trim($t->all_text);
+      my @ap = split /,/, $t;
+      $data->{'locality'} = $ap[0];
+      splice(@ap, 0, 1);
+
+      $data->{address} = join(', ', @ap);;
     }
 
     $t = $dom->at('div[class~="object_descr_text"]');
