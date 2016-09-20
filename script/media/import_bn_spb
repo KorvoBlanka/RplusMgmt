@@ -1,0 +1,416 @@
+#!/usr/bin/env perl
+
+use FindBin;
+use lib "$FindBin::Bin/../../lib";
+
+use Rplus::Modern;
+
+use Rplus::Model::Media::Manager;
+use Rplus::Model::Realty::Manager;
+use Rplus::Model::MediaImportHistory::Manager;
+
+use Rplus::Util::Config;
+use Rplus::Util::PhoneNum;
+use Rplus::Util::Realty qw(put_object);
+use Rplus::Util::Mediator qw(add_mediator);
+
+use DateTime;
+use DateTime::Format::Strptime;
+use Text::Trim;
+use JSON;
+use Mojo::UserAgent;
+
+use Data::Dumper;
+
+no warnings 'experimental';
+
+
+my $app_config = Rplus::Util::Config::get_config();
+my $config = Rplus::Util::Config::get_config('import.conf');
+my $site_config = $config->{bn};
+
+my $site_url = $site_config->{url};
+my $host = $site_config->{host};
+my $source_list = $site_config->{source_list};
+
+my $pause = $site_config->{pause};
+my $depth = $site_config->{depth};
+my $lock_file = $site_config->{lock_file};
+
+
+my $parser = DateTime::Format::Strptime->new(pattern => '%Y-%m-%d %H:%M:%S');
+
+
+my $MEDIA = Rplus::Model::Media::Manager->get_objects(query => [type => 'import', code => 'bn', delete_date => undef])->[0];    # code => 'avito'
+exit unless $MEDIA;
+
+my $ua = Mojo::UserAgent->new;
+$ua->max_redirects(4);
+
+
+while (1) {
+    say 'cycle starts';
+    process_bn();
+}
+
+sub process_bn {
+    foreach (@{$source_list}) {
+       my $list = get_url_list($site_url . $_->{url}, 1);
+       process_list($list);
+    }
+}
+
+sub get_url_list {
+    my ($main_page, $page_count) = @_;
+    my @url_list;
+
+    for(my $i = 0; $i < $page_count; $i ++) {
+
+        my $p = $main_page . '?start=' . 50 * $i;
+        my $res = get_res($p, $host);
+        next unless $res;
+        my $dom = $res->dom;
+
+        $dom->find('table[class="results"] td[title="Детальная информация об объекте"] a')->each(sub {
+            my $item_url = $site_url . $_->attr('href');
+            if ($item_url =~ /\/(\w+)\/(\d+)/) {
+                my $eid = $1 . '_' . $2;
+                say $eid;
+                if (Rplus::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $eid])) {
+                    say 'was processed already';
+                } else {
+                    push(@url_list, $item_url);
+                }
+            }
+        });
+    }
+
+    return \@url_list;
+}
+
+sub process_list {
+    my ($url_list_ref) = @_;
+
+    for my $item_url (@$url_list_ref) {
+        my $res = get_res($item_url, $host);
+        next unless $res;
+        my $dom = $res->dom;
+
+        my $data = {
+            source_media_id => $MEDIA->id,
+            source_url => $item_url,
+            type_code => 'other',
+            offer_type_code => 'sale',
+        };
+
+        get_item($data, $dom);
+
+        say Dumper $data;
+
+        my $id = put_object($data, $app_config);
+
+        my $eid;
+        if ($item_url =~ /\/(\w+)\/(\d+)/) {
+            $eid = $1 . '_' . $2;
+        }
+        # Сохраним историю
+        if ($id && !Rplus::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $eid])) {
+            Rplus::Model::MediaImportHistory->new(media_id => $MEDIA->id, media_num => $eid, media_text => $item_url, realty_id => $id)->save;
+        }
+    }
+}
+
+sub get_item {
+    my ($data, $dom) = @_;
+
+    my $title = $dom->at('h1[class="head_obj"]');
+    my @tp = split /,/, $title;
+    my $r_type = $tp[0];;
+
+    if ($r_type =~ /квартира/i) {
+        $data->{'type_code'} = 'apartment';
+    } elsif ($r_type =~ /комната/i) {
+        $data->{'type_code'} = 'room';
+    } elsif ($r_type =~ /участок/i) {
+        $data->{'type_code'} = 'land';
+    } elsif ($r_type =~ /коттедж/i) {
+        $data->{'type_code'} = 'cottage';
+    } elsif ($r_type =~ /таунхаус/i) {
+        $data->{'type_code'} = 'townhouse';
+    } elsif ($r_type =~ /дача/i) {
+        $data->{'type_code'} = 'dacha';
+    } elsif ($r_type =~ /дом/i) {
+        $data->{'type_code'} = 'house';
+    } elsif ($r_type =~ /часть дома/i) {
+        $data->{'type_code'} = 'house';
+    }
+
+    my $mediator_company;
+    $dom->find('tr[valign="top"]')->each(sub {
+        my $n = $_->at('td');
+        my $nn = $n->next;
+
+        if ($n->text =~ /^цена:/i) {
+            my $price = trim($nn->all_text);
+            $price =~ s/\D//g;
+            $data->{'owner_price'} = $price;
+        } elsif ($n->text =~ /^субъект:/i) {
+            my $subj = trim($nn->all_text);
+            unless ($subj eq 'частное') {
+                $mediator_company = $subj;
+            }
+        } elsif ($n->text =~ /^телефон:/i) {
+            my @owner_phones = ();
+            my $t = $nn->at('a[class="show_phone"]');
+            if ($t) {
+                my $raw_phone = $t->attr('phone');
+                if (my $phone_num = Rplus::Util::PhoneNum::parse($raw_phone, $app_config->{default_phone_prefix})) {
+                    push @owner_phones, $phone_num;
+                } else {
+                    say 'bad phone';
+                }
+            }
+            $data->{'owner_phones'} = \@owner_phones;
+        } elsif ($n->text =~ /^вид сделки:/i) {
+            my $offer_type = trim($nn->all_text);
+            if ($offer_type =~ /продажа/) {
+                $data->{'offer_type_code'} = 'sale';
+            } else {
+                $data->{'offer_type_code'} = 'rent';
+            }
+            # short / long ?
+        } elsif ($n->text =~ /^район:/i) {
+        } elsif ($n->text =~ /^метро:/i) {
+        } elsif ($n->text =~ /^адрес:/i) {
+            $data->{'address'} = $nn->all_text;
+        } elsif ($n->text =~ /^номер дома/i) {        # ?
+
+        } elsif ($n->text =~ /^корпус или дробь/i) {  # ?
+
+        } elsif ($n->text =~ /^комнат:/i) {
+            my $tnum = $nn->all_text;
+            $tnum =~ s/\D//g;
+            $data->{'rooms_count'};
+        } elsif ($n->text =~ /^этаж\/этажность:/i) {
+            my $tnum = $nn->all_text;
+            if ($tnum =~ /(\d+)\/(\d+)/) {
+                $data->{'floor'} = $1;
+                $data->{'floors_count'} = $2;
+            } else {
+                $tnum =~ s/\D//g;
+                $data->{'floors_count'} = $tnum;
+            }
+        } elsif ($n->text =~ /^площадь участка/i) {
+            my $tnum = $nn->all_text;
+            if ($tnum =~ /(\d+(?:.\d+)?)/) {
+                $data->{'square_land'} = $1;
+                $data->{'square_land_type'} = 'ar';
+            }
+        } elsif ($n->text =~ /^площадь (м2)/i) {
+            my $tnum = $nn->all_text;
+            if ($tnum =~ /(\d+(?:.\d+)?)/) {
+                $data->{'square_total'} = $1;
+            }
+        } elsif ($n->text =~ /^общая пл/i) {
+            my $tnum = $nn->all_text;
+            if ($tnum =~ /(\d+(?:.\d+)?)/) {
+                $data->{'square_total'} = $1;
+            }
+        } elsif ($n->text =~ /^пл\. кухни/i) {
+            my $tnum = $nn->all_text;
+            if ($tnum =~ /(\d+(?:.\d+)?)/) {
+                $data->{'square_kitchen'} = $1;
+            }
+        } elsif ($n->text =~ /^жилая пл/i) {
+            my $tnum = $nn->all_text;
+            if ($tnum =~ /(\d+(?:.\d+)?)/) {
+                $data->{'square_living'} = $1;
+            }
+        } elsif ($n->text =~ /^тип дома:/i) {
+            my $tval = $nn->all_text;
+            given ($tval) {
+                when (/блочно-монолитный/i) {
+                    $data->{'house_type_id'} = 2;
+                }
+                when (/блочный/i) {
+                    $data->{'house_type_id'} = 8;
+                }
+                when (/брежневский/i) {
+                    $data->{'app_sceme_id'} = 4;
+                }
+                when (/деревянный/i) {
+                    $data->{'house_type_id'} = 4;
+                }
+                when (/индивидуальный/i) {
+                    $data->{'app_sceme_id'} = 5;
+                }
+                when (/кирпично-монолитный/i) {
+                    $data->{'house_type_id'} = 7;
+                }
+                when (/кирпичный/i) {
+                    $data->{'house_type_id'} = 1;
+                }
+                when (/коттедж/i) {
+                }
+                when (/монолитно-панельный/i) {
+                    $data->{'house_type_id'} = 2;
+                }
+                when (/монолит/i) {
+                    $data->{'house_type_id'} = 2;
+                }
+                when (/панельный/i) {
+                    $data->{'house_type_id'} = 3;
+                }
+                when (/сталинский/i) {
+                    $data->{'app_sceme_id'} = 1;
+                }
+                when (/хрущевский/i) {
+                    $data->{'app_sceme_id'} = 2;
+                }
+            }
+        } elsif ($n->text =~ /^санузел:/i) {
+            my $tval = $nn->all_text;
+            say $tval;
+            given ($tval) {
+                when (/без ванны/i) {
+                    $data->{'bathroom_id'} = 1;
+                }
+                when (/ванна на кухне/i) {
+                    $data->{'bathroom_id'} = 10;
+                }
+                when (/душ на кухне/i) {
+                    $data->{'bathroom_id'} = 11;
+                }
+                when (/душ/i) {
+                    $data->{'bathroom_id'} = 6;
+                }
+                when (/раздельный/i) {
+                    $data->{'bathroom_id'} = 3;
+                }
+                when (/совмещенный/i) {
+                    $data->{'bathroom_id'} = 8;
+                }
+                when (/два/i) {
+                    $data->{'bathroom_id'} = 4;
+                }
+                when (/три/i) {
+                    $data->{'bathroom_id'} = 4;
+                }
+            }
+        } elsif ($n->text =~ /^издание:/i) {
+        } elsif ($n->text =~ /^дата размещения:/i) {
+            my $dt = parse_date($nn->all_text);
+            $data->{'add_date'} = $dt->datetime();
+        }
+    });
+}
+
+sub get_res {
+    my ($url, $host, $referer, $accept) = @_;
+
+    say $url;
+
+    my $res;
+    my $retry = 15;
+
+    my @headers;
+    push @headers, 'Referer' => $referer if $referer;
+    push @headers, 'Accept' => $accept if $accept;
+    push @headers, 'Host' => $host if $host;
+    while ($retry > 0) {
+        $retry -= 1;
+        if ($retry < 5) {
+            say 'retry left ' . $retry;
+        }
+        my $t = $ua->get($url, {
+            'Connection' => 'keep-alive',
+            'User-Agent' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.114 Safari/537.36',
+            'Accept-Encoding' => 'gzip,deflate,sdch',
+            'Accept-Language' => 'ru-RU,ru;q=0.8,en-US;q=0.6,en;q=0.4',
+            @headers,
+        });
+
+        say 'code: ' . $t->res->code;
+
+        if ($t->res->code == 200) {
+            $res = $t->res;
+            last;
+        } elsif ($t->res->code == 404) {
+            last;
+        }
+
+        if ($retry > 0) {
+            sleep 3;
+        }
+    }
+
+    return $res;
+}
+
+sub make_eid {
+    my ($id, $date) = @_;
+    return $id . '_' . $date->strftime('%Y%m%d')
+}
+
+sub parse_date {
+    my $date = lc(shift);
+
+    my $res;
+    my $dt_now = DateTime->now();
+
+    if ($date =~ /(\d{1,2})\.(\d{1,2})\.(\d{1,4})/) {
+        $res = $parser->parse_datetime("$3-$2-$1 00:00:00");
+        if ($res > $dt_now) {
+            # substr 1 day
+            $res->subtract(days => 1);
+        }
+    } else {
+        $res = $dt_now;
+    }
+
+    return $res;
+}
+
+sub month_num {
+    my $month_str = lc(shift);
+
+    given ($month_str) {
+        when (/янв/) {
+            return 1;
+        }
+        when (/фев/) {
+            return 2;
+        }
+        when (/мар/) {
+            return 3;
+        }
+        when (/апр/) {
+            return 4;
+        }
+        when (/мая/) {
+            return 5;
+        }
+        when (/июн/) {
+            return 6;
+        }
+        when (/июл/) {
+            return 7;
+        }
+        when (/авг/) {
+            return 8;
+        }
+        when (/сен/) {
+            return 9;
+        }
+        when (/окт/) {
+            return 10;
+        }
+        when (/ноя/) {
+            return 11;
+        }
+        when (/дек/) {
+            return 12;
+        }
+    }
+    return 0;
+}

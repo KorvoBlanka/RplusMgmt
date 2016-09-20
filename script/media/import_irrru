@@ -261,7 +261,7 @@ sub parse_adv {
     if ($dom->find('div[class~="js-productPagePhoneLabel"]')->first) {
         my $phone_num_raw = decode_base64($dom->find('div[class~="js-productPagePhoneLabel"]')->first->attr('data-phone'));
 
-        if (my $phone_num = Rplus::Util::PhoneNum::parse($phone_num_raw, $config->{default_phone_prefix})) {
+        if (my $phone_num = Rplus::Util::PhoneNum::parse($phone_num_raw, $app_config->{default_phone_prefix})) {
             push @owner_phones, $phone_num;
         }
     } else {
