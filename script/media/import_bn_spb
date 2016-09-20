@@ -193,12 +193,14 @@ sub get_item {
             $data->{'rooms_count'};
         } elsif ($n->text =~ /^этаж\/этажность:/i) {
             my $tnum = $nn->all_text;
-            if ($tnum =~ /(\d+)\/(\d+)/) {
+            if ($tnum =~ /(\d{1,2})\/(\d{1,2})/) {
                 $data->{'floor'} = $1;
                 $data->{'floors_count'} = $2;
             } else {
                 $tnum =~ s/\D//g;
-                $data->{'floors_count'} = $tnum;
+                if ($tnum) {
+                    $data->{'floors_count'} = $tnum;
+                }
             }
         } elsif ($n->text =~ /^площадь участка/i) {
             my $tnum = $nn->all_text;
