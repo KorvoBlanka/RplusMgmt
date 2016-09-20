@@ -21,13 +21,14 @@ use Rplus::Util::PhoneNum;
 use Rplus::Util::Realty;
 use Rplus::Util::Mediator qw(add_mediator);
 
+use Text::Trim;
+use File::Touch;
 use DateTime::Format::Strptime;
 use File::Basename;
-use Text::Trim;
+
 use JSON;
 use Mojo::UserAgent;
 use Data::Dumper;
-use File::Touch;
 
 no warnings 'experimental';
 
@@ -69,10 +70,15 @@ $ua->max_redirects(4);
 my %date_map = ();
 my $parser = DateTime::Format::Strptime->new( pattern => '%Y-%m-%d %H:%M' ); #Шаблон времени Год-месяц-день Часы:минуты
 
-my $stat_count = { count_all_ad => 0,  #найдённых объявлений
+my $stat_count = {
+                  count_all_ad => 0,  #найдённых ссылок
                   count_new_ad => 0,   #новых объектов
                   count_update_ad => 0 ,  #обновленных объектов
-                  count_error_ad => 0};   #кол-во ошибок
+                  count_update_link => 0 ,  #обновленных ссылок
+                  count_error_ad => 0 ,   #кол-во ошибок
+                  url_list => [], #ссылки с ошибками
+                  error_list => [], #текст с ошибками
+                  };
 unless (_import_in_progress()) { #Если импортирование не в процессе
       _lock();
       import_vnh();
@@ -88,6 +94,7 @@ sub _unlock {
 }
 
 sub _import_in_progress {
+      $stat_count->{date_start} = DateTime->now(time_zone => "+1000");
       if (-e $lock_file) { #существует ли файл?
           my $mtime = ( stat $lock_file )[9]; #получение статуса о файле 9-время последнего изменения о файле
           my $current_time = time; #получение текущего времени

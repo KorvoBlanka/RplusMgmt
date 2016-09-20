@@ -33,6 +33,7 @@ no warnings 'experimental';
 
 my $app_config = Rplus::Util::Config::get_config();
 my $config = Rplus::Util::Config::get_config('import.conf');
+
 my $barahla_config = $config->{khv_barahla};
 my $main_url = $barahla_config->{main_url};
 
@@ -50,10 +51,15 @@ $ua->max_redirects(4);
 my %date_map = ();
 my $parser = DateTime::Format::Strptime->new( pattern => '%Y-%m-%d %H:%M' ); #Шаблон времени Год-месяц-день Часы:минуты
 
-my $stat_count = { count_all_ad => 0,  #найдённых объявлений
+my $stat_count = {
+                  count_all_ad => 0,  #найдённых ссылок
                   count_new_ad => 0,   #новых объектов
                   count_update_ad => 0 ,  #обновленных объектов
-                  count_error_ad => 0};   #кол-во ошибок
+                  count_update_link => 0 ,  #обновленных ссылок
+                  count_error_ad => 0 ,   #кол-во ошибок
+                  url_list => [], #ссылки с ошибками
+                  error_list => [], #текст с ошибками
+};
 unless (_import_in_progress()) { #Если импортирование не в процессе
       _lock();
       import_barahlo();
@@ -74,7 +80,7 @@ sub _import_in_progress {
           my $current_time = time; #получение текущего времени
           my $diff = $current_time - $mtime; #вычисление разницы между текущим и временем изменения файла
           if ($diff < 6 * 60 * 60) { #если разница меньше 21600 секунд (6 часов)
-              return 0; #возвращаем true
+              return 1; #возвращаем true
           }
       }
       return 0;

@@ -51,6 +51,7 @@ sub put_object {
         my @realtys = @{_find_similar(%$data, state_code => ['raw', 'work', 'suspended', 'deleted'])};
 
         if (scalar @realtys > 0) {
+            $stat_count->{count_update_link}++;
             foreach (@realtys) {
                 $id = $_->id;   # что если похожий объект не один? какой id возвращать?
                 my $o_realty = $_;
@@ -121,6 +122,8 @@ sub put_object {
     } or do {
        if($@){
          $stat_count->{count_error_ad}++;
+         push  @{$stat_count->{url_list}}, $data->{source_url};
+         push  @{$stat_count->{error_list}}, "Eroor in file Realty: ".$@;
          say "Erroor in file Realty: ".$@;
        }
     };
