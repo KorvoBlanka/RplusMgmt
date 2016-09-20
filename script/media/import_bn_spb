@@ -236,13 +236,13 @@ sub get_item {
                     $data->{'house_type_id'} = 8;
                 }
                 when (/брежневский/i) {
-                    $data->{'app_scheme_id'} = 4;
+                    $data->{'ap_scheme_id'} = 4;
                 }
                 when (/деревянный/i) {
                     $data->{'house_type_id'} = 4;
                 }
                 when (/индивидуальный/i) {
-                    $data->{'app_scheme_id'} = 5;
+                    $data->{'ap_scheme_id'} = 5;
                 }
                 when (/кирпично-монолитный/i) {
                     $data->{'house_type_id'} = 7;
@@ -262,10 +262,10 @@ sub get_item {
                     $data->{'house_type_id'} = 3;
                 }
                 when (/сталинский/i) {
-                    $data->{'app_scheme_id'} = 1;
+                    $data->{'ap_scheme_id'} = 1;
                 }
                 when (/хрущевский/i) {
-                    $data->{'app_scheme_id'} = 2;
+                    $data->{'ap_scheme_id'} = 2;
                 }
             }
         } elsif ($n->text =~ /^санузел:/i) {
