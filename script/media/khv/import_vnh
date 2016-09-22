@@ -317,7 +317,8 @@ sub parse_adv {
 
       #парсинг участка
       elsif ($_ =~/Участок ([0-9,\.]*)/){
-          $data->{square_land} = $1;
+          my $sq_l=$1;    $sq_l=~s/,/./;
+          $data->{square_land} = $sq_l;
           $data->{square_land_type} = 'ar';
       }
 
