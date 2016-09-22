@@ -20,7 +20,7 @@ use Exporter qw(import);
 
 sub save_import_statistic {
     my ($id, $stat_count) = @_;
-    my $now_dt = DateTime->now(time_zone => "+1000");
+    my $now_dt = DateTime->now(time_zone => "local");
 
     my $temp=Rplus::Model::MediaImportStatistic->new(media_id => $id,
                                         add_date_start => $stat_count->{date_start},

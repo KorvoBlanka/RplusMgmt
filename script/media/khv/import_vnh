@@ -53,9 +53,7 @@ for(my $i=1; $i <=2 ; $i++){
   }
 }
 foreach (@{$all_url_list}){
-    $_='?city=Хабаровск&district=&street='.$_."&land_start=&land_stop=&price_start=&price_stop=&plan=&square_full=".
-    "&square_live=&square_kitchen=&square_full_start=&square_full_stop=".
-    "&sort=".$vnh_config->{sort}."&limit=".$vnh_config->{limit};
+    $_='?city=Хабаровск'.$_."&sort=".$vnh_config->{sort}."&limit=".$vnh_config->{limit};
 }
 
 my $lock_file = '/var/tmp/vnh_s_lock';

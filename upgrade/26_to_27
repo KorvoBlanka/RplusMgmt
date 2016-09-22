@@ -1,0 +1,46 @@
+#!/usr/bin/env perl
+
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+
+use Rplus::Modern;
+
+use Data::Dumper;
+use Rplus::DB;
+
+my $dbh = Rplus::DB->new_or_cached->dbh;
+
+if(1){
+    $dbh->do(q{CREATE TABLE "public"."media_import_statistic" (
+	                                  "id" Integer DEFAULT nextval('media_import_statistic_id_seq'::regclass) NOT NULL,
+	                                  "media_id" Integer NOT NULL,
+	                                  "add_date_start" Timestamp With Time Zone NOT NULL,
+	                                  "all_link" Integer NOT NULL,
+	                                  "new_ad" Integer NOT NULL,
+	                                  "update_ad" Integer NOT NULL,
+	                                  "errors_link" Integer NOT NULL,
+	                                  "add_date_end" Timestamp With Time Zone NOT NULL,
+	                                  "update_link" Integer NOT NULL,
+	                                  PRIMARY KEY ( "id" ),
+	                                  CONSTRAINT "unique_id" UNIQUE( "id" ) );}
+    );
+    $dbh->do(q{COMMENT ON COLUMN "public"."media_import_statistic"."media_id" IS 'Источник СМИ';
+          COMMENT ON COLUMN "public"."media_import_statistic"."add_date_start" IS 'Дата/время последнего запуска импорта';
+          COMMENT ON COLUMN "public"."media_import_statistic"."all_link" IS 'Кол-во ссылок для обработки';
+          COMMENT ON COLUMN "public"."media_import_statistic"."new_ad" IS 'Кол-во новых объектов';
+          COMMENT ON COLUMN "public"."media_import_statistic"."update_ad" IS 'Кол-во обновленных объектов';
+          COMMENT ON COLUMN "public"."media_import_statistic"."errors_link" IS 'Кол-во ошибок при обработки';
+          COMMENT ON COLUMN "public"."media_import_statistic"."add_date_end" IS 'Дата/время окончания импорта';
+          COMMENT ON COLUMN "public"."media_import_statistic"."update_link" IS 'Кол-во обновленных ссылок';}
+          );
+
+    $dbh->do(q{CREATE TABLE "public"."media_import_errors" (
+            "id" Integer DEFAULT nextval('media_import_errors_id_seq'::regclass) NOT NULL,
+          	"id_import_stat" Integer NOT NULL,
+          	"url" Character Varying( 2044 ) NOT NULL,
+          	"error_text" Character Varying( 2044 ) NOT NULL,
+          	PRIMARY KEY ( "id" ),
+            CONSTRAINT "unique_id" UNIQUE( "id" ));}
+            );
+}
+1;
