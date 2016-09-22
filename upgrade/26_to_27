@@ -10,9 +10,10 @@ use Rplus::DB;
 
 my $dbh = Rplus::DB->new_or_cached->dbh;
 
+$dbh->do(q{DROP TABLE IF EXISTS "public"."media_import_statistic", "public"."media_import_errors";});
+
 if(1){
     $dbh->do(q{CREATE TABLE "public"."media_import_statistic" (
-	                                  "id" Integer DEFAULT nextval('media_import_statistic_id_seq'::regclass) NOT NULL,
 	                                  "media_id" Integer NOT NULL,
 	                                  "add_date_start" Timestamp With Time Zone NOT NULL,
 	                                  "all_link" Integer NOT NULL,
@@ -21,8 +22,7 @@ if(1){
 	                                  "errors_link" Integer NOT NULL,
 	                                  "add_date_end" Timestamp With Time Zone NOT NULL,
 	                                  "update_link" Integer NOT NULL,
-	                                  PRIMARY KEY ( "id" ),
-	                                  CONSTRAINT "unique_id" UNIQUE( "id" ) );}
+	                                  "id" SERIAL PRIMARY KEY);}
     );
     $dbh->do(q{COMMENT ON COLUMN "public"."media_import_statistic"."media_id" IS 'Источник СМИ';
           COMMENT ON COLUMN "public"."media_import_statistic"."add_date_start" IS 'Дата/время последнего запуска импорта';
@@ -35,12 +35,12 @@ if(1){
           );
 
     $dbh->do(q{CREATE TABLE "public"."media_import_errors" (
-            "id" Integer DEFAULT nextval('media_import_errors_id_seq'::regclass) NOT NULL,
+
           	"id_import_stat" Integer NOT NULL,
           	"url" Character Varying( 2044 ) NOT NULL,
           	"error_text" Character Varying( 2044 ) NOT NULL,
-          	PRIMARY KEY ( "id" ),
-            CONSTRAINT "unique_id" UNIQUE( "id" ));}
+          	"id" SERIAL PRIMARY KEY,
+            FOREIGN KEY (id_import_stat) REFERENCES media_import_statistic(id));}
             );
 }
 1;
