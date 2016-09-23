@@ -1,39 +1,89 @@
 % layout 'default';
 % use Rplus::Model::MediaImportStatistic::Manager;
+% use Rplus::Model::MediaImportError::Manager;
 % use Rplus::Model::Media::Manager;
+
+% my $temp= $self ->param( 'more');
+<div>
 <head>
   <style type="text/css">
 
     td {
       font-size: 14pt;
     }
+
+    a{
+      font-size: 10pt;
+    }
+    .back{
+      margin-top: 10px;
+      margin-left: calc(50% - 5px);
+      font-size: 20pt;
+      border: 1px solid black;
+      border-radius: 5px;
+      color: #bbbbbb;
+      background: #062141;
+      width: 150px;
+      height: 50px;
+    }
+
+    .back:hover{
+      color: #ffffff;
+      background: #00305e;
+    }
+    .link{
+      font-size: 16pt;
+    }
     </style>
 </head>
 
   <table border="3px">
-    <thead style="background: #fc0", align='center'>
-      <tr>
-        <td>Источник</td>
-        <td>Дата запуска</td>
-        <td>Всего ссылок</td>
-        <td>Новых</td>
-        <td>Обновленных</td>
-        <td>Ошибок</td>
+    <thead style="background: #062141; color: #ffffff;", align='center', height="50">
+      <tr >
+      % if ($temp){
+        <td width="250">Ссылка на объявление</td>
+        <td width="600">Описание ошибки</td>
+      %} else {
+        <td width="150">Источник</td>
+        <td width="150">Текст ошибки</td>
+        <td width="150">Окончание</br>импорта</td>
+        <td width="125">Найдено</br>ссылок</td>
+        <td width="125">Новых</td>
+        <td width="150">Ссылок с </br>обновлениями </td>
+        <td width="150">Обновленно </br>недвижимости</td>
+        <td width="170">Ошибок</td>
+      %}
       </tr>
     </thead>
     <tbody align='center'>
-      % for my $x (@{Rplus::Model::MediaImportStatistic::Manager->get_objects(select => 'media_id, add_date, all_ad, new_ad, update_ad, errors_ad', query => [], sort_by => 'add_date')}) {
-      <tr >
-        %  my @y = @{Rplus::Model::Media::Manager->get_objects(select => 'name', query => [id => $x->media_id])};
-        <td><%= $y[0]->name %></td>
-        <td><%= $x->add_date %></td>
-        <td><%= $x->all_ad %></td>
-        <td><%= $x->new_ad %></td>
-        <td><%= $x->update_ad %></td>
-        <td><%= $x->errors_ad %></td>
+      % if ($temp){
+      % for my $x (@{Rplus::Model::MediaImportError::Manager->get_objects(select => 'url, error_text', query => [id_import_stat => "$temp"], sort_by => 'id')}) {
+      <tr>
+        <td><a class="link" href="<%= $x->url %>"><%= $x->url %></a></td>
+        <td><%= $x->error_text %></td>
       </tr>
       % }
+      %} else {
+        % for my $x (@{Rplus::Model::MediaImportStatistic::Manager->get_objects( sort_by => 'id')}) {
+        <tr>
+          %  my @y = @{Rplus::Model::Media::Manager->get_objects(select => 'name', query => [id => $x->media_id])};
+          <td><%= $y[0]->name %></td>
+          <td><%= $x->add_date_start %></td>
+          <td><%= $x->add_date_end %></td>
+          <td><%= $x->all_link %></td>
+          <td><%= $x->new_ad %></td>
+          <td><%= $x->update_link %></td>
+          <td><%= $x->update_ad %></td>
+          <td><%= $x->errors_link %>
+            %if($x->errors_link>0){
+              <a href="statistic?more=<%=$x->id%>">(просмотреть)</a></td>
+              %}
+        </tr>
+      %}}
     </tbody>
   </table>
+  % if ($temp){
+    <form><button class="back" formaction="statistic"> Назад</button></form>
+  %}
 
 </div>

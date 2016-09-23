@@ -75,6 +75,7 @@ sub _unlock {
 }
 
 sub _import_in_progress {
+      $stat_count->{date_start} = DateTime->now(time_zone => "local");
       if (-e $lock_file) { #существует ли файл?
           my $mtime = ( stat $lock_file )[9]; #получение статуса о файле 9-время последнего изменения о файле
           my $current_time = time; #получение текущего времени

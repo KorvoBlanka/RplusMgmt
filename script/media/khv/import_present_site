@@ -56,8 +56,8 @@ my $stat_count = { count_all_ad => 0,  #найдённых ссылок
                     count_update_link => 0 ,  #обновленных ссылок
                     count_error_ad => 0 ,   #кол-во ошибок
                     url_list => [], #ссылки с ошибками
-                    error_list => [] #текст с ошибками}; 
-
+                    error_list => [] #текст с ошибками};
+};
 say 'importing...';
 unless (_import_in_progress()) { #Если импортирование не в процессе
     _lock();
@@ -75,6 +75,7 @@ sub _unlock {
 }
 
 sub _import_in_progress {
+    $stat_count->{date_start} = DateTime->now(time_zone => "local");
     if (-e $lock_file) { #существует ли файл?
         my $mtime = ( stat $lock_file )[9]; #получение статуса о файле 9-время последнего изменения о файле
         my $current_time = time; #получение текущего времени
