@@ -1,523 +1,449 @@
 #!/usr/bin/env perl
 
 use FindBin;
-use lib "$FindBin::Bin/../../lib";
+use lib "$FindBin::Bin/../../../lib";
 
-use Import::Modern;
+use Rplus::Modern;
 
-use Import::Model::AddressObject;
-use Import::Model::AddressObject::Manager;
-use Import::Model::Media;
-use Import::Model::Media::Manager;
-use Import::Model::Mediator;
-use Import::Model::Mediator::Manager;
-use Import::Model::MediaImportHistory;
-use Import::Model::MediaImportHistory::Manager;
-use Import::Model::Realty;
-use Import::Model::Realty::Manager;
-use Import::Model::Variable;
-use Import::Model::Variable::Manager;
+use Rplus::Model::AddressObject;
+use Rplus::Model::AddressObject::Manager;
+use Rplus::Model::Media;
+use Rplus::Model::Media::Manager;
+use Rplus::Model::Mediator;
+use Rplus::Model::Mediator::Manager;
+use Rplus::Model::MediaImportHistory;
+use Rplus::Model::MediaImportHistory::Manager;
+use Rplus::Model::Realty;
+use Rplus::Model::Realty::Manager;
 
-use Import::Util::PhoneNum;
-use Import::Util::Realty;
-use Import::Util::Image;
-use Import::Util::Mediator qw(add_mediator);
+use Rplus::Util::StatImport;
+use Rplus::Util::PhoneNum;
+use Rplus::Util::Realty;
+use Rplus::Util::Mediator qw(add_mediator);
 
-use Data::Dumper;
-use Encode;
-
-use File::Basename;
 use Text::Trim;
+use File::Touch;
+use DateTime::Format::Strptime;
+use File::Basename;
+
 use JSON;
 use Mojo::UserAgent;
-use File::Touch;
+use Data::Dumper;
 
-my $lock_file = '/var/tmp/vnh_lock';
+no warnings 'experimental';
 
-my $config = Import::Util::Config::get_config();
-
-my $limit = 20;
-
-my $main_url = 'http://vnh27.ru/filter/';
-
-my $sell_land_url       = '?city=Хабаровск&offers_type=2&estate=1&limit=' . $limit;
-my $sell_apartment_url  = '?city=Хабаровск&offers_type=2&estate=2&limit=' . $limit;
-my $sell_room_url       = '?city=Хабаровск&offers_type=2&estate=3&limit=' . $limit;
-my $sell_house_url      = '?city=Хабаровск&offers_type=2&estate=5&limit=' . $limit;
-my $sell_garage_url     = '?city=Хабаровск&offers_type=2&estate=4&limit=' . $limit;
-
-my $sell_comm_url       = '?city=Хабаровск&offers_type=2&estate=6&limit=' . $limit;
-
-my $sell_shop_url       = '?city=Хабаровск&offers_type=2&estate=6&purpose=1&limit=' . $limit;
-my $sell_restaurant_url = '?city=Хабаровск&offers_type=2&estate=6&purpose=2&limit=' . $limit;
-my $sell_bar_url        = '?city=Хабаровск&offers_type=2&estate=6&purpose=3&limit=' . $limit;
-my $sell_office_url     = '?city=Хабаровск&offers_type=2&estate=6&purpose=4&limit=' . $limit;
-my $sell_warehouse_1_url= '?city=Хабаровск&offers_type=2&estate=6&purpose=5&limit=' . $limit;
-my $sell_warehouse_2_url= '?city=Хабаровск&offers_type=2&estate=6&purpose=6&limit=' . $limit;
-my $sell_gpurpose_url   = '?city=Хабаровск&offers_type=2&estate=6&purpose=7&limit=' . $limit;
-my $sell_production_url = '?city=Хабаровск&offers_type=2&estate=6&purpose=8&limit=' . $limit;
+my $app_config = Rplus::Util::Config::get_config();
+my $config = Rplus::Util::Config::get_config('import.conf');
+my $vnh_config = $config->{vnh};
+my $main_url = $vnh_config->{main_url};
+my $pages = $vnh_config->{pages};
 
 
+my $all_url_list;
 
-my $rent_land_url       = '?city=Хабаровск&offers_type=1&estate=1&limit=' . $limit;
-my $rent_apartment_url  = '?city=Хабаровск&offers_type=1&estate=2&limit=' . $limit;
-my $rent_room_url       = '?city=Хабаровск&offers_type=1&estate=3&limit=' . $limit;
-my $rent_house_url      = '?city=Хабаровск&offers_type=1&estate=5&limit=' . $limit;
-my $rent_garage_url     = '?city=Хабаровск&offers_type=1&estate=4&limit=' . $limit;
+for(my $i=1; $i <=2 ; $i++){
+  for(my $j=1; $j <=6 ; $j++){
+    if($j==6){
+      for(my $k=1; $k <=8 ; $k++){
+          push @{$all_url_list}, ("&offers_type=$i&estate=$j&purpose=$k");
+      }
+    } else{
+        push @{$all_url_list}, ("&offers_type=$i&estate=$j&purpose=");
+    }
+  }
+}
+foreach (@{$all_url_list}){
+    $_='?city=Хабаровск'.$_."&sort=".$vnh_config->{sort}."&limit=".$vnh_config->{limit};
+}
 
-my $rent_comm_url       = '?city=Хабаровск&offers_type=1&estate=6&limit=' . $limit;
+my $lock_file = '/var/tmp/vnh_s_lock';
 
-my $rent_shop_url       = '?city=Хабаровск&offers_type=1&estate=6&purpose=1&limit=' . $limit;
-my $rent_restaurant_url = '?city=Хабаровск&offers_type=1&estate=6&purpose=2&limit=' . $limit;
-my $rent_bar_url        = '?city=Хабаровск&offers_type=1&estate=6&purpose=3&limit=' . $limit;
-my $rent_office_url     = '?city=Хабаровск&offers_type=1&estate=6&purpose=4&limit=' . $limit;
-my $rent_warehouse_1_url= '?city=Хабаровск&offers_type=1&estate=6&purpose=5&limit=' . $limit;
-my $rent_warehouse_2_url= '?city=Хабаровск&offers_type=1&estate=6&purpose=6&limit=' . $limit;
-my $rent_gpurpose_url   = '?city=Хабаровск&offers_type=1&estate=6&purpose=7&limit=' . $limit;
-my $rent_production_url = '?city=Хабаровск&offers_type=1&estate=6&purpose=8&limit=' . $limit;
-
-
-my $parser = DateTime::Format::Strptime->new(pattern => '%Y-%m-%d %H:%M:%S');
-
-my $host = 'http://vnh27.ru';
-
-my $MEDIA = Import::Model::Media::Manager->get_objects(query => [type => 'import', code => 'vnh', delete_date => undef])->[0];
+my $MEDIA = Rplus::Model::Media::Manager->get_objects(query => [type => 'import', code => 'vnh', delete_date => undef])->[0];
 exit unless $MEDIA;
 my $META = from_json($MEDIA->metadata);
 
 my $ua = Mojo::UserAgent->new;
 $ua->max_redirects(4);
 
-say 'importing...';
-unless (_import_in_progress()) {
-    _lock();
-    import_vnh ();
-    _unlock();
+my %date_map = ();
+my $parser = DateTime::Format::Strptime->new( pattern => '%Y-%m-%d %H:%M' ); #Шаблон времени Год-месяц-день Часы:минуты
+
+my $stat_count = {
+                  count_all_ad => 0,  #найдённых ссылок
+                  count_new_ad => 0,   #новых объектов
+                  count_update_ad => 0 ,  #обновленных объектов
+                  count_update_link => 0 ,  #обновленных ссылок
+                  count_error_ad => 0 ,   #кол-во ошибок
+                  url_list => [], #ссылки с ошибками
+                  error_list => [], #текст с ошибками
+                  };
+unless (_import_in_progress()) { #Если импортирование не в процессе
+      _lock();
+      import_vnh();
+      _unlock();
 }
 
-
 sub _lock {
-    touch($lock_file);
+      my $temp=touch($lock_file); # создать файл
 }
 
 sub _unlock {
-    unlink $lock_file;
+      unlink $lock_file; # удалить файл
 }
 
 sub _import_in_progress {
-    if (-e $lock_file) {
-        my $mtime = ( stat $lock_file )[9];
-        my $current_time = time;
-
-        my $diff = $current_time - $mtime;
-        if ($diff < 8 * 60 * 60) {
-            return 1;
-        }
-    }
-    #return 1 if -e $lock_file;
-    return 0;
+      $stat_count->{date_start} = DateTime->now(time_zone => "+1000");
+      if (-e $lock_file) { #существует ли файл?
+          my $mtime = ( stat $lock_file )[9]; #получение статуса о файле 9-время последнего изменения о файле
+          my $current_time = time; #получение текущего времени
+          my $diff = $current_time - $mtime; #вычисление разницы между текущим и временем изменения файла
+          if ($diff < 6 * 60 * 60) { #если разница меньше 21600 секунд (6 часов)
+              return 0; #возвращаем true
+          }
+      }
+      return 0;
 }
 
 sub import_vnh {
-    my @url_list;
-
-    @url_list = get_url_list($sell_apartment_url, 5);
-    process_url_list(\@url_list, 'apartment', 'sale');
-
-    @url_list = get_url_list($sell_room_url, 5);
-    process_url_list(\@url_list, 'room', 'sale');
-
-    @url_list = get_url_list($sell_house_url, 5);
-    process_url_list(\@url_list, 'house', 'sale');
-
-    @url_list = get_url_list($sell_land_url, 5);
-    process_url_list(\@url_list, 'land', 'sale');
-
-    @url_list = get_url_list($sell_garage_url, 5);
-    process_url_list(\@url_list, 'garage', 'sale');
-
-
-    @url_list = get_url_list($sell_shop_url, 5);
-    process_url_list(\@url_list, 'market_place', 'sale');
-
-    @url_list = get_url_list($sell_restaurant_url, 5);
-    process_url_list(\@url_list, 'service_place', 'sale');
-
-    @url_list = get_url_list($sell_bar_url, 5);
-    process_url_list(\@url_list, 'service_place', 'sale');
-
-    @url_list = get_url_list($sell_office_url, 5);
-    process_url_list(\@url_list, 'office_place', 'sale');
-
-    @url_list = get_url_list($sell_warehouse_1_url, 5);
-    process_url_list(\@url_list, 'warehouse_place', 'sale');
-
-    @url_list = get_url_list($sell_warehouse_2_url, 5);
-    process_url_list(\@url_list, 'warehouse_place', 'sale');
-
-    @url_list = get_url_list($sell_gpurpose_url, 5);
-    process_url_list(\@url_list, 'gpurpose_place', 'sale');
-
-    @url_list = get_url_list($sell_production_url, 5);
-    process_url_list(\@url_list, 'production_place', 'sale');
-
-
-
-    @url_list = get_url_list($rent_apartment_url, 5);
-    process_url_list(\@url_list, 'apartment', 'rent');
-
-    @url_list = get_url_list($rent_room_url, 5);
-    process_url_list(\@url_list, 'room', 'rent');
-
-    @url_list = get_url_list($rent_house_url, 5);
-    process_url_list(\@url_list, 'house', 'rent');
-
-    @url_list = get_url_list($rent_land_url, 5);
-    process_url_list(\@url_list, 'land', 'rent');
-
-    @url_list = get_url_list($rent_garage_url, 5);
-    process_url_list(\@url_list, 'garage', 'rent');
-
-
-    @url_list = get_url_list($rent_shop_url, 5);
-    process_url_list(\@url_list, 'market_place', 'rent');
-
-    @url_list = get_url_list($rent_restaurant_url, 5);
-    process_url_list(\@url_list, 'service_place', 'rent');
-
-    @url_list = get_url_list($rent_bar_url, 5);
-    process_url_list(\@url_list, 'service_place', 'rent');
-
-    @url_list = get_url_list($rent_office_url, 5);
-    process_url_list(\@url_list, 'office_place', 'rent');
-
-    @url_list = get_url_list($rent_warehouse_1_url, 5);
-    process_url_list(\@url_list, 'warehouse_place', 'rent');
-
-    @url_list = get_url_list($rent_warehouse_2_url, 5);
-    process_url_list(\@url_list, 'warehouse_place', 'rent');
-
-    @url_list = get_url_list($rent_gpurpose_url, 5);
-    process_url_list(\@url_list, 'gpurpose_place', 'rent');
-
-    @url_list = get_url_list($rent_production_url, 5);
-    process_url_list(\@url_list, 'production_place', 'rent');
+  my @url_list;
+  foreach (@$all_url_list){
+      @url_list = get_url_list($_); # наполняем массив списком URL
+      process_url_list(\@url_list, $_);
+  }
+  Rplus::Util::StatImport::save_import_statistic($MEDIA->id, $stat_count);
 }
 
 sub get_url_list {
-    my ($filter, $page_count) = @_;
+    my $main_page = shift;
     my @url_list;
 
-    for(my $i = 1; $i <= $page_count; $i ++) {
+    for(my $i = 1; $i <= $pages; $i ++) {
+        #sleep 1;
+        my $dom = $ua->get($main_url .'/filter/'. $i . $main_page)->res->dom; #изьятие DOM страницы
 
-        my $page_url = $main_url . $i . $filter;
+        $dom->find('div[class="teaser teaser_filter "]')->each (sub {
 
-        my $dom = get_res($page_url, [])->dom;
+            my $item_id; #id объявления
+            my $item_url = $main_url.$_->at('div')->at('div')->at('a')->{href}; #ссылка на объявление
 
-        $dom->find('div[class="teaser teaser_filter "]')->each( sub {
-
-            my $item_href = $_->find('div[class="meta_location"] > a')->first->attr('href');
-            my $item_id = '42';
-            if ($item_href =~ /(\d+)/) {
+            if ($item_url =~ /\/(\d+)$/) {
                 $item_id = $1;
             }
+            my $add_date = parse_data ($_->find('div[class="meta_top"]')->first->text);
 
-            say $item_href;
-            say $item_id;
-
-            #my $dt = parse_date($date_str);
-
-            my $eid = $item_id;
-
-            if (Import::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $eid])) {
-                say 'was processed already';
+            $date_map{$item_id} = $add_date; #сохраняем дату в глоб.переменную используя ID-Data
+            my $eid = make_eid($item_id, $add_date); #создаём уник.ID в формате ID_DATA
+            if (Rplus::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $eid])) {
+                  say 'was processed already';
             } else {
-                push(@url_list, {url => $host . $item_href, eid => $eid});
+                  say $item_url;
+                  if ($item_url ~~ @url_list) { #Проверяет есть ли этот объект в массиве
+                      say 'wtf?!';
+                  } else {
+                      push(@url_list, $item_url); #сохраняем в массив URL ссылку
+                  }
             }
         });
     }
-
-    return reverse @url_list;
+    $stat_count->{count_all_ad}+=scalar @url_list;
+    return reverse @url_list;  #reverse - переворачивает массив
 }
 
 sub process_url_list {
-    my ($url_list_ref, $type_code, $offer_type) = @_;
+    my ($url_list_ref, $base_request) = ($_[0],$_[1]);
 
-    for my $item (@$url_list_ref) {
-        my $item_url = $item->{url};
-        my $eid = $item->{eid};
+    for my $item_url (reverse @$url_list_ref) {
 
-        my $res = get_res($item_url, []);
-        next unless $res;
-        my $dom = $res->dom;
+        my $item_id = basename($item_url); # извлечение имени объекта из адреса
+        my $dt = $date_map{$item_id};
+        my $eid = make_eid($item_id, $dt);# создание уникального идентификатора
+        say 'processing ' . $item_url;
 
+        my $offer_type_code= $base_request;
+        $offer_type_code =~s/.+offers_type=(\d).+/$1/;
+        if($offer_type_code == 1){
+          $offer_type_code = 'rent';
+        } else {
+          $offer_type_code = 'sale';
+        }
+
+        my $type_code= parse_type_realty($base_request);
         my $data = {
             source_media_id => $MEDIA->id,
             source_url => $item_url,
             type_code => $type_code,
-            offer_type_code => $offer_type,
-            add_date => 'now()',
+            offer_type_code => $offer_type_code,
+            add_date => $dt->datetime(),
         };
-
-        say Dumper get_data($dom, $data);
-
+        #sleep 2;
         eval {
-            my $id;
-            my $realty = Import::Model::Realty->new((map { $_ => $data->{$_} } grep { $_ ne 'category_code' } keys %$data), state_code => 'raw');
-            $realty->save;
-            $id = $realty->id;
-            say "Saved new realty: $id";
-
-            # Сохраним историю
-            if ($id && !Import::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $eid])) {
-                Import::Model::MediaImportHistory->new(media_id => $MEDIA->id, media_num => $eid, media_text => $item_url, realty_id => $id)->save;
+            my $dom = get_res($item_url, [])->dom; #Изьятия Dom страницы объекта
+            if ($dom) { #Если Dom не пустой
+                eval { # попробовать выполнить
+                    parse_adv($dom, $data);
+                } or do {
+                    say "ERROR of Parsing: ".$@;  # сообщение об ошибке
+                }
             }
-        } or do {
-            say $@;
-        }
+            my $id;
+            {
+                eval {
+                    $id = Rplus::Util::Realty::put_object($data, $app_config, $stat_count);
+                } or do {
+                    say "Error of put object:".$@;
+                }
+            }
+            # Сохраним историю
+            if ($id && !Rplus::Model::MediaImportHistory::Manager->get_objects_count(query => [media_id => $MEDIA->id, media_num => $eid])) {
+                Rplus::Model::MediaImportHistory->new(media_id => $MEDIA->id, media_num => $eid, media_text => $main_url . $item_url, realty_id => $id)->save;
+            }
 
+        } or do {
+          if($@){
+            say "Err:".$@;
+          }
+        }
     }
 }
 
-sub get_data {
-    my ($dom, $data,) = @_;
+sub set_address {
+    my ($data, $addr) = @_;
 
-    my $phones = $dom->find('span[class="phone"]')->first->text;
-    my @owner_phones;
-    for my $x (split /[.,;:]/, $phones) {
-        if (my $phone_num = Import::Util::PhoneNum::parse($x, $config->{default_phone_prefix})) {
-            push @owner_phones, $phone_num;
+    $data->{address} = $addr;
+}
+
+sub parse_data {
+    my $text=shift;
+    my $ret_data;
+
+    my $dt_now = DateTime->now(time_zone => "+1000"); # сохраняем текущее время с учетом временной зоны +10 (Хабаровск)
+    my $nhour = $dt_now->hour_1(); # Текущий час
+    my $nmin = $dt_now->minute(); # Текущий час
+
+    if($text=~/Изменено: (\d{2})-(\d{2})-(\d{4})/){
+      $ret_data=$parser->parse_datetime("$3-$2-$1 $nhour:$nmin");
+    }elsif($text=~/Создано: (\d{2})-(\d{2})-(\d{4})/){
+      $ret_data=$parser->parse_datetime("$3-$2-$1 $nhour:$nmin");
+    }
+    return $ret_data;
+}
+
+sub month_num {
+    my $month_str = lc(shift);
+
+    given ($month_str) {
+        when (/янв/) {
+            return 1;
+        }
+        when (/фев/) {
+            return 2;
+        }
+        when (/мар/) {
+            return 3;
+        }
+        when (/апр/) {
+            return 4;
+        }
+        when (/май/) {
+            return 5;
+        }
+        when (/мая/) {
+            return 5;
+        }
+        when (/июн/) {
+            return 6;
+        }
+        when (/июл/) {
+            return 7;
+        }
+        when (/авг/) {
+            return 8;
+        }
+        when (/сен/) {
+            return 9;
+        }
+        when (/окт/) {
+            return 10;
+        }
+        when (/ноя/) {
+            return 11;
+        }
+        when (/дек/) {
+            return 12;
         }
     }
-    $data->{'owner_phones'} = \@owner_phones;
+    return 0;
+}
 
-    my $seller_company = $dom->find('span[class="fio"]  a')->first;
-    if ($seller_company) {
-        my $seller = $seller_company->text;
-        say $seller;
-        foreach (@{$data->{'owner_phones'}}) {
-            say 'add mediator ' . $_;
-            add_mediator($seller, $_);
+sub make_eid {
+    my ($id, $date) = @_;
+    return $id . '_' . $date->strftime('%Y%m%d')
+}
+
+sub parse_adv {
+    my ($dom, $data) = @_;
+
+    #добавление типа аренды
+    if($data->{offer_type_code} eq 'rent'){
+        $data->{rent_type}='long';
+    }
+
+    #парсинг адреса/города
+    my $adress=$dom->find('p[class="address"]')->first;
+    if($adress=~/<p class="address">(.+?), ([^\d].+)<br>(.+)<\/p>/){
+      $data->{address}=$2;
+      $data->{locality}=$1;
+    }
+
+    my $data_list=$dom->find('div[class="item_full_right"]')->first->at('ul')->find('li'); #сохраняем список всех данных объявления
+
+    #перебор всех записей и извлечение данных
+    foreach (@{$data_list}){
+      #парсинг площади
+      if ($_ =~/Площадь ([0-9,\.]*)\/([0-9,\.]*)\/([0-9,\.]*)/){
+          my $sq_t=$1;    $sq_t=~s/,/./;
+          my $sq_l=$2;    $sq_l=~s/,/./;
+          my $sq_k=$3;    $sq_k=~s/,/./;
+          $sq_t=0+$sq_t;
+          $sq_l=0+$sq_l;
+          $sq_k=0+$sq_k;
+
+          $data->{square_total} = $sq_t if ($sq_t>0);
+          $data->{square_living} = $sq_l if ($sq_l>0);
+          $data->{square_kitchen} = $sq_k if ($sq_k>0);
+      }
+
+      #парсинг участка
+      elsif ($_ =~/Участок ([0-9,\.]*)/){
+          my $sq_l=$1;    $sq_l=~s/,/./;
+          $data->{square_land} = $sq_l;
+          $data->{square_land_type} = 'ar';
+      }
+
+      #парсинг количества комнат
+      elsif ($_ =~/Количество комнат: (\d{1,3})/){
+          $data->{rooms_count} =  0 + $1;
+      }
+
+      #парсинг этажа и этажности
+      elsif ($_ =~/(\d{0,3}) этаж из (\d{0,3})/){
+          $data->{floor} = $1;
+          $data->{floors_count} = $2;
+      }
+
+      #парсинг этажности зданий
+      elsif ($_ =~/Количество этажей: (\d{0,3})/){
+          $data->{floors_count} = $1;
+      }
+
+      #определение типа комнат
+      elsif ($_ =~/Тип комнат: (.+)/){
+          $data->{room_scheme_id} = get_room_type($1);
+      }
+
+      #определение типа санузла
+      elsif ($_ =~/Санузел (.+)/){
+          $data->{bathroom_id} = get_bathroom_type($1);
+      }
+
+      #определение состояния
+      elsif ($_ =~/Состояние (.+)/){
+          $data->{condition_id} = get_condition_type($1);
+      }
+
+      #определение балконов/лоджий
+      elsif ($_ =~/Количество (((лоджий)|(балконов)).+)/){
+          $data->{balcony_id} = get_balcon_type($1);
+      }
+
+      #извлечение данных из текста объявления
+      else {
+        #определение типа здания
+        $data->{house_type_id} = get_house_type($_);
+
+        #определение планировки
+        $data->{ap_scheme_id} = get_scheme_house($_);
+
+        #парсинг новостройки
+        $data->{type_code} = 'apartment_new' if ($_ =~/Новостройка/);
+
+        #парсинг малосемейки
+        $data->{type_code} = 'apartment_small' if ($_ =~/Малосемейка/);
+
+      }
+    }
+
+    #парсинг цены
+    my $price_data=$dom->find('div[class="item_full_right"]')->first->at('p');
+    if($price_data){
+      if($price_data->text =~ /Цена (.+) руб/){
+          my $price = $1;
+          $price =~ s/\s//g;
+          $data->{owner_price} = 0 + $price/1000 if $price > 0;
         }
     }
+    #определение текста объявления
+    if($dom->find('span[class="message_text"]')->first){
+      $data->{source_media_text} = $dom->find('span[class="message_text"]')->first->text;
 
-    my $text = $dom->find('div[class="item_full_center"]')->first->text;
-    $data->{'source_media_text'} = $text;
+      $data->{type_code} = 'cottage' if ($data->{source_media_text}=~/(К)|(к)оттедж/ && $data->{type_code} eq 'house');
+      $data->{type_code} = 'townhouse' if ($data->{source_media_text}=~/(Т)|(т)аунхаус/ && $data->{type_code} eq 'house');
 
-    my $price_str = $dom->find('p[class="price"]')->first->text;
-    if ($price_str =~ /Цена (.+) руб/) {
-        my $price = $1;
-        $price =~ s/\D+//g;
-        $data->{'owner_price'} =  $price / 1000;
-    }
+      $data->{type_code} = 'dacha' if ($data->{source_media_text}=~/(дача)|(дом)/i  && $data->{type_code} eq 'land');
 
-    # разберем поля
-    $dom->find('div[class="item_full_right"] > ul > li')->each(sub {
-
-        given ($_->text) {
-
-            when (/Количество комнат: (\d+)/) {
-                $data->{'rooms_count'} = $1;
-                $data->{'rooms_offer_count'} = $1;
-            }
-
-            when (/Всего комнат: (\d+)/) {
-                $data->{'rooms_count'} = $1;
-            }
-
-            when (/Тип комнат: (.+)/) {
-                if ($1 eq 'раздельные') {
-                    $data->{'room_scheme_id'} = 3;
-                } else {
-                    $data->{'room_scheme_id'} = 4;
-                }
-            }
-
-            when (/(\d+) этаж из (\d+)/) {
-                if ($1 <= $2) {
-                    $data->{'floor'} = $1;
-                    $data->{'floors_count'} = $2;
-                } else {
-                    $data->{'floor'} = $2;
-                    $data->{'floors_count'} = $1;
-                }
-            }
-
-            when (/Площадь (\d+(?:,\d+)?)\/(\d+(?:,\d+)?)\/(\d+(?:,\d+)?) м/) {
-                my ($total, $living, $kitchen) = map { s/,/./r } ($1, $2, $3);
-                $data->{'square_total'} = $total;
-                $data->{'square_living'} = $living;
-                $data->{'square_kitchen'} = $kitchen;
-            }
-
-            when (/Площадь (\d+(?:,\d+)?)\/(\d+(?:,\d+)?)\/ м/) {
-                my ($total, $living) = map { s/,/./r } ($1, $2);
-                $data->{'square_total'} = $total;
-                $data->{'square_living'} = $living;
-            }
-
-            when (/Площадь (\d+(?:,\d+)?)\/\/(\d+(?:,\d+)?) м/) {
-                my ($total, $kitchen) = map { s/,/./r } ($1, $2);
-                $data->{'square_total'} = $total;
-                $data->{'square_kitchen'} = $kitchen;
-            }
-
-            when (/Площадь (\d+(?:,\d+)?)\/\/ м/) {
-                my ($total) = map { s/,/./r } ($1);
-                $data->{'square_total'} = $total;
-            }
-
-            when (/Площадь (\d+(?:,\d+)?) м/) {
-                my ($total) = map { s/,/./r } ($1);
-                $data->{'square_total'} = $total;
-            }
-
-            when (/Участок (\d+(?:,\d+)?) соток/) {
-                my ($area) = map { s/,/./r } ($1);
-                $data->{'square_land'} = $area;
-                $data->{'square_land_type'} = 'ar';
-            }
-
-            when (/Санузел (.+)/) {
-                if ($1 eq 'раздельный') {
-                    $data->{'bathroom_id'} = 3;
-                } else {
-                    $data->{'bathroom_id'} = 8;
-                }
-            }
-
-            when (/Состояние (.+)/) {
-                if ($1 eq 'отличное') {
-                    $data->{'condition_id'} = 12;
-                } elsif ($1 eq 'хорошее') {
-                    $data->{'condition_id'} = 11;
-                } elsif ($1 eq 'нормальное') {
-                    $data->{'condition_id'} = 10;
-                } elsif ($1 eq 'евроремонт') {
-                    $data->{'condition_id'} = 4;
-                } elsif ($1 eq 'после строителей') {
-                    $data->{'condition_id'} = 1;
-                } else {
-                    $data->{'condition_id'} = 9;
-                }
-            }
-
-            when (/Новая планировка/) {
-                $data->{'ap_scheme_id'} = 4;
-            }
-
-            when (/Брежневка/) {
-                $data->{'ap_scheme_id'} = 3;
-            }
-
-            when (/Сталинка/) {
-                $data->{'ap_scheme_id'} = 1;
-            }
-
-            when (/Хрущевка/) {
-                $data->{'ap_scheme_id'} = 2;
-            }
-
-            when (/Индивидуальная/) {
-                $data->{'ap_scheme_id'} = 5;
-            }
-
-            when (/Улучшенная/) {
-                $data->{'ap_scheme_id'} = 3;
-            }
-
-
-            when (/кирпич/i) {
-                $data->{'house_type_id'} = 1;
-            }
-
-            when (/панель/i) {
-                $data->{'house_type_id'} = 3;
-            }
-
-            when (/дерево/i) {
-                $data->{'house_type_id'} = 4;
-            }
-
-            when (/брус/i) {
-                $data->{'house_type_id'} = 5;
-            }
+      #уточняем размерность земель
+      if($data->{source_media_text}=~/([\d,\.]{1,5}).{0,2}га/i){
+        if($1 == $data->{square_land}){
+          $data->{square_land_type} = 'hectare';
         }
-    });
-
-    if ($data->{'rooms_count'} == $data->{'rooms_offer_count'}) {
-        $data->{'rooms_offer_count'} = undef;
+      }
     }
 
-    my $addr = $dom->find('p[class="address"]')->first->text;
-    if ($addr) {
-        $data->{'description'} = $addr;
-        $addr =~ s/\w+? район//g;
+    #определение риэлтора
+    my $company_name = $dom->find('span[class="fio"]')->first->at('a');
+    if($company_name){
+      $company_name=$company_name->text;
+    } else{
+      $company_name=$dom->find('span[class="fio"]')->first->text;
+    }
+    my $phone_text = $dom->find('span[class="phone"]')->first->text;
+    my @phone_num = split(/,|;/,$phone_text);
+    foreach (@phone_num){
+      $_= Rplus::Util::PhoneNum::parse($_, $app_config->{default_phone_prefix});
+      if($_){
+          Rplus::Util::Mediator::add_mediator($company_name, @phone_num);
+      }
 
-        my @adr_parts = split(',', $addr);
+    }
+    $data->{'owner_phones'} = \@phone_num;
 
-        $addr = $adr_parts[1];
-
-        if ($addr) {
-          $data->{address} = $addr;
+    #извлекает ссылки на фотографии
+    my $script = $dom->find('div[class="item_full_image_small"]')->first->at('ul')->find('li');
+    if($script){
+      foreach(@{$script}){
+        if($_->at('a')->{href}=~/http:/){
+          push @{$data->{photo_url}}, $_->at('a')->{href};
+        } else{
+          push @{$data->{photo_url}}, $main_url.$_->at('a')->{href};
         }
-
-
+      }
     }
-
-	$dom->find('a[rel="gallery1"]')->each ( sub {
-	my $img_url = $_->attr('href');
-	if ($img_url =~ /^\//) {
-		$img_url = $host . $img_url;
-	}
-	push @{$data->{photo_url}}, $img_url;
-
     return $data;
-};
-
-sub get_res_ex {
-    my ($url) = @_;
-
-    say $url;
-
-    my $res;
-    my $code = 0;
-    my $retry = 15;
-
-    while ($code != 200 && $retry > 0) {
-        $retry -= 1;
-        if ($retry < 5) {
-            say 'retry left ' . $retry;
-        }
-        $res = $ua->get($url)->res;
-
-        $code = $res->code unless $res->error;
-    }
-
-    if ($retry == 0) {
-        undef $res;
-    }
-
-    return $res;
 }
 
 sub get_res {
     my ($url, $headers) = @_;
 
-    say $url;
-
     my $res;
-    my $code = 0;
+    my $code = 0; # код 200 - все хорошо
     my $retry = 15;
 
-    #push @headers, 'Referer' => $referer if $referer;
-    #push @headers, 'Accept' => $accept if $accept;
     while ($code != 200 && $retry > 0) {
         $retry -= 1;
         if ($retry < 5) {
             say 'retry left ' . $retry;
         }
-        $res = $ua->get($url, {
+        $res = $ua->get($url, {      #отправляем get запрос на сайт и получаем ответ
             'Host' => 'vnh27.ru',
             'Connection' => 'keep-alive',
             'Cache-Control' => 'max-age=0',
@@ -527,44 +453,198 @@ sub get_res {
             @$headers,
         })->res;
 
-        $code = $res->code unless $res->error;
+        $code = $res->code unless $res->error; # кодуприсваиваем текущее значение полученного ответа, если не получен код ошибки
+
     }
 
-    if ($retry == 0) {
-        undef $res;
+    if ($retry == 0) { # если количество повторов 0
+        undef $res; # то обнуляем переменную с ресурсами
     }
 
     return $res;
 }
 
-sub make_eid {
-    my ($id, $date) = @_;
-
-    return $id . '_' . $date->strftime('%Y%m%d')
+sub parse_type_realty {
+    my $text = lc(shift);
+    my $type;
+    my $sub_type;
+    if($text=~/.+estate=(\d)&purpose=(\d{0,2}).+/){
+        $type=$1;
+        $sub_type=$2;
+    }
+    return 'land' if($type==1);
+    return 'apartment' if($type==2);
+    return 'room' if($type==3);
+    return 'garage' if($type==4);
+    return 'house' if($type==5);
+    if($type==6){
+      return 'market_place' if($sub_type==1);
+      return 'gpurpose_place' if($sub_type==2 || $sub_type==3 || $sub_type==7);
+      return 'office_place' if($sub_type==4);
+      return 'warehouse_place' if($sub_type==5 || $sub_type==6);
+      return 'production_place' if($sub_type==8);
+    }
+    return undef;
 }
 
-sub parse_date {
-    my $date = lc(shift);
+sub get_house_type {
+  my $text = lc(shift);
+  given ($text) {
+      when (/монолит/ && /кирпич/) {
+        return 7;
+      }
+      when (/монолит/) {
+          return 2;
+      }
+      when (/кирпич/) {
+        return 1;
+      }
+      when (/панель/) {
+          return 3;
+      }
+      when (/брус/ || /бревно/) {
+          return 5;
+      }
+      when (/(каркасно-засыпн(.{1,4}) дом)|(дом.{1}каркасно-засыпн)/) {
+          return 6;
+      }
+      when (/(монолитно-кирпичн(.{1,4}) дом)|(дом.{1}монолитно-кирпичн)/) {
+          return 7;
+      }
+      when (/дерев/) {
+          return 4;
+      }
+  }
+  return undef;
+}
 
-    say $date;
+sub get_room_type {
+  my $text = shift;
+  given ($text) {
+      when (/смеж(.+)раздельн/) {
+          return 6;
+      }
+      when (/смежн/) {
+          return 4;
+      }
+      when (/раздельн/) {
+          return 3;
+      }
+      when (/студ/) {
+          return 1;
+      }
+      when (/икарус/) {
+          return 5;
+      }
+  }
+  return undef;
+}
 
-    my $res;
-    my $dt_now = DateTime->now();
-    my $year = $dt_now->year();
-    my $mon = $dt_now->month();
-    my $mday = $dt_now->mday();
+sub get_balcon_type {
+  my $text = lc(shift);
+  given ($text) {
+      when (/лоджий(.*)застек/) {
+          return 5;
+      }
+      when (/балконов(.*)застек/) {
+          return 6;
+      }
+      when (/лоджий(.*)/) {
+          return 7;
+      }
+      when (/(лоджи. застеклен)|(застеклен.{0,4} лодж)/) {
+          return 5;
+      }
+      when (/(балкон застеклен)|(застеклен.{0,4} балкон)/) {
+          return 6;
+      }
+      when (/лоджия/) {
+          return 3;
+      }
+      when (/балкон/) {
+          return 2;
+      }
+  }
+  return undef;
+}
 
-    if ($date =~ /(\d{1,2}):(\d{1,2}), (\d{1,2}).(\d{1,2}).(\d+)/) {
-        $res = $parser->parse_datetime("$5-$4-$3 $1:$2");
-        #$res->subtract(days => 1);
-    } else {
-        $res = $dt_now;
-    }
+sub get_condition_type {
+  my $text = lc(shift);
+  given ($text) {
+      when (/евро.{0,1}ремонт/) {
+          return 4;
+      }
+      when (/уд/) {
+          return 9;
+      }
+      when (/хор/) {
+          return 11;
+      }
+      when (/отл/) {
+          return 12;
+      }
+      when (/(требуется ремонт)/) {
+          return 6;
+      }
+      when (/(требуется косм.{0,10} ремонт)/) {
+          return 7;
+      }
+      when (/(после строит)/) {
+          return 1;
+      }
+      when (/(ремонт)/) {
+          return 3;
+      }
+  }
+  return undef;
+}
 
-    if ($res > $dt_now) {
-        # substr 1 day
-        $res->subtract(days => 1);
-    }
+sub get_bathroom_type {
+  my $text = lc(shift);
+  given ($text) {
+      when (/раздельн/) {
+          return 3;
+      }
+      when (/совмещ/) {
+          return 8;
+      }
+      when (/смежн/) {
+          return 4;
+      }
+      when (/без удобств/) {
+          return 1;
+      }
+      when (/без душа/) {
+          return 7;
+      }
+      when (/c удобств/) {
+          return 9;
+      }
+  }
+  return undef;
+}
 
-    return $res;
+sub get_scheme_house {
+  my $text = lc(shift);
+  given ($text) {
+      when (/хрущ/) {
+          return 2;
+      }
+      when (/брежнев/) {
+          return 3;
+      }
+      when (/сталин/) {
+          return 1;
+      }
+      when (/новая/) {
+          return 4;
+      }
+      when (/индивид/) {
+          return 5;
+      }
+      when (/общеж/) {
+          return 6;
+      }
+  }
+  return undef;
 }

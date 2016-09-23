@@ -22,10 +22,9 @@ my $parser = DateTime::Format::Strptime->new( pattern => '%FT%T' );
 my $parser_tz = DateTime::Format::Strptime->new( pattern => '%FT%T%z' );
 
 sub put_object {
-    my ($data, $config) = @_;
+    my ($data, $config, $stat_count) = @_;
     my $id;
     eval {
-
         if (0 && $data->{'owner_phones'} && scalar @{$data->{'owner_phones'}} > 0) {
             my $mediator = Rplus::Model::Mediator::Manager->get_objects(
               query => [
@@ -41,9 +40,9 @@ sub put_object {
         # check add_date
         if ($data->{add_date}) {
             my $now_dt = DateTime->now(time_zone => 'local');
-            say $data->{add_date};
+
             my $d_dt = $parser->parse_datetime($data->{add_date});
-            say $d_dt;
+
             if ($d_dt > $now_dt) {
                 say "wtf? obj from future";
                 $data->{add_date} = undef;
@@ -51,7 +50,9 @@ sub put_object {
         }
 
         my @realtys = @{_find_similar(%$data, state_code => ['raw', 'work', 'suspended', 'deleted'])};
+
         if (scalar @realtys > 0) {
+            $stat_count->{count_update_link}++;
             foreach (@realtys) {
                 $id = $_->id;   # что если похожий объект не один? какой id возвращать?
                 my $o_realty = $_;
@@ -97,7 +98,8 @@ sub put_object {
                 _update_location($o_realty);
 
                 $o_realty->save(changes_only => 1);
-                say "updated realty: $id";
+                $stat_count->{count_update_ad}++;
+                say "updated realty:". $id;
 
                 _update_photos($id, $config->{storage}->{path}, $data->{photo_url});
             }
@@ -116,12 +118,19 @@ sub put_object {
 
             my $data_id = $data->{id};
             $id = $realty->id;
-            say "Saved new realty: $id";
+            $stat_count->{count_new_ad}++;
+            say "Saved new realty:". $id;
 
             _update_photos($id, $config->{storage}->{path}, $data->{photo_url});
+
         }
     } or do {
-        say $@;
+       if($@){
+         $stat_count->{count_error_ad}++;
+         push  @{$stat_count->{url_list}}, $data->{source_url};
+         push  @{$stat_count->{error_list}}, "Eroor in file Realty: ".$@;
+         say "Erroor in file Realty: ".$@;
+       }
     };
 
     return $id;
@@ -180,6 +189,7 @@ sub _find_similar {
     # Совпадение: один из номеров телефонов + проверка по остальным параметрам
     #
     if (ref($data{'owner_phones'}) eq 'ARRAY' && @{$data{'owner_phones'}}) {
+
         my $realty = Rplus::Model::Realty::Manager->get_objects(
             #select => 'id',
             query => [
@@ -203,6 +213,7 @@ sub _find_similar {
             ],
             limit => 10,
         );
+
         return $realty if scalar @{$realty} > 0;
     }
 
@@ -239,7 +250,7 @@ sub _update_photos {
     Rplus::Util::Image::remove_images($realty_id);
 
     for my $photo_url (@{$photos}) {
-        say 'loading ' . $photo_url;
+        #say 'loading ' . $photo_url;
         #Rplus::Util::Image::load_image_from_url($realty_id, $photo_url, $storage_path, 0);
         Rplus::Util::Image::put_external_image($realty_id, $photo_url, $photo_url)
     }

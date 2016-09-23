@@ -4,7 +4,9 @@ use utf8;
 
 use Cwd qw/abs_path/;
 use Mojo::Asset::File;
+use Data::Dumper;
 
+use utf8;
 use Exporter qw(import);
 
 our @EXPORT_OK = qw(get_config);
@@ -24,7 +26,9 @@ sub get_config {
     $path = abs_path($path . '/../../../' . $filename);
 
     my $file = Mojo::Asset::File->new(path => $path);
+
     my $config = eval $file->slurp;
+
     return $config;
 }
 

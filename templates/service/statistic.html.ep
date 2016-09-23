@@ -1,0 +1,39 @@
+% layout 'default';
+% use Rplus::Model::MediaImportStatistic::Manager;
+% use Rplus::Model::Media::Manager;
+<head>
+  <style type="text/css">
+
+    td {
+      font-size: 14pt;
+    }
+    </style>
+</head>
+
+  <table border="3px">
+    <thead style="background: #fc0", align='center'>
+      <tr>
+        <td>Источник</td>
+        <td>Дата запуска</td>
+        <td>Всего ссылок</td>
+        <td>Новых</td>
+        <td>Обновленных</td>
+        <td>Ошибок</td>
+      </tr>
+    </thead>
+    <tbody align='center'>
+      % for my $x (@{Rplus::Model::MediaImportStatistic::Manager->get_objects(select => 'media_id, add_date, all_ad, new_ad, update_ad, errors_ad', query => [], sort_by => 'add_date')}) {
+      <tr >
+        %  my @y = @{Rplus::Model::Media::Manager->get_objects(select => 'name', query => [id => $x->media_id])};
+        <td><%= $y[0]->name %></td>
+        <td><%= $x->add_date %></td>
+        <td><%= $x->all_ad %></td>
+        <td><%= $x->new_ad %></td>
+        <td><%= $x->update_ad %></td>
+        <td><%= $x->errors_ad %></td>
+      </tr>
+      % }
+    </tbody>
+  </table>
+
+</div>
