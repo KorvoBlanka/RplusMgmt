@@ -29,12 +29,6 @@ __PACKAGE__->meta->setup(
             type       => 'one to many',
         },
 
-        media_import_statistic => {
-            class      => 'Rplus::Model::MediaImportStatistic',
-            column_map => { id => 'media_id' },
-            type       => 'one to many',
-        },
-
         realty => {
             class      => 'Rplus::Model::Realty',
             column_map => { id => 'source_media_id' },

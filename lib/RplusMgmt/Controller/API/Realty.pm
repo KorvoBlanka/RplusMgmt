@@ -806,7 +806,7 @@ sub update_multiple {
 
         if ($export_media) {
             my $export_media_id = $self->param_n('export_media');
-            my $export_media_ok = Rplus::DB->new_or_cached->dbh->selectall_hashref(q{SELECT M.id, M.name FROM media M WHERE M.type = 'export' AND M.delete_date IS NULL}, 'id');
+            my $export_media_ok = Rplus::DB->new_or_cached->dbh->selectall_arrayref(q{SELECT M.id, M.name FROM media M WHERE M.type = 'export' AND M.delete_date IS NULL});
 
             unless ($self->has_permission(realty => write => $realty->agent_id) || !exists $export_media_ok->{$export_media_id}) {
                 push @errors, $id;

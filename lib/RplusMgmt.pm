@@ -1,6 +1,7 @@
 package RplusMgmt;
 
 use Mojo::Base 'Mojolicious';
+use Mojo::IOLoop::Subprocess;
 
 our $VERSION = '1.0';
 
@@ -9,6 +10,7 @@ use Rplus::Model::User::Manager;
 use Rplus::Model::Realty::Manager;
 use Rplus::DB;
 
+use RplusMgmt::Task::Import;
 use RplusMgmt::Task::SMS;
 use RplusMgmt::Task::Subscriptions;
 use RplusMgmt::Task::CalendarSync;
@@ -26,6 +28,7 @@ use DateTime::Format::Strptime qw();
 use Time::HiRes qw( time usleep );
 use Cache::FastMmap;
 use POSIX;
+use Data::Dumper;
 
 my $fmap = Cache::FastMmap->new();
 my $ua = Mojo::UserAgent->new;
@@ -33,6 +36,7 @@ my $ua = Mojo::UserAgent->new;
 sub startup {
     my $self = shift;
 
+    $fmap->set('task_process_import', {});
     $fmap->set('task_process', {});
     $fmap->set('users_online', {});
     $fmap->set('users_logged_in', {});
@@ -347,31 +351,63 @@ sub startup {
         }
     });
 
+    my $task_timer_id_0 = Mojo::IOLoop->recurring(5 => sub {
 
-    my $task_timer_id = Mojo::IOLoop->recurring(180 => sub {
+        my $tp_import = $fmap->get('task_process_import');
 
-      my $tp = $fmap->get('task_process');
+        if ($tp_import ne 'in_progress') {
+            my $subprocess = Mojo::IOLoop::Subprocess->new;
+            $subprocess->run(sub {
+                my $subproc = shift;
 
-      if (waitpid($tp->{pid}, WNOHANG) != 0) { # вернет 0 если еще не завершился, -1 если такого нет, pid если завершился
-        if (my $task_pid = fork) {
-          say 'task process forked';
-          $fmap->set('task_process', {pid => $task_pid,});
+                $fmap->set('task_process_import', 'in_progress');
+
+                say 'subproc: doing import';
+                RplusMgmt::Task::Import::run($self);
+
+                return 1;
+            },
+            sub {
+                my ($subprocess, $err, @results) = @_;
+                $fmap->set('task_process_import', '');
+                say "subprocess error: $err" and return if $err;
+                say 'subproc: import done';
+            });
         } else {
-
-          say 'child: doing chords';
-          RplusMgmt::Task::BillingSync::run($self);
-          RplusMgmt::Task::CalendarSync::run();
-
-          RplusMgmt::Task::Subscriptions::run($self);
-          RplusMgmt::Task::SMS::run($self);
-          say 'child: done';
-
-          exit(0);
+            say 'import in progress';
         }
-      } else {
-        say 'child is running'
-      }
+    });
 
+    my $task_timer_id_1 = Mojo::IOLoop->recurring(60 => sub {
+
+        my $tp = $fmap->get('task_process');
+
+        if ($tp eq 'in_progress') {
+            say 'in proggress';
+            return;
+        }
+
+        my $subprocess = Mojo::IOLoop::Subprocess->new;
+        $subprocess->run(sub {
+            my $subproc = shift;
+
+            $fmap->set('task_process', 'in_progress');
+
+            say 'subproc: doing chords';
+            RplusMgmt::Task::BillingSync::run($self);
+            RplusMgmt::Task::CalendarSync::run();
+
+            RplusMgmt::Task::Subscriptions::run($self);
+            RplusMgmt::Task::SMS::run($self);
+
+            return 1;
+        },
+        sub {
+            my ($subprocess, $err, @results) = @_;
+            $fmap->set('task_process', '');
+            say "subprocess error: $err" and return if $err;
+            say 'subproc: done';
+        });
     });
 
     # Router

@@ -27,10 +27,10 @@ __PACKAGE__->meta->setup(
         condition_id        => { type => 'integer', remarks => 'Состояние' },
         balcony_id          => { type => 'integer', remarks => 'Описание балкона(ов)' },
         bathroom_id         => { type => 'integer', remarks => 'Описание санузла(ов)' },
-        square_total        => { type => 'float', remarks => 'Общая площадь', scale => 4 },
-        square_living       => { type => 'float', remarks => 'Жилая площадь', scale => 4 },
-        square_kitchen      => { type => 'float', remarks => 'Площадь кухни', scale => 4 },
-        square_land         => { type => 'float', remarks => 'Площадь земельного участка', scale => 4 },
+        square_total        => { type => 'float', precision => 4, remarks => 'Общая площадь', scale => 4 },
+        square_living       => { type => 'float', precision => 4, remarks => 'Жилая площадь', scale => 4 },
+        square_kitchen      => { type => 'float', precision => 4, remarks => 'Площадь кухни', scale => 4 },
+        square_land         => { type => 'float', precision => 4, remarks => 'Площадь земельного участка', scale => 4 },
         square_land_type    => { type => 'varchar', length => 7, remarks => 'Тип площади земельного участка:
       ar - сотка
       hectare - гектар' },
@@ -44,14 +44,14 @@ __PACKAGE__->meta->setup(
         owner_id            => { type => 'integer', remarks => 'Собственник' },
         owner_phones        => { type => 'array', not_null => 1, remarks => 'Контактные телефоны собственника данного объекта недвижимости' },
         owner_info          => { type => 'text', remarks => 'Доп. информация от собственника (контакты, удобное время звонка, и т.д.)' },
-        owner_price         => { type => 'float', remarks => 'Цена собственника', scale => 4 },
+        owner_price         => { type => 'float', precision => 4, remarks => 'Цена собственника', scale => 4 },
         work_info           => { type => 'text', remarks => 'Доп. информация по продаже недвижимости' },
         agent_id            => { type => 'integer', remarks => 'Агент, за которым закреплен данный объект недвижимости' },
-        agency_price        => { type => 'float', remarks => 'Цена агентства', scale => 4 },
-        price               => { type => 'float', remarks => 'COALESCE(agency_price, owner_price)', scale => 4 },
+        agency_price        => { type => 'float', precision => 4, remarks => 'Цена агентства', scale => 4 },
+        price               => { type => 'float', precision => 4, remarks => 'COALESCE(agency_price, owner_price)', scale => 4 },
         price_change_date   => { type => 'timestamp with time zone', remarks => 'Дата/время последнего изменения цены' },
         buyer_id            => { type => 'integer', remarks => 'Покупатель' },
-        final_price         => { type => 'float', remarks => 'Цена продажи по факту', scale => 4 },
+        final_price         => { type => 'float', precision => 4, remarks => 'Цена продажи по факту', scale => 4 },
         latitude            => { type => 'numeric', remarks => 'Широта' },
         longitude           => { type => 'numeric', remarks => 'Долгота' },
         geocoords           => { type => 'geography', remarks => 'Географические координаты' },
@@ -68,7 +68,7 @@ __PACKAGE__->meta->setup(
         hidden_for          => { type => 'array', default => '{}', not_null => 1, remarks => 'ID аккаунтов, для которых не будет виден объект' },
         multylisting        => { type => 'boolean', default => 'false', not_null => 1 },
         mls_price_type      => { type => 'varchar', default => 'rub', length => 255, not_null => 1 },
-        mls_price           => { type => 'float', scale => 4 },
+        mls_price           => { type => 'float', precision => 4, scale => 4 },
         attachments         => { type => 'array', default => '{}', not_null => 1 },
         rent_type           => { type => 'varchar', default => 'long', length => 8, not_null => 1 },
         lease_deposite_id   => { type => 'integer' },
@@ -79,7 +79,7 @@ __PACKAGE__->meta->setup(
         address             => { type => 'varchar' },
         locality            => { type => 'varchar' },
         color_tag           => { type => 'array' },
-        like_it             => { type => 'integer', default => '0' },
+        like_it             => { type => 'integer', default => '0', not_null => 1 },
     ],
 
     primary_key_columns => [ 'id' ],
@@ -174,21 +174,6 @@ __PACKAGE__->meta->setup(
     ],
 
     relationships => [
-<<<<<<< HEAD
-=======
-        color_tags => {
-            class      => 'Rplus::Model::ColorTag',
-            column_map => { id => 'realty_id' },
-            type       => 'one to many',
-        },
-
-        media_import_history => {
-            class      => 'Rplus::Model::MediaImportHistory',
-            column_map => { id => 'realty_id' },
-            type       => 'one to many',
-        },
-
->>>>>>> origin/eugenu_test
         photos => {
             class      => 'Rplus::Model::Photo',
             column_map => { id => 'realty_id' },
