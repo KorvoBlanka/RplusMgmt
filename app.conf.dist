@@ -129,6 +129,7 @@
 
   default_phone_prefix => 4212,
   location_id => 3,
+  location_short => 'msk',
   account_type => 'production',
 
   location => {
@@ -176,6 +177,7 @@
     places_radius => '50000'
   },
   billing_url => 'billing.rplusmgmt.com',
+  import_server_url => 'import.rplusmgmt.com:3000',
   export => {
     city => 'Москва',
     region => 'Московская обл.',

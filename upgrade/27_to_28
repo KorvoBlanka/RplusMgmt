@@ -16,8 +16,7 @@ if(1){
     $dbh->do(q{CREATE TABLE "public"."variables" (
                                     "id" SERIAL PRIMARY KEY,
 	                                "name" VARCHAR NOT NULL,
-	                                "value" VARCHAR NOT NULL,
-	                                  );}
+	                                "value" VARCHAR NOT NULL);}
     );
 }
 1;

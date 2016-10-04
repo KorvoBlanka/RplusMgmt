@@ -22,116 +22,105 @@ my $parser = DateTime::Format::Strptime->new( pattern => '%FT%T' );
 my $parser_tz = DateTime::Format::Strptime->new( pattern => '%FT%T%z' );
 
 sub put_object {
-    my ($data, $config, $stat_count) = @_;
+    my ($data, $config) = @_;
     my $id;
-    eval {
-        if (0 && $data->{'owner_phones'} && scalar @{$data->{'owner_phones'}} > 0) {
-            my $mediator = Rplus::Model::Mediator::Manager->get_objects(
-              query => [
-                  phone_num => [@{$data->{'owner_phones'}}],
-                  delete_date => undef,
-              ],
-              limit => 1,
-            )->[0];
 
-            return undef if ($mediator && $data->{offer_type_code} eq 'rent');
+    if (0 && $data->{'owner_phones'} && scalar @{$data->{'owner_phones'}} > 0) {
+        my $mediator = Rplus::Model::Mediator::Manager->get_objects(
+          query => [
+              phone_num => [@{$data->{'owner_phones'}}],
+              delete_date => undef,
+          ],
+          limit => 1,
+        )->[0];
+
+        return undef if ($mediator && $data->{offer_type_code} eq 'rent');
+    }
+
+    # check add_date
+    if ($data->{add_date}) {
+        my $now_dt = DateTime->now(time_zone => 'local');
+
+        my $d_dt = $parser->parse_datetime($data->{add_date});
+
+        if ($d_dt > $now_dt) {
+            say "wtf? obj from future";
+            $data->{add_date} = undef;
         }
+    }
 
-        # check add_date
-        if ($data->{add_date}) {
-            my $now_dt = DateTime->now(time_zone => 'local');
+    my @realtys = @{_find_similar(%$data, state_code => ['raw', 'work', 'suspended', 'deleted'])};
 
-            my $d_dt = $parser->parse_datetime($data->{add_date});
+    if (scalar @realtys > 0) {
+        foreach (@realtys) {
+            $id = $_->id;   # что если похожий объект не один? какой id возвращать?
+            my $o_realty = $_;
+            say "Found similar realty: $id";
 
-            if ($d_dt > $now_dt) {
-                say "wtf? obj from future";
-                $data->{add_date} = undef;
+            if ($data->{add_date} && $o_realty->last_seen_date) {
+                # пропустим если объект в базе "новее"
+
+                say $data->{add_date};
+                say $o_realty->last_seen_date;
+
+                my $o_dt = $parser->parse_datetime($o_realty->last_seen_date);
+                my $n_dt = $parser->parse_datetime($data->{add_date});
+
+                if ($o_dt && $n_dt && ($o_dt >= $n_dt)) {
+                    say 'newer!';
+                    next;
+                }
             }
-        }
 
-        my @realtys = @{_find_similar(%$data, state_code => ['raw', 'work', 'suspended', 'deleted'])};
-
-        if (scalar @realtys > 0) {
-            $stat_count->{count_update_link}++;
-            foreach (@realtys) {
-                $id = $_->id;   # что если похожий объект не один? какой id возвращать?
-                my $o_realty = $_;
-                say "Found similar realty: $id";
-
-                if ($data->{add_date} && $o_realty->last_seen_date) {
-                    # пропустим если объект в базе "новее"
-
-                    say $data->{add_date};
-                    say $o_realty->last_seen_date;
-
-                    my $o_dt = $parser->parse_datetime($o_realty->last_seen_date);
-                    my $n_dt = $parser->parse_datetime($data->{add_date});
-
-                    if ($o_dt && $n_dt && ($o_dt >= $n_dt)) {
-                        say 'newer!';
-                        next;
-                    }
-                }
-
-                my @phones = ();
-                foreach (@{$o_realty->owner_phones}) {
-                    push @phones, $_;
-                }
-
-                realty_record(undef, undef, 'update_media', $o_realty, $data);
-
-                $o_realty->owner_phones(Mojo::Collection->new(@phones)->compact->uniq);
-                if ($data->{add_date}) {
-                    $o_realty->last_seen_date($data->{add_date});
-                } else {
-                    $o_realty->last_seen_date('now()');
-                }
-                $o_realty->change_date('now()');
-
-                if ($o_realty->state_code ne 'work') {
-                    my @fields = qw(type_code source_media_id source_url source_media_text locality address house_num owner_price ap_scheme_id rooms_offer_count rooms_count condition_id room_scheme_id house_type_id floors_count floor square_total square_living square_kitchen square_land square_land_type);
-                    foreach (@fields) {
-                        $o_realty->$_($data->{$_}) if $data->{$_};
-                    }
-                }
-
-                _update_location($o_realty);
-
-                $o_realty->save(changes_only => 1);
-                $stat_count->{count_update_ad}++;
-                say "updated realty:". $id;
-
-                _update_photos($id, $config->{storage}->{path}, $data->{photo_url});
+            my @phones = ();
+            foreach (@{$o_realty->owner_phones}) {
+                push @phones, $_;
             }
-        } else {
-            my $realty = Rplus::Model::Realty->new((map { $_ => $data->{$_} } grep { $_ ne 'photo_url' && $_ ne 'id' && $_ ne 'category_code'} keys %$data), state_code => 'raw');
+
+            realty_record(undef, undef, 'update_media', $o_realty, $data);
+
+            $o_realty->owner_phones(Mojo::Collection->new(@phones)->compact->uniq);
             if ($data->{add_date}) {
-                $realty->last_seen_date($data->{add_date});
+                $o_realty->last_seen_date($data->{add_date});
             } else {
-                $realty->last_seen_date('now()');
+                $o_realty->last_seen_date('now()');
+            }
+            $o_realty->change_date('now()');
+
+            if ($o_realty->state_code ne 'work') {
+                my @fields = qw(type_code source_media_id source_url source_media_text locality address house_num owner_price ap_scheme_id rooms_offer_count rooms_count condition_id room_scheme_id house_type_id floors_count floor square_total square_living square_kitchen square_land square_land_type);
+                foreach (@fields) {
+                    $o_realty->$_($data->{$_}) if $data->{$_};
+                }
             }
 
-            _update_location($realty, $config);
+            _update_location($o_realty);
 
-            $realty->save;
-            realty_record(undef, undef, 'add_media', $realty, undef);
-
-            my $data_id = $data->{id};
-            $id = $realty->id;
-            $stat_count->{count_new_ad}++;
-            say "Saved new realty:". $id;
+            $o_realty->save(changes_only => 1);
+            say "updated realty:". $id;
 
             _update_photos($id, $config->{storage}->{path}, $data->{photo_url});
-
         }
-    } or do {
-       if($@){
-         $stat_count->{count_error_ad}++;
-         push  @{$stat_count->{url_list}}, $data->{source_url};
-         push  @{$stat_count->{error_list}}, "Eroor in file Realty: ".$@;
-         say "Erroor in file Realty: ".$@;
-       }
-    };
+    } else {
+        my $realty = Rplus::Model::Realty->new((map { $_ => $data->{$_} } grep { $_ ne 'photo_url' && $_ ne 'id' && $_ ne 'category_code'} keys %$data), state_code => 'raw');
+        if ($data->{add_date}) {
+            $realty->last_seen_date($data->{add_date});
+        } else {
+            $realty->last_seen_date('now()');
+        }
+
+        _update_location($realty, $config);
+
+        $realty->save;
+        realty_record(undef, undef, 'add_media', $realty, undef);
+
+        my $data_id = $data->{id};
+        $id = $realty->id;
+        say "Saved new realty:". $id;
+
+        _update_photos($id, $config->{storage}->{path}, $data->{photo_url});
+
+    }
 
     return $id;
 }
