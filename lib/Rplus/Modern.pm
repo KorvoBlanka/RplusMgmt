@@ -1,6 +1,6 @@
 package Rplus::Modern;
 
-use v5.16;
+use v5.18;
 
 use strict;
 use warnings;
@@ -29,7 +29,7 @@ sub import {
     strict->import();
     warnings->import();
     utf8->import();
-    feature->import(':5.16');
+    feature->import(':5.18');
     mro::set_mro(scalar caller(), 'c3');
 }
 

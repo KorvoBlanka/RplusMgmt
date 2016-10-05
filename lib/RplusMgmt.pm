@@ -1,13 +1,12 @@
 package RplusMgmt;
 
 use Mojo::Base 'Mojolicious';
-use Mojo::IOLoop::Subprocess;
+use Mojo::IOLoop;
 
 our $VERSION = '1.0';
 
 use Rplus::Model::Account::Manager;
 use Rplus::Model::User::Manager;
-use Rplus::Model::Realty::Manager;
 use Rplus::DB;
 
 use RplusMgmt::Task::Import;
@@ -31,7 +30,6 @@ use POSIX;
 use Data::Dumper;
 
 my $fmap = Cache::FastMmap->new();
-my $ua = Mojo::UserAgent->new;
 # This method will run once at server start
 sub startup {
     my $self = shift;
@@ -98,13 +96,13 @@ sub startup {
         my $max_users = $account->user_count * 1;
         my $login_struct = $fmap->get('users_logged_in');
 
-        if ($login_struct->{$account_id} && (scalar keys $login_struct->{$account_id}) > $user_count) {
+        if ($login_struct->{$account_id} && (scalar keys %{$login_struct->{$account_id}} > $user_count)) {
             $login_struct->{$account_id} = {};
             $fmap->set('users_logged_in', $login_struct);
         }
         return 1 if $login_struct->{$account_id} && $login_struct->{$account_id}->{$user_id};
         if ($login_struct->{$account_id}) {
-            return 0 if scalar keys $login_struct->{$account_id} >= $user_count;
+            return 0 if scalar keys %{$login_struct->{$account_id}} >= $user_count;
         }
 
         return 1;
@@ -135,7 +133,7 @@ sub startup {
         return 0 unless exists $login_struct->{$account_id}->{$user_id};
         return 0 if $self->session->{sid} != $login_struct->{$account_id}->{$user_id};
 
-        return 0 if scalar keys $login_struct->{$account_id} > $max_users;
+        return 0 if scalar keys %{$login_struct->{$account_id}} > $max_users;
 
         return 1;
     });
@@ -334,7 +332,6 @@ sub startup {
     #
     $self->hook(before_routes => sub {
         my $c = shift;
-
         if (my $user_id = $c->session->{user_id}) {
             if (my $user = Rplus::Model::User::Manager->get_objects(query => [id => $user_id, delete_date => undef])->[0]) {
                 $c->stash(user => {
@@ -349,65 +346,6 @@ sub startup {
                 });
             }
         }
-    });
-
-    my $task_timer_id_0 = Mojo::IOLoop->recurring(5 => sub {
-
-        my $tp_import = $fmap->get('task_process_import');
-
-        if ($tp_import ne 'in_progress') {
-            my $subprocess = Mojo::IOLoop::Subprocess->new;
-            $subprocess->run(sub {
-                my $subproc = shift;
-
-                $fmap->set('task_process_import', 'in_progress');
-
-                say 'subproc: doing import';
-                RplusMgmt::Task::Import::run($self);
-
-                return 1;
-            },
-            sub {
-                my ($subprocess, $err, @results) = @_;
-                $fmap->set('task_process_import', '');
-                say "subprocess error: $err" and return if $err;
-                say 'subproc: import done';
-            });
-        } else {
-            say 'import in progress';
-        }
-    });
-
-    my $task_timer_id_1 = Mojo::IOLoop->recurring(60 => sub {
-
-        my $tp = $fmap->get('task_process');
-
-        if ($tp eq 'in_progress') {
-            say 'in proggress';
-            return;
-        }
-
-        my $subprocess = Mojo::IOLoop::Subprocess->new;
-        $subprocess->run(sub {
-            my $subproc = shift;
-
-            $fmap->set('task_process', 'in_progress');
-
-            say 'subproc: doing chords';
-            RplusMgmt::Task::BillingSync::run($self);
-            RplusMgmt::Task::CalendarSync::run();
-
-            RplusMgmt::Task::Subscriptions::run($self);
-            RplusMgmt::Task::SMS::run($self);
-
-            return 1;
-        },
-        sub {
-            my ($subprocess, $err, @results) = @_;
-            $fmap->set('task_process', '');
-            say "subprocess error: $err" and return if $err;
-            say 'subproc: done';
-        });
     });
 
     # Router
@@ -494,6 +432,49 @@ sub startup {
         # Other controllers
         $r2b->get('/:controller/:action')->to(action => 'index');
     }
+
+    my $quit_proc = 0;
+    my $pid_0 = fork;
+    unless ($pid_0) {
+        # need some quit flag
+        # NEED that for some reason
+        Rplus::Model::Account::Manager->get_objects(query => [del_date => undef]);
+        while(!$quit_proc) {
+            say 'subproc: doing import';
+            eval {
+                RplusMgmt::Task::Import::run($self);
+            } or do {
+                say $@;
+            };
+            say 'subproc: import done';
+        }
+        exit;
+    }
+
+    my $pid_1 = fork;
+    unless ($pid_1) {
+        # need some quit flag
+        #Rplus::DB->new_or_cached;
+        Rplus::Model::Account::Manager->get_objects(query => [del_date => undef]);
+        while(!$quit_proc) {
+            say 'subproc: doing chors';
+            RplusMgmt::Task::BillingSync::run($self);
+            RplusMgmt::Task::CalendarSync::run();
+
+            RplusMgmt::Task::Subscriptions::run($self);
+            RplusMgmt::Task::SMS::run($self);
+            say 'subproc: chors done';
+            sleep 1;
+        }
+        exit;
+    }
+
+    my $loop = Mojo::IOLoop->singleton;
+    $loop->on(finish => sub {
+      my $loop = shift;
+      say 'dieing gracefully';
+      $quit_proc = 1;
+    });
 }
 
 1;

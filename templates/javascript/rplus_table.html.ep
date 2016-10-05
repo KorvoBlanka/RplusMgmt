@@ -34,42 +34,42 @@
       ap_schemes: { <% { %>
         % my $iter = Rplus::Model::DictApScheme::Manager->get_objects_iterator(query => [delete_date => undef]);
         % while (my $x = $iter->next) {
-          "<%= $x->id %>": {id: <%= $x->id %>, name: "<%= $x->name %>", metadata: <%== decode_utf8 $x->metadata %>},
+          "<%= $x->id %>": {id: <%= $x->id %>, name: "<%= $x->name %>", metadata: <%==  $x->metadata %>},
         % }
       <% } %> },
 
       balconies: { <% { %>
         % my $iter = Rplus::Model::DictBalcony::Manager->get_objects_iterator(query => [delete_date => undef]);
         % while (my $x = $iter->next) {
-          "<%= $x->id %>": {id: <%= $x->id %>, name: "<%= $x->name %>", metadata: <%== decode_utf8 $x->metadata %>},
+          "<%= $x->id %>": {id: <%= $x->id %>, name: "<%= $x->name %>", metadata: <%==  $x->metadata %>},
         % }
       <% } %> },
 
       bathrooms: { <% { %>
         % my $iter = Rplus::Model::DictBathroom::Manager->get_objects_iterator(query => [delete_date => undef]);
         % while (my $x = $iter->next) {
-          "<%= $x->id %>": {id: <%= $x->id %>, name: "<%= $x->name %>", metadata: <%== decode_utf8 $x->metadata %>},
+          "<%= $x->id %>": {id: <%= $x->id %>, name: "<%= $x->name %>", metadata: <%==  $x->metadata %>},
         % }
       <% } %> },
 
       conditions: { <% { %>
         % my $iter = Rplus::Model::DictCondition::Manager->get_objects_iterator(query => [delete_date => undef]);
         % while (my $x = $iter->next) {
-          "<%= $x->id %>": {id: <%= $x->id %>, name: "<%= $x->name %>", metadata: <%== decode_utf8 $x->metadata %>},
+          "<%= $x->id %>": {id: <%= $x->id %>, name: "<%= $x->name %>", metadata: <%==  $x->metadata %>},
         % }
       <% } %> },
 
       house_types: { <% { %>
         % my $iter = Rplus::Model::DictHouseType::Manager->get_objects_iterator(query => [delete_date => undef]);
         % while (my $x = $iter->next) {
-          "<%= $x->id %>": {id: <%= $x->id %>, name: "<%= $x->name %>", metadata: <%== decode_utf8 $x->metadata %>},
+          "<%= $x->id %>": {id: <%= $x->id %>, name: "<%= $x->name %>", metadata: <%==  $x->metadata %>},
         % }
       <% } %> },
 
       room_schemes: { <% { %>
         % my $iter = Rplus::Model::DictRoomScheme::Manager->get_objects_iterator(query => [delete_date => undef]);
         % while (my $x = $iter->next) {
-          "<%= $x->id %>": {id: <%= $x->id %>, name: "<%= $x->name %>", metadata: <%== decode_utf8 $x->metadata %>},
+          "<%= $x->id %>": {id: <%= $x->id %>, name: "<%= $x->name %>", metadata: <%==  $x->metadata %>},
         % }
       <% } %> },
     },

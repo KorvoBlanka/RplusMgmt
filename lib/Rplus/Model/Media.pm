@@ -23,12 +23,6 @@ __PACKAGE__->meta->setup(
     allow_inline_column_values => 1,
 
     relationships => [
-        media_import_history => {
-            class      => 'Rplus::Model::MediaImportHistory',
-            column_map => { id => 'media_id' },
-            type       => 'one to many',
-        },
-
         realty => {
             class      => 'Rplus::Model::Realty',
             column_map => { id => 'source_media_id' },

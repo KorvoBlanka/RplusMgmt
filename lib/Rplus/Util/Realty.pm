@@ -5,8 +5,6 @@ use Rplus::Modern;
 use Rplus::Model::Realty::Manager;
 use Rplus::Model::Mediator::Manager;
 use Rplus::Model::RealtyType::Manager;
-use Rplus::Model::MediaImportHistory;
-use Rplus::Model::MediaImportHistory::Manager;
 
 use Rplus::Util::Geo;
 use Rplus::Util::Image;
@@ -45,7 +43,7 @@ sub put_object {
 
         if ($d_dt > $now_dt) {
             say "wtf? obj from future";
-            $data->{add_date} = undef;
+            #$data->{add_date} = undef;
         }
     }
 
@@ -156,21 +154,6 @@ sub _find_similar {
             limit => 10,
         );
         return $realty if scalar @{$realty} > 0;
-
-        # Поиск в таблице истории импорта по тексту объявления
-        my $mih = Rplus::Model::MediaImportHistory::Manager->get_objects(
-            select => 'id, realty_id',
-            query => [
-                media_text => $data{'source_media_text'},
-                'realty.type_code' => $data{'type_code'},
-                'realty.offer_type_code' => $data{'offer_type_code'},
-                'realty.state_code' => $data{'state_code'},
-                ($data{'id'} ? ('!realty_id' => $data{'id'}) : ()),
-            ],
-            require_objects => ['realty'],
-            limit => 1
-        )->[0];
-        return $mih->realty_id if $mih;
     }
 
     #

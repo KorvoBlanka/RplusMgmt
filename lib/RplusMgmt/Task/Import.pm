@@ -26,7 +26,7 @@ sub run {
     my $max_id = 0;
 
     my $url = $c->config->{import_server_url} . '/api/result/get';
-    my $location_short = 'msk';
+    my $location_short = $c->config->{location_short};
 
     my $page = 0;
     my $quit = 0;
@@ -46,6 +46,9 @@ sub run {
             my $realty_data = $res->json->{list};
             if ($res->json->{count} == 0) {$quit = 1;}
             for my $data (@$realty_data) {
+
+                sleep 1;
+
                 my $object = from_json($data->{data});
 
                 if ($data->{id} > $max_id) {

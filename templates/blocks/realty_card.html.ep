@@ -1347,10 +1347,10 @@
               %       $categories{$x} = scalar keys %categories;
               %       $type_optgroups->[$categories{$x}] = {$x => []};
               %     }
-              %     push $type_optgroups->[$categories{$x}]->{$x}, [$_->{name} => $_->{code}];
+              %     push @{$type_optgroups->[$categories{$x}]->{$x}}, [$_->{name} => $_->{code}];
               %   }
               %   my @select = ();
-              %   while (my ($key, $value) = each $type_optgroups) {
+              %   while (my ($key, $value) = each @{$type_optgroups}) {
               %     my $k = (keys %$value)[0];
               %     push @select, c($k, $value->{$k});
               %   }
