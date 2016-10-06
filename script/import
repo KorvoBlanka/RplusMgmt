@@ -1,0 +1,22 @@
+#!/usr/bin/env perl
+
+use FindBin;
+BEGIN { unshift @INC, "$FindBin::Bin/../lib" }
+
+use Mojo::Log;
+use RplusMgmt::Task::Import;
+
+my $log = Mojo::Log->new(path => '../log/import.log', level => 'info');
+
+while(1) {
+    eval {
+        $log->info('cycle begin');
+        RplusMgmt::Task::Import::run($log);
+        $log->info('cycle end');
+
+        1;
+    } or do {
+        $log->error($@);
+    };
+    sleep 1;
+}

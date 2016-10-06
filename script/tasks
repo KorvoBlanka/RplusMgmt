@@ -1,0 +1,36 @@
+#!/usr/bin/env perl
+
+use FindBin;
+BEGIN { unshift @INC, "$FindBin::Bin/../lib" }
+
+use Mojo::Log;
+use RplusMgmt::Task::SMS;
+use RplusMgmt::Task::Subscriptions;
+use RplusMgmt::Task::CalendarSync;
+use RplusMgmt::Task::BillingSync;
+
+my $log = Mojo::Log->new(path => '../log/tasks.log', level => 'info');
+
+while(1) {
+    eval {
+
+        $log->info('cycle begin');
+
+        $log->info('billing');
+        RplusMgmt::Task::BillingSync::run();
+        $log->info('calendar');
+        RplusMgmt::Task::CalendarSync::run();
+        $log->info('subscription');
+        RplusMgmt::Task::Subscriptions::run();
+        $log->info('sms');
+        RplusMgmt::Task::SMS::run();
+
+        $log->info('cycle end');
+
+        sleep 1;
+        
+        1;
+    } or do {
+        $log->error($@);
+    };
+}

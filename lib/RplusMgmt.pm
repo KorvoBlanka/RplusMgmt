@@ -9,12 +9,6 @@ use Rplus::Model::Account::Manager;
 use Rplus::Model::User::Manager;
 use Rplus::DB;
 
-use RplusMgmt::Task::Import;
-use RplusMgmt::Task::SMS;
-use RplusMgmt::Task::Subscriptions;
-use RplusMgmt::Task::CalendarSync;
-use RplusMgmt::Task::BillingSync;
-
 use RplusMgmt::L10N;
 
 use JSON;
@@ -432,49 +426,6 @@ sub startup {
         # Other controllers
         $r2b->get('/:controller/:action')->to(action => 'index');
     }
-
-    my $quit_proc = 0;
-    my $pid_0 = fork;
-    unless ($pid_0) {
-        # need some quit flag
-        # NEED that for some reason
-        Rplus::Model::Account::Manager->get_objects(query => [del_date => undef]);
-        while(!$quit_proc) {
-            say 'subproc: doing import';
-            eval {
-                RplusMgmt::Task::Import::run($self);
-            } or do {
-                say $@;
-            };
-            say 'subproc: import done';
-        }
-        exit;
-    }
-
-    my $pid_1 = fork;
-    unless ($pid_1) {
-        # need some quit flag
-        #Rplus::DB->new_or_cached;
-        Rplus::Model::Account::Manager->get_objects(query => [del_date => undef]);
-        while(!$quit_proc) {
-            say 'subproc: doing chors';
-            RplusMgmt::Task::BillingSync::run($self);
-            RplusMgmt::Task::CalendarSync::run();
-
-            RplusMgmt::Task::Subscriptions::run($self);
-            RplusMgmt::Task::SMS::run($self);
-            say 'subproc: chors done';
-            sleep 1;
-        }
-        exit;
-    }
-
-    my $loop = Mojo::IOLoop->singleton;
-    $loop->on(finish => sub {
-      my $loop = shift;
-      say 'dieing gracefully';
-      $quit_proc = 1;
-    });
 }
 
 1;

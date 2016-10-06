@@ -20,10 +20,11 @@ use Rplus::Model::Option::Manager;
 use Rplus::Util::History qw(subscription_record notification_record);
 use Rplus::Util::SMS qw(prepare_sms_text enqueue send_sms);
 use Rplus::Util::Query;
+use Rplus::Util::Config qw(get_config);
 use JSON;
 
 sub run {
-    my $c = shift;
+    my $app_config = get_config();
 
     my $account_iter = Rplus::Model::Account::Manager->get_objects_iterator(query => [del_date => undef]);
     while (my $account = $account_iter->next) {
@@ -65,7 +66,7 @@ sub run {
                 for my $q (@{$subscr->queries}) {
 
                     # Skip FTS data
-                    my @query = map { ref($_) eq 'SCALAR' && $$_ =~ /^t1\.fts/ ? () : $_ } (Rplus::Util::Query::parse($q, $c));
+                    my @query = map { ref($_) eq 'SCALAR' && $$_ =~ /^t1\.fts/ ? () : $_ } (Rplus::Util::Query::parse($q));
 
                     if ($subscr->rent_type) {
                         push @query, rent_type => $subscr->rent_type;

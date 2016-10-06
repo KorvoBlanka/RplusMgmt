@@ -457,7 +457,7 @@ sub list {
     }
 
     # Parse query
-    push @query, Rplus::Util::Query::parse($q, $self);
+    push @query, Rplus::Util::Query::parse($q);
 
     if ($near_q) {
         push @query, Rplus::Util::Query::get_near_filter($near_q, $self);

@@ -6,6 +6,7 @@ use Rplus::DB;
 
 use Rplus::Model::QueryCache;
 use Rplus::Model::QueryCache::Manager;
+use Rplus::Util::Config qw(get_config);
 
 use Mojo::Util qw(trim);
 use Encode qw(decode_utf8);
@@ -84,20 +85,22 @@ sub get_near_filter {
 
 # Parse the user's query and return Rose::DB::Object params
 sub parse {
-    my ($q, $c) = @_; # Class, Query string, Mojolicious::Controller (for config)
+    my ($q) = @_;
+
+    my $config = get_config();
 
     return unless $q;
     my $q_orig = $q = trim($q);
 
     # Disabled params
-    my $disabled_query_items = {map { $_ => 1 } @{($c && $c->config->{disabled_query_items}) || []}};
+    my $disabled_query_items = {map { $_ => 1 } @{($config->{disabled_query_items}) || []}};
 
     # Rose::DB::Object query format
     my @params;
 
     # Check for cached query existence
     if ($USE_CACHE) {
-        my $query_cache_lifetime = ($c && $c->config->{query_cache_lifetime}) || '1 day';
+        my $query_cache_lifetime = ($config->{query_cache_lifetime}) || '1 day';
         if (my $qc = Rplus::Model::QueryCache::Manager->get_objects(query => [query => $q, \"add_date >= now() - interval '$query_cache_lifetime'"])->[0]) {
             return _json2params($qc->params);
         }

@@ -70,6 +70,9 @@ sub put_object {
                 }
             }
 
+            my @photo_url = @{$data->{photo_url}};
+            delete $data->{photo_url};
+
             my @phones = ();
             foreach (@{$o_realty->owner_phones}) {
                 push @phones, $_;
@@ -95,9 +98,9 @@ sub put_object {
             _update_location($o_realty);
 
             $o_realty->save(changes_only => 1);
-            say "updated realty:". $id;
+            say "updated realty: ". $id;
 
-            _update_photos($id, $config->{storage}->{path}, $data->{photo_url});
+            _update_photos($id, $config->{storage}->{path}, \@photo_url);
         }
     } else {
         my $realty = Rplus::Model::Realty->new((map { $_ => $data->{$_} } grep { $_ ne 'photo_url' && $_ ne 'id' && $_ ne 'category_code'} keys %$data), state_code => 'raw');

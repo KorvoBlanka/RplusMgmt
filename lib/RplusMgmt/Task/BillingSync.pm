@@ -4,18 +4,18 @@ use Rplus::Modern;
 
 use Rplus::Model::Account;
 use Rplus::Model::Account::Manager;
+use Rplus::Util::Config qw(get_config);
 
-use Data::Dumper;
 
 my $ua = Mojo::UserAgent->new;
 
 sub run {
-    my $c = shift;
+    my $config = get_config();
 
     my $account_iter = Rplus::Model::Account::Manager->get_objects_iterator(query => [del_date => undef]);
     while (my $account = $account_iter->next) {
 
-      my $url = $c->config->{billing_url} . '/api/account/get_by_name';
+      my $url = $config->{billing_url} . '/api/account/get_by_name';
 
       my $tx = $ua->get($url, form => {name => $account->name});
 

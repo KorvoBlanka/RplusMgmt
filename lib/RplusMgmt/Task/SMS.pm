@@ -12,7 +12,6 @@ use JSON;
 
 
 sub run {
-    my $c = shift;
 
     my $stop = 0;
     my $account_iter = Rplus::Model::Account::Manager->get_objects_iterator(query => [del_date => undef]);
@@ -33,8 +32,6 @@ sub run {
         $stop = 0;
         while ((my $sm = $sm_iter->next) && !$stop) {
             $sm->attempts_count($sm->attempts_count + 1);
-
-            $c->app->log->debug(sprintf("Sending SMS: (%s) %s => %s", $sm->id, $sm->phone_num, $sm->text));
 
             my $ua = Mojo::UserAgent->new;
             my $tx = $ua->post('https://smsc.ru/sys/send.php' => form => {

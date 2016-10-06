@@ -323,6 +323,7 @@ sub get_object_changes {
             }
             1;
         } or do {
+            say $@;
             say 'oops';
         };
     }
