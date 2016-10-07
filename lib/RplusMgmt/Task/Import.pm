@@ -57,6 +57,8 @@ sub run {
                 eval {
                     my $object = from_json($data->{data});
 
+                    say Dumper $object;
+
                     $log->info('processing obj ' . $data->{id});
 
                     if ($data->{id} > $max_id) {
@@ -76,7 +78,6 @@ sub run {
                             $dt->add(hours => 8);
                             $object->{add_date} = $dt->datetime();
                         }
-                        say Dumper $data;
                     }
 
                     my @p_phones;
