@@ -66,6 +66,16 @@ sub run {
                     $object->{source_media_id} = $media_dict->{$object->{source_media}};
                     delete $object->{source_media};
 
+                    # cluch for avito
+                    if ($object->{source_media_id} == 5) {
+                        # add 8 hours
+                        say 'yay! avito cluch';
+                        my $parser = DateTime::Format::Strptime->new( pattern => '%FT%T' );
+                        my $dt = $parser->parse_datetime($data->{add_date});
+                        $dt->add(hours => 8);
+                        $data->{add_date} = $dt->datetime();
+                    }
+
                     my @p_phones;
                     foreach (@{$object->{owner_phones}}) {
                         my $pp = Rplus::Util::PhoneNum::parse($_);
