@@ -285,10 +285,6 @@ sub changeset_to_string {
             my $v1 = $ta->[0];
             my $v2 = $ta->[1];
 
-            say $key;
-            say $v1;
-            say $v2;
-
             $v1 = $val_dict->{$key}->{$v1} if $val_dict->{$key}->{$v1};
             $v2 = $val_dict->{$key}->{$v2} if $val_dict->{$key}->{$v2};
 
@@ -323,12 +319,9 @@ sub get_object_changes {
             }
             1;
         } or do {
-            say $@;
-            say 'oops';
+            say 'exception ' . $@;
         };
     }
-
-    say Dumper $changes;
 
     return $changes;
 }

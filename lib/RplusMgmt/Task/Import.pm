@@ -67,13 +67,16 @@ sub run {
                     delete $object->{source_media};
 
                     # cluch for avito
-                    if ($object->{source_media_id} == 5) {
+                    if ($object->{source_media_id} == 5 && $object->{add_date}) {
                         # add 8 hours
                         say 'yay! avito cluch';
                         my $parser = DateTime::Format::Strptime->new( pattern => '%FT%T' );
-                        my $dt = $parser->parse_datetime($data->{add_date});
-                        $dt->add(hours => 8);
-                        $data->{add_date} = $dt->datetime();
+                        my $dt = $parser->parse_datetime($object->{add_date});
+                        if ($dt) {
+                            $dt->add(hours => 8);
+                            $object->{add_date} = $dt->datetime();
+                        }
+                        say Dumper $data;
                     }
 
                     my @p_phones;
