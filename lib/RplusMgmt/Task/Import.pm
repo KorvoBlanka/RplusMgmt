@@ -82,8 +82,9 @@ sub run {
 
                     my @p_phones;
                     foreach (@{$object->{owner_phones}}) {
-                        my $pp = Rplus::Util::PhoneNum::parse($_);
-                        push @p_phones, $pp;
+                        #my $pp = Rplus::Util::PhoneNum::parse($_);
+                        #push @p_phones, $pp;
+                        push @p_phones, $_;
                     }
                     $object->{owner_phones} = \@p_phones;
 
