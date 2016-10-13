@@ -103,12 +103,14 @@ sub put_object {
             _update_photos($id, $config->{storage}->{path}, \@photo_url);
         }
     } else {
-        my $realty = Rplus::Model::Realty->new((map { $_ => $data->{$_} } grep { $_ ne 'photo_url' && $_ ne 'id' && $_ ne 'category_code'} keys %$data), state_code => 'raw');
-        if ($data->{add_date}) {
-            $realty->last_seen_date($data->{add_date});
-        } else {
-            $realty->last_seen_date('now()');
+
+        unless ($data->{add_date}) {
+            my $dt = DateTime->now();            
+            $data->{add_date} = $dt->datetime();
         }
+
+        my $realty = Rplus::Model::Realty->new((map { $_ => $data->{$_} } grep { $_ ne 'photo_url' && $_ ne 'id' && $_ ne 'category_code'} keys %$data), state_code => 'raw');
+        $realty->last_seen_date($data->{add_date});
 
         _update_location($realty, $config);
 
