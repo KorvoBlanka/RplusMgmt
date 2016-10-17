@@ -47,6 +47,10 @@ sub put_object {
         }
     }
 
+    unless ($data->{photo_url}) {
+        $data->{photo_url} = [];
+    }
+
     my @realtys = @{_find_similar(%$data, state_code => ['raw', 'work', 'suspended', 'deleted'])};
 
     if (scalar @realtys > 0) {
