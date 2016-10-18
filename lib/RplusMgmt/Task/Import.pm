@@ -72,7 +72,7 @@ sub run {
                     if ($object->{source_media_id} == 5 && $object->{add_date}) {
                         # add 8 hours
                         say 'yay! avito cluch';
-                        my $parser = DateTime::Format::Strptime->new( pattern => '%FT%T' );
+                        my $parser = DateTime::Format::Strptime->new( pattern => '%FT%T%Z' );
                         my $dt = $parser->parse_datetime($object->{add_date});
                         if ($dt) {
                             $dt->add(hours => 8);
