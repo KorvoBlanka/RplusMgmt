@@ -51,6 +51,10 @@ sub put_object {
         $data->{photo_url} = [];
     }
 
+    my @photo_url = @{$data->{photo_url}};
+    delete $data->{photo_url};
+    delete $data->{category_code};
+
     my @realtys = @{_find_similar(%$data, state_code => ['raw', 'work', 'suspended', 'deleted'])};
 
     if (scalar @realtys > 0) {
@@ -73,9 +77,6 @@ sub put_object {
                     next;
                 }
             }
-
-            my @photo_url = @{$data->{photo_url}};
-            delete $data->{photo_url};
 
             my @phones = ();
             foreach (@{$o_realty->owner_phones}) {
@@ -125,7 +126,7 @@ sub put_object {
         $id = $realty->id;
         say "Saved new realty:". $id;
 
-        _update_photos($id, $config->{storage}->{path}, $data->{photo_url});
+        _update_photos($id, $config->{storage}->{path}, \@photo_url);
 
     }
 
