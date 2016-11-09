@@ -148,13 +148,10 @@ sub save {
             $mediator->save(changes_only => 1);
         }
 
-
         # Search for additional mediator phones
         my $found_phones = Mojo::Collection->new();
         my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(query => [delete_date => undef, \("owner_phones && '{".$phone_num."}'")], db => $db);
         while (my $realty = $realty_iter->next) {
-            #$realty->mediator_company_id($mediator->company->id);
-            #$realty->save(changes_only => 1);
             push @$found_phones, ($realty->owner_phones);
         }
         $found_phones = $found_phones->uniq;
@@ -216,25 +213,6 @@ sub delete {
     }
 
     $found_phones = $found_phones->uniq;
-
-    #if ($found_phones->size) {
-        # Add additional mediators from realty owner phones
-    #    for (@$found_phones) {
-
-    #        $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(query => [delete_date => undef, \("owner_phones && '{".$_."}'")]);
-    #        while (my $realty = $realty_iter->next) {
-                #$realty->mediator_company_id(undef);
-                #$realty->save(changes_only => 1);
-
-    #        }
-
-            #my $num_rows_updated = Rplus::Model::Mediator::Manager->update_objects(
-            #    set => {delete_date => \'now()'},
-            #    where => [phone_num => $_, delete_date => undef],
-            #);
-
-    #    }
-    #}
 
     mediator_record($user_id, 'delete', $mediator, undef);
 

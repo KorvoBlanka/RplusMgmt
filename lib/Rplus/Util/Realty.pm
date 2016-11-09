@@ -63,7 +63,7 @@ sub put_object {
             my $o_realty = $_;
             say "Found similar realty: $id";
 
-            if ($data->{add_date} && $o_realty->last_seen_date) {
+            if (1 == 2 && $data->{add_date} && $o_realty->last_seen_date) {
                 # пропустим если объект в базе "новее"
 
                 say $data->{add_date};

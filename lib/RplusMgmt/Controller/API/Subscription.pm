@@ -27,7 +27,6 @@ no warnings 'experimental::smartmatch';
 # Private function: serialize realty object(s)
 my $_serialize = sub {
     my $self = shift;
-    my $ff = shift;
     my @realty_objs = (ref($_[0]) eq 'ARRAY' ? @{shift()} : shift);
     my %params = @_;
 
@@ -95,12 +94,6 @@ my $_serialize = sub {
         if ($self->account_type() eq 'demo') {
             $x->{reference} = '';
             $x->{owner_phones} = ['ДЕМО ВЕРСИЯ'];
-        }
-
-        if ($ff eq 'not_med') {
-            $x->{mediator_company} = '';
-        } elsif ($ff eq 'med' && !$x->{mediator_company}) {
-            $x->{mediator_company} = 'ПОСРЕДНИК В НЕДВИЖИМОСТИ';
         }
 
         push @serialized, $x;
@@ -286,7 +279,6 @@ sub realty_list {
     my $acc_id = $self->session('account')->{id};
     my $user_id = $self->stash('user')->{id};
 
-    my $ff = '';
 
     my $subscription = Rplus::Model::Subscription::Manager->get_objects(query => [id => $subscription_id, delete_date => undef])->[0];
     if ($page eq '1') {
@@ -315,17 +307,13 @@ sub realty_list {
             if ($agent_id eq 'all' && $self->has_permission(realty => 'read')->{others}) {
                 push @query, and => ['!realty.agent_id' => undef, '!realty.agent_id' => 10000];
             } elsif ($agent_id eq 'not_med') {
-                $ff = 'not_med';
                 push @query, agent_id => undef;
-                push @query, 'realty.mediator_company_id' => undef;
-                #push @query,
-                    #[\"NOT EXISTS (SELECT 1 FROM mediators WHERE mediators.phone_num = ANY (t3.owner_phones) AND mediators.delete_date IS NULL AND ((mediators.account_id IS NULL AND NOT mediators.hidden_for_aid && '{4}') OR mediators.account_id = 4) LIMIT 1)"];
+                push @query,
+                    [\"NOT EXISTS (SELECT 1 FROM mediators WHERE mediators.phone_num = ANY (t2.owner_phones) AND mediators.delete_date IS NULL AND (NOT mediators.hidden_for_aid && '{$acc_id}' AND (mediators.account_id IS NULL OR mediators.account_id = $acc_id)) LIMIT 1)"];
 
             } elsif ($agent_id eq 'med') {
-                $ff = 'med';
-                push @query, '!realty.mediator_company_id' => undef;
-                #push @query,
-                    #[\"EXISTS (SELECT 1 FROM mediators WHERE mediators.phone_num = ANY (t3.owner_phones) AND mediators.delete_date IS NULL AND ((mediators.account_id IS NULL AND NOT mediators.hidden_for_aid && '{4}') OR mediators.account_id = 4) LIMIT 1)"];
+                push @query,
+                    [\"EXISTS (SELECT 1 FROM mediators WHERE mediators.phone_num = ANY (t2.owner_phones) AND mediators.delete_date IS NULL AND (NOT mediators.hidden_for_aid && '{$acc_id}' AND (mediators.account_id IS NULL OR mediators.account_id = $acc_id)) LIMIT 1)"];
 
             } elsif ($agent_id =~ /^a(\d+)$/) {
                 my $manager = Rplus::Model::User::Manager->get_objects(query => [id => $1, delete_date => undef])->[0];
@@ -393,7 +381,7 @@ sub realty_list {
         }
     }
 
-    $res->{list} = [$_serialize->($self, $ff, $realty_objs)];
+    $res->{list} = [$_serialize->($self, $realty_objs)];
 
     return $self->render(json => $res);
 }
