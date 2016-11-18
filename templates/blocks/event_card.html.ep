@@ -183,6 +183,7 @@
           $('#cardTitle').text(opts.title);
           $('#taskTypeInput').val(opts.task_type_id);
           $('#taskTypeInput').change();
+          $('#taskSummaryInput').val('');
 
           $modal.modal('toggle');
           return $this;

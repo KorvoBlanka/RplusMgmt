@@ -127,7 +127,6 @@ sub put_object {
         say "Saved new realty:". $id;
 
         _update_photos($id, $config->{storage}->{path}, \@photo_url);
-
     }
 
     return $id;
