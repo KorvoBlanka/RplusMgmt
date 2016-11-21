@@ -715,7 +715,20 @@
         type: "POST",
         cache: false,
         url: "/api/realty/list",
-        data: {q: q, search_area: geoSearchText, depth: depth, state_code: stateCode, offer_type_code: offerTypeCode, rent_type: rentType, agent_id: agentId, color_tag_id: colorTagId, sort_by: sortBy, page: page, per_page: 34, rq_id: rq_id},
+        data: {
+            q: q,
+            search_area: geoSearchText,
+            depth: depth,
+            state_code: stateCode,
+            offer_type_code: offerTypeCode,
+            rent_type: rentType,
+            agent_id: agentId,
+            color_tag_id: colorTagId,
+            sort_by: sortBy,
+            page: page,
+            per_page: 34,
+            rq_id: rq_id
+        },
         complete: function () { _listRealty_started = false; }
       })
         .done(function (data, textStatus, jqXHR) {
@@ -808,7 +821,19 @@
       $.ajax({
         type: "POST",
         url: "/api/realty/list",
-        data: {q: q, state_code: stateCode, offer_type_code: offerTypeCode, rent_type: rentType, agent_id: agentId, color_tag_id: colorTagId, sort_by: sortBy, rq_id: rq_id, page: 1, per_page: 34},
+        data: {
+            q: q,
+            search_area: geoSearchText,
+            state_code: stateCode,
+            offer_type_code: offerTypeCode,
+            rent_type: rentType,
+            agent_id: agentId,
+            color_tag_id: colorTagId,
+            sort_by: sortBy,
+            rq_id: rq_id,
+            page: 1,
+            per_page: 34
+        },
         complete: function () {
           _listRealty_started = false;
           supressAjaxIndicator(0);
