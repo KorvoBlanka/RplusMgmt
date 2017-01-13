@@ -6,7 +6,7 @@ BEGIN { unshift @INC, "$FindBin::Bin/../lib" }
 use Mojo::Log;
 use RplusMgmt::Task::Import;
 
-my $log = Mojo::Log->new(path => '../log/import.log', level => 'info');
+my $log = Mojo::Log->new(path => '../log/import.log', level => 'error');
 
 while(1) {
     eval {

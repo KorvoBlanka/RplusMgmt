@@ -9,7 +9,7 @@ use RplusMgmt::Task::Subscriptions;
 use RplusMgmt::Task::CalendarSync;
 use RplusMgmt::Task::BillingSync;
 
-my $log = Mojo::Log->new(path => '../log/tasks.log', level => 'info');
+my $log = Mojo::Log->new(path => '../log/tasks.log', level => 'error');
 
 while(1) {
     eval {
@@ -28,7 +28,7 @@ while(1) {
         $log->info('cycle end');
 
         sleep 1;
-        
+
         1;
     } or do {
         $log->error($@);
