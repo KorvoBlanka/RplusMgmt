@@ -47,7 +47,7 @@ sub import_present {
         #<a class="arc-link" href="/upload/present/archive/archive/2014085.zip">Скачать</a>
         my $response = $ua->get('http://present-dv.ru/present/archive');
         die $response->status_line unless $response->is_success;
-        if ($response->decoded_content =~ /<a class="arc-link" href="(.+?(\d+)\.zip)">Скачать<\/a>/) {
+        if ($response->decoded_content =~ /<a href="(.+?(\d+)\.zip)">Скачать<\/a>/) {
             $arch_url = $1;
             $media_num = $2;
             $arch_file = "$tempdir/${media_num}.zip";
@@ -56,7 +56,7 @@ sub import_present {
             say $media_num;
 
             # Скачаем актуальный архив во временную директорию
-            say "http://old.present-dv.ru$arch_url" =~ s/&amp;/&/r;
+            say "http://present-dv.ru$arch_url" =~ s/&amp;/&/r;
             $response = $ua->get("http://present-dv.ru$arch_url" =~ s/&amp;/&/r, ':content_file' => $arch_file, 'Referer' => 'http://www.present-dv.ru/');
             die $response->status_line unless $response->is_success;
         } else {

@@ -10,7 +10,7 @@ __PACKAGE__->meta->setup(
     columns => [
         id    => { type => 'serial', not_null => 1 },
         name  => { type => 'varchar', not_null => 1 },
-        value => { type => 'varchar' },
+        value => { type => 'varchar', not_null => 1 },
     ],
 
     primary_key_columns => [ 'id' ],

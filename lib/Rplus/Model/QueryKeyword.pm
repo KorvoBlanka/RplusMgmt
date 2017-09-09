@@ -15,6 +15,8 @@ __PACKAGE__->meta->setup(
     ],
 
     primary_key_columns => [ 'ftype', 'fkey', 'fval' ],
+
+    unique_key => [ 'fkey', 'ftype', 'fval' ],
 );
 
 1;
