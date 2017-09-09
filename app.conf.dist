@@ -1,5 +1,6 @@
 {
   default_lang => 'ru',
+  some_key => 'test',
   roles => {
     top => {
       landmarks => {
